@@ -8,10 +8,10 @@
     {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="habilidade"><i class="fa-solid fa-plus"></i> Nova habilidade</button>{{/if}}
   </header>
   {{#each habilidades.secoes}}
-  <section class="epm-secao-poder" style="--cor: {{cor}}" data-secao="{{id}}">
+  <section class="epm-secao-poder" style="--cor: {{this.cor}}" data-secao="{{this.id}}">
     <header class="epm-secao-titulo">
-      <h3>{{label}}</h3>
-      {{#if limite}}<span class="epm-contador{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" title="Limite desta raridade{{#if (epmEq @root.modoLimites "combinados")}} (habilidades e magias somadas){{/if}}">{{usados}} de {{limite}}</span>{{/if}}
+      <h3>{{this.label}}</h3>
+      {{#if limite}}<span class="epm-contador{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" title="Limite desta raridade{{#if (epmEq @root.modoLimites "combinados")}} (habilidades e magias somadas){{/if}}">{{this.usados}} de {{this.limite}}</span>{{/if}}
     </header>
     {{#if vazia}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}
     <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>

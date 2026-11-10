@@ -1,13 +1,13 @@
-<div class="epm-chat epm-chat-ataque{{#if critico}} critico{{/if}}" style="--cor: {{cor}}" data-actor-uuid="{{actorUuid}}">
+<div class="epm-chat epm-chat-ataque{{#if critico}} critico{{/if}}" style="--cor: {{this.cor}}" data-actor-uuid="{{this.actorUuid}}">
   <header class="epm-chat-topo">
-    {{#if img}}<img src="{{img}}" alt="" />{{else}}<i class="fa-solid fa-burst" aria-hidden="true"></i>{{/if}}
+    {{#if img}}<img src="{{this.img}}" alt="" />{{else}}<i class="fa-solid fa-burst" aria-hidden="true"></i>{{/if}}
     <div class="epm-chat-titulos">
-      <h3>{{nome}}</h3>
-      <span class="epm-chat-sub">{{periciaNome}}{{#if modo}}, {{modo}}{{/if}}</span>
+      <h3>{{this.nome}}</h3>
+      <span class="epm-chat-sub">{{this.periciaNome}}{{#if modo}}, {{this.modo}}{{/if}}</span>
     </div>
   </header>
-  <div class="epm-chat-rolagem"><span class="epm-rotulo">Acerto</span>{{{htmlAtaque}}}</div>
-  {{#if critico}}<p class="epm-chat-critico">Crítico! Dados da arma ×{{mult}}.</p>{{/if}}
-  {{#if htmlDano}}<div class="epm-chat-rolagem"><span class="epm-rotulo">Dano{{#if tipoDano}} ({{tipoDano}}){{/if}}</span>{{{htmlDano}}}</div>{{/if}}
+  <div class="epm-chat-rolagem"><span class="epm-rotulo">Acerto</span>{{{this.htmlAtaque}}}</div>
+  {{#if critico}}<p class="epm-chat-critico">Crítico! Dados da arma ×{{this.mult}}.</p>{{/if}}
+  {{#if htmlDano}}<div class="epm-chat-rolagem"><span class="epm-rotulo">Dano{{#if tipoDano}} ({{this.tipoDano}}){{/if}}</span>{{{this.htmlDano}}}</div>{{/if}}
   {{#each notas}}<p class="epm-chat-requisitos">{{this}}</p>{{/each}}
 </div>

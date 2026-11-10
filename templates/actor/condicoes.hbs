@@ -6,10 +6,10 @@
     </header>
     <div class="epm-condicoes-grade">
       {{#each condicoesLista}}
-      <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{id}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}>
-        <img src="{{icone}}" alt="" />
-        <span class="epm-condicao-nome">{{label}}{{#if imune}} <em>imune</em>{{/if}}</span>
-        <span class="epm-condicao-desc">{{descricao}}</span>
+      <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{this.id}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}>
+        <img src="{{this.icone}}" alt="" />
+        <span class="epm-condicao-nome">{{this.label}}{{#if imune}} <em>imune</em>{{/if}}</span>
+        <span class="epm-condicao-desc">{{this.descricao}}</span>
         {{#if resumo.length}}<span class="epm-condicao-efeitos">{{#each resumo}}<span>{{this}}</span>{{/each}}</span>{{/if}}
       </button>
       {{/each}}
@@ -22,16 +22,16 @@
 
   <div class="epm-tags-grade">
     {{#each tagsCondicoes}}
-    <section class="epm-painel epm-tags" data-campo="{{campo}}">
-      <header class="epm-painel-titulo"><h3>{{label}}</h3></header>
-      <p class="epm-dica">{{dica}}</p>
+    <section class="epm-painel epm-tags" data-campo="{{this.campo}}">
+      <header class="epm-painel-titulo"><h3>{{this.label}}</h3></header>
+      <p class="epm-dica">{{this.dica}}</p>
       <ul class="epm-tag-lista">
         {{#each itens}}<li class="epm-chip">{{this}}{{#if @root.edicao}}<button type="button" data-action="removerTag" data-campo="{{../campo}}" data-valor="{{this}}" aria-label="Remover {{this}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}
       </ul>
       {{#unless itens.length}}<p class="epm-vazio">Nenhum.</p>{{/unless}}
       {{#if @root.edicao}}
-      <input type="text" class="epm-tag-input" data-tag-campo="{{campo}}" list="epm-sug-{{campo}}-{{@root.actor.id}}" placeholder="Digite e tecle Enter" aria-label="Adicionar em {{label}}" />
-      <datalist id="epm-sug-{{campo}}-{{@root.actor.id}}">{{#each sugestoes}}<option value="{{this}}"></option>{{/each}}</datalist>
+      <input type="text" class="epm-tag-input" data-tag-campo="{{this.campo}}" list="epm-sug-{{this.campo}}-{{@root.actor.id}}" placeholder="Digite e tecle Enter" aria-label="Adicionar em {{this.label}}" />
+      <datalist id="epm-sug-{{this.campo}}-{{@root.actor.id}}">{{#each sugestoes}}<option value="{{this}}"></option>{{/each}}</datalist>
       {{/if}}
     </section>
     {{/each}}

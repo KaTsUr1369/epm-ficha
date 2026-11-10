@@ -1,36 +1,36 @@
-<article class="epm-bencao {{tipo}}{{#if ativo}} ativa{{/if}}" data-bencao="{{id}}">
+<article class="epm-bencao {{this.tipo}}{{#if ativo}} ativa{{/if}}" data-bencao="{{this.id}}">
   <header class="epm-bencao-topo">
     <label class="epm-interruptor" title="{{#if ativo}}Ativa: os modificadores valem{{else}}Inativa{{/if}}">
-      <input type="checkbox" name="flags.epm-ficha.bencaos.{{id}}.ativo" {{epmChecked ativo}} aria-label="Ativa" />
+      <input type="checkbox" name="flags.epm-ficha.bencaos.{{this.id}}.ativo" {{epmChecked ativo}} aria-label="Ativa" />
       <span class="epm-interruptor-trilho" aria-hidden="true"></span>
     </label>
     {{#if @root.edicao}}
-    <input class="epm-bencao-nome" type="text" name="flags.epm-ficha.bencaos.{{id}}.nome" value="{{nome}}" placeholder="{{#if (epmEq tipo "maldicao")}}Nome da maldição{{else}}Nome da bênção{{/if}}" aria-label="Nome" />
-    <button type="button" class="epm-icone-botao perigo" data-action="excluirBencao" data-bencao="{{id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+    <input class="epm-bencao-nome" type="text" name="flags.epm-ficha.bencaos.{{this.id}}.nome" value="{{this.nome}}" placeholder="{{#if (epmEq tipo "maldicao")}}Nome da maldição{{else}}Nome da bênção{{/if}}" aria-label="Nome" />
+    <button type="button" class="epm-icone-botao perigo" data-action="excluirBencao" data-bencao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
     {{else}}
-    <span class="epm-bencao-nome">{{#if nome}}{{nome}}{{else}}Sem nome{{/if}}</span>
+    <span class="epm-bencao-nome">{{#if nome}}{{this.nome}}{{else}}Sem nome{{/if}}</span>
     {{/if}}
   </header>
   {{#if @root.edicao}}
-  <label class="epm-campo"><span>Origem</span><input type="text" name="flags.epm-ficha.bencaos.{{id}}.origem" value="{{origem}}" placeholder="quem concedeu, onde foi obtida" /></label>
-  <label class="epm-campo"><span>Efeito</span><textarea name="flags.epm-ficha.bencaos.{{id}}.descricao" rows="2">{{descricao}}</textarea></label>
+  <label class="epm-campo"><span>Origem</span><input type="text" name="flags.epm-ficha.bencaos.{{this.id}}.origem" value="{{this.origem}}" placeholder="quem concedeu, onde foi obtida" /></label>
+  <label class="epm-campo"><span>Efeito</span><textarea name="flags.epm-ficha.bencaos.{{this.id}}.descricao" rows="2">{{this.descricao}}</textarea></label>
   <div class="epm-mods">
     <span class="epm-rotulo">Modificadores na ficha</span>
     {{#each mods}}
     <div class="epm-mod-linha">
-      <select name="flags.epm-ficha.bencaos.{{../id}}.mods.{{id}}.alvo" aria-label="O que muda">
+      <select name="flags.epm-ficha.bencaos.{{../id}}.mods.{{this.id}}.alvo" aria-label="O que muda">
         <option value="">Escolha o que muda…</option>
-        {{#each grupos}}<optgroup label="{{grupo}}">{{#each opcoes}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</optgroup>{{/each}}
+        {{#each grupos}}<optgroup label="{{this.grupo}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</optgroup>{{/each}}
       </select>
-      <input type="number" step="any" name="flags.epm-ficha.bencaos.{{../id}}.mods.{{id}}.valor" value="{{valor}}" aria-label="Valor" />
-      <button type="button" class="epm-icone-botao perigo" data-action="removerMod" data-bencao="{{../id}}" data-mod="{{id}}" title="Remover modificador"><i class="fa-solid fa-xmark"></i></button>
+      <input type="number" step="any" name="flags.epm-ficha.bencaos.{{../id}}.mods.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
+      <button type="button" class="epm-icone-botao perigo" data-action="removerMod" data-bencao="{{../id}}" data-mod="{{this.id}}" title="Remover modificador"><i class="fa-solid fa-xmark"></i></button>
     </div>
     {{/each}}
-    <button type="button" class="epm-link" data-action="adicionarMod" data-bencao="{{id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modificador</button>
+    <button type="button" class="epm-link" data-action="adicionarMod" data-bencao="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modificador</button>
   </div>
   {{else}}
-  {{#if origem}}<p class="epm-dica">{{origem}}</p>{{/if}}
-  {{#if descricao}}<p class="epm-texto-livre">{{descricao}}</p>{{/if}}
-  {{#if mods.length}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag">{{alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}</div>{{/if}}
+  {{#if origem}}<p class="epm-dica">{{this.origem}}</p>{{/if}}
+  {{#if descricao}}<p class="epm-texto-livre">{{this.descricao}}</p>{{/if}}
+  {{#if mods.length}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag">{{this.alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}</div>{{/if}}
   {{/if}}
 </article>

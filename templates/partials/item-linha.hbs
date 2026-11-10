@@ -1,31 +1,31 @@
-<li class="epm-item{{#if expandido}} expandido{{/if}}" data-item-id="{{id}}" draggable="true" style="--cor: {{raridadeCor}}">
+<li class="epm-item{{#if expandido}} expandido{{/if}}" data-item-id="{{this.id}}" draggable="true" style="--cor: {{this.raridadeCor}}">
   <div class="epm-item-linha">
-    <img class="epm-item-img" src="{{img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{id}}" title="Trocar imagem"{{/if}} />
-    <button type="button" class="epm-item-nome" data-action="expandirItem" data-item-id="{{id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">
-      <span class="epm-item-titulo">{{name}}</span>
+    <img class="epm-item-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{this.id}}" title="Trocar imagem"{{/if}} />
+    <button type="button" class="epm-item-nome" data-action="expandirItem" data-item-id="{{this.id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">
+      <span class="epm-item-titulo">{{this.name}}</span>
       {{#if eArma}}<span class="epm-item-dentro">{{ataque.periciaNome}} {{epmSinal ataque.acertoTotal}}, crítico {{ataque.critTexto}}</span>{{/if}}
-      {{#if containerNome}}<span class="epm-item-dentro">em {{containerNome}}</span>{{/if}}
-      {{#if conteudo}}<span class="epm-item-dentro">{{conteudo}} {{#if (epmEq conteudo 1)}}item{{else}}itens{{/if}} dentro</span>{{/if}}
+      {{#if containerNome}}<span class="epm-item-dentro">em {{this.containerNome}}</span>{{/if}}
+      {{#if conteudo}}<span class="epm-item-dentro">{{this.conteudo}} {{#if (epmEq conteudo 1)}}item{{else}}itens{{/if}} dentro</span>{{/if}}
     </button>
-    <span class="epm-raridade" title="Raridade">{{raridadeLabel}}</span>
+    <span class="epm-raridade" title="Raridade">{{this.raridadeLabel}}</span>
     {{#if eArma}}
-    <button type="button" class="epm-botao" data-action="atacar" data-tipo="arma" data-ref="{{id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano"><i class="fa-solid fa-dice-d20"></i> Atacar</button>
-    {{#if ataque.dano}}<button type="button" class="epm-dano" data-action="danoArma" data-item-id="{{id}}" title="Rolar só o dano">{{ataque.dano}}</button>{{/if}}
+    <button type="button" class="epm-botao" data-action="atacar" data-tipo="arma" data-ref="{{this.id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano"><i class="fa-solid fa-dice-d20"></i> Atacar</button>
+    {{#if ataque.dano}}<button type="button" class="epm-dano" data-action="danoArma" data-item-id="{{this.id}}" title="Rolar só o dano">{{ataque.dano}}</button>{{/if}}
     {{/if}}
-    {{#if eConsumivel}}<button type="button" class="epm-botao" data-action="usarItem" data-item-id="{{id}}" title="Gasta 1 unidade e mostra no chat">Usar</button>{{/if}}
+    {{#if eConsumivel}}<button type="button" class="epm-botao" data-action="usarItem" data-item-id="{{this.id}}" title="Gasta 1 unidade e mostra no chat">Usar</button>{{/if}}
     <div class="epm-quantidade">
-      <button type="button" data-action="quantidade" data-item-id="{{id}}" data-delta="-1" aria-label="Diminuir quantidade" {{#unless @root.editavel}}disabled{{/unless}}>−</button>
-      <input type="number" min="0" value="{{quantidade}}" data-item-campo="system.quantity" data-item-id="{{id}}" aria-label="Quantidade" {{#unless @root.editavel}}disabled{{/unless}} />
-      <button type="button" data-action="quantidade" data-item-id="{{id}}" data-delta="1" aria-label="Aumentar quantidade" {{#unless @root.editavel}}disabled{{/unless}}>+</button>
+      <button type="button" data-action="quantidade" data-item-id="{{this.id}}" data-delta="-1" aria-label="Diminuir quantidade" {{#unless @root.editavel}}disabled{{/unless}}>−</button>
+      <input type="number" min="0" value="{{this.quantidade}}" data-item-campo="system.quantity" data-item-id="{{this.id}}" aria-label="Quantidade" {{#unless @root.editavel}}disabled{{/unless}} />
+      <button type="button" data-action="quantidade" data-item-id="{{this.id}}" data-delta="1" aria-label="Aumentar quantidade" {{#unless @root.editavel}}disabled{{/unless}}>+</button>
     </div>
     <span class="epm-item-peso" title="Peso ({{epmNumero peso}} cada)">{{epmNumero pesoLinha}}</span>
     <div class="epm-item-controles">
-      {{#if equipavel}}<button type="button" class="epm-icone-botao{{#if equipado}} ativo{{/if}}" data-action="equiparItem" data-item-id="{{id}}" title="{{#if equipado}}Equipado (clique para tirar){{else}}Equipar{{/if}}" aria-pressed="{{#if equipado}}true{{else}}false{{/if}}"><i class="fa-solid fa-shirt"></i></button>{{/if}}
-      <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo da categoria){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
-      <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
+      {{#if equipavel}}<button type="button" class="epm-icone-botao{{#if equipado}} ativo{{/if}}" data-action="equiparItem" data-item-id="{{this.id}}" title="{{#if equipado}}Equipado (clique para tirar){{else}}Equipar{{/if}}" aria-pressed="{{#if equipado}}true{{else}}false{{/if}}"><i class="fa-solid fa-shirt"></i></button>{{/if}}
+      <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{this.id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo da categoria){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
+      <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
       {{#if @root.edicao}}
-      <button type="button" class="epm-icone-botao" data-action="editarItem" data-item-id="{{id}}" title="Abrir a ficha do item"><i class="fa-solid fa-pen-to-square"></i></button>
-      <button type="button" class="epm-icone-botao perigo" data-action="excluirItem" data-item-id="{{id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+      <button type="button" class="epm-icone-botao" data-action="editarItem" data-item-id="{{this.id}}" title="Abrir a ficha do item"><i class="fa-solid fa-pen-to-square"></i></button>
+      <button type="button" class="epm-icone-botao perigo" data-action="excluirItem" data-item-id="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
       {{/if}}
     </div>
   </div>
@@ -33,19 +33,19 @@
   <div class="epm-item-detalhes">
     {{#if @root.edicao}}
     <div class="epm-item-config">
-      <label class="epm-mini"><span>raridade</span><select data-item-campo="flags.epm-ficha.raridade" data-item-id="{{id}}">{{#each opcoesRaridade}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+      <label class="epm-mini"><span>raridade</span><select data-item-campo="flags.epm-ficha.raridade" data-item-id="{{this.id}}">{{#each opcoesRaridade}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       {{#if eArma}}
-      <label class="epm-mini"><span>perícia de ataque</span><select data-item-campo="flags.epm-ficha.periciaAtaque" data-item-id="{{id}}">{{#each opcoesPericia}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{nome}}</option>{{/each}}</select></label>
-      <label class="epm-mini curto"><span>acerto</span><input type="number" value="{{ataque.bonusAcerto}}" data-item-campo="flags.epm-ficha.bonusAcerto" data-item-id="{{id}}" /></label>
-      <label class="epm-mini"><span>dano</span><input type="text" value="{{ataque.dano}}" data-item-campo="flags.epm-ficha.dano" data-item-id="{{id}}" placeholder="2d10 + @atr.forca" /></label>
-      <label class="epm-mini"><span>tipo de dano</span><input type="text" value="{{ataque.tipoDano}}" data-item-campo="flags.epm-ficha.tipoDano" data-item-id="{{id}}" placeholder="Corte" /></label>
-      <label class="epm-mini curto" title="Menor resultado no d20 que conta como crítico"><span>margem</span><input type="number" min="2" max="20" value="{{ataque.critMargem}}" data-item-campo="flags.epm-ficha.critMargem" data-item-id="{{id}}" /></label>
-      <label class="epm-mini curto" title="No crítico, os dados da arma são multiplicados por este valor"><span>×crítico</span><input type="number" min="2" value="{{ataque.critMult}}" data-item-campo="flags.epm-ficha.critMult" data-item-id="{{id}}" /></label>
+      <label class="epm-mini"><span>perícia de ataque</span><select data-item-campo="flags.epm-ficha.periciaAtaque" data-item-id="{{this.id}}">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+      <label class="epm-mini curto"><span>acerto</span><input type="number" value="{{ataque.bonusAcerto}}" data-item-campo="flags.epm-ficha.bonusAcerto" data-item-id="{{this.id}}" /></label>
+      <label class="epm-mini"><span>dano</span><input type="text" value="{{ataque.dano}}" data-item-campo="flags.epm-ficha.dano" data-item-id="{{this.id}}" placeholder="2d10 + @atr.forca" /></label>
+      <label class="epm-mini"><span>tipo de dano</span><input type="text" value="{{ataque.tipoDano}}" data-item-campo="flags.epm-ficha.tipoDano" data-item-id="{{this.id}}" placeholder="Corte" /></label>
+      <label class="epm-mini curto" title="Menor resultado no d20 que conta como crítico"><span>margem</span><input type="number" min="2" max="20" value="{{ataque.critMargem}}" data-item-campo="flags.epm-ficha.critMargem" data-item-id="{{this.id}}" /></label>
+      <label class="epm-mini curto" title="No crítico, os dados da arma são multiplicados por este valor"><span>×crítico</span><input type="number" min="2" value="{{ataque.critMult}}" data-item-campo="flags.epm-ficha.critMult" data-item-id="{{this.id}}" /></label>
       {{/if}}
-      {{#if eConsumivel}}<label class="epm-mini largo"><span>rolagem ao usar</span><input type="text" value="{{formulaUso}}" data-item-campo="flags.epm-ficha.formula" data-item-id="{{id}}" placeholder="2d4 + 2" /></label>{{/if}}
+      {{#if eConsumivel}}<label class="epm-mini largo"><span>rolagem ao usar</span><input type="text" value="{{this.formulaUso}}" data-item-campo="flags.epm-ficha.formula" data-item-id="{{this.id}}" placeholder="2d4 + 2" /></label>{{/if}}
     </div>
     {{/if}}
-    <div class="epm-descricao">{{#if descricao}}{{{descricao}}}{{else}}<p class="epm-vazio">Sem descrição.{{#if @root.edicao}} Use o lápis para escrever uma.{{/if}}</p>{{/if}}</div>
+    <div class="epm-descricao">{{#if descricao}}{{{this.descricao}}}{{else}}<p class="epm-vazio">Sem descrição.{{#if @root.edicao}} Use o lápis para escrever uma.{{/if}}</p>{{/if}}</div>
   </div>
   {{/if}}
 </li>

@@ -1,7 +1,7 @@
 <nav class="epm-nav" aria-label="Seções da ficha">
   {{#each abas}}
-  <button type="button" class="epm-nav-item{{#if ativa}} active{{/if}}" data-action="aba" data-group="primary" data-tab="{{id}}" title="{{label}}">
-    <i class="{{icone}}" aria-hidden="true"></i><span>{{label}}</span>
+  <button type="button" class="epm-nav-item{{#if ativa}} active{{/if}}" data-action="aba" data-group="primary" data-tab="{{this.id}}" title="{{this.label}}">
+    <i class="{{this.icone}}" aria-hidden="true"></i><span>{{this.label}}</span>
   </button>
   {{/each}}
 </nav>

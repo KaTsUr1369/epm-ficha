@@ -1,19 +1,19 @@
-<div class="epm-chat" style="--cor: {{raridadeCor}}" data-actor-uuid="{{actorUuid}}">
+<div class="epm-chat" style="--cor: {{this.raridadeCor}}" data-actor-uuid="{{this.actorUuid}}">
   <header class="epm-chat-topo">
-    <img src="{{img}}" alt="" />
+    <img src="{{this.img}}" alt="" />
     <div class="epm-chat-titulos">
-      <h3>{{nome}}</h3>
-      <span class="epm-chat-sub">{{tipoLabel}} {{raridadeLabel}}{{#if circuloLabel}}, {{circuloLabel}}{{/if}}</span>
+      <h3>{{this.nome}}</h3>
+      <span class="epm-chat-sub">{{this.tipoLabel}} {{this.raridadeLabel}}{{#if circuloLabel}}, {{this.circuloLabel}}{{/if}}</span>
     </div>
   </header>
-  {{#if formaNome}}<p class="epm-chat-forma">Forma <strong>{{formaNome}}</strong></p>{{/if}}
-  {{#if linhas.length}}<dl class="epm-chat-linhas">{{#each linhas}}<dt>{{rotulo}}</dt><dd>{{valor}}</dd>{{/each}}</dl>{{/if}}
+  {{#if formaNome}}<p class="epm-chat-forma">Forma <strong>{{this.formaNome}}</strong></p>{{/if}}
+  {{#if linhas.length}}<dl class="epm-chat-linhas">{{#each linhas}}<dt>{{this.rotulo}}</dt><dd>{{this.valor}}</dd>{{/each}}</dl>{{/if}}
   {{#if requisitos.length}}<p class="epm-chat-requisitos">Requisitos: {{epmJoin requisitos}}</p>{{/if}}
-  {{#if texto}}<div class="epm-chat-texto">{{{texto}}}</div>{{/if}}
+  {{#if texto}}<div class="epm-chat-texto">{{{this.texto}}}</div>{{/if}}
   {{#each avisos}}<p class="epm-chat-aviso">{{this}}</p>{{/each}}
   {{#if botoes.length}}
   <div class="epm-chat-botoes">
-    {{#each botoes}}<button type="button" data-epm-action="{{acao}}"{{#if formula}} data-formula="{{formula}}"{{/if}}{{#if pericia}} data-pericia="{{pericia}}"{{/if}}{{#if tipo}} data-tipo="{{tipo}}"{{/if}} data-rotulo="{{rotulo}}"><i class="{{icone}}" aria-hidden="true"></i> {{label}}</button>{{/each}}
+    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if pericia}} data-pericia="{{this.pericia}}"{{/if}}{{#if tipo}} data-tipo="{{this.tipo}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
   </div>
   {{/if}}
 </div>

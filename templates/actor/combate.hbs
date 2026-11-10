@@ -26,11 +26,11 @@
         </div>
         <div class="epm-defesas">
           {{#each ficha.defesas}}
-          <button type="button" class="epm-defesa" data-action="defesa" data-defesa="{{id}}" title="{{descricao}}">
-            <i class="{{icone}}" aria-hidden="true"></i>
-            <span class="epm-defesa-nome">{{label}}</span>
-            <span class="epm-defesa-valor">{{valor}}</span>
-            <span class="epm-defesa-formula">CA + {{periciaNome}} {{epmSinal periciaBonus}}{{#if faltaPericia}} (perícia ausente){{/if}}</span>
+          <button type="button" class="epm-defesa" data-action="defesa" data-defesa="{{this.id}}" title="{{this.descricao}}">
+            <i class="{{this.icone}}" aria-hidden="true"></i>
+            <span class="epm-defesa-nome">{{this.label}}</span>
+            <span class="epm-defesa-valor">{{this.valor}}</span>
+            <span class="epm-defesa-formula">CA + {{this.periciaNome}} {{epmSinal periciaBonus}}{{#if faltaPericia}} (perícia ausente){{/if}}</span>
           </button>
           {{/each}}
         </div>
@@ -42,7 +42,7 @@
           <div class="epm-turno-linha">
             <span class="epm-rotulo">Ações</span>
             <div class="epm-turno-acoes">
-              {{#each acoesTurno}}<button type="button" class="epm-pip-acao{{#if usada}} usada{{/if}}" data-action="alternarAcao" data-acao="{{id}}" aria-pressed="{{#if usada}}true{{else}}false{{/if}}" title="{{#if usada}}Usada neste turno{{else}}Disponível{{/if}}">{{label}}</button>{{/each}}
+              {{#each acoesTurno}}<button type="button" class="epm-pip-acao{{#if usada}} usada{{/if}}" data-action="alternarAcao" data-acao="{{this.id}}" aria-pressed="{{#if usada}}true{{else}}false{{/if}}" title="{{#if usada}}Usada neste turno{{else}}Disponível{{/if}}">{{this.label}}</button>{{/each}}
             </div>
           </div>
           <div class="epm-turno-linha" title="Cada defesa gasta 1 ação do seu próximo turno">
@@ -54,10 +54,10 @@
             {{#each ficha.acoes.especiais}}
             {{#if (epmOr max @root.edicao)}}
             <div class="epm-especial{{#unless max}} inativa{{/unless}}" title="Só existe se alguma habilidade, magia ou item conceder">
-              <span class="epm-especial-nome">{{label}}</span>
-              <input type="number" min="0" name="flags.epm-ficha.acoes.{{id}}.value" value="{{value}}" aria-label="{{label}} disponíveis" />
+              <span class="epm-especial-nome">{{this.label}}</span>
+              <input type="number" min="0" name="flags.epm-ficha.acoes.{{this.id}}.value" value="{{this.value}}" aria-label="{{this.label}} disponíveis" />
               <span aria-hidden="true">/</span>
-              {{#if @root.edicao}}<input type="number" min="0" name="flags.epm-ficha.acoes.{{id}}.max" value="{{max}}" aria-label="{{label}} por rodada" />{{else}}<span>{{max}}</span>{{/if}}
+              {{#if @root.edicao}}<input type="number" min="0" name="flags.epm-ficha.acoes.{{this.id}}.max" value="{{this.max}}" aria-label="{{this.label}} por rodada" />{{else}}<span>{{this.max}}</span>{{/if}}
             </div>
             {{/if}}
             {{/each}}
@@ -81,31 +81,31 @@
         <ol class="epm-lista-ataques">
           {{#each ataques.armas}}
           <li class="epm-ataque">
-            <img class="epm-ataque-img" src="{{img}}" alt="" />
-            <div class="epm-ataque-info"><span class="epm-ataque-nome">{{nome}}</span><span class="epm-ataque-sub">{{periciaNome}}, crítico {{critTexto}}</span></div>
+            <img class="epm-ataque-img" src="{{this.img}}" alt="" />
+            <div class="epm-ataque-info"><span class="epm-ataque-nome">{{this.nome}}</span><span class="epm-ataque-sub">{{this.periciaNome}}, crítico {{this.critTexto}}</span></div>
             <span class="epm-ataque-acerto" title="Bônus de acerto">{{epmSinal acertoTotal}}</span>
-            <span class="epm-ataque-dano" title="Dano">{{#if danoTexto}}{{danoTexto}}{{else}}—{{/if}}</span>
-            <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="arma" data-ref="{{id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano">Atacar</button>
+            <span class="epm-ataque-dano" title="Dano">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}</span>
+            <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="arma" data-ref="{{this.id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano">Atacar</button>
           </li>
           {{/each}}
           {{#each ataques.custom}}
           <li class="epm-ataque custom">
             <span class="epm-ataque-img epm-ataque-icone" aria-hidden="true"><i class="fa-solid fa-burst"></i></span>
-            <div class="epm-ataque-info"><span class="epm-ataque-nome">{{nome}}</span><span class="epm-ataque-sub">{{periciaNome}}, crítico {{critTexto}}{{#if notas}}, {{notas}}{{/if}}</span></div>
+            <div class="epm-ataque-info"><span class="epm-ataque-nome">{{this.nome}}</span><span class="epm-ataque-sub">{{this.periciaNome}}, crítico {{this.critTexto}}{{#if notas}}, {{this.notas}}{{/if}}</span></div>
             <span class="epm-ataque-acerto" title="Bônus de acerto">{{epmSinal acertoTotal}}</span>
-            <span class="epm-ataque-dano" title="Dano">{{#if danoTexto}}{{danoTexto}}{{else}}—{{/if}}</span>
-            <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="custom" data-ref="{{id}}">Atacar</button>
+            <span class="epm-ataque-dano" title="Dano">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}</span>
+            <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="custom" data-ref="{{this.id}}">Atacar</button>
             {{#if @root.edicao}}
             <div class="epm-ataque-campos">
-              <label class="epm-mini largo"><span>nome</span><input type="text" name="flags.epm-ficha.ataques.{{id}}.nome" value="{{nome}}" /></label>
-              <label class="epm-mini"><span>perícia</span><select name="flags.epm-ficha.ataques.{{id}}.pericia">{{#each opcoesPericia}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{nome}}</option>{{/each}}</select></label>
-              <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.ataques.{{id}}.bonusAcerto" value="{{bonusAcerto}}" /></label>
-              <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.ataques.{{id}}.dano" value="{{dano}}" placeholder="1d8 + @atr.forca" /></label>
-              <label class="epm-mini"><span>tipo</span><input type="text" name="flags.epm-ficha.ataques.{{id}}.tipoDano" value="{{tipoDano}}" placeholder="Corte" /></label>
-              <label class="epm-mini"><span>margem</span><input type="number" min="2" max="20" name="flags.epm-ficha.ataques.{{id}}.critMargem" value="{{critMargem}}" /></label>
-              <label class="epm-mini"><span>×crítico</span><input type="number" min="2" name="flags.epm-ficha.ataques.{{id}}.critMult" value="{{critMult}}" /></label>
-              <label class="epm-mini largo"><span>notas</span><input type="text" name="flags.epm-ficha.ataques.{{id}}.notas" value="{{notas}}" placeholder="alcance, efeito…" /></label>
-              <button type="button" class="epm-icone-botao perigo" data-action="excluirAtaque" data-ref="{{id}}" title="Excluir ataque"><i class="fa-solid fa-trash"></i></button>
+              <label class="epm-mini largo"><span>nome</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.nome" value="{{this.nome}}" /></label>
+              <label class="epm-mini"><span>perícia</span><select name="flags.epm-ficha.ataques.{{this.id}}.pericia">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+              <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.ataques.{{this.id}}.bonusAcerto" value="{{this.bonusAcerto}}" /></label>
+              <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8 + @atr.forca" /></label>
+              <label class="epm-mini"><span>tipo</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="Corte" /></label>
+              <label class="epm-mini"><span>margem</span><input type="number" min="2" max="20" name="flags.epm-ficha.ataques.{{this.id}}.critMargem" value="{{this.critMargem}}" /></label>
+              <label class="epm-mini"><span>×crítico</span><input type="number" min="2" name="flags.epm-ficha.ataques.{{this.id}}.critMult" value="{{this.critMult}}" /></label>
+              <label class="epm-mini largo"><span>notas</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.notas" value="{{this.notas}}" placeholder="alcance, efeito…" /></label>
+              <button type="button" class="epm-icone-botao perigo" data-action="excluirAtaque" data-ref="{{this.id}}" title="Excluir ataque"><i class="fa-solid fa-trash"></i></button>
             </div>
             {{/if}}
           </li>
@@ -124,18 +124,18 @@
         {{#each bonusCena}}
         <div class="epm-bonus{{#if ativo}} ativo{{/if}}">
           <label class="epm-interruptor" title="{{#if ativo}}Ligado{{else}}Desligado{{/if}}">
-            <input type="checkbox" name="flags.epm-ficha.bonusCena.{{id}}.ativo" {{epmChecked ativo}} aria-label="Ligado" />
+            <input type="checkbox" name="flags.epm-ficha.bonusCena.{{this.id}}.ativo" {{epmChecked ativo}} aria-label="Ligado" />
             <span class="epm-interruptor-trilho" aria-hidden="true"></span>
           </label>
           {{#if @root.edicao}}
-          <input type="text" class="epm-bonus-nome" name="flags.epm-ficha.bonusCena.{{id}}.nome" value="{{nome}}" placeholder="Nome do bônus" aria-label="Nome" />
-          <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.bonusCena.{{id}}.acerto" value="{{acerto}}" /></label>
-          <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.bonusCena.{{id}}.dano" value="{{dano}}" placeholder="1d8" /></label>
-          <button type="button" class="epm-icone-botao perigo" data-action="excluirBonusCena" data-ref="{{id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+          <input type="text" class="epm-bonus-nome" name="flags.epm-ficha.bonusCena.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome do bônus" aria-label="Nome" />
+          <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
+          <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.bonusCena.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8" /></label>
+          <button type="button" class="epm-icone-botao perigo" data-action="excluirBonusCena" data-ref="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
           {{else}}
-          <span class="epm-bonus-nome">{{#if nome}}{{nome}}{{else}}Bônus sem nome{{/if}}</span>
+          <span class="epm-bonus-nome">{{#if nome}}{{this.nome}}{{else}}Bônus sem nome{{/if}}</span>
           {{#if acerto}}<span class="epm-tag">{{epmSinal acerto}} acerto</span>{{/if}}
-          {{#if dano}}<span class="epm-tag epm-tag-dano">+{{dano}} dano</span>{{/if}}
+          {{#if dano}}<span class="epm-tag epm-tag-dano">+{{this.dano}} dano</span>{{/if}}
           {{/if}}
         </div>
         {{/each}}

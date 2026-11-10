@@ -1,40 +1,40 @@
-<li class="epm-poder{{#if bloqueada}} bloqueada{{/if}}{{#if expandido}} expandido{{/if}}" data-item-id="{{id}}" draggable="true" style="--cor: {{raridadeCor}}">
+<li class="epm-poder{{#if bloqueada}} bloqueada{{/if}}{{#if expandido}} expandido{{/if}}" data-item-id="{{this.id}}" draggable="true" style="--cor: {{this.raridadeCor}}">
   <div class="epm-poder-linha">
-    <img class="epm-poder-img" src="{{img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{id}}" title="Trocar imagem"{{/if}} />
+    <img class="epm-poder-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{this.id}}" title="Trocar imagem"{{/if}} />
     <div class="epm-poder-info">
-      <button type="button" class="epm-poder-nome" data-action="expandirItem" data-item-id="{{id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">{{#if favorito}}<i class="fa-solid fa-star epm-estrela" aria-hidden="true"></i>{{/if}}{{name}}</button>
+      <button type="button" class="epm-poder-nome" data-action="expandirItem" data-item-id="{{this.id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">{{#if favorito}}<i class="fa-solid fa-star epm-estrela" aria-hidden="true"></i>{{/if}}{{this.name}}</button>
       <div class="epm-poder-meta">
-        <span class="epm-raridade">{{raridadeLabel}}</span>
-        {{#if origemLabel}}<span class="epm-tag">{{origemLabel}}</span>{{/if}}
+        <span class="epm-raridade">{{this.raridadeLabel}}</span>
+        {{#if origemLabel}}<span class="epm-tag">{{this.origemLabel}}</span>{{/if}}
         {{#if passiva}}<span class="epm-tag">Passiva</span>{{/if}}
-        {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{nome}}</strong> {{/if}}{{acaoLabel}}, {{custoTexto}}{{#if resistencia}}, CD {{@root.ficha.cd.valor}}{{/if}}</span>{{/each}}
+        {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{this.motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{this.nome}}</strong> {{/if}}{{this.acaoLabel}}, {{this.custoTexto}}{{#if resistencia}}, CD {{@root.ficha.cd.valor}}{{/if}}</span>{{/each}}
         {{#unless nFormas}}{{#unless passiva}}<span class="epm-tag fraca">sem formas</span>{{/unless}}{{/unless}}
-        {{#if alertas.length}}<span class="epm-alerta" title="{{alertasTexto}}"><i class="fa-solid fa-triangle-exclamation" aria-label="Acima dos limites da raridade"></i></span>{{/if}}
+        {{#if alertas.length}}<span class="epm-alerta" title="{{this.alertasTexto}}"><i class="fa-solid fa-triangle-exclamation" aria-label="Acima dos limites da raridade"></i></span>{{/if}}
       </div>
     </div>
-    <button type="button" class="epm-botao epm-usar{{#if bloqueada}} bloqueado{{/if}}" data-action="usarPoder" data-item-id="{{id}}" title="{{#if bloqueada}}Bloqueada por: {{motivosTexto}}{{else}}Usar{{#if variasFormas}} (você escolhe a forma){{/if}}{{/if}}">{{#if bloqueada}}<i class="fa-solid fa-lock" aria-hidden="true"></i> Bloqueada{{else}}Usar{{/if}}</button>
+    <button type="button" class="epm-botao epm-usar{{#if bloqueada}} bloqueado{{/if}}" data-action="usarPoder" data-item-id="{{this.id}}" title="{{#if bloqueada}}Bloqueada por: {{this.motivosTexto}}{{else}}Usar{{#if variasFormas}} (você escolhe a forma){{/if}}{{/if}}">{{#if bloqueada}}<i class="fa-solid fa-lock" aria-hidden="true"></i> Bloqueada{{else}}Usar{{/if}}</button>
     <div class="epm-item-controles">
-      <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
-      <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{id}}" title="Mostrar descrição no chat"><i class="fa-solid fa-comment"></i></button>
+      <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{this.id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
+      <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar descrição no chat"><i class="fa-solid fa-comment"></i></button>
       {{#if @root.edicao}}
-      <button type="button" class="epm-icone-botao" data-action="editarPoder" data-item-id="{{id}}" title="Editar formas, custos e melhorias"><i class="fa-solid fa-pen-to-square"></i></button>
-      <button type="button" class="epm-icone-botao" data-action="duplicarPoder" data-item-id="{{id}}" title="Duplicar (criar uma variante)"><i class="fa-solid fa-clone"></i></button>
-      <button type="button" class="epm-icone-botao perigo" data-action="excluirItem" data-item-id="{{id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+      <button type="button" class="epm-icone-botao" data-action="editarPoder" data-item-id="{{this.id}}" title="Editar formas, custos e melhorias"><i class="fa-solid fa-pen-to-square"></i></button>
+      <button type="button" class="epm-icone-botao" data-action="duplicarPoder" data-item-id="{{this.id}}" title="Duplicar (criar uma variante)"><i class="fa-solid fa-clone"></i></button>
+      <button type="button" class="epm-icone-botao perigo" data-action="excluirItem" data-item-id="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
       {{/if}}
     </div>
   </div>
   {{#if expandido}}
   <div class="epm-poder-detalhes">
-    {{#if descricao}}<div class="epm-descricao">{{{descricao}}}</div>{{/if}}
+    {{#if descricao}}<div class="epm-descricao">{{{this.descricao}}}</div>{{/if}}
     {{#each formas}}
     <div class="epm-forma-resumo{{#if bloqueada}} bloqueada{{/if}}">
-      <strong>{{nome}}</strong>
-      <span class="epm-tag">{{acaoLabel}}</span>
-      <span class="epm-tag">{{custoTexto}}</span>
+      <strong>{{this.nome}}</strong>
+      <span class="epm-tag">{{this.acaoLabel}}</span>
+      <span class="epm-tag">{{this.custoTexto}}</span>
       {{#if resistencia}}<span class="epm-tag">CD {{@root.ficha.cd.valor}}</span>{{/if}}
-      {{#if dano}}<span class="epm-tag epm-tag-dano">{{dano}}</span>{{/if}}
+      {{#if dano}}<span class="epm-tag epm-tag-dano">{{this.dano}}</span>{{/if}}
       {{#if requisitos.length}}<span class="epm-tag fraca">{{epmJoin requisitos}}</span>{{/if}}
-      {{#if bloqueada}}<span class="epm-bloqueio">bloqueada por {{motivosTexto}}</span>{{/if}}
+      {{#if bloqueada}}<span class="epm-bloqueio">bloqueada por {{this.motivosTexto}}</span>{{/if}}
     </div>
     {{/each}}
     {{#each alertas}}<p class="epm-aviso">{{this}}</p>{{/each}}

@@ -4,11 +4,11 @@
       <header class="epm-painel-titulo"><h3>Traços</h3></header>
       {{#if edicao}}
       <div class="epm-campos-grade">
-        {{#each camposSobre}}<label class="epm-campo"><span>{{label}}</span><input type="text" name="flags.epm-ficha.sobre.{{id}}" value="{{valor}}" {{#if dica}}placeholder="{{dica}}"{{/if}} /></label>{{/each}}
+        {{#each camposSobre}}<label class="epm-campo"><span>{{this.label}}</span><input type="text" name="flags.epm-ficha.sobre.{{this.id}}" value="{{this.valor}}" {{#if dica}}placeholder="{{this.dica}}"{{/if}} /></label>{{/each}}
       </div>
       {{else}}
       <dl class="epm-campos-grade epm-campos-texto">
-        {{#each camposSobre}}<div><dt>{{label}}</dt><dd>{{#if valor}}{{valor}}{{else}}—{{/if}}</dd></div>{{/each}}
+        {{#each camposSobre}}<div><dt>{{this.label}}</dt><dd>{{#if valor}}{{this.valor}}{{else}}—{{/if}}</dd></div>{{/each}}
       </dl>
       {{/if}}
     </section>
@@ -53,8 +53,8 @@
 
   {{#each textosSobre}}
   <section class="epm-painel epm-texto-longo">
-    <header class="epm-painel-titulo"><h3>{{label}}</h3></header>
-    {{#if @root.edicao}}{{{editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{texto}}}</div>{{else}}<p class="epm-vazio">Vazio. Escreva no modo edição.</p>{{/if}}{{/if}}
+    <header class="epm-painel-titulo"><h3>{{this.label}}</h3></header>
+    {{#if @root.edicao}}{{{this.editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{this.texto}}}</div>{{else}}<p class="epm-vazio">Vazio. Escreva no modo edição.</p>{{/if}}{{/if}}
   </section>
   {{/each}}
 </section>

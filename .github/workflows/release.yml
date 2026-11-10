@@ -1,0 +1,36 @@
+# Ao publicar uma release com tag "vX.Y.Z", gera module.zip e module.json com a versão certa
+# e anexa os dois à release. O Foundry instala pela URL do manifest em module.json.
+name: Publicar release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ajustar versão e links do manifest
+        run: |
+          VERSAO="${GITHUB_REF_NAME#v}"
+          REPO="https://github.com/${GITHUB_REPOSITORY}"
+          jq --arg v "$VERSAO" --arg url "$REPO" \
+             --arg man "$REPO/releases/latest/download/module.json" \
+             --arg dl "$REPO/releases/download/${GITHUB_REF_NAME}/module.zip" \
+             '.version=$v | .url=$url | .manifest=$man | .download=$dl | .bugs=($url + "/issues")' \
+             module.json > module.tmp && mv module.tmp module.json
+
+      - name: Empacotar
+        run: zip -r module.zip module.json scripts templates styles fonts README.md
+
+      - name: Anexar à release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            module.zip

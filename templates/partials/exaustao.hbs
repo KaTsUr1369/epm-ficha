@@ -1,0 +1,22 @@
+<div class="epm-exaustao{{#if ficha.exaustao.coma}} coma{{/if}}">
+  <div class="epm-exaustao-topo">
+    <span class="epm-rotulo">Exaustão</span>
+    <span class="epm-exaustao-nivel">{{#if ficha.exaustao.nivel}}nível {{ficha.exaustao.nivel}}{{else}}nenhuma{{/if}}</span>
+  </div>
+  <div class="epm-exaustao-pips">
+    {{#each ficha.exaustao.pips}}
+    <button type="button" class="epm-pip-exaustao{{#if ativo}} ativo{{/if}}" data-action="exaustao" data-nivel="{{nivel}}" title="Nível {{nivel}}: {{texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{nivel}}</button>
+    {{/each}}
+    <button type="button" class="epm-pip-exaustao extra" data-action="exaustaoMais" title="Acumular acima do nível 6 (+2 dias de coma por nível)" {{#unless @root.editavel}}disabled{{/unless}}>+</button>
+  </div>
+  {{#if ficha.exaustao.nivel}}
+  <ul class="epm-exaustao-efeitos">{{#each ficha.exaustao.efeitos}}<li>{{texto}}</li>{{/each}}</ul>
+  {{/if}}
+  {{#if ficha.exaustao.coma}}
+  <div class="epm-coma">
+    <span>Em coma por {{ficha.exaustao.formulaComa}} dias.</span>
+    <button type="button" class="epm-botao" data-action="rolarComa">Rolar dias</button>
+    {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="acordarComa" title="Ao acordar, volta com Exaustão 3">Acordar</button>{{/if}}
+  </div>
+  {{/if}}
+</div>

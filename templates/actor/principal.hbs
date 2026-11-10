@@ -1,0 +1,136 @@
+<section class="tab epm-aba epm-principal {{cls.principal}}" data-group="primary" data-tab="principal">
+  <section class="epm-faixa-pontos" aria-label="Pontos">
+    {{#each pontosLista}}
+    <label class="epm-ponto" title="{{dica}}">
+      <span class="epm-ponto-sigla">{{sigla}}</span>
+      <input type="number" min="0" name="flags.epm-ficha.pontos.{{id}}" value="{{valor}}" aria-label="{{nome}}" />
+      <span class="epm-ponto-nome">{{nome}}</span>
+    </label>
+    {{/each}}
+    <div class="epm-faixa-acoes">
+      <button type="button" class="epm-botao" data-action="converter" data-de="pt" {{#unless ficha.progressao.phDePt}}disabled{{/unless}} title="Shift+clique converte o máximo possível">5 PT em 1 PH</button>
+      <button type="button" class="epm-botao" data-action="converter" data-de="pev" {{#unless ficha.progressao.phDePev}}disabled{{/unless}} title="Shift+clique converte o máximo possível">2 PEv em 1 PH</button>
+      {{#if ficha.progressao.custo1}}
+      <button type="button" class="epm-botao epm-botao-forte" data-action="subirNivel" data-arquetipo="1" {{#unless ficha.progressao.podeSubir1}}disabled{{/unless}} title="{{#if dados.arquetipo}}{{dados.arquetipo}}{{else}}Arquétipo principal{{/if}}: custa 2 × (novo nível − 1) PEv">Subir nível por {{ficha.progressao.custo1}} PEv</button>
+      {{/if}}
+      {{#if ficha.progressao.custo2}}
+      <button type="button" class="epm-botao" data-action="subirNivel" data-arquetipo="2" {{#unless ficha.progressao.podeSubir2}}disabled{{/unless}} title="{{dados.arquetipo2}}">{{dados.arquetipo2}} por {{ficha.progressao.custo2}} PEv</button>
+      {{/if}}
+    </div>
+  </section>
+
+  <div class="epm-caixas-estado">
+    <section class="epm-painel epm-caixa epm-caixa-condicoes">
+      <header class="epm-painel-titulo"><h3>Condições</h3><button type="button" class="epm-link" data-action="irAba" data-tab="condicoes">Gerenciar</button></header>
+      {{#if condicoesBox.vazio}}<p class="epm-vazio">Nenhuma condição ativa.</p>{{/if}}
+      <div class="epm-chips">
+        {{#each condicoesBox.condicoes}}<span class="epm-chip epm-chip-condicao{{#if imune}} imune{{/if}}" title="{{descricao}}{{#if imune}} (imune: sem efeito){{/if}}"><img src="{{icone}}" alt="" />{{label}}</span>{{/each}}
+        {{#each condicoesBox.desvantagens}}<span class="epm-chip epm-chip-alerta" title="{{fontes}}">{{label}}</span>{{/each}}
+      </div>
+    </section>
+    <section class="epm-painel epm-caixa epm-caixa-defesas">
+      <header class="epm-painel-titulo"><h3>Resistências</h3></header>
+      {{#if defesasBox.vazio}}<p class="epm-vazio">Nenhuma resistência, imunidade ou vulnerabilidade.</p>{{/if}}
+      {{#if defesasBox.resistencias.length}}<div class="epm-chips"><span class="epm-rotulo">Resiste</span>{{#each defesasBox.resistencias}}<span class="epm-chip">{{this}}</span>{{/each}}</div>{{/if}}
+      {{#if defesasBox.imunidades.length}}<div class="epm-chips"><span class="epm-rotulo">Imune</span>{{#each defesasBox.imunidades}}<span class="epm-chip epm-chip-imune">{{this}}</span>{{/each}}</div>{{/if}}
+      {{#if defesasBox.vulnerabilidades.length}}<div class="epm-chips"><span class="epm-rotulo">Vulnerável</span>{{#each defesasBox.vulnerabilidades}}<span class="epm-chip epm-chip-vulneravel">{{this}}</span>{{/each}}</div>{{/if}}
+    </section>
+    <section class="epm-painel epm-caixa epm-caixa-idiomas">
+      <header class="epm-painel-titulo"><h3>Idiomas</h3></header>
+      {{#unless idiomas.length}}<p class="epm-vazio">Nenhum idioma.</p>{{/unless}}
+      <div class="epm-chips">{{#each idiomas}}<span class="epm-chip epm-chip-idioma">{{this}}</span>{{/each}}</div>
+    </section>
+  </div>
+
+  <div class="epm-principal-grade">
+    <div class="epm-coluna">
+      <section class="epm-painel epm-atributos">
+        <header class="epm-painel-titulo">
+          <h3>Atributos</h3>
+          {{#if edicao}}
+          <span class="epm-contador {{estadoAtributos}}" title="Pontos de base distribuídos (16 no total). Valores negativos devolvem pontos.">base {{ficha.pontosAtributo.gasto}} de {{ficha.pontosAtributo.disponivel}}</span>
+          <span class="epm-contador {{estadoAumentos}}" title="1 aumento a cada nível par">aumentos {{ficha.pontosAtributo.aumentoGasto}} de {{ficha.pontosAtributo.aumentoDisponivel}}</span>
+          {{/if}}
+        </header>
+        {{#if edicao}}{{#each ficha.pontosAtributo.avisos}}<p class="epm-aviso">{{this}}</p>{{/each}}{{/if}}
+        <div class="epm-grupos-atributo{{#if edicao}} editando{{/if}}">
+          {{#each gruposAtributo}}
+          <div class="epm-grupo-atributo">
+            <h4>{{label}}</h4>
+            {{#each atributos}}
+            <div class="epm-atributo">
+              <button type="button" class="epm-atributo-nome" data-action="rolarAtributo" data-atributo="{{id}}" title="Rolar {{label}} (Shift: vantagem, Ctrl: desvantagem)">{{label}}</button>
+              <span class="epm-atributo-total" {{#if fontesTexto}}title="{{fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+              {{#if @root.edicao}}
+              <div class="epm-atributo-campos">
+                <label class="epm-mini"><span>base</span><input type="number" name="flags.epm-ficha.atributos.{{id}}.base" value="{{base}}" /></label>
+                <label class="epm-mini"><span>raça</span><input type="number" name="flags.epm-ficha.atributos.{{id}}.raca" value="{{raca}}" /></label>
+                <label class="epm-mini"><span>aumento</span><input type="number" name="flags.epm-ficha.atributos.{{id}}.aumento" value="{{aumento}}" /></label>
+                <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.atributos.{{id}}.outros" value="{{outros}}" /></label>
+              </div>
+              {{/if}}
+            </div>
+            {{/each}}
+          </div>
+          {{/each}}
+        </div>
+      </section>
+
+      <section class="epm-painel epm-progressao">
+        <header class="epm-painel-titulo"><h3>Progressão</h3><span class="epm-contador">nível total {{ficha.nivelTotal}}</span></header>
+        {{#if edicao}}
+        <div class="epm-arquetipo-linha">
+          <label class="epm-mini largo"><span>segundo arquétipo</span><input type="text" name="flags.epm-ficha.arquetipo2" value="{{dados.arquetipo2}}" list="epm-arquetipos-{{actor.id}}" placeholder="opcional" /></label>
+          {{#if ficha.progressao.temSegundo}}<label class="epm-mini"><span>nível</span><input type="number" min="0" max="50" name="flags.epm-ficha.nivel2" value="{{dados.nivel2}}" /></label>{{/if}}
+        </div>
+        {{else}}
+        <p class="epm-arquetipo-resumo"><strong>{{#if dados.arquetipo}}{{dados.arquetipo}}{{else}}Arquétipo principal{{/if}}</strong> nível {{ficha.progressao.nivel1}}{{#if ficha.progressao.temSegundo}}, <strong>{{dados.arquetipo2}}</strong> nível {{ficha.progressao.nivel2}}{{/if}}</p>
+        {{/if}}
+        <div class="epm-espacos">
+          <span title="Habilidades conhecidas e espaços. Habilidades Únicas não contam.">Habilidades <strong>{{habilidades.conhecidas}}</strong> / {{#if edicao}}<input type="number" min="0" name="flags.epm-ficha.espacos.habilidades" value="{{habilidades.espacos}}" aria-label="Espaços de habilidade" />{{else}}{{habilidades.espacos}}{{/if}}</span>
+          <span title="Magias de 1º círculo ou acima">Magias <strong>{{magias.conhecidas}}</strong> / {{#if edicao}}<input type="number" min="0" name="flags.epm-ficha.espacos.magias" value="{{magias.espacosMagias}}" aria-label="Espaços de magia" />{{else}}{{magias.espacosMagias}}{{/if}}</span>
+          <span>Truques <strong>{{magias.truques}}</strong> / {{#if edicao}}<input type="number" min="0" name="flags.epm-ficha.espacos.truques" value="{{magias.espacosTruques}}" aria-label="Espaços de truque" />{{else}}{{magias.espacosTruques}}{{/if}}</span>
+          <span title="CD dos testes de resistência contra suas habilidades e magias">CD <strong>{{ficha.cd.valor}}</strong></span>
+        </div>
+      </section>
+    </div>
+
+    <section class="epm-painel epm-pericias{{#if edicao}} editando{{/if}}">
+      <header class="epm-painel-titulo">
+        <h3>Perícias</h3>
+        <span class="epm-contador {{estadoPericias}}" title="45 pontos, +15 a cada 5 níveis">{{ficha.pontosPericia.gasto}} de {{ficha.pontosPericia.disponivel}}</span>
+        <span class="epm-contador" title="Máximo de pontos numa perícia (sobe +5 nos níveis 15 e 35)">limite {{ficha.pontosPericia.limite}}</span>
+      </header>
+      {{#if ficha.desvantagens.testes.length}}<p class="epm-aviso">Testes com desvantagem: {{epmJoin ficha.desvantagens.testes}}</p>{{/if}}
+      <ol class="epm-lista-pericias">
+        {{#each pericias}}
+        <li class="epm-pericia{{#if acimaLimite}} acima{{/if}}">
+          {{#if @root.edicao}}
+          <button type="button" class="epm-icone-botao perigo" data-action="removerPericia" data-pericia="{{id}}" title="Remover {{nome}}"><i class="fa-solid fa-xmark"></i></button>
+          <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{id}}.nome" value="{{nome}}" aria-label="Nome da perícia" />
+          <label class="epm-mini"><span>pontos</span><input type="number" class="epm-pericia-pontos" name="flags.epm-ficha.pericias.{{id}}.pontos" value="{{pontos}}" min="0" {{#if acimaLimite}}title="Acima do limite do seu nível"{{/if}} /></label>
+          <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.pericias.{{id}}.outros" value="{{outros}}" /></label>
+          <span class="epm-pericia-total" {{#if fontesTexto}}title="{{fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+          <div class="epm-chips-atributo" role="group" aria-label="Atributos somados em {{nome}}">
+            {{#each chips}}<button type="button" class="epm-chip-atributo{{#if ativo}} ativo{{/if}}{{#if sugerido}} sugerido{{/if}}" data-action="alternarAtributoPericia" data-pericia="{{../id}}" data-atributo="{{id}}" aria-pressed="{{#if ativo}}true{{else}}false{{/if}}" title="{{label}}{{#if sugerido}} (indicado para esta perícia){{/if}}">{{abrev}}</button>{{/each}}
+          </div>
+          {{else}}
+          <button type="button" class="epm-pericia-rolar" data-action="rolarPericia" data-pericia="{{id}}" title="Rolar {{nome}} (Shift: vantagem, Ctrl: desvantagem)"><i class="fa-solid fa-dice-d20"></i></button>
+          <span class="epm-pericia-nome">{{nome}}</span>
+          <span class="epm-pericia-atributo" title="Atributo somado">{{atributoAbrev}}</span>
+          <span class="epm-pericia-total" {{#if fontesTexto}}title="{{fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+          {{/if}}
+        </li>
+        {{/each}}
+      </ol>
+      {{#if edicao}}
+      <p class="epm-dica">Clique nos atributos para escolher quais somam. Os destacados são os indicados pela regra.</p>
+      <div class="epm-pericias-edicao">
+        <button type="button" class="epm-botao" data-action="adicionarPericia"><i class="fa-solid fa-plus"></i> Nova perícia</button>
+        <button type="button" class="epm-botao" data-action="sincronizarPericias" title="Adiciona as perícias da lista padrão que faltam nesta ficha">Trazer do padrão</button>
+        {{#if isGM}}<button type="button" class="epm-botao" data-action="salvarPericiasPadrao" title="Fichas novas passam a usar esta lista">Salvar como padrão do mundo</button>{{/if}}
+      </div>
+      {{/if}}
+    </section>
+  </div>
+</section>

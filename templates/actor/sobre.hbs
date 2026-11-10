@@ -1,0 +1,60 @@
+<section class="tab epm-aba epm-sobre {{cls.sobre}}" data-group="primary" data-tab="sobre">
+  <div class="epm-sobre-grade">
+    <section class="epm-painel epm-sobre-campos">
+      <header class="epm-painel-titulo"><h3>Traços</h3></header>
+      {{#if edicao}}
+      <div class="epm-campos-grade">
+        {{#each camposSobre}}<label class="epm-campo"><span>{{label}}</span><input type="text" name="flags.epm-ficha.sobre.{{id}}" value="{{valor}}" {{#if dica}}placeholder="{{dica}}"{{/if}} /></label>{{/each}}
+      </div>
+      {{else}}
+      <dl class="epm-campos-grade epm-campos-texto">
+        {{#each camposSobre}}<div><dt>{{label}}</dt><dd>{{#if valor}}{{valor}}{{else}}—{{/if}}</dd></div>{{/each}}
+      </dl>
+      {{/if}}
+    </section>
+    <section class="epm-painel epm-imagem-painel epm-aparencia-painel">
+      <header class="epm-painel-titulo"><h3>Aparência</h3>{{#if edicao}}{{#if aparencia.imagem}}<button type="button" class="epm-link" data-action="removerImagemSobre" data-campo="imagemAparencia">Remover imagem</button>{{/if}}{{/if}}</header>
+      {{#if edicao}}
+      <figure class="epm-imagem-slot{{#unless aparencia.imagem}} vazia{{/unless}}" data-action="imagemSobre" data-campo="imagemAparencia" title="Escolher imagem do computador ou dos arquivos">
+        {{#if aparencia.imagem}}<img src="{{aparencia.imagem}}" alt="Aparência de {{actor.name}}" />{{else}}<span>Imagem (opcional): clique para escolher</span>{{/if}}
+      </figure>
+      <span class="epm-rotulo">Descrição (opcional)</span>
+      {{{aparencia.editor}}}
+      {{else}}
+      {{#if aparencia.imagem}}
+      <figure class="epm-imagem-slot{{#if aparencia.texto}} com-texto{{/if}}" data-action="verImagem" data-src="{{aparencia.imagem}}" data-titulo="{{actor.name}}" title="Ampliar">
+        <img src="{{aparencia.imagem}}" alt="Aparência de {{actor.name}}" />
+      </figure>
+      {{/if}}
+      {{#if aparencia.texto}}<div class="epm-descricao">{{{aparencia.texto}}}</div>{{/if}}
+      {{#if aparencia.vazia}}<p class="epm-vazio">Sem aparência definida. No modo edição você pode pôr uma imagem, um texto ou os dois.</p>{{/if}}
+      {{/if}}
+    </section>
+  </div>
+
+  <section class="epm-painel epm-marca-painel">
+    <header class="epm-painel-titulo"><h3>Marca</h3>{{#if edicao}}{{#if marca.imagem}}<button type="button" class="epm-link" data-action="removerImagemSobre" data-campo="imagemMarca">Remover imagem</button>{{/if}}{{/if}}</header>
+    <div class="epm-marca-grade">
+      <figure class="epm-imagem-slot epm-imagem-marca{{#unless marca.imagem}} vazia{{/unless}}" {{#if edicao}}data-action="imagemSobre" data-campo="imagemMarca" title="Imagem da Marca (PNG ou JPEG)"{{else}}{{#if marca.imagem}}data-action="verImagem" data-src="{{marca.imagem}}" data-titulo="Marca" title="Ampliar"{{/if}}{{/if}}>
+        {{#if marca.imagem}}<img src="{{marca.imagem}}" alt="Marca de {{actor.name}}" />{{else}}<span>{{#if edicao}}Imagem da Marca (PNG ou JPEG){{else}}Sem imagem{{/if}}</span>{{/if}}
+      </figure>
+      <div class="epm-marca-textos">
+        <p class="epm-dica">A tatuagem sobrenatural que liga você aos seus outros personagens e permite a Ressonância de Alma.</p>
+        {{#if edicao}}
+        <label class="epm-campo"><span>Onde fica</span><input type="text" name="flags.epm-ficha.sobre.marcaLocal" value="{{marca.local}}" placeholder="nuca, palma da mão esquerda…" /></label>
+        <label class="epm-campo"><span>Como ela é</span><textarea name="flags.epm-ficha.sobre.marcaAparencia" rows="4">{{marca.aparencia}}</textarea></label>
+        {{else}}
+        <dl class="epm-campos-texto"><div><dt>Onde fica</dt><dd>{{#if marca.local}}{{marca.local}}{{else}}—{{/if}}</dd></div></dl>
+        <p class="epm-texto-livre">{{#if marca.aparencia}}{{marca.aparencia}}{{else}}<span class="epm-vazio">Sem descrição.</span>{{/if}}</p>
+        {{/if}}
+      </div>
+    </div>
+  </section>
+
+  {{#each textosSobre}}
+  <section class="epm-painel epm-texto-longo">
+    <header class="epm-painel-titulo"><h3>{{label}}</h3></header>
+    {{#if @root.edicao}}{{{editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{texto}}}</div>{{else}}<p class="epm-vazio">Vazio. Escreva no modo edição.</p>{{/if}}{{/if}}
+  </section>
+  {{/each}}
+</section>

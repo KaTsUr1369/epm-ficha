@@ -1,0 +1,34 @@
+<section class="tab epm-aba epm-anotacoes {{cls.anotacoes}}" data-group="primary" data-tab="anotacoes">
+  <nav class="epm-subnav epm-paginas" aria-label="Páginas de anotações">
+    {{#each paginas}}
+    <button type="button" class="epm-subnav-item {{cls}}" data-action="aba" data-group="notas" data-tab="{{id}}" title="{{#if eMapa}}Mapa mental{{else}}Texto{{/if}}"><i class="fa-solid {{#if eMapa}}fa-diagram-project{{else}}fa-align-left{{/if}}" aria-hidden="true"></i> {{nome}}</button>
+    {{/each}}
+    {{#if editavel}}<button type="button" class="epm-subnav-item epm-nova-pagina" data-action="novaPagina"><i class="fa-solid fa-plus" aria-hidden="true"></i> Página</button>{{/if}}
+  </nav>
+  {{#if semPaginas}}
+  <div class="epm-vazio-grande">
+    <p>Organize suas anotações em páginas: texto livre ou um mapa mental com cartões ligados entre si.</p>
+    {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaPagina">Criar a primeira página</button>{{/if}}
+  </div>
+  {{/if}}
+  {{#each paginas}}
+  <section class="tab epm-pagina {{cls}}{{#if eMapa}} epm-pagina-mapa{{/if}}" data-group="notas" data-tab="{{id}}">
+    <header class="epm-pagina-topo">
+      <h3>{{nome}}</h3>
+      {{#if @root.editavel}}
+      <div class="epm-item-controles">
+        <button type="button" class="epm-icone-botao" data-action="moverPagina" data-pagina="{{id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Mover para a esquerda"><i class="fa-solid fa-arrow-left"></i></button>
+        <button type="button" class="epm-icone-botao" data-action="moverPagina" data-pagina="{{id}}" data-dir="1" {{#if ultima}}disabled{{/if}} title="Mover para a direita"><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="epm-icone-botao" data-action="renomearPagina" data-pagina="{{id}}" title="Renomear"><i class="fa-solid fa-pen"></i></button>
+        <button type="button" class="epm-icone-botao perigo" data-action="excluirPagina" data-pagina="{{id}}" title="Excluir página"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      {{/if}}
+    </header>
+    {{#if eMapa}}
+    <div class="epm-mapa" data-pagina="{{id}}"></div>
+    {{else}}
+    <div class="epm-pagina-texto">{{{editor}}}</div>
+    {{/if}}
+  </section>
+  {{/each}}
+</section>

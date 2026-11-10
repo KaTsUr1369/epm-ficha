@@ -1,0 +1,19 @@
+<div class="epm-chat" style="--cor: {{raridadeCor}}" data-actor-uuid="{{actorUuid}}">
+  <header class="epm-chat-topo">
+    <img src="{{img}}" alt="" />
+    <div class="epm-chat-titulos">
+      <h3>{{nome}}</h3>
+      <span class="epm-chat-sub">{{tipoLabel}} {{raridadeLabel}}{{#if circuloLabel}}, {{circuloLabel}}{{/if}}</span>
+    </div>
+  </header>
+  {{#if formaNome}}<p class="epm-chat-forma">Forma <strong>{{formaNome}}</strong></p>{{/if}}
+  {{#if linhas.length}}<dl class="epm-chat-linhas">{{#each linhas}}<dt>{{rotulo}}</dt><dd>{{valor}}</dd>{{/each}}</dl>{{/if}}
+  {{#if requisitos.length}}<p class="epm-chat-requisitos">Requisitos: {{epmJoin requisitos}}</p>{{/if}}
+  {{#if texto}}<div class="epm-chat-texto">{{{texto}}}</div>{{/if}}
+  {{#each avisos}}<p class="epm-chat-aviso">{{this}}</p>{{/each}}
+  {{#if botoes.length}}
+  <div class="epm-chat-botoes">
+    {{#each botoes}}<button type="button" data-epm-action="{{acao}}"{{#if formula}} data-formula="{{formula}}"{{/if}}{{#if pericia}} data-pericia="{{pericia}}"{{/if}}{{#if tipo}} data-tipo="{{tipo}}"{{/if}} data-rotulo="{{rotulo}}"><i class="{{icone}}" aria-hidden="true"></i> {{label}}</button>{{/each}}
+  </div>
+  {{/if}}
+</div>

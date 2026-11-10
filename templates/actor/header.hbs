@@ -1,0 +1,77 @@
+<header class="epm-cabecalho{{#if edicao}} modo-edicao{{/if}}">
+  {{#if editavel}}
+  <button type="button" class="epm-modo-edicao{{#if edicao}} ativo{{/if}}" data-action="alternarEdicao" aria-pressed="{{#if edicao}}true{{else}}false{{/if}}" title="{{#if edicao}}Sair do modo edição{{else}}Entrar no modo edição para mudar atributos, máximos e detalhes{{/if}}">
+    <span class="epm-modo-trilho" aria-hidden="true"></span><span>{{#if edicao}}Editando{{else}}Editar{{/if}}</span>
+  </button>
+  {{/if}}
+  <div class="epm-astrolabio" title="Anéis: Vida, Mana, Estamina e Sanidade (de fora para dentro)">
+    <svg class="epm-aneis" viewBox="0 0 150 150" aria-hidden="true">
+      {{#each marcas}}<line class="epm-marca{{#if longo}} longa{{/if}}" x1="{{x1}}" y1="{{y1}}" x2="{{x2}}" y2="{{y2}}" />{{/each}}
+      {{#each aneis}}
+      <circle class="epm-anel-trilho" cx="75" cy="75" r="{{r}}" />
+      <circle class="epm-anel" cx="75" cy="75" r="{{r}}" style="stroke: {{cor}}" stroke-dasharray="{{dash}} {{resto}}" transform="rotate(-90 75 75)" />
+      {{/each}}
+    </svg>
+    <img class="epm-retrato" src="{{actor.img}}" alt="Retrato de {{actor.name}}" {{#if edicao}}data-action="editarImagem" title="Trocar retrato (do computador ou dos arquivos)"{{else}}data-action="verImagem" data-src="{{actor.img}}" data-titulo="{{actor.name}}" title="Ver retrato"{{/if}} />
+  </div>
+
+  <div class="epm-identidade">
+    {{#if edicao}}
+    <input class="epm-nome" type="text" name="name" value="{{actor.name}}" placeholder="Nome do personagem" aria-label="Nome do personagem" />
+    <div class="epm-linha-identidade">
+      <label class="epm-campo"><span>Raça</span><input type="text" name="flags.epm-ficha.raca" value="{{dados.raca}}" /></label>
+      <label class="epm-campo"><span>Arquétipo</span><input type="text" name="flags.epm-ficha.arquetipo" value="{{dados.arquetipo}}" list="epm-arquetipos-{{actor.id}}" /></label>
+      <label class="epm-campo"><span>Classe</span><input type="text" name="flags.epm-ficha.classe" value="{{dados.classe}}" /></label>
+      <label class="epm-campo epm-campo-nivel"><span>Nível</span><input type="number" name="flags.epm-ficha.nivel" value="{{dados.nivel}}" min="1" max="50" /></label>
+      <datalist id="epm-arquetipos-{{actor.id}}">{{#each arquetiposSugeridos}}<option value="{{this}}"></option>{{/each}}</datalist>
+    </div>
+    {{else}}
+    <h1 class="epm-nome-texto">{{actor.name}}</h1>
+    <dl class="epm-identidade-texto">
+      <div><dt>Raça</dt><dd>{{#if dados.raca}}{{dados.raca}}{{else}}—{{/if}}</dd></div>
+      <div><dt>Arquétipo</dt><dd>{{#if dados.arquetipo}}{{dados.arquetipo}}{{else}}—{{/if}}{{#if ficha.progressao.temSegundo}} e {{dados.arquetipo2}}{{/if}}</dd></div>
+      <div><dt>Classe</dt><dd>{{#if dados.classe}}{{dados.classe}}{{else}}—{{/if}}</dd></div>
+      <div><dt>Nível</dt><dd>{{ficha.nivelTotal}}</dd></div>
+    </dl>
+    {{/if}}
+
+    <div class="epm-recursos">
+      {{#each recursosLista}}
+      <div class="epm-recurso" style="--cor: {{cor}}" data-recurso="{{id}}">
+        <div class="epm-recurso-topo">
+          <span class="epm-recurso-sigla">{{abrev}}</span>
+          <span class="epm-recurso-nome">{{label}}</span>
+          {{#if eVida}}<button type="button" class="epm-temp-caixa{{#if temTemp}} ativa{{/if}}{{#if @root.tempAberto}} aberta{{/if}}" data-action="alternarTemp" aria-expanded="{{#if @root.tempAberto}}true{{else}}false{{/if}}" title="Vida temporária: clique para ajustar" {{#unless @root.editavel}}disabled{{/unless}}>Temp{{#if temTemp}} <strong>{{temp}}</strong>{{/if}}</button>{{/if}}
+        </div>
+        <div class="epm-recurso-valores">
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{id}}" data-delta="-5" title="Diminuir 5" aria-label="Diminuir {{label}} em 5" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-angles-left"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{id}}" data-delta="-1" title="Diminuir 1" aria-label="Diminuir {{label}} em 1" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-left"></i></button>
+          <input class="epm-recurso-atual" type="text" inputmode="numeric" data-recurso-valor="{{id}}" value="{{value}}"
+                 aria-label="{{label}} atual" title="Digite o valor, ou +5 / -3 para somar ou tirar" />
+          <span class="epm-recurso-barra-sep" aria-hidden="true">/</span>
+          {{#if @root.edicao}}
+          <input class="epm-recurso-max" type="number" name="{{nomeMax}}" value="{{maxFonte}}" min="0" aria-label="{{label}} máxima" title="{{label}} máxima (sem bônus){{#if motivosTexto}}&#10;{{motivosTexto}}{{/if}}" />
+          {{else}}
+          <span class="epm-recurso-max-texto" {{#if motivosTexto}}title="{{motivosTexto}}"{{/if}}>{{max}}</span>
+          {{/if}}
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{id}}" data-delta="1" title="Aumentar 1" aria-label="Aumentar {{label}} em 1" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-right"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{id}}" data-delta="5" title="Aumentar 5" aria-label="Aumentar {{label}} em 5" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-angles-right"></i></button>
+        </div>
+        <div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pct}}"></span></div>
+        {{#if temTemp}}<div class="epm-barra epm-barra-temp" aria-hidden="true"><span style="width: {{epmPct tempPct}}; background: {{corTemp}}"></span></div>{{/if}}
+        {{#if eVida}}{{#if @root.tempAberto}}
+        <div class="epm-temp-editor" role="group" aria-label="Vida temporária">
+          <span class="epm-temp-rotulo">Temp.</span>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="-5" title="Diminuir 5" aria-label="Diminuir vida temporária em 5"><i class="fa-solid fa-angles-left"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="-1" title="Diminuir 1" aria-label="Diminuir vida temporária em 1"><i class="fa-solid fa-angle-left"></i></button>
+          <input type="text" inputmode="numeric" class="epm-temp-input" data-recurso-valor="temp" value="{{temp}}" aria-label="Vida temporária" title="Digite o valor, ou +5 / -3. Enter confirma, Esc fecha." />
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="1" title="Aumentar 1" aria-label="Aumentar vida temporária em 1"><i class="fa-solid fa-angle-right"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="5" title="Aumentar 5" aria-label="Aumentar vida temporária em 5"><i class="fa-solid fa-angles-right"></i></button>
+          <button type="button" class="epm-icone-botao epm-temp-fechar" data-action="alternarTemp" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-check"></i></button>
+        </div>
+        {{/if}}{{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</header>

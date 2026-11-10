@@ -1,0 +1,20 @@
+<section class="tab epm-aba epm-habilidades {{cls.habilidades}}" data-group="primary" data-tab="habilidades">
+  <header class="epm-aba-topo">
+    <div class="epm-aba-resumo">
+      <span class="epm-contador" title="Pontos de Habilidade disponíveis">{{ficha.pontos.ph}} PH</span>
+      <span class="epm-contador" title="CD dos testes de resistência contra você: 8 + {{ficha.cd.periciaNome}}">CD {{ficha.cd.valor}}</span>
+      <span class="epm-contador" title="Habilidades conhecidas e espaços. Habilidades Únicas não contam.">{{habilidades.conhecidas}} de {{habilidades.espacos}} conhecidas</span>
+    </div>
+    {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="habilidade"><i class="fa-solid fa-plus"></i> Nova habilidade</button>{{/if}}
+  </header>
+  {{#each habilidades.secoes}}
+  <section class="epm-secao-poder" style="--cor: {{cor}}" data-secao="{{id}}">
+    <header class="epm-secao-titulo">
+      <h3>{{label}}</h3>
+      {{#if limite}}<span class="epm-contador{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" title="Limite desta raridade{{#if (epmEq @root.modoLimites "combinados")}} (habilidades e magias somadas){{/if}}">{{usados}} de {{limite}}</span>{{/if}}
+    </header>
+    {{#if vazia}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}
+    <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>
+  </section>
+  {{/each}}
+</section>

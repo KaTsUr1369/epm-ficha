@@ -1,0 +1,35 @@
+<section class="tab epm-aba epm-relacoes {{cls.relacoes}}" data-group="primary" data-tab="relacoes">
+  <header class="epm-aba-topo">
+    <p class="epm-dica">Arraste um personagem da barra lateral para cá{{#if edicao}}, ou crie uma relação à mão{{/if}}.</p>
+    {{#if edicao}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaRelacao"><i class="fa-solid fa-plus"></i> Nova relação</button>{{/if}}
+  </header>
+  {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
+  <div class="epm-relacoes-grade">
+    {{#each relacoes}}
+    <article class="epm-relacao" data-relacao="{{id}}">
+      <img class="epm-relacao-img" src="{{img}}" alt="" {{#if uuid}}data-action="abrirRelacao" data-uuid="{{uuid}}" title="Abrir ficha"{{/if}} />
+      <div class="epm-relacao-corpo">
+        {{#if @root.edicao}}
+        <div class="epm-relacao-topo">
+          <input type="text" class="epm-relacao-nome" name="flags.epm-ficha.relacoes.{{id}}.nome" value="{{nome}}" placeholder="Nome" aria-label="Nome" />
+          <select name="flags.epm-ficha.relacoes.{{id}}.tipo" aria-label="Tipo de relação">{{#each opcoesTipo}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+          <button type="button" class="epm-icone-botao perigo" data-action="excluirRelacao" data-relacao="{{id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <label class="epm-afinidade">
+          <span>Afinidade <strong>{{afinidadeLabel}}</strong> ({{epmSinal afinidade}})</span>
+          <input type="range" min="{{@root.afinidade.min}}" max="{{@root.afinidade.max}}" step="1" name="flags.epm-ficha.relacoes.{{id}}.afinidade" value="{{afinidade}}" data-dtype="Number" />
+        </label>
+        <textarea name="flags.epm-ficha.relacoes.{{id}}.notas" rows="2" placeholder="Como se conheceram, o que um deve ao outro…" aria-label="Notas">{{notas}}</textarea>
+        {{else}}
+        <div class="epm-relacao-topo-texto"><span class="epm-relacao-nome">{{#if nome}}{{nome}}{{else}}Sem nome{{/if}}</span><span class="epm-tag">{{tipoLabel}}</span></div>
+        <div class="epm-afinidade" title="Afinidade {{epmSinal afinidade}}">
+          <span>Afinidade <strong>{{afinidadeLabel}}</strong></span>
+          <div class="epm-medidor"><span style="width: {{afinidadePct}}%"></span></div>
+        </div>
+        {{#if notas}}<p class="epm-texto-livre">{{notas}}</p>{{/if}}
+        {{/if}}
+      </div>
+    </article>
+    {{/each}}
+  </div>
+</section>

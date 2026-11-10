@@ -1,0 +1,21 @@
+<section class="tab epm-aba epm-bencaos {{cls.bencaos}}" data-group="primary" data-tab="bencaos">
+  <p class="epm-dica epm-intro">Ligue o interruptor para ativar. Os modificadores de bênçãos e maldições ativas entram direto nos números da ficha.</p>
+  <div class="epm-bencaos-grade">
+    <section class="epm-coluna-bencao bencao">
+      <header class="epm-painel-titulo">
+        <h3>Bênçãos</h3>
+        {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaBencao" data-tipo="bencao"><i class="fa-solid fa-plus"></i> Nova bênção</button>{{/if}}
+      </header>
+      {{#unless bencaos.length}}<p class="epm-vazio">Nenhuma bênção recebida.</p>{{/unless}}
+      {{#each bencaos}}{{> "epm-bencao"}}{{/each}}
+    </section>
+    <section class="epm-coluna-bencao maldicao">
+      <header class="epm-painel-titulo">
+        <h3>Maldições</h3>
+        {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaBencao" data-tipo="maldicao"><i class="fa-solid fa-plus"></i> Nova maldição</button>{{/if}}
+      </header>
+      {{#unless maldicoes.length}}<p class="epm-vazio">Nenhuma maldição. Por enquanto.</p>{{/unless}}
+      {{#each maldicoes}}{{> "epm-bencao"}}{{/each}}
+    </section>
+  </div>
+</section>

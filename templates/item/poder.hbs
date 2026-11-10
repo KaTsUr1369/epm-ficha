@@ -1,0 +1,101 @@
+<div class="epm-poder-corpo" style="--cor: {{raridadeCor}}">
+  <header class="epm-poder-cabecalho">
+    <img class="epm-poder-retrato" src="{{item.img}}" alt="" {{#if editavel}}data-action="editarImagem" title="Trocar ícone"{{/if}} />
+    <div class="epm-poder-identidade">
+      <input class="epm-nome" type="text" name="name" value="{{item.name}}" placeholder="Nome" aria-label="Nome" />
+      <div class="epm-linha-identidade">
+        <label class="epm-campo"><span>Raridade</span><select name="flags.epm-ficha.raridade">{{#each opcoesRaridade}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        {{#if eMagia}}
+        <label class="epm-campo"><span>Círculo</span><select name="system.level" data-dtype="Number">{{#each opcoesCirculo}}<option value="{{nivel}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        {{else}}
+        <label class="epm-campo"><span>Origem</span><select name="flags.epm-ficha.origem"><option value="">Sem origem</option>{{#each opcoesOrigem}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        {{/if}}
+        <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.passiva" {{epmChecked dados.passiva}} /> Passiva</label>
+      </div>
+      <p class="epm-dica">Teto {{raridadeLabel}}: até {{limite.danoMax}} de dano por ativação e {{limite.efeitos}} efeito(s) adicional(is){{#if limite.limite}}; no máximo {{limite.limite}} por personagem{{/if}}.</p>
+    </div>
+  </header>
+
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Descrição</h3></header>
+    {{{editorDescricao}}}
+  </section>
+
+
+  <section class="epm-painel epm-formas">
+    <header class="epm-painel-titulo">
+      <h3>Formas</h3>
+      <span class="epm-dica">Cada forma é um modo de usar. Com mais de uma, você escolhe ao usar.</span>
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaForma"><i class="fa-solid fa-plus"></i> Nova forma</button>{{/if}}
+    </header>
+    {{#unless formas.length}}<p class="epm-vazio">Sem formas. Crie uma para definir ação, custo e dano.</p>{{/unless}}
+    {{#each formas}}
+    <article class="epm-forma" data-forma="{{id}}">
+      <header class="epm-forma-topo">
+        <input class="epm-forma-nome" type="text" name="flags.epm-ficha.formas.{{id}}.nome" value="{{nome}}" aria-label="Nome da forma" />
+        {{#if av.excedeDano}}<span class="epm-alerta-texto" title="O teto desta raridade é {{av.teto}}">dano máximo {{av.maxDano}} passa do teto</span>{{/if}}
+        {{#if @root.editavel}}
+        <div class="epm-item-controles">
+          <button type="button" class="epm-icone-botao" data-action="moverForma" data-forma="{{id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="epm-icone-botao" data-action="moverForma" data-forma="{{id}}" data-dir="1" {{#if ultima}}disabled{{/if}} title="Descer"><i class="fa-solid fa-arrow-down"></i></button>
+          <button type="button" class="epm-icone-botao" data-action="duplicarForma" data-forma="{{id}}" title="Duplicar forma"><i class="fa-solid fa-clone"></i></button>
+          <button type="button" class="epm-icone-botao perigo" data-action="excluirForma" data-forma="{{id}}" title="Excluir forma"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        {{/if}}
+      </header>
+      <div class="epm-forma-grade">
+        <label class="epm-campo"><span>Ação</span><select name="flags.epm-ficha.formas.{{id}}.acao">{{#each opcoesAcao}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        <div class="epm-campo"><span>Custo</span><div class="epm-custo"><input type="number" min="0" name="flags.epm-ficha.formas.{{id}}.custo.valor" value="{{custo.valor}}" aria-label="Valor do custo" /><select name="flags.epm-ficha.formas.{{id}}.custo.recurso" aria-label="Recurso gasto">{{#each opcoesCusto}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></div></div>
+        <label class="epm-campo"><span>Alcance</span><input type="text" name="flags.epm-ficha.formas.{{id}}.alcance" value="{{alcance}}" placeholder="9 m, toque…" /></label>
+        <label class="epm-campo"><span>Área</span><input type="text" name="flags.epm-ficha.formas.{{id}}.area" value="{{area}}" placeholder="cone de 6 m…" /></label>
+        <label class="epm-campo"><span>Alvo</span><input type="text" name="flags.epm-ficha.formas.{{id}}.alvo" value="{{alvo}}" placeholder="1 criatura…" /></label>
+        <label class="epm-campo"><span>Duração</span><input type="text" name="flags.epm-ficha.formas.{{id}}.duracao" value="{{duracao}}" placeholder="instantânea…" /></label>
+        <label class="epm-campo"><span>Teste</span><select name="flags.epm-ficha.formas.{{id}}.teste.tipo">{{#each opcoesTeste}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Perícia do teste</span><select name="flags.epm-ficha.formas.{{id}}.teste.pericia"><option value="">Nenhuma</option>{{#each opcoesPericia}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{nome}}</option>{{/each}}</select></label>
+        <div class="epm-campo"><span>CD da resistência</span><span class="epm-cd{{#unless resistencia}} fraca{{/unless}}" title="Calculada: {{@root.cdFormula}}">{{#if @root.cd}}{{@root.cd.valor}} ({{@root.cdFormula}}){{else}}{{@root.cdFormula}}{{/if}}</span></div>
+        <label class="epm-campo epm-campo-largo"><span>Dano ou cura</span><input type="text" name="flags.epm-ficha.formas.{{id}}.dano.formula" value="{{dano.formula}}" placeholder="2d6 + @atr.nucleo" /></label>
+        <label class="epm-campo"><span>Tipo</span><input type="text" name="flags.epm-ficha.formas.{{id}}.dano.tipo" value="{{dano.tipo}}" list="epm-tipos-dano-{{@root.item.id}}" placeholder="Fogo, Cura…" /></label>
+      </div>
+      <fieldset class="epm-requisitos">
+        <legend>Requisitos (condições podem bloquear)</legend>
+        {{#each requisitosLista}}<label class="epm-check" title="{{dica}}"><input type="checkbox" name="flags.epm-ficha.formas.{{../id}}.requisitos.{{id}}" {{epmChecked checked}} /> {{label}}</label>{{/each}}
+      </fieldset>
+      <div class="epm-forma-efeito">
+        <span class="epm-rotulo">Efeito</span>
+        {{{editorEfeito}}}
+      </div>
+      <p class="epm-dica">Efeitos adicionais comprados: {{av.efeitosUsados}} de {{av.limiteEfeitos}}.{{#if av.maxDano}} Dano máximo {{av.maxDano}} de {{av.teto}}.{{/if}}</p>
+    </article>
+    {{/each}}
+    <datalist id="epm-tipos-dano-{{item.id}}">{{#each sugestoesDano}}<option value="{{this}}"></option>{{/each}}</datalist>
+  </section>
+
+  <section class="epm-painel epm-melhorias">
+    <header class="epm-painel-titulo">
+      <h3>Melhorias com PT</h3>
+      {{#if temDono}}<span class="epm-contador">{{pt}} PT disponíveis</span>{{/if}}
+    </header>
+    {{#if editavel}}
+    <div class="epm-melhoria-form">
+      <select data-melhoria="tipo" aria-label="Melhoria">{{#each melhoriasOpcoes}}<option value="{{id}}">{{label}} ({{custo}} PT)</option>{{/each}}</select>
+      <select data-melhoria="forma" aria-label="Forma melhorada">{{#each formas}}<option value="{{id}}">{{nome}}</option>{{/each}}</select>
+      <input type="text" data-melhoria="nota" placeholder="anotação (opcional)" aria-label="Anotação" />
+      <button type="button" class="epm-botao epm-botao-forte" data-action="aplicarMelhoria">Aplicar</button>
+    </div>
+    <p class="epm-dica">Dano é somado à fórmula da forma; troca de ação muda a ação da forma. O teto da raridade é conferido antes de cobrar.{{#unless temDono}} Este item não está numa ficha: nada é cobrado.{{/unless}}</p>
+    {{/if}}
+    {{#if melhorias.length}}
+    <ol class="epm-melhorias-lista">
+      {{#each melhorias}}
+      <li>
+        <span>{{label}}</span>
+        {{#if formaNome}}<span class="epm-tag">{{formaNome}}</span>{{/if}}
+        {{#if nota}}<span class="epm-dica">{{nota}}</span>{{/if}}
+        <span class="epm-contador">{{custo}} PT</span>
+        {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="removerMelhoria" data-melhoria="{{id}}" title="Remover registro"><i class="fa-solid fa-xmark"></i></button>{{/if}}
+      </li>
+      {{/each}}
+    </ol>
+    {{else}}<p class="epm-vazio">Nenhuma melhoria comprada.</p>{{/if}}
+  </section>
+</div>

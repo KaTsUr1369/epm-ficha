@@ -1,0 +1,52 @@
+<section class="tab epm-aba epm-inventario {{cls.inventario}}" data-group="primary" data-tab="inventario">
+  <section class="epm-painel epm-carteira">
+    <header class="epm-painel-titulo">
+      <h3>Carteira</h3>
+      <span class="epm-contador" title="Todas as moedas somadas e convertidas">{{patrimonio}}</span>
+    </header>
+    <div class="epm-moedas">
+      {{#each moedas}}
+      <label class="epm-moeda" style="--cor: {{cor}}" title="{{dica}}">
+        <span class="epm-moeda-disco" aria-hidden="true">{{abrev}}</span>
+        {{#if @root.edicao}}<input type="number" min="0" name="flags.epm-ficha.moedas.{{id}}" value="{{quantidade}}" aria-label="{{label}}" />{{else}}<span class="epm-moeda-valor">{{epmNumero quantidade}}</span>{{/if}}
+        <span class="epm-moeda-nome">{{label}}</span>
+      </label>
+      {{/each}}
+    </div>
+    {{#if editavel}}
+    <div class="epm-carteira-acoes">
+      <button type="button" class="epm-botao" data-action="moedas" data-operacao="receber"><i class="fa-solid fa-plus"></i> Receber</button>
+      <button type="button" class="epm-botao" data-action="moedas" data-operacao="pagar" title="Desconta e calcula o troco"><i class="fa-solid fa-minus"></i> Pagar</button>
+      <button type="button" class="epm-botao" data-action="moedas" data-operacao="consolidar" title="Troca moedas pequenas por maiores (10 cobres viram 1 prata…)">Consolidar</button>
+    </div>
+    {{/if}}
+  </section>
+
+  <div class="epm-filtros" role="group" aria-label="Filtrar por raridade">
+    <span class="epm-rotulo">Raridade</span>
+    {{#each filtros}}<button type="button" class="epm-filtro{{#if ativo}} ativo{{/if}}" style="--cor: {{cor}}" data-action="filtroRaridade" data-raridade="{{id}}" aria-pressed="{{#if ativo}}true{{else}}false{{/if}}">{{label}}</button>{{/each}}
+    {{#if temFiltro}}<button type="button" class="epm-link" data-action="filtroRaridade" data-raridade="">Mostrar todas</button>{{/if}}
+    <span class="epm-peso" title="Peso total carregado"><i class="fa-solid fa-weight-hanging" aria-hidden="true"></i> {{epmNumero pesoTotal}}</span>
+  </div>
+
+  {{#each categorias}}
+  <section class="epm-categoria" data-categoria="{{id}}">
+    <header class="epm-categoria-titulo">
+      <i class="{{icone}}" aria-hidden="true"></i>
+      <h3>{{label}}</h3>
+      <span class="epm-contador">{{total}}</span>
+      {{#if @root.edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="criarItem" data-tipo="{{criar}}" data-nome="{{novo}}"><i class="fa-solid fa-plus"></i> {{novo}}</button>{{/if}}
+    </header>
+    {{#if vazia}}<p class="epm-vazio">Nada aqui ainda. Arraste um item para a ficha{{#if @root.edicao}} ou crie um novo{{/if}}.</p>{{/if}}
+    {{#if filtrada}}<p class="epm-vazio">Nenhum item com as raridades selecionadas.</p>{{/if}}
+    {{#each grupos}}
+    <div class="epm-grupo-raridade{{#if favoritos}} favoritos{{/if}}" style="--cor: {{cor}}">
+      <h4 class="epm-grupo-titulo">{{#if favoritos}}<i class="fa-solid fa-star" aria-hidden="true"></i> {{/if}}{{label}}</h4>
+      <ol class="epm-itens">
+        {{#each itens}}{{> "epm-item-linha"}}{{/each}}
+      </ol>
+    </div>
+    {{/each}}
+  </section>
+  {{/each}}
+</section>

@@ -1,0 +1,24 @@
+<section class="tab epm-aba epm-magias {{cls.magias}}" data-group="primary" data-tab="magias">
+  <header class="epm-aba-topo">
+    <div class="epm-aba-resumo">
+      <span class="epm-contador" title="Pontos de Habilidade disponíveis">{{ficha.pontos.ph}} PH</span>
+      <span class="epm-contador" title="CD dos testes de resistência contra você: 8 + {{ficha.cd.periciaNome}}">CD {{ficha.cd.valor}}</span>
+      <span class="epm-contador" title="Magias de 1º círculo ou acima. Magias Únicas não contam.">{{magias.conhecidas}} de {{magias.espacosMagias}} magias</span>
+      <span class="epm-contador">{{magias.truques}} de {{magias.espacosTruques}} truques</span>
+      {{#each magias.limites}}<span class="epm-contador epm-limite{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" style="--cor: {{cor}}" title="Limite de magias {{label}}{{#if (epmEq @root.modoLimites "combinados")}} (somado às habilidades){{/if}}">{{label}} {{usados}}/{{limite}}</span>{{/each}}
+    </div>
+    {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="magia" title="Cria no círculo aberto"><i class="fa-solid fa-plus"></i> Nova magia</button>{{/if}}
+  </header>
+  <nav class="epm-subnav" aria-label="Círculos de magia">
+    {{#each magias.circulos}}
+    <button type="button" class="epm-subnav-item {{cls}}" data-action="aba" data-group="magias" data-tab="{{chave}}">{{curto}}<span class="epm-subnav-qtd">{{total}}</span></button>
+    {{/each}}
+  </nav>
+  {{#each magias.circulos}}
+  <section class="tab epm-circulo {{cls}}" data-group="magias" data-tab="{{chave}}">
+    <header class="epm-secao-titulo"><h3>{{label}}</h3></header>
+    {{#if vazia}}<p class="epm-vazio">Nenhuma magia neste círculo.</p>{{/if}}
+    <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>
+  </section>
+  {{/each}}
+</section>

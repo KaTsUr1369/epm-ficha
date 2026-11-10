@@ -4,9 +4,11 @@
  */
 import {
   FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, RECURSOS, REGRAS, custoNivel,
-  RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, EXAUSTAO, DEFESAS, MOEDAS,
-  ACOES, ACOES_BLOQUEADAS_COMA, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD
+  RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
+  MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
+  TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO
 } from "./config.mjs";
+import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
 
 /* -------------------------------------------- */
 /*  Utilitários                                 */
@@ -131,9 +133,12 @@ export function migrarPericias(pericias = {}, lista = PERICIAS_PADRAO, obsoletas
   return updates;
 }
 
+/** Versão atual do formato dos dados (normalizarDados e migrarDados levam fichas antigas até ela). */
+export const VERSAO_DADOS = 3;
+
 export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
   return {
-    versao: 2,
+    versao: VERSAO_DADOS,
     raca: "", arquetipo: "", classe: "",
     nivel: 1, arquetipo2: "", nivel2: 0,
     pontos: { pt: 0, pev: 0, ph: 0 },
@@ -160,7 +165,9 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     bencaos: {},
     relacoes: {},
     ataques: {},
-    bonusCena: {}
+    bonusCena: {},
+    personalizacao: { cor: COR_PADRAO, brilho: BRILHO_PADRAO },
+    ui: { ordemAbas: [], ordemCategorias: [] }
   };
 }
 
@@ -172,6 +179,13 @@ export function normalizarDados(bruto = {}, listaPericias = PERICIAS_PADRAO) {
   for (const campo of ["idiomas", "resistencias", "vulnerabilidades", "imunidades"]) {
     if (!Array.isArray(dados[campo])) dados[campo] = [];
   }
+  for (const [antiga, nova] of Object.entries(MOEDAS_ANTIGAS)) {
+    if (bruto?.moedas?.[antiga] !== undefined && !int(bruto?.moedas?.[nova])) dados.moedas[nova] = int(bruto.moedas[antiga]);
+    delete dados.moedas[antiga];
+  }
+  dados.exaustao = limitar(int(dados.exaustao), 0, EXAUSTAO_MAX);
+  if (!Array.isArray(dados.ui?.ordemAbas)) dados.ui.ordemAbas = [];
+  if (!Array.isArray(dados.ui?.ordemCategorias)) dados.ui.ordemCategorias = [];
   return dados;
 }
 
@@ -185,9 +199,123 @@ export function camposFaltando(bruto = {}, listaPericias = PERICIAS_PADRAO) {
   return faltando;
 }
 
+/**
+ * Atualizações (caminhos relativos a flags.epm-ficha) que levam uma ficha da versão 2 para a 3:
+ * Joias de Kan viram Dracmas, a exaustão acima de 6 volta a 6 (não há mais coma).
+ * Idiomas são migrados pela ficha, porque dependem da lista de idiomas do mundo.
+ */
+export function migrarDados(bruto = {}) {
+  const updates = {};
+  if (int(bruto?.versao) >= VERSAO_DADOS) return updates;
+  for (const [antiga, nova] of Object.entries(MOEDAS_ANTIGAS)) {
+    if (bruto?.moedas?.[antiga] === undefined) continue;
+    updates[`moedas.${nova}`] = int(bruto.moedas?.[nova]) + int(bruto.moedas[antiga]);
+    updates[`moedas.-=${antiga}`] = null;
+  }
+  if (int(bruto?.exaustao) > EXAUSTAO_MAX) updates.exaustao = EXAUSTAO_MAX;
+  updates.versao = VERSAO_DADOS;
+  return updates;
+}
+
 /* -------------------------------------------- */
-/*  Ficha derivada                              */
+/*  Ordem das abas e categorias                 */
 /* -------------------------------------------- */
+
+/** Aplica uma ordem salva a uma lista de ids: os conhecidos na ordem salva, os novos no fim. */
+export function ordenarPorLista(ids, salva = []) {
+  const conhecidos = new Set(ids);
+  const out = (Array.isArray(salva) ? salva : []).filter(id => conhecidos.has(id));
+  for (const id of ids) if (!out.includes(id)) out.push(id);
+  return out;
+}
+
+/** Move `id` para antes de `antesDe` (ou para o fim, se `antesDe` for vazio). */
+export function moverNaLista(lista, id, antesDe = null) {
+  const out = lista.filter(x => x !== id);
+  const i = antesDe ? out.indexOf(antesDe) : -1;
+  if (i < 0) out.push(id);
+  else out.splice(i, 0, id);
+  return out;
+}
+
+/* -------------------------------------------- */
+/*  Itens: bônus e efeitos                      */
+/* -------------------------------------------- */
+
+const EQUIPAVEIS = ["weapon", "equipment"];
+
+export function lerEfeitosItem(item) {
+  const f = item?.flags?.[FLAG]?.efeitos ?? {};
+  const padraoQuando = item?.type === "weapon" ? "acerto" : "uso";
+  return Object.entries(f)
+    .filter(([, e]) => e && TIPOS_EFEITO_ITEM[e.tipo])
+    .map(([id, e]) => ({
+      id, tipo: e.tipo, alvo: e.alvo ?? "", valor: num(e.valor),
+      tipoDano: String(e.tipoDano ?? "").trim(), em: e.em ?? "",
+      recurso: RECURSOS[e.recurso] ? e.recurso : "pv",
+      formula: String(e.formula ?? "").trim(),
+      quando: QUANDO_CURA[e.quando] ? e.quando : padraoQuando,
+      criado: num(e.criado)
+    }))
+    .sort((a, b) => a.criado - b.criado);
+}
+
+/** O item dá seus bônus passivos agora? Armas e armaduras: equipadas. Consumíveis: só ao usar. */
+export function itemAtivo(item) {
+  if (!item) return false;
+  if (EQUIPAVEIS.includes(item.type)) return !!item.system?.equipped;
+  if (item.type === "consumable") return false;
+  return num(item.system?.quantity, 1) > 0;
+}
+
+/** Fontes de bônus passivos dos itens ativos (para calcularFicha). */
+export function efeitosDeItens(itens = []) {
+  const out = [];
+  for (const item of itens) {
+    let efeitos;
+    try {
+      if (!itemAtivo(item)) continue;
+      efeitos = lerEfeitosItem(item).filter(e => !["cura", "danoExtra"].includes(e.tipo));
+    } catch { continue; }
+    if (efeitos.length) out.push({ id: item.id, nome: item.name, efeitos });
+  }
+  return out;
+}
+
+/** Texto curto de um efeito de item ("CA +2", "RD 3 (Corte)", "Desvantagem: Furtividade"). */
+export function resumoEfeitoItem(e, rotulos = {}) {
+  const alvo = rotulos.alvos?.[e.alvo] ?? e.alvo;
+  const em = rotulos.em?.[e.em] ?? e.em;
+  switch (e.tipo) {
+    case "mod": return alvo ? `${alvo} ${e.valor > 0 ? "+" : e.valor < 0 ? "−" : ""}${Math.abs(e.valor).toLocaleString("pt-BR")}` : "";
+    case "rd": return `RD ${e.valor.toLocaleString("pt-BR")}${e.tipoDano ? ` (${e.tipoDano})` : ""}`;
+    case "resistencia": return e.tipoDano ? `Resiste: ${e.tipoDano}` : "";
+    case "imunidade": return e.tipoDano ? `Imune: ${e.tipoDano}` : "";
+    case "vulnerabilidade": return e.tipoDano ? `Vulnerável: ${e.tipoDano}` : "";
+    case "desvantagem": return em ? `Desvantagem: ${em}` : "";
+    case "vantagem": return em ? `Vantagem: ${em}` : "";
+    case "cura": return e.formula ? `${QUANDO_CURA[e.quando]}: ${RECURSOS[e.recurso]?.abrev ?? "PV"} +${e.formula}` : "";
+    case "danoExtra": return e.formula ? `Dano +${e.formula}${e.tipoDano ? ` ${e.tipoDano}` : ""}` : "";
+    default: return "";
+  }
+}
+
+/* -------------------------------------------- */
+/*  Condições, combinações e efeitos            */
+/* -------------------------------------------- */
+
+const CONDICAO_POR_ID = new Map(CONDICOES.map(c => [c.id, c]));
+export const condicaoPorId = id => CONDICAO_POR_ID.get(id) ?? null;
+
+/** Efeitos da exaustão em cada nível (cumulativos). */
+const EFEITOS_EXAUSTAO = {
+  1: { desvTestes: true, desvAtaques: true, desvResistencias: true, desvDano: true },
+  2: { testes: -5, defesa: -5 },
+  3: { bloqueiaAcoes: ["bonus", "reacao"], deslocamentoMult: 0.5 },
+  4: { acoesMax: 1 },
+  5: { implica: ["epm-incapacitado", "epm-inconsciente"] },
+  6: {}
+};
 
 function lerModsAE(modsAE, somar) {
   if (!eObjeto(modsAE)) return;
@@ -196,9 +324,39 @@ function lerModsAE(modsAE, somar) {
   for (const [chave, prefixo] of Object.entries(grupos)) {
     for (const [id, valor] of Object.entries(modsAE[chave] ?? {})) somar(`${prefixo}.${id}`, valor, fonte);
   }
-  for (const chave of ["ca", "deslocamento", "iniciativa"]) {
+  for (const chave of ["ca", "deslocamento", "iniciativa", "testes", "acerto", "danoAtaque"]) {
     if (modsAE[chave] !== undefined) somar(chave, modsAE[chave], fonte);
   }
+}
+
+const novaLista = () => [];
+const somaLista = lista => lista.reduce((s, x) => s + x.valor, 0);
+
+/**
+ * Lê as bênçãos e maldições gravadas: ativas, suspensas (Vínculo Quebrado, maldições que anulam
+ * bênçãos) e a automação de cada uma (catálogo + o que o jogador definiu).
+ */
+export function lerBencaos(bencaos = {}, { suspensaoCondicao = [] } = {}) {
+  const lista = Object.entries(bencaos ?? {}).filter(([, b]) => b && typeof b === "object").map(([id, b]) => {
+    const tipo = b.tipo === "maldicao" ? "maldicao" : "bencao";
+    const auto = automacaoDe(b);
+    const natureza = NATUREZAS[b.natureza] ? b.natureza : (auto.catalogo?.natureza ?? "");
+    return { id, b, tipo, natureza, ativo: !!b.ativo, auto };
+  });
+  const suspensoes = [];
+  for (const x of lista) {
+    if (x.tipo !== "maldicao" || !x.ativo) continue;
+    const s = x.auto.efeitos.suspendeBencaos;
+    if (s) suspensoes.push({ alcance: s === "divina" ? "divina" : "todas", fonte: x.b.nome || "Maldição" });
+  }
+  for (const fonte of suspensaoCondicao) suspensoes.push({ alcance: "todas", fonte });
+  for (const x of lista) {
+    x.suspensaPor = x.tipo === "bencao"
+      ? suspensoes.filter(s => s.alcance === "todas" || (s.alcance === "divina" && x.natureza === "divina")).map(s => s.fonte)
+      : [];
+    x.vale = x.ativo && !x.suspensaPor.length;
+  }
+  return lista;
 }
 
 /**
@@ -208,27 +366,207 @@ function lerModsAE(modsAE, somar) {
  * @param {object} p.hp          { value, max (efetivo do dnd5e), maxFonte, temp }
  * @param {Iterable} p.statuses  ids de status ativos no ator
  * @param {object} p.modsAE      actor.flags[FLAG].mods depois dos Active Effects
+ * @param {Array} p.itens        fontes de bônus dos itens ativos (efeitosDeItens)
  */
-export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
+export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [] }) {
   const d = dados;
   const st = new Set(statuses);
   const nivel1 = Math.max(0, int(d.nivel, 1));
   const temSegundo = !!String(d.arquetipo2 ?? "").trim();
   const nivel2 = temSegundo ? Math.max(0, int(d.nivel2, 0)) : 0;
   const nivelTotal = nivel1 + nivel2;
-  const exaustao = Math.max(0, int(d.exaustao, 0));
-  const coma = exaustao >= 6;
+  const exaustao = limitar(int(d.exaustao, 0), 0, EXAUSTAO_MAX);
 
-  // Condições e imunidades
-  const imunes = new Set((d.imunidades ?? []).map(normalizarTexto));
+  /* ---------- Bênçãos e maldições (1ª passada: suspensões) ---------- */
+  const diretas = new Set(CONDICOES.filter(c => st.has(c.id)).map(c => c.id));
+  // Vínculo Quebrado e afins suspendem bênçãos; só conta se marcado (ou implicado) por condições.
+  const suspensaoCondicao = [];
+  {
+    const vistos = new Set();
+    const fila = [...diretas];
+    while (fila.length) {
+      const id = fila.shift();
+      if (vistos.has(id)) continue;
+      vistos.add(id);
+      const c = CONDICAO_POR_ID.get(id);
+      if (!c) continue;
+      if (c.efeitos.suspendeBencaos) suspensaoCondicao.push(c.label);
+      fila.push(...(c.efeitos.implica ?? []));
+    }
+  }
+  const bencaos = lerBencaos(d.bencaos, { suspensaoCondicao });
+  const bencaosValendo = bencaos.filter(x => x.vale);
+
+  /* ---------- Imunidades (tags, itens e bênçãos) ---------- */
+  const imunidadesTags = [];
+  for (const t of d.imunidades ?? []) if (t) imunidadesTags.push({ tipo: t, fonte: "" });
+  for (const fonteItem of itens) {
+    for (const e of fonteItem.efeitos) if (e.tipo === "imunidade" && e.tipoDano) imunidadesTags.push({ tipo: e.tipoDano, fonte: fonteItem.nome });
+  }
+  for (const x of bencaosValendo) for (const t of x.auto.efeitos.imunidades ?? []) imunidadesTags.push({ tipo: t, fonte: x.b.nome });
+  const imunes = new Set(imunidadesTags.map(t => normalizarTexto(t.tipo)));
+
+  /* ---------- Condições: diretas, implicadas (automáticas) e imunes ---------- */
+  const porQue = new Map();
+  const efetivasIds = new Set();
+  {
+    const fila = [];
+    const empurrar = (id, motivo) => {
+      if (!CONDICAO_POR_ID.has(id)) return;
+      if (motivo) {
+        if (!porQue.has(id)) porQue.set(id, []);
+        if (!porQue.get(id).includes(motivo)) porQue.get(id).push(motivo);
+      }
+      fila.push(id);
+    };
+    for (const id of diretas) empurrar(id, null);
+    for (const x of bencaosValendo) for (const id of x.auto.efeitos.implica ?? []) empurrar(id, x.b.nome || "Bênção");
+    for (let n = 1; n <= exaustao; n++) for (const id of EFEITOS_EXAUSTAO[n]?.implica ?? []) empurrar(id, `Exaustão ${n}`);
+    const vistos = new Set();
+    while (fila.length) {
+      const id = fila.shift();
+      if (vistos.has(id)) continue;
+      vistos.add(id);
+      const c = CONDICAO_POR_ID.get(id);
+      if (imunes.has(normalizarTexto(c.label))) continue;
+      efetivasIds.add(id);
+      for (const filho of c.efeitos.implica ?? []) empurrar(filho, c.label);
+    }
+  }
   const condicoes = CONDICOES.map(c => {
-    const ativa = st.has(c.id);
+    const ativa = diretas.has(c.id);
+    const automatica = !ativa && porQue.has(c.id) && (efetivasIds.has(c.id) || imunes.has(normalizarTexto(c.label)));
     const imune = imunes.has(normalizarTexto(c.label));
-    return { ...c, ativa, imune, efetiva: ativa && !imune, resumo: resumirEfeitos(c.efeitos) };
+    return {
+      ...c, ativa, automatica, imune, efetiva: efetivasIds.has(c.id),
+      porQue: automatica ? porQue.get(c.id) : [], resumo: resumirEfeitos(c.efeitos)
+    };
   });
   const efetivas = condicoes.filter(c => c.efetiva);
 
-  // Modificadores
+  /* ---------- Combinações (as duas condições marcadas diretamente) ---------- */
+  const combinacoes = COMBINACOES.filter(k => k.condicoes.every(id => diretas.has(id) && !imunes.has(normalizarTexto(CONDICAO_POR_ID.get(id)?.label))))
+    .map(k => ({
+      ...k,
+      nomes: k.condicoes.map(id => CONDICAO_POR_ID.get(id)?.label ?? id),
+      podeAplicar: (k.aplicar ?? []).some(id => !diretas.has(id)),
+      podeRemover: (k.remover ?? []).some(id => diretas.has(id)),
+      aplicarNomes: (k.aplicar ?? []).map(id => CONDICAO_POR_ID.get(id)?.label ?? id),
+      removerNomes: (k.remover ?? []).map(id => CONDICAO_POR_ID.get(id)?.label ?? id)
+    }));
+
+  /* ---------- Fontes de efeito ---------- */
+  const fontesEfeito = [];
+  for (const c of efetivas) fontesEfeito.push({ fonte: c.label, efeitos: c.efeitos, tipo: "condicao" });
+  for (const k of combinacoes) if (k.efeitos) fontesEfeito.push({ fonte: k.titulo, efeitos: k.efeitos, tipo: "combinacao" });
+  for (const x of bencaosValendo) fontesEfeito.push({ fonte: x.b.nome || (x.tipo === "maldicao" ? "Maldição" : "Bênção"), efeitos: x.auto.efeitos, tipo: x.tipo });
+  for (let n = 1; n <= exaustao; n++) fontesEfeito.push({ fonte: `Exaustão ${n}`, efeitos: EFEITOS_EXAUSTAO[n] ?? {}, tipo: "exaustao" });
+
+  const penal = { testes: novaLista(), ataques: novaLista(), distancia: novaLista(), dano: novaLista(), defesa: novaLista() };
+  const penalAtributo = {};
+  const penalPericia = {};
+  const desv = { testes: [], ataques: [], ataquesMagicos: [], iniciativa: [], resistencias: [], dano: [], pericias: {} };
+  const vant = { testes: [], ataques: [], pericias: {} };
+  const bloqueios = { acoes: {}, requisitos: {}, magias: [], mana: [], ataques: [], origens: {}, pericias: {} };
+  const recuperacao = { sem: { pv: [], pm: [], pe: [], ps: [] }, metade: { pv: [], pm: [], pe: [], ps: [] }, semDescansoCurto: [], descansoCurtoMetade: [] };
+  const dots = [];
+  const turnoEfeitos = [];
+  const vulneraveisBrutos = [];
+  const anulados = new Map();
+  const avisos = [];
+  const especiais = {
+    danoAtaques: [], danoMult: { valor: 1, fontes: [] }, custoExtraMagia: { valor: 0, fontes: [] },
+    pvPorPm: [], pmPorPv: [], pvPorHabilidade: { valor: 0, fontes: [] }, psFimCombate: { valor: 0, fontes: [] },
+    psPorDescansoLongo: { valor: 0, fontes: [] }, pvMaxPorDescanso: { valor: 0, fontes: [] },
+    iniciativaZero: [], metadeDinheiro: []
+  };
+  const resistenciasExtra = [];
+  let deslMult = 1;
+  const deslMotivos = [];
+  let acoesMax = null;
+  const acoesMaxFontes = [];
+
+  for (const { fonte, efeitos: e } of fontesEfeito) {
+    for (const chave of ["testes", "ataques", "distancia", "dano", "defesa"]) {
+      if (num(e[chave])) penal[chave].push({ valor: num(e[chave]), fonte });
+    }
+    for (const [a, v] of Object.entries(e.atributos ?? {})) if (ATRIBUTOS[a] && num(v)) (penalAtributo[a] ??= []).push({ valor: num(v), fonte });
+    for (const [p, v] of Object.entries(e.pericias ?? {})) if (num(v)) (penalPericia[p] ??= []).push({ valor: num(v), fonte });
+    if (e.desvTestes) desv.testes.push(fonte);
+    if (e.desvAtaques) desv.ataques.push(fonte);
+    if (e.desvAtaquesMagicos) desv.ataquesMagicos.push(fonte);
+    if (e.desvIniciativa) desv.iniciativa.push(fonte);
+    if (e.desvResistencias) desv.resistencias.push(fonte);
+    if (e.desvDano) desv.dano.push(fonte);
+    for (const p of e.desvPericias ?? []) (desv.pericias[p] ??= []).push(fonte);
+    if (e.deslocamentoMult !== undefined) {
+      deslMult = Math.min(deslMult, num(e.deslocamentoMult, 1));
+      deslMotivos.push(fonte);
+    }
+    for (const a of e.bloqueiaAcoes ?? []) (bloqueios.acoes[a] ??= []).push(fonte);
+    for (const r of e.bloqueiaRequisitos ?? []) (bloqueios.requisitos[r] ??= []).push(fonte);
+    for (const o of e.bloqueiaOrigens ?? []) (bloqueios.origens[o] ??= []).push(fonte);
+    for (const p of e.bloqueiaPericias ?? []) (bloqueios.pericias[p] ??= []).push(fonte);
+    if (e.bloqueiaMagias) bloqueios.magias.push(fonte);
+    if (e.bloqueiaMana) bloqueios.mana.push(fonte);
+    if (e.bloqueiaAtaques) bloqueios.ataques.push(fonte);
+    for (const r of e.semRecuperar ?? []) recuperacao.sem[r]?.push(fonte);
+    for (const r of e.recuperacaoMetade ?? []) recuperacao.metade[r]?.push(fonte);
+    if (e.semDescansoCurto) recuperacao.semDescansoCurto.push(fonte);
+    if (e.descansoCurtoMetade) recuperacao.descansoCurtoMetade.push(fonte);
+    for (const dot of e.dot ?? []) dots.push({ ...dot, fonte, rotulo: dot.rotulo || fonte });
+    if (e.turno) turnoEfeitos.push({ tipo: e.turno, fonte });
+    for (const t of e.vulneravel ?? []) vulneraveisBrutos.push({ tipo: t, fonte });
+    for (const t of e.anulaVulnerabilidade ?? []) anulados.set(normalizarTexto(t), fonte);
+    for (const t of e.avisos ?? []) avisos.push({ texto: t, fonte });
+    for (const t of e.resistencias ?? []) resistenciasExtra.push({ tipo: t, fonte });
+    if (e.acoesMax) { acoesMax = acoesMax === null ? e.acoesMax : Math.min(acoesMax, e.acoesMax); acoesMaxFontes.push(fonte); }
+    if (e.danoAtaques) especiais.danoAtaques.push({ formula: e.danoAtaques, fonte });
+    if (num(e.danoMult) > 1) { especiais.danoMult.valor = Math.max(especiais.danoMult.valor, num(e.danoMult)); especiais.danoMult.fontes.push(fonte); }
+    for (const chave of ["custoExtraMagia", "pvPorHabilidade", "psFimCombate", "psPorDescansoLongo", "pvMaxPorDescanso"]) {
+      if (num(e[chave])) { especiais[chave].valor += num(e[chave]); especiais[chave].fontes.push(fonte); }
+    }
+    for (const chave of ["pvPorPm", "pmPorPv", "iniciativaZero", "metadeDinheiro"]) if (e[chave]) especiais[chave].push(fonte);
+  }
+
+  /* ---------- Itens: desvantagem, vantagem, resistências, RD ---------- */
+  const reducoes = [];
+  const tagsItens = { resistencias: [], vulnerabilidades: [] };
+  for (const fonteItem of itens) {
+    for (const e of fonteItem.efeitos) {
+      const fonte = fonteItem.nome;
+      if (e.tipo === "desvantagem" || e.tipo === "vantagem") {
+        const alvoLista = e.tipo === "desvantagem" ? desv : vant;
+        if (e.em === "testes") alvoLista.testes.push(fonte);
+        else if (e.em === "ataques") alvoLista.ataques.push(fonte);
+        else if (e.em === "iniciativa" && e.tipo === "desvantagem") desv.iniciativa.push(fonte);
+        else if (String(e.em).startsWith("pericia.")) (alvoLista.pericias[e.em.slice(8)] ??= []).push(fonte);
+      } else if (e.tipo === "rd" && num(e.valor)) {
+        reducoes.push({ valor: num(e.valor), tipos: e.tipoDano || "todos os danos", fonte });
+      } else if (e.tipo === "resistencia" && e.tipoDano) {
+        tagsItens.resistencias.push({ tipo: e.tipoDano, fonte });
+      } else if (e.tipo === "vulnerabilidade" && e.tipoDano) {
+        tagsItens.vulnerabilidades.push({ tipo: e.tipoDano, fonte });
+      }
+    }
+  }
+
+  /* ---------- Vulnerabilidades por condição (×2), menos as anuladas ---------- */
+  const vulneraveis = [];
+  for (const v of vulneraveisBrutos) {
+    const chave = normalizarTexto(v.tipo);
+    const existente = vulneraveis.find(x => normalizarTexto(x.tipo) === chave);
+    if (anulados.has(chave)) {
+      if (!existente) vulneraveis.push({ tipo: v.tipo, fontes: [v.fonte], anulada: anulados.get(chave) });
+      else existente.fontes.push(v.fonte);
+      continue;
+    }
+    if (existente) existente.fontes.push(v.fonte);
+    else vulneraveis.push({ tipo: v.tipo, fontes: [v.fonte], anulada: null });
+  }
+  for (const v of vulneraveis) v.texto = `${v.tipo} ×2`;
+
+  /* ---------- Modificadores numéricos ---------- */
   const mods = {};
   const somar = (alvo, valor, fonte) => {
     const v = num(valor);
@@ -237,15 +575,21 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
     mods[alvo].total += v;
     mods[alvo].fontes.push({ fonte, valor: v });
   };
-  for (const b of Object.values(d.bencaos ?? {})) {
-    if (!b?.ativo) continue;
-    const fonte = b.nome || (b.tipo === "maldicao" ? "Maldição" : "Bênção");
-    for (const m of Object.values(b.mods ?? {})) somar(m?.alvo, m?.valor, fonte);
+  for (const x of bencaos) {
+    const fonte = x.b.nome || (x.tipo === "maldicao" ? "Maldição" : "Bênção");
+    for (const m of Object.values(x.b.permanentes ?? {})) somar(m?.alvo, m?.valor, `${fonte} (permanente)`);
+    if (!x.vale) continue;
+    for (const m of Object.values(x.b.mods ?? {})) somar(m?.alvo, m?.valor, fonte);
   }
   for (const c of efetivas) for (const m of c.efeitos.mods ?? []) somar(m.alvo, m.valor, c.label);
+  for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome);
   lerModsAE(modsAE, somar);
   const mod = alvo => mods[alvo]?.total ?? 0;
   const fontes = alvo => mods[alvo]?.fontes ?? [];
+
+  /* ---------- Bônus/penalidade nos testes ---------- */
+  const penalTestesTotal = somaLista(penal.testes) + mod("testes");
+  const fontesTestes = [...penal.testes, ...fontes("testes")];
 
   // Atributos: base (16 pontos) + raça + aumento (1 por nível par) + outros
   const atributos = {};
@@ -260,7 +604,13 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
     const m = mod(`atributo.${id}`);
     gastoAtributos += base;
     gastoAumento += aumento;
-    atributos[id] = { id, ...cfg, base, raca, aumento, outros, mod: m, total: base + raca + aumento + outros + m, fontes: fontes(`atributo.${id}`) };
+    const penalProprio = penalAtributo[id] ?? [];
+    const testeFontes = [...fontesTestes, ...penalProprio];
+    const testeMod = penalTestesTotal + somaLista(penalProprio);
+    atributos[id] = {
+      id, ...cfg, base, raca, aumento, outros, mod: m, total: base + raca + aumento + outros + m, fontes: fontes(`atributo.${id}`),
+      testeMod, testeFontes, testeTotal: base + raca + aumento + outros + m + testeMod
+    };
   }
   const gruposAtributo = Object.entries(GRUPOS_ATRIBUTO).map(([id, label]) => ({
     id, label, atributos: Object.values(atributos).filter(a => a.grupo === id)
@@ -290,30 +640,40 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
     const outros = int(p.outros);
     gastoPericias += pontos;
     const valorAtributo = atrs.reduce((s, a) => s + atributos[a].total, 0);
-    const m = mod(`pericia.${id}`);
+    const m = mod(`pericia.${id}`) + mod("pericias");
+    // Penalidades dos atributos: cada fonte conta uma vez só (a mais severa entre os atributos da perícia)
+    const porFonte = new Map();
+    for (const a of atrs) {
+      for (const x of penalAtributo[a] ?? []) {
+        const atual = porFonte.get(x.fonte);
+        if (atual === undefined || x.valor < atual) porFonte.set(x.fonte, x.valor);
+      }
+    }
+    const penalAtrs = [...porFonte.entries()].map(([fonte, valor]) => ({ fonte, valor }));
+    const penalProprio = penalPericia[id] ?? [];
+    const testeFontes = [...fontesTestes, ...penalAtrs, ...penalProprio];
+    const testeMod = penalTestesTotal + somaLista(penalAtrs) + somaLista(penalProprio);
+    const total = pontos + valorAtributo + outros + m;
     return {
       id, nome: p.nome || id, atributos: atrs,
       sugestoes: (Array.isArray(p.sugestoes) ? p.sugestoes : []).filter(a => ATRIBUTOS[a]),
       atributoAbrev: atrs.length ? atrs.map(a => ATRIBUTOS[a].abrev).join(" + ") : "—",
       pontos, outros, valorAtributo, mod: m,
       bonusProprio: pontos + outros + m,
-      total: pontos + valorAtributo + outros + m,
-      acimaLimite: pontos > limitePericia, fontes: fontes(`pericia.${id}`)
+      total, testeMod, testeFontes, testeTotal: total + testeMod,
+      desvantagem: [...(desv.pericias[id] ?? [])], vantagem: [...(vant.pericias[id] ?? [])],
+      bloqueada: [...(bloqueios.pericias[id] ?? [])],
+      acimaLimite: pontos > limitePericia, fontes: [...fontes(`pericia.${id}`), ...fontes("pericias")]
     };
   }).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const periciaPorId = Object.fromEntries(pericias.map(p => [p.id, p]));
 
   // Recursos
   const recursos = {};
-  {
-    let max = num(hp.max) + mod("recurso.pv");
-    const motivos = [];
-    if (exaustao >= 4) { max = Math.floor(max / 2); motivos.push("Exaustão 4"); }
-    recursos.pv = {
-      id: "pv", ...RECURSOS.pv, value: num(hp.value), max, maxFonte: hp.maxFonte ?? "",
-      temp: num(hp.temp), mod: mod("recurso.pv"), fontes: fontes("recurso.pv"), motivos
-    };
-  }
+  recursos.pv = {
+    id: "pv", ...RECURSOS.pv, value: num(hp.value), max: num(hp.max) + mod("recurso.pv"), maxFonte: hp.maxFonte ?? "",
+    temp: num(hp.temp), mod: mod("recurso.pv"), fontes: fontes("recurso.pv"), motivos: []
+  };
   for (const id of ["pm", "pe", "ps"]) {
     const r = d.recursos?.[id] ?? {};
     recursos[id] = {
@@ -324,52 +684,35 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
   for (const r of Object.values(recursos)) {
     r.pct = r.max > 0 ? limitar(r.value / r.max, 0, 1) : 0;
     r.maxDiferente = r.max !== num(r.id === "pv" ? hp.maxFonte : r.maxFonte);
+    r.semRecuperar = recuperacao.sem[r.id] ?? [];
+    r.recuperaMetade = recuperacao.metade[r.id] ?? [];
   }
 
-  // CA
-  const ca = { base: int(d.ca?.base, 10), bonus: int(d.ca?.bonus), mod: mod("ca"), fontes: fontes("ca") };
-  ca.total = ca.base + ca.bonus + ca.mod;
+  // CA (Defesa)
+  const ca = { base: int(d.ca?.base, 10), bonus: int(d.ca?.bonus), mod: mod("ca"), fontes: [...fontes("ca"), ...penal.defesa], penal: somaLista(penal.defesa) };
+  ca.total = ca.base + ca.bonus + ca.mod + ca.penal;
 
   // Deslocamento
-  const deslocamento = { base: num(d.deslocamento?.base, 9), mod: mod("deslocamento"), fontes: fontes("deslocamento"), motivos: [] };
-  let mult = 1;
-  for (const c of efetivas) {
-    if (c.efeitos.deslocamentoMult === undefined) continue;
-    mult = Math.min(mult, c.efeitos.deslocamentoMult);
-    deslocamento.motivos.push(c.label);
-  }
-  if (coma) { mult = 0; deslocamento.motivos.push("Coma"); }
-  else if (exaustao >= 5) { mult = 0; deslocamento.motivos.push("Exaustão 5"); }
-  else if (exaustao >= 2) { mult = Math.min(mult, 0.5); deslocamento.motivos.push("Exaustão 2"); }
-  deslocamento.mult = mult;
-  deslocamento.final = arredondar(Math.max(0, deslocamento.base + deslocamento.mod) * mult, 2);
+  const deslocamento = { base: num(d.deslocamento?.base, 9), mod: mod("deslocamento"), fontes: fontes("deslocamento"), motivos: [...new Set(deslMotivos)] };
+  deslocamento.mult = deslMult;
+  deslocamento.final = arredondar(Math.max(0, deslocamento.base + deslocamento.mod) * deslMult, 2);
   deslocamento.reduzido = deslocamento.final < deslocamento.base + deslocamento.mod;
 
   // Exaustão
-  const diasExtra = Math.max(0, exaustao - 6) * 2;
+  const atual = EXAUSTAO.find(e => e.nivel === exaustao) ?? null;
   const exaustaoInfo = {
-    nivel: exaustao, coma, diasExtra,
-    formulaComa: diasExtra ? `1d6 + ${diasExtra}` : "1d6",
-    efeitos: EXAUSTAO.filter(e => e.nivel <= Math.min(exaustao, 6)),
-    pips: EXAUSTAO.map(e => ({ nivel: e.nivel, ativo: exaustao >= e.nivel, texto: e.texto }))
+    nivel: exaustao, nome: atual?.nome ?? "", colapso: exaustao >= 5, morte: exaustao >= EXAUSTAO_MAX,
+    efeitos: EXAUSTAO.filter(e => e.nivel <= exaustao),
+    pips: EXAUSTAO.map(e => ({ nivel: e.nivel, nome: e.nome, ativo: exaustao >= e.nivel, texto: e.texto }))
   };
 
-  // Desvantagens
-  const desvantagens = { testes: [], ataques: [], resistencias: [] };
-  for (const c of efetivas) {
-    if (c.efeitos.desvantagemTestes) desvantagens.testes.push(c.label);
-    if (c.efeitos.desvantagemAtaques) desvantagens.ataques.push(c.label);
-  }
-  if (exaustao >= 1) desvantagens.testes.push("Exaustão 1");
-  if (exaustao >= 3) { desvantagens.ataques.push("Exaustão 3"); desvantagens.resistencias.push("Exaustão 3"); }
-
-  // Bloqueios
-  const bloqueios = { acoes: {}, requisitos: {} };
-  for (const c of efetivas) {
-    for (const a of c.efeitos.bloqueiaAcoes ?? []) (bloqueios.acoes[a] ??= []).push(c.label);
-    for (const r of c.efeitos.bloqueiaRequisitos ?? []) (bloqueios.requisitos[r] ??= []).push(c.label);
-  }
-  if (coma) for (const a of ACOES_BLOQUEADAS_COMA) (bloqueios.acoes[a] ??= []).push("Coma");
+  // Desvantagens (as condições mandam; vantagem e desvantagem se anulam na rolagem)
+  const desvantagens = {
+    testes: [...new Set(desv.testes)], ataques: [...new Set(desv.ataques)], ataquesMagicos: [...new Set(desv.ataquesMagicos)],
+    iniciativa: [...new Set([...desv.testes, ...desv.iniciativa])], resistencias: [...new Set([...desv.resistencias])],
+    dano: [...new Set(desv.dano)], pericias: desv.pericias
+  };
+  const vantagens = { testes: [...new Set(vant.testes)], ataques: [...new Set(vant.ataques)], pericias: vant.pericias };
 
   // Defesas
   const defesas = Object.entries(DEFESAS).map(([id, def]) => {
@@ -382,13 +725,25 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
     };
   });
 
-  // Iniciativa
+  // Iniciativa (é um teste de Destreza)
   const iniciativa = {
     fonte: ATRIBUTOS.destreza.label,
     base: atributos.destreza.total,
-    bonus: int(d.iniciativa?.bonus), mod: mod("iniciativa"), fontes: fontes("iniciativa")
+    bonus: int(d.iniciativa?.bonus), mod: mod("iniciativa"), fontes: fontes("iniciativa"),
+    testeMod: atributos.destreza.testeMod, testeFontes: atributos.destreza.testeFontes,
+    zero: especiais.iniciativaZero
   };
   iniciativa.total = iniciativa.base + iniciativa.bonus + iniciativa.mod;
+  iniciativa.testeTotal = iniciativa.total + iniciativa.testeMod;
+
+  // Ataques (valem para todos)
+  const ataquesGerais = {
+    penal: somaLista(penal.ataques) + mod("acerto"), fontes: [...penal.ataques, ...fontes("acerto")],
+    distancia: somaLista(penal.distancia), fontesDistancia: penal.distancia,
+    dano: somaLista(penal.dano) + mod("danoAtaque"), fontesDano: [...penal.dano, ...fontes("danoAtaque")],
+    danoExtra: especiais.danoAtaques, danoMult: especiais.danoMult,
+    bloqueados: [...new Set(bloqueios.ataques)]
+  };
 
   // Ações do turno
   const a = d.acoes ?? {};
@@ -397,9 +752,12 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
     defesas: limitar(int(a.defesas), 0, REGRAS.maxDefesasPorRodada),
     especiais: ["lendaria", "mitica", "arcaica"].map(id => ({
       id, label: ACOES[id].label, value: int(a[id]?.value), max: int(a[id]?.max)
-    }))
+    })),
+    limite: acoesMax, limiteFontes: acoesMaxFontes
   };
   acoes.temEspeciais = acoes.especiais.some(e => e.max > 0);
+  acoes.usadas = ["padrao", "bonus", "movimento"].filter(id => acoes[id]).length;
+  acoes.esgotadas = acoesMax !== null && acoes.usadas >= acoesMax;
 
   // Progressão
   const pontos = { pt: int(d.pontos?.pt), pev: int(d.pontos?.pev), ph: int(d.pontos?.ph) };
@@ -412,6 +770,14 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
   };
   progressao.podeSubir1 = progressao.custo1 !== null && pontos.pev >= progressao.custo1 && nivelTotal < REGRAS.nivelMaxTotal;
   progressao.podeSubir2 = progressao.custo2 !== null && pontos.pev >= progressao.custo2 && nivelTotal < REGRAS.nivelMaxTotal;
+
+  // Resistências, imunidades e vulnerabilidades reunidas (tags + itens + bênçãos + condições)
+  const tags = {
+    resistencias: [...(d.resistencias ?? []).filter(Boolean).map(t => ({ tipo: t, fonte: "" })), ...tagsItens.resistencias, ...resistenciasExtra],
+    imunidades: imunidadesTags,
+    vulnerabilidades: [...(d.vulnerabilidades ?? []).filter(Boolean).map(t => ({ tipo: t, fonte: "" })), ...tagsItens.vulnerabilidades],
+    reducoes
+  };
 
   return {
     nivelTotal, atributos, gruposAtributo,
@@ -426,24 +792,69 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {} }) {
       limite: limitePericia, excedido: gastoPericias > disponivelPericias
     },
     recursos, ca, deslocamento, exaustao: exaustaoInfo,
-    condicoes, condicoesAtivas: condicoes.filter(c => c.ativa),
-    desvantagens, bloqueios, defesas, iniciativa, acoes, pontos, progressao, mods
+    condicoes, condicoesAtivas: condicoes.filter(c => c.ativa || c.automatica), condicoesDiretas: [...diretas],
+    combinacoes, penalidades: {
+      testes: { total: penalTestesTotal, fontes: fontesTestes },
+      ataques: { total: ataquesGerais.penal, fontes: ataquesGerais.fontes },
+      distancia: { total: ataquesGerais.distancia, fontes: penal.distancia },
+      dano: { total: ataquesGerais.dano, fontes: ataquesGerais.fontesDano },
+      defesa: { total: ca.penal, fontes: penal.defesa },
+      atributos: penalAtributo, pericias: penalPericia
+    },
+    desvantagens, vantagens, bloqueios, recuperacao, dots, turnoEfeitos, vulneraveis, avisos, especiais,
+    ataquesGerais, tags, bencaos, defesas, iniciativa, acoes, pontos, progressao, mods
   };
 }
 
 /** Texto curto do que uma condição faz, para mostrar no cartão. */
 export function resumirEfeitos(efeitos = {}) {
   const partes = [];
+  const sinal = v => (v > 0 ? `+${v}` : `−${Math.abs(v)}`);
+  const pena = [["testes", "testes"], ["ataques", "ataques"], ["distancia", "ataques à distância"], ["dano", "dano"], ["defesa", "Defesa"]];
+  const iguais = pena.filter(([k]) => num(efeitos[k]));
+  if (iguais.length && iguais.every(([k]) => efeitos[k] === efeitos[iguais[0][0]])) {
+    partes.push(`${sinal(efeitos[iguais[0][0]])} em ${iguais.map(([, l]) => l).join(", ")}`);
+  } else {
+    for (const [k, l] of iguais) partes.push(`${sinal(efeitos[k])} em ${l}`);
+  }
+  const atrs = Object.entries(efeitos.atributos ?? {});
+  if (atrs.length) {
+    const valores = [...new Set(atrs.map(([, v]) => v))];
+    if (valores.length === 1) partes.push(`${sinal(valores[0])} em testes de ${atrs.map(([a]) => ATRIBUTOS[a]?.label ?? a).join(", ")}`);
+    else for (const [a, v] of atrs) partes.push(`${sinal(v)} em ${ATRIBUTOS[a]?.label ?? a}`);
+  }
+  for (const [p, v] of Object.entries(efeitos.pericias ?? {})) partes.push(`${sinal(v)} em ${p === "percepcao" ? "Percepção" : p}`);
+  if (efeitos.desvTestes) partes.push("Desvantagem em testes");
+  if (efeitos.desvAtaques) partes.push("Desvantagem em ataques");
+  if (efeitos.desvAtaquesMagicos) partes.push("Desvantagem em ataques mágicos");
+  if (efeitos.desvIniciativa) partes.push("Desvantagem na iniciativa");
+  for (const p of efeitos.desvPericias ?? []) partes.push(`Desvantagem em ${p === "percepcao" ? "Percepção" : p}`);
   if (efeitos.deslocamentoMult === 0) partes.push("Deslocamento 0");
-  else if (efeitos.deslocamentoMult !== undefined) partes.push(`Deslocamento ×${efeitos.deslocamentoMult}`);
-  if (efeitos.desvantagemTestes) partes.push("Desvantagem em testes");
-  if (efeitos.desvantagemAtaques) partes.push("Desvantagem em ataques");
+  else if (efeitos.deslocamentoMult !== undefined) partes.push(efeitos.deslocamentoMult === 0.5 ? "Deslocamento ÷2" : `Deslocamento ×${efeitos.deslocamentoMult}`);
   const acoes = efeitos.bloqueiaAcoes ?? [];
   if (acoes.length >= 8) partes.push("Sem ações");
   else if (acoes.length) partes.push(`Sem ${acoes.map(a => ACOES[a]?.curto ?? a).join(", ")}`);
   const reqs = efeitos.bloqueiaRequisitos ?? [];
   if (reqs.length) partes.push(`Bloqueia: ${reqs.map(r => REQUISITOS[r]?.label ?? r).join(", ")}`);
-  for (const m of efeitos.mods ?? []) partes.push(`${m.alvo} ${m.valor > 0 ? "+" : ""}${m.valor}`);
+  if (efeitos.bloqueiaMagias) partes.push("Sem magias");
+  if (efeitos.bloqueiaMana) partes.push("Sem poderes de mana");
+  if (efeitos.bloqueiaAtaques) partes.push("Sem ataques");
+  if (efeitos.bloqueiaOrigens?.length) partes.push("Sem habilidades raciais e de arquétipo");
+  if (efeitos.semRecuperar?.length) partes.push(`Não recupera ${efeitos.semRecuperar.map(r => RECURSOS[r]?.abrev ?? r).join(", ")}`);
+  if (efeitos.recuperacaoMetade?.length) partes.push(`Recupera ½ ${efeitos.recuperacaoMetade.map(r => RECURSOS[r]?.abrev ?? r).join(", ")}`);
+  if (efeitos.semDescansoCurto) partes.push("Sem descanso curto");
+  for (const dot of efeitos.dot ?? []) partes.push(`−${dot.formula} ${RECURSOS[dot.recurso]?.abrev ?? "PV"} por turno${dot.opcional ? " (se valer)" : ""}`);
+  if (efeitos.turno === "insano") partes.push("Rola 1d6 no início do turno");
+  for (const t of efeitos.vulneravel ?? []) partes.push(`${t} ×2`);
+  for (const t of efeitos.anulaVulnerabilidade ?? []) partes.push(`Anula ${t} ×2`);
+  if (efeitos.suspendeBencaos) partes.push("Suspende bênçãos");
+  for (const m of efeitos.mods ?? []) {
+    const alvo = m.alvo === "recurso.pv" ? "PV máx." : m.alvo;
+    partes.push(`${alvo} ${m.valor > 0 ? "+" : "−"}${Math.abs(m.valor)}`);
+  }
+  if (efeitos.implica?.length) {
+    partes.push(`Fica ${efeitos.implica.map(id => CONDICAO_POR_ID.get(id)?.label ?? id).join(", ")}`);
+  }
   return partes;
 }
 
@@ -518,21 +929,40 @@ export function contarEfeitos(melhorias, formaId) {
   return melhorias.filter(m => m.efeito && (!formaId || m.forma === formaId)).length;
 }
 
+/** A forma é ofensiva? (ataque ou dano que não seja cura) */
+export function formaOfensiva(forma) {
+  if (!forma) return false;
+  if (forma.teste?.tipo === "ataque") return true;
+  return !!forma.dano?.formula && !/cura/i.test(forma.dano?.tipo ?? "");
+}
+
+/** Custo real de uma forma (Mana Corrompida e afins somam PM às magias). */
+export function custoEfetivo(forma, ficha, tipo = "habilidade") {
+  if (!forma || forma.custo?.recurso === "nenhum") return { recurso: "nenhum", valor: 0, extra: 0 };
+  const extra = tipo === "magia" && forma.custo.recurso === "pm" ? (ficha?.especiais?.custoExtraMagia?.valor ?? 0) : 0;
+  return { recurso: forma.custo.recurso, valor: Math.max(0, int(forma.custo.valor)) + extra, extra };
+}
+
 /**
  * Verifica se uma forma pode ser usada agora e se respeita os limites da raridade.
+ * `poder` informa o tipo (habilidade/magia) e a origem, para bloqueios de magia e de origem.
  * @returns {{bloqueada:boolean, motivos:string[], semRecurso:boolean, excedeDano:boolean, maxDano:number|null, teto:number|null}}
  */
-export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [], dadosRolagem = {} } = {}) {
+export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [], dadosRolagem = {}, poder = {} } = {}) {
   const motivos = [];
+  const b = ficha.bloqueios ?? {};
   if (forma && forma.acao !== "passiva") {
-    motivos.push(...(ficha.bloqueios.acoes[forma.acao] ?? []));
+    motivos.push(...(b.acoes?.[forma.acao] ?? []));
     for (const [req, ligado] of Object.entries(forma.requisitos ?? {})) {
-      if (ligado) motivos.push(...(ficha.bloqueios.requisitos[req] ?? []));
+      if (ligado) motivos.push(...(b.requisitos?.[req] ?? []));
     }
+    if (poder.tipo === "magia") motivos.push(...(b.magias ?? []));
+    if (poder.origem) motivos.push(...(b.origens?.[poder.origem] ?? []));
+    if (forma.custo?.recurso === "pm" && forma.custo?.valor > 0) motivos.push(...(b.mana ?? []));
+    if (formaOfensiva(forma)) motivos.push(...(b.ataques ?? []));
   }
-  const recurso = forma?.custo?.recurso;
-  const valor = forma?.custo?.valor ?? 0;
-  const atual = recurso && recurso !== "nenhum" ? ficha.recursos[recurso]?.value ?? 0 : null;
+  const custo = custoEfetivo(forma, ficha, poder.tipo);
+  const atual = custo.recurso !== "nenhum" ? ficha.recursos?.[custo.recurso]?.value ?? 0 : null;
   const maxDano = forma?.dano?.formula ? maxFormula(forma.dano.formula, dadosRolagem) : null;
   const teto = tetoDano(raridade);
   const efeitosUsados = forma ? contarEfeitos(melhorias, forma.id) : 0;
@@ -540,7 +970,8 @@ export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [],
   return {
     bloqueada: motivos.length > 0,
     motivos: [...new Set(motivos)],
-    semRecurso: atual !== null && valor > atual,
+    semRecurso: atual !== null && custo.valor > atual,
+    custo,
     maxDano, teto,
     excedeDano: maxDano !== null && teto !== null && maxDano > teto,
     efeitosUsados, limiteEfeitos,
@@ -548,9 +979,9 @@ export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [],
   };
 }
 
-export function textoCusto(forma) {
-  if (!forma || forma.custo.recurso === "nenhum" || !forma.custo.valor) return "Sem custo";
-  return `${forma.custo.valor} ${CUSTO_RECURSOS[forma.custo.recurso].sigla}`;
+export function textoCusto(forma, extra = 0) {
+  if (!forma || forma.custo.recurso === "nenhum" || (!forma.custo.valor && !extra)) return "Sem custo";
+  return `${forma.custo.valor + extra} ${CUSTO_RECURSOS[forma.custo.recurso].sigla}${extra ? ` (+${extra})` : ""}`;
 }
 
 /** Contagem por raridade, separando habilidades e magias. */
@@ -700,7 +1131,7 @@ export function valorEmCobre(moedas = {}) {
 export function decompor(cobre) {
   const out = {};
   let resto = Math.max(0, Math.floor(num(cobre)));
-  for (const c of MOEDAS) {
+  for (const c of MOEDAS_DESC) {
     out[c.id] = Math.floor(resto / c.valor);
     resto -= out[c.id] * c.valor;
   }
@@ -721,17 +1152,17 @@ export function pagarMoedas(moedas, custo) {
   let resto = Math.max(0, Math.floor(num(custo)));
   if (!resto) return m;
   if (valorEmCobre(m) < resto) return null;
-  for (const c of MOEDAS) {
+  for (const c of MOEDAS_DESC) {
     const n = Math.min(m[c.id], Math.floor(resto / c.valor));
     m[c.id] -= n;
     resto -= n * c.valor;
   }
   if (resto > 0) {
-    const quebrar = [...MOEDAS].reverse().find(c => m[c.id] > 0 && c.valor > resto);
+    const quebrar = MOEDAS.find(c => m[c.id] > 0 && c.valor > resto);
     if (!quebrar) return null;
     m[quebrar.id] -= 1;
     let troco = quebrar.valor - resto;
-    for (const c of MOEDAS) {
+    for (const c of MOEDAS_DESC) {
       if (c.valor >= quebrar.valor) continue;
       const n = Math.floor(troco / c.valor);
       m[c.id] += n;
@@ -741,10 +1172,10 @@ export function pagarMoedas(moedas, custo) {
   return m;
 }
 
-/** "1 JK, 250 PL, 3 PO" (só as moedas que aparecem). */
+/** "1 DR, 250 PL, 3 PO" (só as moedas que aparecem, da maior para a menor). */
 export function formatarMoedas(cobre) {
   const partes = decompor(cobre);
-  const texto = MOEDAS.filter(c => partes[c.id]).map(c => `${partes[c.id].toLocaleString("pt-BR")} ${c.abrev}`);
+  const texto = MOEDAS_DESC.filter(c => partes[c.id]).map(c => `${partes[c.id].toLocaleString("pt-BR")} ${c.abrev}`);
   return texto.length ? texto.join(", ") : "0 PC";
 }
 

@@ -1,7 +1,8 @@
-<nav class="epm-nav" aria-label="Seções da ficha">
+<nav class="epm-nav{{#if edicao}} reordenavel{{/if}}" aria-label="Seções da ficha">
   {{#each abas}}
-  <button type="button" class="epm-nav-item{{#if ativa}} active{{/if}}" data-action="aba" data-group="primary" data-tab="{{this.id}}" title="{{this.label}}">
-    <i class="{{this.icone}}" aria-hidden="true"></i><span>{{this.label}}</span>
+  <button type="button" class="epm-nav-item{{#if ativa}} active{{/if}}{{#if soEdicao}} so-edicao{{/if}}" data-action="aba" data-group="primary" data-tab="{{this.id}}" data-aba-id="{{this.id}}" title="{{#if titulo}}{{this.titulo}}{{else}}{{this.label}}{{/if}}{{#if @root.edicao}} (arraste para mudar a ordem){{/if}}" {{#if @root.edicao}}draggable="true"{{/if}}>
+    <i class="{{this.icone}}" aria-hidden="true"></i><span>{{this.label}}</span>{{#if @root.edicao}}<i class="fa-solid fa-grip-vertical epm-nav-alca" aria-hidden="true"></i>{{/if}}
   </button>
   {{/each}}
+  {{#if edicao}}<p class="epm-nav-dica">Arraste as abas para mudar a ordem.</p>{{/if}}
 </nav>

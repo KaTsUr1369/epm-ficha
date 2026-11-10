@@ -9,6 +9,26 @@ export function registrarAjustes() {
     scope: "world", config: true, type: String, requiresReload: true, default: "substituir",
     choices: { substituir: "Só as condições EPM", adicionar: "EPM junto com as do D&D 5e" }
   });
+  reg("condicoesHudTodas", {
+    name: "Todas as condições no HUD do token",
+    hint: "Desligado: o HUD do token mostra só as 43 condições básicas (Lento, Cego, Caído…). Ligado: mostra as 131. Na ficha todas aparecem sempre.",
+    scope: "world", config: true, type: Boolean, requiresReload: true, default: false
+  });
+  reg("afinidadeSoMestre", {
+    name: "Só o Mestre muda a afinidade",
+    hint: "A afinidade revela partes do background dos outros personagens. Ligado: jogadores veem o medidor, mas só o Mestre muda.",
+    scope: "world", config: true, type: Boolean, default: true
+  });
+  reg("relacaoMutua", {
+    name: "Conectar relações nas duas fichas",
+    hint: "Ao conectar dois personagens, cria a relação também na ficha do outro (quando quem conecta pode editar as duas).",
+    scope: "world", config: true, type: Boolean, default: true
+  });
+  reg("avisoFichaPadrao", {
+    name: "Avisar se a ficha padrão não for a EPM",
+    hint: "Ao entrar no mundo, o Mestre recebe um aviso se os personagens estiverem abrindo a ficha do D&D 5e.",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   reg("modoLimites", {
     name: "Limites de raridade",
     hint: "Épica 4, Lendária 3, Única 2. Separados: habilidades e magias contam cada uma o seu limite. Somados: dividem o mesmo limite.",
@@ -48,7 +68,11 @@ export function ajustes() {
     modoLimites: ler("modoLimites", "separados"),
     bloquearLimites: ler("bloquearLimites", true),
     formulaTeste: ler("formulaTeste", "1d20"),
-    marcarAcoes: ler("marcarAcoes", true)
+    marcarAcoes: ler("marcarAcoes", true),
+    condicoesHudTodas: ler("condicoesHudTodas", false),
+    afinidadeSoMestre: ler("afinidadeSoMestre", true),
+    relacaoMutua: ler("relacaoMutua", true),
+    avisoFichaPadrao: ler("avisoFichaPadrao", true)
   };
 }
 

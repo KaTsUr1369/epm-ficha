@@ -1,34 +1,80 @@
 <section class="tab epm-aba epm-relacoes {{cls.relacoes}}" data-group="primary" data-tab="relacoes">
   <header class="epm-aba-topo">
-    <p class="epm-dica">Arraste um personagem da barra lateral para cá{{#if edicao}}, ou crie uma relação à mão{{/if}}.</p>
-    {{#if edicao}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaRelacao"><i class="fa-solid fa-plus"></i> Nova relação</button>{{/if}}
+    <p class="epm-dica">Conecte um personagem pela lista ou arraste-o da barra lateral para cá: nome e imagem vêm da ficha dele. Conforme a afinidade sobe, partes do background dele são reveladas.</p>
+    <div class="epm-aba-acoes">
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="conectarRelacao"><i class="fa-solid fa-link"></i> Conectar personagem</button>{{/if}}
+      {{#if isGM}}<button type="button" class="epm-botao" data-action="relacaoMultipla" title="Mudar a afinidade de vários personagens com alguém de uma vez"><i class="fa-solid fa-people-group"></i> Relação múltipla</button>{{/if}}
+      {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaRelacao" title="Relação com alguém que não tem ficha"><i class="fa-solid fa-plus"></i> Sem ficha</button>{{/if}}
+    </div>
   </header>
+  {{#unless podeAfinidade}}{{#if editavel}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> A afinidade é definida pelo Mestre.</p>{{/if}}{{/unless}}
   {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
   <div class="epm-relacoes-grade">
     {{#each relacoes}}
-    <article class="epm-relacao" data-relacao="{{this.id}}">
-      <img class="epm-relacao-img" src="{{this.img}}" alt="" {{#if uuid}}data-action="abrirRelacao" data-uuid="{{this.uuid}}" title="Abrir ficha"{{/if}} />
-      <div class="epm-relacao-corpo">
-        {{#if @root.edicao}}
-        <div class="epm-relacao-topo">
-          <input type="text" class="epm-relacao-nome" name="flags.epm-ficha.relacoes.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome" aria-label="Nome" />
-          <select name="flags.epm-ficha.relacoes.{{this.id}}.tipo" aria-label="Tipo de relação">{{#each opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
-          <button type="button" class="epm-icone-botao perigo" data-action="excluirRelacao" data-relacao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+    <article class="epm-relacao{{#if aberta}} aberta{{/if}}{{#if perdido}} perdida{{/if}}" data-relacao="{{this.id}}">
+      <div class="epm-relacao-linha">
+        <img class="epm-relacao-img" src="{{this.img}}" alt="" {{#if ligado}}data-action="abrirRelacao" data-uuid="{{this.uuid}}" title="Abrir ficha"{{/if}} />
+        <div class="epm-relacao-corpo">
+          <div class="epm-relacao-topo-texto">
+            {{#if ligado}}
+            <span class="epm-relacao-nome">{{this.nome}}</span><i class="fa-solid fa-link epm-ligado" title="Ligado à ficha: nome e imagem se atualizam sozinhos"></i>
+            {{else if @root.edicao}}
+            <input type="text" class="epm-relacao-nome" name="flags.epm-ficha.relacoes.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome" aria-label="Nome" />
+            {{else}}
+            <span class="epm-relacao-nome">{{#if nome}}{{this.nome}}{{else}}Sem nome{{/if}}</span>
+            {{/if}}
+            {{#if @root.edicao}}
+            <select name="flags.epm-ficha.relacoes.{{this.id}}.tipo" aria-label="Tipo de relação">{{#each opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+            <button type="button" class="epm-icone-botao perigo" data-action="excluirRelacao" data-relacao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+            {{else}}
+            <span class="epm-tag">{{this.tipoLabel}}</span>
+            {{/if}}
+          </div>
+          {{#if perdido}}<p class="epm-aviso">A ficha ligada não foi encontrada (pode ter sido apagada).</p>{{/if}}
+          <div class="epm-afinidade" title="Afinidade {{epmSinal afinidade}}">
+            <span>Afinidade <strong>{{this.afinidadeLabel}}</strong> ({{epmSinal afinidade}})</span>
+            {{#if @root.podeAfinidade}}
+            <div class="epm-afinidade-controle">
+              <button type="button" class="epm-seta" data-action="ajustarAfinidade" data-relacao="{{this.id}}" data-delta="-1" aria-label="Diminuir afinidade"><i class="fa-solid fa-minus"></i></button>
+              <div class="epm-medidor"><span style="width: {{this.afinidadePct}}%"></span></div>
+              <button type="button" class="epm-seta" data-action="ajustarAfinidade" data-relacao="{{this.id}}" data-delta="1" aria-label="Aumentar afinidade"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            {{else}}
+            <div class="epm-medidor"><span style="width: {{this.afinidadePct}}%"></span></div>
+            {{/if}}
+          </div>
+          {{#if @root.edicao}}
+          <textarea name="flags.epm-ficha.relacoes.{{this.id}}.notas" rows="2" placeholder="Como se conheceram, o que um deve ao outro…" aria-label="Notas">{{this.notas}}</textarea>
+          {{else}}
+          {{#if notas}}<p class="epm-texto-livre">{{this.notas}}</p>{{/if}}
+          {{/if}}
         </div>
-        <label class="epm-afinidade">
-          <span>Afinidade <strong>{{this.afinidadeLabel}}</strong> ({{epmSinal afinidade}})</span>
-          <input type="range" min="{{@root.afinidade.min}}" max="{{@root.afinidade.max}}" step="1" name="flags.epm-ficha.relacoes.{{this.id}}.afinidade" value="{{this.afinidade}}" data-dtype="Number" />
-        </label>
-        <textarea name="flags.epm-ficha.relacoes.{{this.id}}.notas" rows="2" placeholder="Como se conheceram, o que um deve ao outro…" aria-label="Notas">{{this.notas}}</textarea>
-        {{else}}
-        <div class="epm-relacao-topo-texto"><span class="epm-relacao-nome">{{#if nome}}{{this.nome}}{{else}}Sem nome{{/if}}</span><span class="epm-tag">{{this.tipoLabel}}</span></div>
-        <div class="epm-afinidade" title="Afinidade {{epmSinal afinidade}}">
-          <span>Afinidade <strong>{{this.afinidadeLabel}}</strong></span>
-          <div class="epm-medidor"><span style="width: {{this.afinidadePct}}%"></span></div>
+      </div>
+      {{#if background}}
+      <div class="epm-relacao-bg">
+        <button type="button" class="epm-relacao-bg-botao" data-action="abrirBackground" data-relacao="{{this.id}}" aria-expanded="{{#if aberta}}true{{else}}false{{/if}}">
+          <i class="fa-solid fa-chevron-{{#if aberta}}down{{else}}right{{/if}}" aria-hidden="true"></i>
+          Background de {{this.nome}} <span class="epm-contador">{{this.liberadas}} parte{{#unless (epmEq liberadas 1)}}s{{/unless}} revelada{{#unless (epmEq liberadas 1)}}s{{/unless}}</span>
+        </button>
+        {{#if aberta}}
+        <div class="epm-relacao-partes">
+          {{#each background}}
+          <section class="epm-parte{{#if revelado}} revelada{{else}} trancada{{/if}}">
+            <h5>{{#unless revelado}}<i class="fa-solid fa-lock" aria-hidden="true"></i> {{/unless}}{{this.label}}{{#unless revelado}}<span class="epm-dica"> {{this.nivelTexto}}</span>{{/unless}}</h5>
+            {{#if revelado}}
+            {{#if conteudo.vazio}}<p class="epm-vazio">Nada escrito ainda.</p>{{/if}}
+            {{#if conteudo.campos}}<dl class="epm-campos-texto">{{#each conteudo.campos}}<div><dt>{{this.label}}</dt><dd>{{this.valor}}</dd></div>{{/each}}</dl>{{/if}}
+            {{#if conteudo.imagem}}<img class="epm-parte-img" src="{{conteudo.imagem}}" alt="" data-action="verImagem" data-src="{{conteudo.imagem}}" data-titulo="{{../nome}}" />{{/if}}
+            {{#if conteudo.local}}<p class="epm-dica">Local: {{conteudo.local}}</p>{{/if}}
+            {{#if conteudo.texto}}<p class="epm-texto-livre">{{conteudo.texto}}</p>{{/if}}
+            {{#if conteudo.html}}<div class="epm-descricao">{{{conteudo.html}}}</div>{{/if}}
+            {{/if}}
+          </section>
+          {{/each}}
         </div>
-        {{#if notas}}<p class="epm-texto-livre">{{this.notas}}</p>{{/if}}
         {{/if}}
       </div>
+      {{/if}}
     </article>
     {{/each}}
   </div>

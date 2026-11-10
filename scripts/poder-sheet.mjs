@@ -9,6 +9,7 @@ import { enriquecer, editorHTML, escapar } from "./helpers.mjs";
 import { listaPericias } from "./settings.mjs";
 import * as M from "./mecanicas.mjs";
 import { escolherImagem } from "./imagens.mjs";
+import { aplicarPaleta } from "./personalizacao.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
@@ -31,6 +32,13 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
   static PARTS = {
     corpo: { template: `${CAMINHO}/item/poder.hbs`, scrollable: [""] }
   };
+
+  /** O editor acompanha a cor da ficha do dono. */
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    const pers = this.item.actor?.flags?.[FLAG]?.personalizacao;
+    if (pers?.cor) aplicarPaleta(this.element, pers.cor, pers.brilho);
+  }
 
   async _prepareContext(options) {
     const base = await super._prepareContext(options);

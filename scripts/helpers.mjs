@@ -94,4 +94,5 @@ export function registrarHelpers(H) {
   H.registerHelper("epmPct", v => `${Math.round((Number(v) || 0) * 100)}%`);
   H.registerHelper("epmJoin", (arr, sep) => (Array.isArray(arr) ? arr.join(typeof sep === "string" ? sep : ", ") : ""));
   H.registerHelper("epmNumero", v => (Number(v) || 0).toLocaleString("pt-BR"));
+  H.registerHelper("epmMenor", (a, b) => Number(a) < Number(b));
 }

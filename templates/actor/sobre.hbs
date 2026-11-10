@@ -32,6 +32,24 @@
     </section>
   </div>
 
+  <section class="epm-painel epm-idiomas-painel">
+    <header class="epm-painel-titulo">
+      <h3>Idiomas</h3>
+      {{#if idiomasInfo.polyglot}}<span class="epm-contador epm-polyglot" title="A lista vem do módulo Polyglot e os idiomas marcados aqui valem para ele no chat"><i class="fa-solid fa-language" aria-hidden="true"></i> Polyglot</span>{{/if}}
+    </header>
+    <ul class="epm-tag-lista">
+      {{#each idiomas}}<li class="epm-chip epm-chip-idioma{{#if custom}} custom{{/if}}" {{#if custom}}title="Idioma escrito à mão (não está na lista{{#if @root.idiomasInfo.polyglot}} do Polyglot{{/if}})"{{/if}}>{{this.label}}{{#if @root.edicao}}<button type="button" data-action="removerIdioma" data-chave="{{this.key}}" data-rotulo="{{this.label}}" aria-label="Remover {{this.label}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}
+    </ul>
+    {{#unless idiomas.length}}<p class="epm-vazio">Nenhum idioma.</p>{{/unless}}
+    {{#if edicao}}
+    <div class="epm-idiomas-adicionar">
+      <input type="text" class="epm-tag-input" data-idioma-input="1" list="epm-idiomas-{{actor.id}}" placeholder="Escolha da lista ou digite e tecle Enter" aria-label="Adicionar idioma" />
+      <datalist id="epm-idiomas-{{actor.id}}">{{#each idiomasInfo.opcoes}}<option value="{{this.label}}"></option>{{/each}}</datalist>
+    </div>
+    <p class="epm-dica">{{#if idiomasInfo.polyglot}}Os idiomas da lista são os do Polyglot. Um idioma digitado que não existe nela fica como personalizado.{{else}}A lista vem do sistema. Com o módulo Polyglot ativo, ela passa a ser a do Polyglot.{{/if}}</p>
+    {{/if}}
+  </section>
+
   <section class="epm-painel epm-marca-painel">
     <header class="epm-painel-titulo"><h3>Marca</h3>{{#if edicao}}{{#if marca.imagem}}<button type="button" class="epm-link" data-action="removerImagemSobre" data-campo="imagemMarca">Remover imagem</button>{{/if}}{{/if}}</header>
     <div class="epm-marca-grade">
@@ -50,6 +68,20 @@
       </div>
     </div>
   </section>
+
+  {{#if edicao}}
+  <section class="epm-painel epm-revelacoes-painel">
+    <header class="epm-painel-titulo"><h3>Quem vê seu background</h3></header>
+    <p class="epm-dica">Personagens que têm uma relação com você leem estas partes quando a afinidade deles chega ao nível escolhido.</p>
+    <div class="epm-revelacoes-grade">
+      {{#each revelacoes}}
+      <label class="epm-campo"><span>{{this.label}}</span>
+        <select name="flags.epm-ficha.sobre.revelar.{{this.id}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+      </label>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
 
   {{#each textosSobre}}
   <section class="epm-painel epm-texto-longo">

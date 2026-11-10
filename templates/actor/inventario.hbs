@@ -6,10 +6,10 @@
     </header>
     <div class="epm-moedas">
       {{#each moedas}}
-      <label class="epm-moeda" style="--cor: {{this.cor}}" title="{{this.dica}}">
-        <span class="epm-moeda-disco" aria-hidden="true">{{this.abrev}}</span>
+      <label class="epm-moeda" style="--cor: {{this.cor}}" title="{{this.label}}: {{this.dica}}">
+        <img class="epm-moeda-img" src="{{this.img}}" alt="" />
         {{#if @root.edicao}}<input type="number" min="0" name="flags.epm-ficha.moedas.{{this.id}}" value="{{this.quantidade}}" aria-label="{{this.label}}" />{{else}}<span class="epm-moeda-valor">{{epmNumero quantidade}}</span>{{/if}}
-        <span class="epm-moeda-nome">{{this.label}}</span>
+        <span class="epm-moeda-nome">{{this.label}} <small>{{this.abrev}}</small></span>
       </label>
       {{/each}}
     </div>
@@ -18,8 +18,47 @@
       <button type="button" class="epm-botao" data-action="moedas" data-operacao="receber"><i class="fa-solid fa-plus"></i> Receber</button>
       <button type="button" class="epm-botao" data-action="moedas" data-operacao="pagar" title="Desconta e calcula o troco"><i class="fa-solid fa-minus"></i> Pagar</button>
       <button type="button" class="epm-botao" data-action="moedas" data-operacao="consolidar" title="Troca moedas pequenas por maiores (10 cobres viram 1 prata…)">Consolidar</button>
+      {{#if metadeDinheiro}}<span class="epm-dica epm-aviso-inline" title="{{this.metadeDinheiro}}"><i class="fa-solid fa-triangle-exclamation"></i> Metade do que receber some ({{this.metadeDinheiro}})</span>{{/if}}
     </div>
     {{/if}}
+  </section>
+
+  <section class="epm-mochilas-area" data-zona-inventario="mochilas">
+    <header class="epm-categoria-titulo">
+      <i class="{{categoriaMochilas.icone}}" aria-hidden="true"></i>
+      <h3>{{categoriaMochilas.label}}</h3>
+      <span class="epm-contador">{{mochilas.length}}</span>
+      {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="criarItem" data-tipo="{{categoriaMochilas.criar}}" data-nome="{{categoriaMochilas.novo}}"><i class="fa-solid fa-plus"></i> {{categoriaMochilas.novo}}</button>{{/if}}
+    </header>
+    {{#unless temMochilas}}<p class="epm-vazio">Nenhuma mochila. Crie uma{{#unless edicao}} no modo edição{{/unless}} ou arraste uma para a ficha; depois é só arrastar os itens para dentro dela.</p>{{/unless}}
+    <div class="epm-mochilas">
+      {{#each mochilas}}
+      <article class="epm-mochila{{#if aberta}} aberta{{/if}}{{#if cheia}} cheia{{/if}}" data-container-id="{{this.id}}" data-item-id="{{this.id}}" draggable="true" style="--cor: {{this.raridadeCor}}">
+        <header class="epm-mochila-topo">
+          <img class="epm-item-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{this.id}}" title="Trocar imagem"{{/if}} />
+          <button type="button" class="epm-mochila-nome" data-action="abrirMochila" data-item-id="{{this.id}}" aria-expanded="{{#if aberta}}true{{else}}false{{/if}}">
+            <i class="fa-solid fa-chevron-{{#if aberta}}down{{else}}right{{/if}}" aria-hidden="true"></i>
+            <span class="epm-item-titulo">{{this.name}}</span>
+            <span class="epm-item-dentro">{{this.qtdDentro}} {{#if (epmEq qtdDentro 1)}}item{{else}}itens{{/if}}, peso {{epmNumero pesoDentro}}{{#if capacidade}} de {{epmNumero capacidade}}{{/if}}</span>
+            {{#if resumoEfeitos.length}}<span class="epm-item-efeitos">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
+          </button>
+          <div class="epm-item-controles">
+            <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
+            {{#if @root.edicao}}
+            <button type="button" class="epm-icone-botao" data-action="editarItem" data-item-id="{{this.id}}" title="Abrir a ficha do item"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button type="button" class="epm-icone-botao perigo" data-action="excluirItem" data-item-id="{{this.id}}" title="Excluir (os itens de dentro voltam para o inventário)"><i class="fa-solid fa-trash"></i></button>
+            {{/if}}
+          </div>
+        </header>
+        {{#if aberta}}
+        <div class="epm-mochila-conteudo" data-container-id="{{this.id}}">
+          {{#unless conteudo.length}}<p class="epm-mochila-vazia">Arraste itens do inventário para cá.</p>{{/unless}}
+          <ol class="epm-itens">{{#each conteudo}}{{> "epm-item-linha"}}{{/each}}</ol>
+        </div>
+        {{/if}}
+      </article>
+      {{/each}}
+    </div>
   </section>
 
   <div class="epm-filtros" role="group" aria-label="Filtrar por raridade">
@@ -28,14 +67,24 @@
     {{#if temFiltro}}<button type="button" class="epm-link" data-action="filtroRaridade" data-raridade="">Mostrar todas</button>{{/if}}
     <span class="epm-peso" title="Peso total carregado"><i class="fa-solid fa-weight-hanging" aria-hidden="true"></i> {{epmNumero pesoTotal}}</span>
   </div>
+  {{#if edicao}}<p class="epm-dica epm-dica-ordem"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i> Arraste o título de uma categoria (ou use as setas) para mudar a ordem.{{#unless ordemCategoriasPadrao}} <button type="button" class="epm-link" data-action="restaurarOrdemCategorias">Restaurar ordem</button>{{/unless}}</p>{{/if}}
 
+  <datalist id="epm-sug-dano-{{actor.id}}">{{#each sugestoesDano}}<option value="{{this}}"></option>{{/each}}</datalist>
+  <div class="epm-categorias" data-zona-inventario="geral">
   {{#each categorias}}
   <section class="epm-categoria" data-categoria="{{this.id}}">
-    <header class="epm-categoria-titulo">
+    <header class="epm-categoria-titulo{{#if @root.edicao}} arrastavel{{/if}}" data-categoria-id="{{this.id}}" {{#if @root.edicao}}draggable="true"{{/if}}>
+      {{#if @root.edicao}}<i class="fa-solid fa-grip-vertical epm-alca" aria-hidden="true"></i>{{/if}}
       <i class="{{this.icone}}" aria-hidden="true"></i>
       <h3>{{this.label}}</h3>
       <span class="epm-contador">{{this.total}}</span>
-      {{#if @root.edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="criarItem" data-tipo="{{this.criar}}" data-nome="{{this.novo}}"><i class="fa-solid fa-plus"></i> {{this.novo}}</button>{{/if}}
+      {{#if @root.edicao}}
+      <span class="epm-ordem-botoes">
+        <button type="button" class="epm-icone-botao" data-action="moverCategoria" data-categoria="{{this.id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
+        <button type="button" class="epm-icone-botao" data-action="moverCategoria" data-categoria="{{this.id}}" data-dir="1" {{#if ultima}}disabled{{/if}} title="Descer"><i class="fa-solid fa-arrow-down"></i></button>
+      </span>
+      <button type="button" class="epm-botao epm-botao-sutil" data-action="criarItem" data-tipo="{{this.criar}}" data-nome="{{this.novo}}"><i class="fa-solid fa-plus"></i> {{this.novo}}</button>
+      {{/if}}
     </header>
     {{#if vazia}}<p class="epm-vazio">Nada aqui ainda. Arraste um item para a ficha{{#if @root.edicao}} ou crie um novo{{/if}}.</p>{{/if}}
     {{#if filtrada}}<p class="epm-vazio">Nenhum item com as raridades selecionadas.</p>{{/if}}
@@ -49,4 +98,5 @@
     {{/each}}
   </section>
   {{/each}}
+  </div>
 </section>

@@ -4,13 +4,12 @@
     <button type="button" class="epm-item-nome" data-action="expandirItem" data-item-id="{{this.id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">
       <span class="epm-item-titulo">{{this.name}}</span>
       {{#if eArma}}<span class="epm-item-dentro">{{ataque.periciaNome}} {{epmSinal ataque.acertoTotal}}, crítico {{ataque.critTexto}}</span>{{/if}}
-      {{#if containerNome}}<span class="epm-item-dentro">em {{this.containerNome}}</span>{{/if}}
-      {{#if conteudo}}<span class="epm-item-dentro">{{this.conteudo}} {{#if (epmEq conteudo 1)}}item{{else}}itens{{/if}} dentro</span>{{/if}}
+      {{#if resumoEfeitos.length}}<span class="epm-item-efeitos{{#unless efeitosAtivos}} inativos{{/unless}}" title="{{#if efeitosAtivos}}Bônus valendo{{else}}{{this.dicaAtivo}}{{/if}}">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
     </button>
     <span class="epm-raridade" title="Raridade">{{this.raridadeLabel}}</span>
     {{#if eArma}}
     <button type="button" class="epm-botao" data-action="atacar" data-tipo="arma" data-ref="{{this.id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano"><i class="fa-solid fa-dice-d20"></i> Atacar</button>
-    {{#if ataque.dano}}<button type="button" class="epm-dano" data-action="danoArma" data-item-id="{{this.id}}" title="Rolar só o dano">{{ataque.dano}}</button>{{/if}}
+    {{#if ataque.dano}}<button type="button" class="epm-dano" data-action="danoArma" data-item-id="{{this.id}}" title="Rolar só o dano ({{ataque.dano}})">{{ataque.danoBase}}</button>{{/if}}
     {{/if}}
     {{#if eConsumivel}}<button type="button" class="epm-botao" data-action="usarItem" data-item-id="{{this.id}}" title="Gasta 1 unidade e mostra no chat">Usar</button>{{/if}}
     <div class="epm-quantidade">
@@ -23,6 +22,7 @@
       {{#if equipavel}}<button type="button" class="epm-icone-botao{{#if equipado}} ativo{{/if}}" data-action="equiparItem" data-item-id="{{this.id}}" title="{{#if equipado}}Equipado (clique para tirar){{else}}Equipar{{/if}}" aria-pressed="{{#if equipado}}true{{else}}false{{/if}}"><i class="fa-solid fa-shirt"></i></button>{{/if}}
       <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{this.id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo da categoria){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
       <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
+      {{#if containerNome}}{{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="tirarDaMochila" data-item-id="{{this.id}}" title="Tirar de {{this.containerNome}}"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>{{/if}}{{/if}}
       {{#if @root.edicao}}
       <button type="button" class="epm-icone-botao" data-action="editarItem" data-item-id="{{this.id}}" title="Abrir a ficha do item"><i class="fa-solid fa-pen-to-square"></i></button>
       <button type="button" class="epm-icone-botao perigo" data-action="excluirItem" data-item-id="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
@@ -43,6 +43,49 @@
       <label class="epm-mini curto" title="No crítico, os dados da arma são multiplicados por este valor"><span>×crítico</span><input type="number" min="2" value="{{ataque.critMult}}" data-item-campo="flags.epm-ficha.critMult" data-item-id="{{this.id}}" /></label>
       {{/if}}
       {{#if eConsumivel}}<label class="epm-mini largo"><span>rolagem ao usar</span><input type="text" value="{{this.formulaUso}}" data-item-campo="flags.epm-ficha.formula" data-item-id="{{this.id}}" placeholder="2d4 + 2" /></label>{{/if}}
+    </div>
+    <div class="epm-efeitos-editor">
+      <span class="epm-rotulo">Bônus e efeitos <span class="epm-dica">({{this.dicaAtivo}})</span></span>
+      {{#each efeitos}}
+      <div class="epm-efeito-item" data-efeito="{{this.id}}">
+        <span class="epm-efeito-tipo">{{this.tipoLabel}}</span>
+        {{#if eMod}}
+        <select data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.alvo" data-item-id="{{../id}}" aria-label="O que muda">
+          <option value="">Escolha o que muda…</option>
+          {{#each grupos}}<optgroup label="{{this.grupo}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</optgroup>{{/each}}
+        </select>
+        <input type="number" step="any" value="{{this.valor}}" data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.valor" data-item-id="{{../id}}" aria-label="Valor" title="Valor (use negativo para penalidade, ex.: −1,5 m de deslocamento)" />
+        {{/if}}
+        {{#if eRd}}
+        <input type="number" min="0" value="{{this.valor}}" data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.valor" data-item-id="{{../id}}" aria-label="Quanto reduz" title="Quanto reduz" />
+        <input type="text" value="{{this.tipoDano}}" data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.tipoDano" data-item-id="{{../id}}" placeholder="tipos (vazio = todos)" list="epm-sug-dano-{{@root.actor.id}}" aria-label="Tipos de dano" />
+        {{/if}}
+        {{#if eTipoDano}}{{#unless eFormula}}
+        <input type="text" value="{{this.tipoDano}}" data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.tipoDano" data-item-id="{{../id}}" placeholder="tipo de dano ou condição" list="epm-sug-dano-{{@root.actor.id}}" aria-label="Tipo" />
+        {{/unless}}{{/if}}
+        {{#if eEm}}
+        <select data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.em" data-item-id="{{../id}}" aria-label="Em quê">
+          <option value="">Em quê…</option>
+          {{#each opcoesEm}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
+        </select>
+        {{/if}}
+        {{#if eCura}}
+        <select data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.recurso" data-item-id="{{../id}}" aria-label="Recurso">{{#each opcoesRecurso}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+        <select data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.quando" data-item-id="{{../id}}" aria-label="Quando">{{#each opcoesQuando}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+        {{/if}}
+        {{#if eFormula}}
+        <input type="text" value="{{this.formula}}" data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.formula" data-item-id="{{../id}}" placeholder="1d6 + 2" aria-label="Fórmula" />
+        {{#if eTipoDano}}<input type="text" value="{{this.tipoDano}}" data-item-campo="flags.epm-ficha.efeitos.{{this.id}}.tipoDano" data-item-id="{{../id}}" placeholder="tipo (Fogo…)" list="epm-sug-dano-{{@root.actor.id}}" aria-label="Tipo de dano" />{{/if}}
+        {{/if}}
+        <button type="button" class="epm-icone-botao perigo" data-action="removerEfeitoItem" data-item-id="{{../id}}" data-efeito="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      {{/each}}
+      <div class="epm-efeito-novo">
+        <select class="epm-efeito-novo-tipo" aria-label="Tipo de bônus" data-novo-efeito="{{this.id}}">
+          {{#each @root.tiposEfeitoItem}}<option value="{{this.id}}" title="{{this.dica}}">{{this.label}}</option>{{/each}}
+        </select>
+        <button type="button" class="epm-link" data-action="adicionarEfeitoItem" data-item-id="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Adicionar</button>
+      </div>
     </div>
     {{/if}}
     <div class="epm-descricao">{{#if descricao}}{{{this.descricao}}}{{else}}<p class="epm-vazio">Sem descrição.{{#if @root.edicao}} Use o lápis para escrever uma.{{/if}}</p>{{/if}}</div>

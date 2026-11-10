@@ -10,4 +10,9 @@
   {{#if critico}}<p class="epm-chat-critico">Crítico! Dados da arma ×{{this.mult}}.</p>{{/if}}
   {{#if htmlDano}}<div class="epm-chat-rolagem"><span class="epm-rotulo">Dano{{#if tipoDano}} ({{this.tipoDano}}){{/if}}</span>{{{this.htmlDano}}}</div>{{/if}}
   {{#each notas}}<p class="epm-chat-requisitos">{{this}}</p>{{/each}}
+  {{#if botoes.length}}
+  <div class="epm-chat-botoes">
+    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
+  </div>
+  {{/if}}
 </div>

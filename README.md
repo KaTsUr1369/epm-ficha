@@ -14,6 +14,33 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.4.0
+
+Esta versão junta o que tinha sido feito entre a 0.2.5 e a 0.3.0 (refeito a partir da 0.2.4) com o patch note novo.
+
+### Patch note
+
+- **Idiomas na aba Sobre.** O painel para adicionar e remover idiomas saiu de Condições e foi para Sobre (modo edição). Eles continuam aparecendo na caixa Idiomas da Principal.
+- **Polyglot.** Com o módulo Polyglot ativo, a lista de idiomas é a dele; sem ele, é a do D&D 5e. Os idiomas ficam no campo nativo do personagem (`system.traits.languages`), então o Polyglot já reconhece no chat. Um idioma digitado que não está na lista fica como personalizado. Idiomas das versões antigas são migrados sozinhos.
+- **Ordem das abas.** No modo edição, segure e arraste as abas da barra lateral. A aba Personalizar também tem a lista com setas e "Restaurar ordem".
+- **Relações.** "Conectar personagem" abre a lista de atores (com busca), ou arraste um ator da barra lateral. Nome e imagem vêm da ficha do parceiro e se atualizam sozinhos. A afinidade vai de −5 a +5 e, conforme sobe, revela partes do background do parceiro; cada jogador escolhe em Sobre → "Quem vê seu background" a afinidade que libera cada parte (ou "Nunca"). A relação pode ser criada nas duas fichas ao mesmo tempo.
+- **Relação múltipla (Mestre).** Um personagem ou NPC muda a afinidade com vários atores de uma vez (por exemplo, +1 com o grupo inteiro), criando a relação onde ela ainda não existe.
+- **Lista de Bênçãos e Maldições.** "Adicionar da lista" mostra as 100 bênçãos e 100 maldições do sistema, separadas por natureza (Divina, Caótica, Memética) e raridade (Boa, Épica, Lendária), com busca e as regras gerais. Na ficha cada uma tem frequência (livre, 1/turno, 1/combate, 1/dia, 1/semana, única), duração em turnos, botões Usar, Encerrar e Recarregar e cartão no chat. Parte dos efeitos é automática: bônus em atributos, resistências, imunidades, PV ao usar ou ao terminar, custo extra de magias, metade do dinheiro recebido, bloqueios, dano contínuo etc.
+- **Lista de Condições.** 131 condições (43 básicas e 88 do sistema) em 10 categorias, cada uma com ícone próprio, busca e filtro "Só ativas". Uma condição pode causar outra (aparece como automática), 26 combinações têm efeito próprio (Molhado + Enregelado → Congelado, por exemplo), há dano no início do turno, Insano rola a tabela, e as restrições de descanso e recuperação entram sozinhas. Os efeitos aparecem na Principal ao lado de cada atributo e perícia.
+- **Inventário.** Itens ganham efeitos: bônus ou penalidade em qualquer número da ficha (CA, deslocamento, atributo, perícia, acerto, dano…), redução de dano (RD), resistência, imunidade, vulnerabilidade, vantagem, desvantagem, cura (ao usar ou ao acertar) e dano extra. Armas e proteções valem quando equipadas; consumíveis, ao usar. As **Mochilas** ficam no topo como um segundo inventário: arraste itens para dentro, tire pelo botão e veja peso e capacidade. A ordem das categorias muda arrastando o título ou pelas setas (modo edição).
+- **Personalizar.** Aba nova, só no modo edição: roda de cores para escolher a cor base da ficha, traço de brilho, campo de cor em hex e 7 cores prontas. A cor vale também para as janelas de habilidades e magias do personagem.
+
+### Recuperado da 0.2.5 à 0.3.0
+
+- **Moedas:** Cobre, Prata, Ouro, Platina e **Dracmas** (1 Dracma = 1.000 Platinas), com imagens. As antigas Joias de Kan viram Dracmas sozinhas.
+- **Exaustão 1 a 6:** Leve, Moderada, Grave, Crítica, Colapso e Morte, sem dias de coma. O nível 6 pede confirmação e marca o personagem como morto.
+- **Aviso de ficha padrão:** se os personagens estiverem abrindo a ficha do D&D 5e, o Mestre recebe um aviso com o botão "Usar a Ficha EPM".
+
+### Mudanças de dados
+
+- As condições Amedrontado, Queimando e Eletrocutado viraram Apavorado, Em Chamas e Eletrizado; tokens e fichas antigos são atualizados ao abrir.
+- A ficha migra os dados para a versão 3 na primeira abertura (moedas, idiomas, condições renomeadas).
+
 ## Novidades da 0.2.4
 
 - Corrigido: a ficha não abria (erro "Failed to render template part sobre ... reading 'hash'"). Os templates chamavam sem querer o helper `editor` do Foundry; agora todos os campos são lidos com `this.`, o que também evita conflito com helpers de outros módulos.
@@ -45,16 +72,17 @@ Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para 
 
 ## Abas
 
-- **Principal:** PEv, PT e PH; condições, resistências e idiomas; atributos; perícias; progressão.
-- **Combate:** defesas, turno, exaustão, descansos, ataques e bônus de cena.
-- **Inventário:** carteira com Joias de Kan, Platina, Ouro, Prata e Cobre (receber, pagar com troco automático, consolidar), filtro por raridade e categorias Armas, Consumíveis, Armaduras, Ferramentas, Mochilas e Loot. Dentro de cada categoria, favoritos vêm primeiro e o resto é agrupado por raridade (Comum, Rara, Épica, Lendária, Mítica, Arcaica).
+- **Principal:** PEv, PT e PH; condições (com as automáticas, combinações e a lista de penalidades e bloqueios), resistências e RD, idiomas; atributos e perícias com as penalidades marcadas; progressão.
+- **Combate:** CA, deslocamento e iniciativa já com penalidades, defesas, turno (ações bloqueadas por condições), exaustão, descansos, ataques e bônus de cena.
+- **Inventário:** carteira com Cobre, Prata, Ouro, Platina e Dracmas (receber, pagar com troco automático, consolidar), mochilas, filtro por raridade e categorias Armas, Consumíveis, Armaduras, Ferramentas e Loot, na ordem que o dono quiser. Dentro de cada categoria, favoritos vêm primeiro e o resto é agrupado por raridade (Comum, Rara, Épica, Lendária, Mítica, Arcaica).
 - **Habilidades:** seções Comum, Rara, Épica, Lendária, Única e Passivas, com contador do limite de cada raridade.
 - **Magias:** sub-abas Truques e 1º a 6º Círculo.
-- **Sobre:** traços (idade, altura, olhos…), Tema, Marca e textos longos (história, personalidade…).
+- **Sobre:** traços (idade, altura, olhos…), Tema, aparência, idiomas, Marca, quem vê o background e textos longos (história, personalidade…).
 - **Anotações:** páginas criadas pelo jogador, cada uma de texto livre ou mapa mental.
-- **Condições:** condições clicáveis que mudam a ficha, exaustão e listas de resistências, vulnerabilidades, imunidades e idiomas.
-- **Bênçãos:** bênçãos e maldições com interruptor e modificadores que entram nos números da ficha.
-- **Relações:** personagens arrastados da barra lateral, com tipo de relação e afinidade.
+- **Condições:** as 131 condições por categoria, combinações, exaustão e listas de resistências, vulnerabilidades e imunidades.
+- **Bênçãos:** bênçãos e maldições da lista ou criadas à mão, com interruptor, usos e modificadores que entram nos números da ficha.
+- **Relações:** personagens conectados, afinidade e o background liberado de cada um.
+- **Personalizar** (modo edição): cor da ficha e ordem das abas.
 
 ## Regras automatizadas
 
@@ -64,8 +92,12 @@ Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para 
 - Criar ou aprender habilidades e magias cobra PH conforme a raridade e confere os limites (Épica 4, Lendária 3, Única 2). Arrastar uma habilidade ou magia de um compêndio pergunta se é "aprender".
 - Melhorias com PT seguem a tabela do sistema: dano é somado à fórmula, troca de ação muda a forma e o teto de dano e de efeitos da raridade é conferido antes de cobrar.
 - Formas: uma habilidade ou magia pode ter vários modos, cada um com ação, custo (PM, PE, PV ou PS), teste, dano e requisitos. Ao usar, o jogador escolhe a forma, o custo é descontado e um cartão vai para o chat com botões de rolagem.
-- Condições: Lento corta o deslocamento pela metade, Preso zera o deslocamento e bloqueia formas com requisito gestual ou de movimento, Silenciado bloqueia o verbal, Envenenado dá desvantagem em testes, e assim por diante. Imunidade com o mesmo nome da condição anula o efeito.
-- Exaustão 1 a 6+ com os efeitos do sistema, dias de coma rolados na ficha e botão de acordar (volta com Exaustão 3).
+- Condições: Lento corta o deslocamento pela metade, Preso zera o deslocamento e bloqueia formas com requisito gestual ou de movimento, Silenciado bloqueia o verbal, Envenenado dá desvantagem em testes, e assim por diante. Imunidade com o mesmo nome da condição anula o efeito. Uma penalidade de atributo vinda da mesma condição conta uma vez só em cada perícia.
+- Condições que causam dano no início do turno abrem uma janela no botão Novo turno (com opção de rolar ou pular quando o texto diz "pode"); Insano rola a tabela de comportamento.
+- Descansos respeitam as condições e maldições que impedem recuperar PV, PM ou PE, recuperam pela metade ou proíbem o descanso curto.
+- Bênçãos de 1/turno recarregam no Novo turno, as de 1/combate no fim do combate e as de 1/dia no descanso longo; durações em turnos contam sozinhas.
+- Efeitos de itens: o bônus aparece no nome do item e entra nos números; cura de arma aparece como botão no cartão do ataque.
+- Exaustão 1 a 6: 1 desvantagem em testes, ataques e dano; 2 −5 em testes e na Defesa; 3 sem Ação Bônus e Reação e deslocamento pela metade; 4 só uma ação por turno; 5 Colapso (incapacitado e inconsciente); 6 morte.
 - Defesas: Esquiva (CA + Acrobacia), Bloqueio (CA + Fortitude) e Contra-ataque (CA + Luta); cada uso conta uma ação do próximo turno, descontada no botão Novo turno.
 - Testes: 1d20 + valor (configurável). Shift rola com vantagem, Ctrl com desvantagem; desvantagens de condições e exaustão entram sozinhas. A iniciativa da ficha e a do Combat Tracker usam a perícia Iniciativa.
 - Recursos no cabeçalho aceitam `+5` e `-3` para somar ou tirar.
@@ -82,14 +114,25 @@ Itens com Active Effects podem mexer nos números da ficha usando chaves como `f
 
 ## Opções do módulo
 
-Em **Configurar opções → Escolhidos pelo Multiverso: Ficha**: condições no HUD do token, limites de raridade separados ou somados, bloqueio de limites para jogadores, dado dos testes e marcação automática de ações em combate.
+Em **Configurar opções → Escolhidos pelo Multiverso: Ficha**:
+
+- Condições no HUD do token (só EPM ou junto com as do D&D 5e) e se o HUD mostra só as 43 básicas ou todas as 131.
+- Só o Mestre muda a afinidade (ligado por padrão).
+- Conectar relações nas duas fichas (ligado por padrão).
+- Avisar se a ficha padrão não for a EPM.
+- Limites de raridade separados ou somados e bloqueio de limites para jogadores.
+- Dado dos testes e marcação automática de ações em combate.
+
+Para o Mestre, numa macro de script: `game.modules.get("epm-ficha").api.relacaoMultipla()` abre a Relação múltipla sem precisar abrir uma ficha.
 
 ## Publicar uma nova versão
 
 1. Faça commit das mudanças.
-2. Crie uma release no GitHub com a tag `vX.Y.Z` (por exemplo `v0.1.1`).
+2. Crie uma release no GitHub com a tag `vX.Y.Z` (por exemplo `v0.4.0`).
 3. A ação `.github/workflows/release.yml` gera `module.zip` e `module.json` com a versão e anexa os dois à release. O Foundry passa a oferecer a atualização.
 
 ## Créditos
 
-Fonte Cormorant Garamond (SIL Open Font License, ver `fonts/OFL.txt`).
+- Fonte Cormorant Garamond (SIL Open Font License, ver `fonts/OFL.txt`).
+- Ícones de condição do [game-icons.net](https://game-icons.net). Icons made by Lorc, Delapouite, Sbed, Skoll, PriorBlue, Carl Olsen and Cathelineau under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/), and by Zeromancer under CC0. A lista de qual ícone é de quem está em `assets/condicoes/CREDITOS.md`.
+- Imagens das moedas desenhadas para este módulo.

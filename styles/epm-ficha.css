@@ -26,6 +26,9 @@
   --epm-ok: #6CC08B;
   --epm-alerta: #E3A13A;
   --epm-erro: #E05A4E;
+  --epm-brilho: #1B312E;
+  --epm-base: #5D9F98;
+  --epm-base-suave: #5D9F9833;
   --epm-display: "EPM Cormorant", "Cormorant Garamond", Georgia, serif;
   --epm-ui: "Signika", "Segoe UI", system-ui, sans-serif;
   --epm-raio: 6px;
@@ -50,7 +53,7 @@
 .application.epm-ficha .window-content,
 .application.epm-poder .window-content {
   background:
-    radial-gradient(110% 70% at 0% 0%, #1B312E 0%, transparent 60%),
+    radial-gradient(110% 70% at 0% 0%, var(--epm-brilho) 0%, transparent 60%),
     var(--epm-fundo);
   color: var(--epm-texto);
   font-family: var(--epm-ui);
@@ -61,7 +64,7 @@
 
 .application.epm-ficha .window-content {
   display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
+  grid-template-columns: 136px minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   container-type: inline-size;
@@ -436,7 +439,7 @@
   gap: 9px;
   width: 100%;
   height: 34px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: 5px;
   background: transparent;
@@ -587,26 +590,26 @@
 
 .epm-defesas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
 .application.epm .epm-defesa {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  column-gap: 8px;
+  justify-content: center;
+  gap: 1px;
   width: 100%;
   height: auto;
-  padding: 7px 10px;
+  padding: 7px 6px 8px;
   border: 1px solid var(--epm-linha);
   border-radius: 6px;
   background: var(--epm-painel-2);
   color: var(--epm-texto);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 .application.epm .epm-defesa:hover { border-color: var(--epm-latao-escuro); }
-.epm-defesa i { grid-row: 1 / 3; font-size: 15px; color: var(--epm-latao); }
-.epm-defesa-nome { font-size: 12.5px; font-weight: 600; }
-.epm-defesa-formula { grid-column: 2; font-size: 10.5px; color: var(--epm-fraco); }
-.epm-defesa-valor { grid-row: 1 / 3; grid-column: 3; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.epm-defesa-nome { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+.epm-defesa-nome i { font-size: 13px; color: var(--epm-latao); }
+.epm-defesa-formula { font-size: 10.5px; line-height: 1.25; color: var(--epm-fraco); }
+.epm-defesa-valor { font-size: 22px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
 
 .epm-turno { display: flex; flex-direction: column; gap: 7px; padding: 8px 0; border-top: 1px solid var(--epm-linha); }
 .epm-turno-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -1213,7 +1216,7 @@
 
 /* ---------- Relações ---------- */
 
-.epm-relacoes-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.epm-relacoes-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; gap: 10px; }
 .epm-relacao {
   display: flex;
   gap: 10px;
@@ -1721,4 +1724,332 @@
   font-size: 11px;
   white-space: pre-wrap;
   user-select: text;
+}
+
+
+/* =========================================================
+   Versão 0.4.0
+   ========================================================= */
+
+/* ---------- Selos de penalidade e bônus ---------- */
+
+.epm-selo {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 17px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: help;
+}
+.epm-selo.penal { background: rgba(224, 90, 78, 0.16); color: #F07B70; box-shadow: inset 0 0 0 1px rgba(224, 90, 78, 0.45); }
+.epm-selo.bonus { background: rgba(108, 192, 139, 0.14); color: var(--epm-ok); box-shadow: inset 0 0 0 1px rgba(108, 192, 139, 0.4); }
+.epm-atributo { grid-template-columns: minmax(0, 1fr) auto auto; }
+.epm-atributo .epm-selo { justify-self: end; }
+.epm-pericia { display: flex; flex-wrap: nowrap; }
+.epm-pericia .epm-pericia-nome { flex: 1 1 auto; min-width: 0; }
+.epm-pericia .epm-pericia-total { min-width: 36px; }
+.epm-pericias.editando .epm-pericia { display: grid; grid-template-columns: 26px minmax(0, 1fr) 48px 48px 38px auto; }
+.epm-marca-pericia { font-size: 11px; cursor: help; }
+.epm-marca-pericia.desv { color: #F07B70; }
+.epm-marca-pericia.vant { color: var(--epm-ok); }
+.epm-marca-pericia.bloqueio { color: var(--epm-erro); }
+
+/* ---------- Caixa de condições (Principal) ---------- */
+
+.epm-chip-condicao.automatica { border-style: dashed; background: rgba(224, 90, 78, 0.06); }
+.epm-chip-condicao > i { font-size: 9px; opacity: 0.7; }
+.epm-chip-rd { border-color: rgba(211, 168, 94, 0.45); color: var(--epm-latao); }
+.epm-chip-vulneravel.anulada { opacity: 0.55; text-decoration: line-through; }
+.epm-combinacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 5px 8px;
+  border: 1px solid rgba(180, 140, 224, 0.4);
+  border-radius: 6px;
+  background: rgba(180, 140, 224, 0.08);
+  font-size: 12px;
+}
+.epm-combinacao-nome { font-weight: 700; color: #CDB2EF; }
+.epm-combinacao-texto { flex: 1 1 180px; color: var(--epm-suave); }
+.application.epm .epm-botao-mini { width: auto; height: 22px; padding: 0 9px; font-size: 11.5px; }
+.epm-efeitos-lista { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.epm-efeito-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0 2px 7px;
+  border-left: 2px solid var(--epm-linha-forte);
+  font-size: 12px;
+  line-height: 1.3;
+}
+.epm-efeito-linha span { flex: none; color: var(--epm-texto); }
+.epm-efeito-linha em { flex: 1; overflow: hidden; font-size: 11px; font-style: normal; color: var(--epm-fraco); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.epm-efeito-linha.penal { border-left-color: var(--epm-erro); }
+.epm-efeito-linha.penal span { color: #F2A49B; }
+.epm-efeito-linha.bonus { border-left-color: var(--epm-ok); }
+.epm-efeito-linha.alerta { border-left-color: var(--epm-alerta); }
+.epm-efeito-linha.bloqueio { border-left-color: #B48CE0; }
+.epm-polyglot { display: inline-flex; align-items: center; gap: 5px; color: #AFCBE6; }
+.epm-contador.epm-polyglot { border-color: rgba(175, 203, 230, 0.4); }
+.epm-chip-idioma.custom { border-style: dashed; }
+
+/* ---------- Combate ---------- */
+
+.epm-numero-valor.penalizado,
+.epm-ataque-acerto.penalizado { color: #F07B70; }
+.application.epm .epm-pip-acao.bloqueada { border-style: dashed; opacity: 0.55; text-decoration: line-through; }
+.epm-numero .epm-selo { margin-top: 2px; }
+
+/* ---------- Exaustão ---------- */
+
+.epm-exaustao-pips { display: flex; flex-wrap: wrap; gap: 4px; }
+.application.epm .epm-pip-exaustao.fatal { border-color: rgba(224, 90, 78, 0.6); }
+.application.epm .epm-pip-exaustao.fatal.ativo { background: var(--epm-erro); color: #2A1716; }
+.epm-exaustao-efeitos li strong { margin-right: 4px; color: var(--epm-alerta); font-weight: 600; }
+.epm-exaustao-alerta { margin: 6px 0 2px; padding: 4px 8px; border-radius: 4px; background: rgba(224, 90, 78, 0.12); color: #F2A49B; font-size: 12.5px; }
+.epm-exaustao.morte .epm-exaustao-nivel,
+.epm-exaustao.colapso .epm-exaustao-nivel { color: var(--epm-erro); }
+.epm-exaustao .epm-dica { margin-top: 4px; }
+
+/* ---------- Condições (aba) ---------- */
+
+.epm-condicoes-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.epm-busca { position: relative; display: flex; flex: 2 1 340px; align-items: center; }
+.epm-busca > i { position: absolute; left: 9px; color: var(--epm-fraco); font-size: 12px; pointer-events: none; }
+.application.epm .epm-busca input { height: 30px; padding-left: 28px; font-size: 13px; }
+.application.epm .epm-filtro-ativas strong { margin-left: 4px; }
+.epm-categoria-condicao {
+  margin-bottom: 8px;
+  border: 1px solid var(--epm-linha);
+  border-radius: 8px;
+  background: var(--epm-painel);
+}
+.epm-categoria-condicao > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.epm-categoria-condicao > summary::-webkit-details-marker { display: none; }
+.epm-categoria-condicao > summary::after { content: "\f078"; margin-left: auto; font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free"; font-weight: 900; font-size: 11px; color: var(--epm-fraco); transition: transform 0.15s; }
+.epm-categoria-condicao[open] > summary::after { transform: rotate(180deg); }
+.epm-categoria-condicao > summary > i { width: 18px; color: var(--epm-latao); text-align: center; }
+.epm-categoria-nome { font-family: var(--epm-display); font-size: 18px; font-weight: 600; color: var(--epm-latao); }
+.epm-contador-ativas { border-color: rgba(224, 90, 78, 0.5); color: #F07B70; }
+.epm-categoria-condicao > .epm-condicoes-grade { padding: 0 10px 10px; }
+.epm-condicoes-grade { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.epm-condicao-nome em.auto { color: #F2A49B; }
+.application.epm .epm-condicao > :not(img) { grid-column: 2; }
+.application.epm .epm-condicao > img { grid-row: 1 / span 4; }
+.epm-condicao-por { font-size: 10.5px; color: var(--epm-fraco); }
+.application.epm .epm-condicao.automatica { border-style: dashed; border-color: rgba(224, 90, 78, 0.6); background: color-mix(in srgb, var(--epm-erro) 7%, var(--epm-painel-2)); }
+.epm-condicao.automatica img { opacity: 0.85; }
+.epm-condicoes.so-ativas .epm-condicao:not(.ativa):not(.automatica) { display: none; }
+.epm-condicoes.so-ativas .epm-categoria-condicao.sem-ativas { display: none; }
+.epm-condicao[hidden],
+.epm-categoria-condicao[hidden],
+.epm-catalogo-item[hidden],
+.epm-catalogo-raridade[hidden],
+.epm-catalogo-grupo[hidden] { display: none !important; }
+.epm-combinacoes-painel { margin-bottom: 10px; }
+.epm-combinacoes-painel .epm-combinacao + .epm-combinacao { margin-top: 6px; }
+.epm-exaustao-painel { margin-top: 12px; }
+.epm-tags-grade { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.epm-tags-nota { display: flex; flex-direction: column; gap: 6px; }
+.application.epm .epm-tags-nota .epm-link { align-self: flex-start; }
+
+/* ---------- Navegação: abas arrastáveis ---------- */
+
+.epm-nav-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.application.epm .epm-nav-item .epm-nav-alca { position: absolute; right: 4px; top: 50%; width: auto; transform: translateY(-50%); font-size: 10px; opacity: 0; }
+.epm-nav.reordenavel .epm-nav-item:hover .epm-nav-alca { opacity: 0.6; }
+.epm-nav.reordenavel .epm-nav-item { cursor: grab; }
+.epm-nav-item.so-edicao span { color: var(--epm-latao); }
+.epm-nav-item.arrastando { opacity: 0.4; }
+.epm-nav-item.alvo-antes { box-shadow: inset 0 2px 0 var(--epm-latao); }
+.epm-nav-item.alvo-depois { box-shadow: inset 0 -2px 0 var(--epm-latao); }
+.epm-nav-dica { margin: 8px 6px 0; font-size: 10.5px; line-height: 1.3; color: var(--epm-fraco); }
+
+/* ---------- Inventário: moedas, mochilas, categorias ---------- */
+
+.epm-moeda-img { width: 38px; height: 38px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4)); }
+.epm-moeda-nome small { margin-left: 2px; font-size: 10px; color: var(--epm-fraco); }
+.epm-aviso-inline { display: inline-flex; align-items: center; gap: 4px; color: var(--epm-alerta); }
+.epm-mochilas-area { margin-bottom: 14px; }
+.epm-mochilas { display: flex; flex-direction: column; gap: 6px; }
+.epm-mochila {
+  border: 1px solid var(--epm-linha);
+  border-left: 3px solid var(--cor);
+  border-radius: 7px;
+  background: var(--epm-painel);
+}
+.epm-mochila-topo { display: flex; align-items: center; gap: 8px; padding: 5px 8px; }
+.application.epm .epm-mochila-nome {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--epm-texto);
+  text-align: left;
+  cursor: pointer;
+}
+.epm-mochila-nome > i { width: 12px; font-size: 11px; color: var(--epm-fraco); }
+.epm-mochila.cheia .epm-item-dentro { color: var(--epm-erro); }
+.epm-mochila-conteudo {
+  min-height: 40px;
+  margin: 0 8px 8px 22px;
+  padding: 6px;
+  border: 1px dashed var(--epm-linha-forte);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.12);
+}
+.epm-mochila-vazia { margin: 6px 4px; font-size: 12px; font-style: italic; color: var(--epm-fraco); }
+.epm-soltar-aqui { outline: 2px dashed var(--epm-latao); outline-offset: 2px; background: rgba(211, 168, 94, 0.08) !important; }
+.epm-item-efeitos { max-width: 100%; overflow: hidden; font-size: 11px; color: var(--epm-latao); text-overflow: ellipsis; white-space: nowrap; }
+.epm-item-efeitos.inativos { color: var(--epm-fraco); }
+.epm-item-efeitos.inativos::before { content: "\f070"; margin-right: 4px; font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free"; font-weight: 900; font-size: 9px; }
+.epm-dica-ordem { display: flex; align-items: center; gap: 6px; margin: -4px 0 10px; }
+.epm-categoria-titulo.arrastavel { cursor: grab; }
+.epm-categoria-titulo .epm-alca { width: 12px; color: var(--epm-fraco); font-size: 11px; }
+.epm-ordem-botoes { display: inline-flex; margin-left: auto; }
+.application.epm .epm-categoria-titulo .epm-ordem-botoes + .epm-botao { margin-left: 4px; }
+.epm-categoria.arrastando { opacity: 0.45; }
+.epm-categoria.alvo-antes { box-shadow: 0 -3px 0 var(--epm-latao); }
+.epm-categoria.alvo-depois { box-shadow: 0 3px 0 var(--epm-latao); }
+.epm-efeitos-editor { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--epm-linha); }
+.epm-efeito-item { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-efeito-tipo { flex: 0 0 150px; font-size: 12px; color: var(--epm-latao); }
+.application.epm .epm-efeito-item select,
+.application.epm .epm-efeito-item input { flex: 1 1 120px; width: auto; height: 24px; font-size: 12.5px; }
+.application.epm .epm-efeito-item input[type="number"] { flex: 0 0 70px; }
+.epm-efeito-novo { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.application.epm .epm-efeito-novo select { width: 220px; height: 24px; font-size: 12.5px; }
+
+/* ---------- Sobre: idiomas e revelações ---------- */
+
+.epm-idiomas-painel,
+.epm-revelacoes-painel { margin-top: 12px; }
+.epm-idiomas-adicionar { max-width: 380px; }
+.epm-revelacoes-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; margin-top: 8px; }
+
+/* ---------- Bênçãos: catálogo e uso ---------- */
+
+.epm-aba-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.epm-aba-topo > .epm-dica { flex: 1 1 320px; margin: 0; }
+.epm-aba-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.epm-catalogo { margin-bottom: 14px; }
+.epm-catalogo .epm-busca { margin-bottom: 8px; }
+.epm-alternador { display: inline-flex; border: 1px solid var(--epm-linha-forte); border-radius: 999px; overflow: hidden; }
+.application.epm .epm-alternador button { width: auto; height: 24px; padding: 0 12px; border: 0; border-radius: 0; background: transparent; color: var(--epm-suave); font-size: 12px; cursor: pointer; }
+.application.epm .epm-alternador button.ativo { background: var(--epm-latao); color: #1D1608; font-weight: 600; }
+.epm-regras-bencao { margin-bottom: 8px; font-size: 12px; color: var(--epm-suave); }
+.epm-regras-bencao summary { cursor: pointer; color: var(--epm-latao); }
+.epm-regras-bencao ol { margin: 4px 0 0; padding-left: 20px; }
+.epm-catalogo-grupo { margin-top: 10px; }
+.application.epm .epm-catalogo-grupo h4 { margin: 0; font-family: var(--epm-display); font-size: 18px; color: var(--epm-latao); }
+.epm-catalogo-grupo > .epm-dica { margin-bottom: 6px; }
+.epm-catalogo-raridade { margin: 6px 0 10px; }
+.application.epm .epm-catalogo-raridade h5 { display: flex; align-items: center; gap: 6px; margin: 0 0 5px; font-size: 11.5px; font-weight: 700; color: var(--cor); text-transform: uppercase; letter-spacing: 0.04em; }
+.epm-catalogo-raridade h5::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--cor) 30%, transparent); }
+.epm-catalogo-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px; }
+.epm-catalogo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border: 1px solid var(--epm-linha);
+  border-left: 3px solid var(--cor);
+  border-radius: 6px;
+  background: var(--epm-painel-2);
+  font-size: 12px;
+}
+.epm-catalogo-item header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+.epm-catalogo-titulo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.epm-catalogo-item header strong { font-size: 13px; }
+.epm-catalogo-item p { margin: 0; line-height: 1.35; color: var(--epm-suave); }
+.epm-catalogo-item p .epm-rotulo { margin-right: 3px; color: var(--epm-fraco); }
+.epm-catalogo-num { min-width: 22px; padding: 0 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); font-size: 10.5px; text-align: center; color: var(--epm-fraco); }
+.epm-catalogo-item.na-ficha { opacity: 0.7; }
+.epm-tag-auto { color: #9ED9C9; background: rgba(62, 209, 185, 0.1); }
+.epm-tag-ok { color: var(--epm-ok); }
+.epm-tag-perm { color: #F2A49B; background: rgba(224, 90, 78, 0.12); }
+.epm-bencao-selos { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.epm-bencao.suspensa { opacity: 0.6; }
+.epm-bencao.em-curso { box-shadow: inset 3px 0 0 var(--tom), 0 0 0 1px color-mix(in srgb, var(--tom) 55%, transparent); }
+.epm-bencao-extra .epm-rotulo,
+.epm-bencao .epm-texto-livre .epm-rotulo { margin-right: 4px; }
+.epm-bencao .epm-texto-livre { margin: 0; font-size: 12.5px; line-height: 1.4; }
+.epm-bencao-extra { color: var(--epm-suave); }
+.epm-bencao-uso { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-top: 6px; border-top: 1px solid var(--epm-linha); font-size: 12px; }
+.epm-bencao-duracao { color: var(--tom); font-weight: 600; }
+.epm-bencao-freq { color: var(--epm-ok); }
+.epm-bencao-freq.usado { color: var(--epm-fraco); }
+.application.epm .epm-botao.usado { opacity: 0.55; }
+.epm-auto-chips { gap: 3px; }
+
+/* ---------- Relações ---------- */
+
+.epm-relacao { flex-direction: column; gap: 8px; }
+.epm-relacao-linha { display: flex; gap: 10px; }
+.epm-relacao-topo-texto { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-relacao-topo-texto .epm-relacao-nome { font-weight: 600; font-size: 14px; }
+.application.epm .epm-relacao-topo-texto input.epm-relacao-nome { flex: 1 1 140px; width: auto; }
+.application.epm .epm-relacao-topo-texto select { flex: 0 1 150px; width: auto; }
+.epm-ligado { font-size: 11px; color: var(--epm-ok); }
+.epm-relacao.perdida .epm-relacao-img { filter: grayscale(1); opacity: 0.6; }
+.epm-afinidade-controle { display: flex; align-items: center; gap: 6px; }
+.epm-afinidade-controle .epm-medidor { flex: 1; }
+.epm-afinidade-nota { margin: -6px 0 10px; }
+.epm-relacao-bg { border-top: 1px solid var(--epm-linha); padding-top: 6px; }
+.application.epm .epm-relacao-bg-botao { display: flex; align-items: center; gap: 6px; width: 100%; height: auto; padding: 2px 0; border: 0; background: none; color: var(--epm-latao); font-size: 12.5px; text-align: left; cursor: pointer; }
+.epm-relacao-bg-botao .epm-contador { margin-left: auto; }
+.epm-relacao-partes { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.epm-parte { padding: 6px 8px; border: 1px solid var(--epm-linha); border-radius: 6px; background: var(--epm-painel-2); }
+.application.epm .epm-parte h5 { margin: 0 0 4px; font-size: 12px; font-weight: 700; color: var(--epm-texto); }
+.epm-parte.trancada { border-style: dashed; background: transparent; }
+.application.epm .epm-parte.trancada h5 { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--epm-fraco); font-weight: 600; }
+.epm-parte.trancada h5 .epm-dica { margin-left: auto; font-weight: 400; font-style: italic; }
+.epm-parte .epm-campos-texto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 10px; margin: 0; }
+.epm-parte-img { max-width: 120px; max-height: 120px; border: 1px solid var(--epm-linha); border-radius: 6px; cursor: zoom-in; }
+
+/* ---------- Personalização ---------- */
+
+.epm-personalizacao-grade { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.epm-cor-editor { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
+.epm-roda { position: relative; flex: none; width: 220px; height: 220px; border-radius: 50%; cursor: crosshair; touch-action: none; box-shadow: 0 0 0 1px var(--epm-linha-forte), 0 6px 18px rgba(0, 0, 0, 0.35); }
+.epm-roda:focus-visible { outline: 2px solid var(--epm-latao); outline-offset: 3px; }
+.epm-roda-canvas { width: 100%; height: 100%; border-radius: 50%; }
+.epm-roda-marcador { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid #FFF; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.5); pointer-events: none; }
+.epm-cor-controles { display: flex; flex: 1 1 220px; flex-direction: column; gap: 10px; min-width: 200px; }
+.application.epm .epm-cor-controles input[type="range"] { width: 100%; height: 16px; accent-color: var(--epm-latao); }
+.epm-hex-linha { display: flex; align-items: center; gap: 6px; }
+.epm-hex-amostra { flex: none; width: 26px; height: 26px; border: 1px solid var(--epm-linha-forte); border-radius: 5px; }
+.application.epm .epm-hex-linha input { width: 110px; font-family: ui-monospace, monospace; text-transform: uppercase; }
+.epm-cores-prontas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.application.epm .epm-cor-pronta { display: flex; align-items: center; gap: 6px; width: 100%; height: 26px; padding: 0 8px; border: 1px solid var(--epm-linha); border-radius: 5px; background: var(--epm-painel-2); color: var(--epm-suave); font-size: 12px; text-align: left; cursor: pointer; }
+.epm-cor-pronta span { width: 14px; height: 14px; border-radius: 50%; background: var(--amostra); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
+.application.epm .epm-cor-pronta.ativa { border-color: var(--epm-latao); color: var(--epm-texto); }
+.epm-ordem-lista { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 0; padding: 0; list-style: none; }
+.epm-ordem-lista li { display: flex; align-items: center; gap: 8px; padding: 3px 6px; border: 1px solid var(--epm-linha); border-radius: 5px; background: var(--epm-painel-2); font-size: 12.5px; }
+.epm-ordem-lista li > i { width: 16px; color: var(--epm-latao); text-align: center; }
+.epm-ordem-lista li > span { flex: 1; }
+
+@container (max-width: 860px) {
+  .epm-personalizacao-grade { grid-template-columns: minmax(0, 1fr); }
+  .epm-revelacoes-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .epm-parte .epm-campos-texto { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

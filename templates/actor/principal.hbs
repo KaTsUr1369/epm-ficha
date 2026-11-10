@@ -25,22 +25,40 @@
     <section class="epm-painel epm-caixa epm-caixa-condicoes">
       <header class="epm-painel-titulo"><h3>Condições</h3><button type="button" class="epm-link" data-action="irAba" data-tab="condicoes">Gerenciar</button></header>
       {{#if condicoesBox.vazio}}<p class="epm-vazio">Nenhuma condição ativa.</p>{{/if}}
+      {{#if condicoesBox.condicoes.length}}
       <div class="epm-chips">
-        {{#each condicoesBox.condicoes}}<span class="epm-chip epm-chip-condicao{{#if imune}} imune{{/if}}" title="{{this.descricao}}{{#if imune}} (imune: sem efeito){{/if}}"><img src="{{this.icone}}" alt="" />{{this.label}}</span>{{/each}}
-        {{#each condicoesBox.desvantagens}}<span class="epm-chip epm-chip-alerta" title="{{this.fontes}}">{{this.label}}</span>{{/each}}
+        {{#each condicoesBox.condicoes}}<span class="epm-chip epm-chip-condicao{{#if imune}} imune{{/if}}{{#if automatica}} automatica{{/if}}" title="{{this.efeito}}{{#if automatica}}&#10;Automática: vem de {{this.porQueTexto}}{{/if}}{{#if imune}}&#10;Imune: sem efeito{{/if}}"><img src="{{this.icone}}" alt="" />{{this.label}}{{#if automatica}}<i class="fa-solid fa-link" aria-label="automática"></i>{{/if}}</span>{{/each}}
       </div>
+      {{/if}}
+      {{#each condicoesBox.combinacoes}}
+      <div class="epm-combinacao" title="{{this.texto}}">
+        <span class="epm-combinacao-nome"><i class="fa-solid fa-flask-vial" aria-hidden="true"></i> {{this.titulo}}</span>
+        <span class="epm-combinacao-texto">{{this.texto}}</span>
+        {{#if @root.editavel}}
+        {{#if podeAplicar}}<button type="button" class="epm-botao epm-botao-mini" data-action="aplicarCombinacao" data-combinacao="{{this.id}}" title="Ligar {{epmJoin aplicarNomes}}">Aplicar</button>{{/if}}
+        {{#if podeRemover}}<button type="button" class="epm-botao epm-botao-mini" data-action="removerCombinacao" data-combinacao="{{this.id}}" title="Desligar {{epmJoin removerNomes}}">Remover</button>{{/if}}
+        {{/if}}
+      </div>
+      {{/each}}
+      {{#if condicoesBox.linhas.length}}
+      <ul class="epm-efeitos-lista">
+        {{#each condicoesBox.linhas}}<li class="epm-efeito-linha {{this.tipo}}" title="{{this.fontes}}"><span>{{this.texto}}</span><em>{{this.fontes}}</em></li>{{/each}}
+      </ul>
+      {{/if}}
     </section>
     <section class="epm-painel epm-caixa epm-caixa-defesas">
       <header class="epm-painel-titulo"><h3>Resistências</h3></header>
       {{#if defesasBox.vazio}}<p class="epm-vazio">Nenhuma resistência, imunidade ou vulnerabilidade.</p>{{/if}}
-      {{#if defesasBox.resistencias.length}}<div class="epm-chips"><span class="epm-rotulo">Resiste</span>{{#each defesasBox.resistencias}}<span class="epm-chip">{{this}}</span>{{/each}}</div>{{/if}}
-      {{#if defesasBox.imunidades.length}}<div class="epm-chips"><span class="epm-rotulo">Imune</span>{{#each defesasBox.imunidades}}<span class="epm-chip epm-chip-imune">{{this}}</span>{{/each}}</div>{{/if}}
-      {{#if defesasBox.vulnerabilidades.length}}<div class="epm-chips"><span class="epm-rotulo">Vulnerável</span>{{#each defesasBox.vulnerabilidades}}<span class="epm-chip epm-chip-vulneravel">{{this}}</span>{{/each}}</div>{{/if}}
+      {{#if defesasBox.resistencias.length}}<div class="epm-chips"><span class="epm-rotulo">Resiste</span>{{#each defesasBox.resistencias}}<span class="epm-chip" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
+      {{#if defesasBox.reducoes.length}}<div class="epm-chips"><span class="epm-rotulo">Reduz</span>{{#each defesasBox.reducoes}}<span class="epm-chip epm-chip-rd" title="{{this.fonte}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
+      {{#if defesasBox.imunidades.length}}<div class="epm-chips"><span class="epm-rotulo">Imune</span>{{#each defesasBox.imunidades}}<span class="epm-chip epm-chip-imune" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
+      {{#if defesasBox.vulnerabilidades.length}}<div class="epm-chips"><span class="epm-rotulo">Vulnerável</span>{{#each defesasBox.vulnerabilidades}}<span class="epm-chip epm-chip-vulneravel{{#if anulada}} anulada{{/if}}" title="{{this.fonte}}{{#if anulada}}&#10;Anulada por {{this.anulada}}{{/if}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
     </section>
     <section class="epm-painel epm-caixa epm-caixa-idiomas">
-      <header class="epm-painel-titulo"><h3>Idiomas</h3></header>
+      <header class="epm-painel-titulo"><h3>Idiomas</h3>{{#if editavel}}<button type="button" class="epm-link" data-action="irAba" data-tab="sobre" title="Os idiomas são editados na aba Sobre">Editar</button>{{/if}}</header>
       {{#unless idiomas.length}}<p class="epm-vazio">Nenhum idioma.</p>{{/unless}}
-      <div class="epm-chips">{{#each idiomas}}<span class="epm-chip epm-chip-idioma">{{this}}</span>{{/each}}</div>
+      <div class="epm-chips">{{#each idiomas}}<span class="epm-chip epm-chip-idioma">{{this.label}}</span>{{/each}}</div>
+      {{#if idiomasInfo.polyglot}}<p class="epm-dica epm-polyglot"><i class="fa-solid fa-language" aria-hidden="true"></i> Ligado ao Polyglot</p>{{/if}}
     </section>
   </div>
 
@@ -63,6 +81,7 @@
             <div class="epm-atributo">
               <button type="button" class="epm-atributo-nome" data-action="rolarAtributo" data-atributo="{{this.id}}" title="Rolar {{this.label}} (Shift: vantagem, Ctrl: desvantagem)">{{this.label}}</button>
               <span class="epm-atributo-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+              {{#if teste}}<span class="epm-selo {{teste.tipo}}" title="Nos testes de {{this.label}}:&#10;{{teste.fontesTexto}}">{{teste.texto}}</span>{{/if}}
               {{#if @root.edicao}}
               <div class="epm-atributo-campos">
                 <label class="epm-mini"><span>base</span><input type="number" name="flags.epm-ficha.atributos.{{this.id}}.base" value="{{this.base}}" /></label>
@@ -104,6 +123,7 @@
         <span class="epm-contador" title="Máximo de pontos numa perícia (sobe +5 nos níveis 15 e 35)">limite {{ficha.pontosPericia.limite}}</span>
       </header>
       {{#if ficha.desvantagens.testes.length}}<p class="epm-aviso">Testes com desvantagem: {{epmJoin ficha.desvantagens.testes}}</p>{{/if}}
+      {{#if ficha.penalidades.testes.total}}<p class="epm-dica">Os números em vermelho ao lado das perícias e atributos entram nas rolagens.</p>{{/if}}
       <ol class="epm-lista-pericias">
         {{#each pericias}}
         <li class="epm-pericia{{#if acimaLimite}} acima{{/if}}">
@@ -113,6 +133,7 @@
           <label class="epm-mini"><span>pontos</span><input type="number" class="epm-pericia-pontos" name="flags.epm-ficha.pericias.{{this.id}}.pontos" value="{{this.pontos}}" min="0" {{#if acimaLimite}}title="Acima do limite do seu nível"{{/if}} /></label>
           <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.pericias.{{this.id}}.outros" value="{{this.outros}}" /></label>
           <span class="epm-pericia-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+          {{#if teste}}<span class="epm-selo {{teste.tipo}}" title="{{teste.fontesTexto}}">{{teste.texto}}</span>{{/if}}
           <div class="epm-chips-atributo" role="group" aria-label="Atributos somados em {{this.nome}}">
             {{#each chips}}<button type="button" class="epm-chip-atributo{{#if ativo}} ativo{{/if}}{{#if sugerido}} sugerido{{/if}}" data-action="alternarAtributoPericia" data-pericia="{{../id}}" data-atributo="{{this.id}}" aria-pressed="{{#if ativo}}true{{else}}false{{/if}}" title="{{this.label}}{{#if sugerido}} (indicado para esta perícia){{/if}}">{{this.abrev}}</button>{{/each}}
           </div>
@@ -120,6 +141,10 @@
           <button type="button" class="epm-pericia-rolar" data-action="rolarPericia" data-pericia="{{this.id}}" title="Rolar {{this.nome}} (Shift: vantagem, Ctrl: desvantagem)"><i class="fa-solid fa-dice-d20"></i></button>
           <span class="epm-pericia-nome">{{this.nome}}</span>
           <span class="epm-pericia-atributo" title="Atributo somado">{{this.atributoAbrev}}</span>
+          {{#if bloqueadaTexto}}<i class="fa-solid fa-ban epm-marca-pericia bloqueio" title="Bloqueada: {{this.bloqueadaTexto}}"></i>{{/if}}
+          {{#if desvantagemTexto}}<i class="fa-solid fa-angles-down epm-marca-pericia desv" title="Desvantagem: {{this.desvantagemTexto}}"></i>{{/if}}
+          {{#if vantagemTexto}}<i class="fa-solid fa-angles-up epm-marca-pericia vant" title="Vantagem: {{this.vantagemTexto}}"></i>{{/if}}
+          {{#if teste}}<span class="epm-selo {{teste.tipo}}" title="{{teste.fontesTexto}}">{{teste.texto}}</span>{{/if}}
           <span class="epm-pericia-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
           {{/if}}
         </li>

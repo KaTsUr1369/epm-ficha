@@ -2,8 +2,14 @@
  * Ficha de personagem EPM (ApplicationV2), registrada para atores "character" do dnd5e.
  * Os dados ficam em actor.flags["epm-ficha"]; a Vida usa system.attributes.hp do dnd5e.
  */
-import { FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS } from "./config.mjs";
-import { num, int, slug, novoId, normalizarTexto, periciasParaLista, periciasParaObjeto, migrarPericias, atributosDaPericia, entradaPericia } from "./data.mjs";
+import {
+  FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS, ABAS, CATEGORIAS_ITEM,
+  CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, AFINIDADE, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM
+} from "./config.mjs";
+import {
+  num, int, slug, novoId, normalizarTexto, periciasParaLista, periciasParaObjeto, migrarPericias, atributosDaPericia,
+  entradaPericia, migrarDados, VERSAO_DADOS, ordenarPorLista, moverNaLista
+} from "./data.mjs";
 import { montarContexto, lerAtor } from "./context.mjs";
 import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar } from "./helpers.mjs";
 import { ajustes, listaPericias, salvarListaPericias } from "./settings.mjs";
@@ -11,23 +17,32 @@ import * as M from "./mecanicas.mjs";
 import { MapaMental } from "./mind-map.mjs";
 import { abrirEditorPoder } from "./poder-sheet.mjs";
 import { escolherImagem, verImagem } from "./imagens.mjs";
+import { catalogoIdiomas, polyglotAtivo, adicionarIdioma, removerIdioma, migrarIdiomas } from "./idiomas.mjs";
+import { dadosDoParceiro, dialogoConectar, relacaoMultipla, conectar } from "./relacoes.mjs";
+import { aplicarPaleta, ligarPersonalizacao } from "./personalizacao.mjs";
+import { CATALOGO, entradaCatalogo, dadosNovaEntrada } from "./bencaos.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 const P = `flags.${FLAG}`;
+const TIPO_ABA = "application/x-epm-aba";
+const TIPO_CATEGORIA = "application/x-epm-categoria";
 
 const ACOES_FICHA = [
   "aba", "irAba", "alternarEdicao", "editarImagem", "imagemItem", "imagemSobre", "removerImagemSobre", "verImagem",
   "ajustarRecurso", "rolarAtributo", "rolarPericia", "rolarIniciativa", "alternarAtributoPericia", "adicionarPericia", "removerPericia", "sincronizarPericias", "salvarPericiasPadrao",
-  "defesa", "alternarAcao", "novoTurno", "exaustao", "exaustaoMais", "rolarComa", "acordarComa", "descanso",
+  "defesa", "alternarAcao", "novoTurno", "exaustao", "descanso",
   "converter", "subirNivel", "moedas", "filtroRaridade",
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
   "usarItem", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
+  "abrirMochila", "tirarDaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
   "novoPoder", "usarPoder", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
-  "alternarCondicao", "removerTag",
-  "novaBencao", "excluirBencao", "adicionarMod", "removerMod",
-  "novaRelacao", "excluirRelacao", "abrirRelacao"
+  "alternarCondicao", "soAtivas", "aplicarCombinacao", "removerCombinacao", "removerTag", "removerIdioma",
+  "novaBencao", "excluirBencao", "adicionarMod", "removerMod", "abrirCatalogo", "tipoCatalogo", "adicionarDoCatalogo",
+  "usarBencao", "encerrarBencao", "recarregarBencao", "chatBencao",
+  "novaRelacao", "excluirRelacao", "abrirRelacao", "conectarRelacao", "relacaoMultipla", "ajustarAfinidade", "abrirBackground",
+  "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -54,6 +69,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this._mapas = [];
     this._mapaOcupado = false;
     this._notasPendente = false;
+    this._condicoesUi = { busca: "", soAtivas: false, abertas: null };
+    this._bencaosUi = { aberto: false, busca: "", tipo: "bencao" };
+    this._relacoesAbertas = new Set();
+    this._mochilasFechadas = new Set();
+    this._arrasto = null;
   }
 
   static DEFAULT_OPTIONS = {
@@ -77,7 +97,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     anotacoes: { template: `${CAMINHO}/actor/anotacoes.hbs`, scrollable: [""] },
     condicoes: { template: `${CAMINHO}/actor/condicoes.hbs`, scrollable: [""] },
     bencaos: { template: `${CAMINHO}/actor/bencaos.hbs`, scrollable: [""] },
-    relacoes: { template: `${CAMINHO}/actor/relacoes.hbs`, scrollable: [""] }
+    relacoes: { template: `${CAMINHO}/actor/relacoes.hbs`, scrollable: [""] },
+    personalizacao: { template: `${CAMINHO}/actor/personalizacao.hbs`, scrollable: [""] }
   };
 
   /* -------------------------------------------- */
@@ -138,18 +159,30 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           enriched: await enriquecer(pagina.texto ?? "", { relativeTo: actor, secrets: segredos })
         });
       }
+      // Parceiros das relações (nome, imagem e background atuais)
+      const parceiros = new Map();
+      for (const r of Object.values(bruto.relacoes ?? {})) {
+        if (!r?.uuid || parceiros.has(r.uuid)) continue;
+        try { parceiros.set(r.uuid, await dadosDoParceiro(r.uuid)); } catch (err) { console.warn("EPM |", err); }
+      }
+      const cfg = ajustes();
       const contexto = montarContexto({
         actor,
         itens: actor.items.contents,
         ui: {
           abas: this._abas, expandidos: this._expandidos, filtroRaridades: this._filtroRaridades,
-          edicao: this._modoEdicao, tempAberto: this._tempAberto, limitado: this._visaoLimitada()
+          edicao: this._modoEdicao, tempAberto: this._tempAberto, limitado: this._visaoLimitada(),
+          condicoes: this._condicoesUi, bencaos: this._bencaosUi, relacoesAbertas: this._relacoesAbertas,
+          mochilasFechadas: this._mochilasFechadas
         },
-        ajustes: { modoLimites: ajustes().modoLimites, listaPericias: listaPericias() },
+        ajustes: { modoLimites: cfg.modoLimites, listaPericias: listaPericias(), afinidadeSoMestre: cfg.afinidadeSoMestre },
         usuario: { isGM: game.user.isGM },
         enriquecidos, editores,
-        editavel: this.isEditable
+        editavel: this.isEditable,
+        idiomas: { catalogo: catalogoIdiomas(), polyglot: polyglotAtivo() },
+        atores: { porUuid: uuid => parceiros.get(uuid) ?? null }
       });
+      if (!contexto.abas.some(a => a.id === this._abas.primary)) this._abas.primary = contexto.abaAtual;
       return Object.assign(base, contexto);
     } catch (err) {
       return Object.assign(base, this._contextoDeErro(err, "montar os dados"));
@@ -187,9 +220,16 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
     this.element.classList.toggle("epm-limitado", this._visaoLimitada());
+    const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
+    aplicarPaleta(this.element, pers.cor ?? COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
     if (options.isFirstRender || options.parts?.includes("anotacoes")) {
       try { this._montarMapas(); } catch (err) { console.error("EPM | Falha ao montar o mapa mental", err); }
     }
+    if (options.isFirstRender || options.parts?.includes("personalizacao")) {
+      try { ligarPersonalizacao(this.element, this.actor); } catch (err) { console.error("EPM | Falha na personalização", err); }
+    }
+    if (options.isFirstRender || options.parts?.includes("condicoes")) this._filtrarCondicoes();
+    if (options.isFirstRender || options.parts?.includes("bencaos")) this._filtrarCatalogo();
     if (this._focarTemp) {
       this._focarTemp = false;
       const campo = this.element.querySelector('[data-recurso-valor="temp"]');
@@ -204,7 +244,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return super._onClose(options);
   }
 
-  /** Grava a lista de perícias em fichas novas e traz fichas da 0.1 para a lista oficial. */
+  /** Grava a lista de perícias em fichas novas e traz fichas antigas para o formato atual. */
   async _inicializarDados() {
     try {
       await this._prepararDadosIniciais();
@@ -218,7 +258,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (!this.actor.isOwner) return;
     const bruto = this.actor.flags?.[FLAG] ?? {};
     if (!bruto.pericias) {
-      await this.actor.update({ [`${P}.pericias`]: periciasParaObjeto(listaPericias()), [`${P}.versao`]: 2 });
+      await this.actor.update({ [`${P}.pericias`]: periciasParaObjeto(listaPericias()), [`${P}.versao`]: VERSAO_DADOS });
       return;
     }
     if (int(bruto.versao) < 2) {
@@ -228,6 +268,24 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       await this.actor.update(updates);
       ui.notifications.info(`${this.actor.name}: perícias atualizadas para a lista oficial.`);
     }
+    if (int(this.actor.flags?.[FLAG]?.versao) < VERSAO_DADOS) await this._migrarPara3();
+  }
+
+  /** 0.2.x → 0.4: Kan vira Dracmas, idiomas vão para o campo do dnd5e, condições renomeadas. */
+  async _migrarPara3() {
+    const bruto = this.actor.flags?.[FLAG] ?? {};
+    const updates = Object.fromEntries(Object.entries(migrarDados(bruto)).map(([k, v]) => [`${P}.${k}`, v]));
+    Object.assign(updates, migrarIdiomas(this.actor) ?? {});
+    await this.actor.update(updates);
+    for (const efeito of this.actor.effects?.contents ?? []) {
+      const antigos = [...(efeito.statuses ?? [])].filter(s => CONDICOES_RENOMEADAS[s]);
+      if (!antigos.length) continue;
+      try {
+        await efeito.delete();
+        for (const s of antigos) if (!this.actor.statuses?.has(CONDICOES_RENOMEADAS[s])) await this.actor.toggleStatusEffect(CONDICOES_RENOMEADAS[s], { active: true });
+      } catch (err) { console.warn("EPM | Migração de condição", err); }
+    }
+    console.log(`EPM | ${this.actor.name} migrado para os dados da versão ${VERSAO_DADOS}`);
   }
 
   /* -------------------------------------------- */
@@ -238,7 +296,13 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const raiz = this.element;
     raiz.addEventListener("change", ev => this._onMudancaLocal(ev), { capture: true });
     raiz.addEventListener("keydown", ev => this._onTeclaLocal(ev), { capture: true });
+    raiz.addEventListener("input", ev => this._onDigitar(ev), { capture: true });
+    raiz.addEventListener("toggle", ev => this._onAbrirCategoria(ev), { capture: true });
     raiz.addEventListener("dragstart", ev => this._onArrastarItem(ev));
+    raiz.addEventListener("dragover", ev => this._onArrastarSobre(ev), { capture: true });
+    raiz.addEventListener("dragleave", ev => this._onArrastarFora(ev), { capture: true });
+    raiz.addEventListener("dragend", () => this._limparArrasto());
+    raiz.addEventListener("drop", ev => this._onSoltarReordenar(ev), { capture: true });
     if (!("_onDrop" in ActorSheetV2.prototype)) {
       raiz.addEventListener("dragover", ev => ev.preventDefault());
       raiz.addEventListener("drop", ev => this._onDrop(ev));
@@ -251,6 +315,9 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (alvo.dataset?.recursoValor) { ev.stopPropagation(); return this._mudarRecurso(alvo); }
     if (alvo.dataset?.itemCampo) { ev.stopPropagation(); return this._mudarCampoItem(alvo); }
     if (alvo.dataset?.tagCampo) { ev.stopPropagation(); return this._adicionarTag(alvo); }
+    if (alvo.dataset?.idiomaInput) { ev.stopPropagation(); return this._adicionarIdioma(alvo); }
+    if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo || alvo.dataset?.novoEfeito) { ev.stopPropagation(); return; }
+    // Brilho e hex da Personalização: os próprios campos tratam (e param o evento) — não parar aqui.
   }
 
   _onTeclaLocal(ev) {
@@ -269,7 +336,82 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       return this._mudarRecurso(alvo).then(() => this.render({ parts: ["header"] }));
     }
     if (alvo.dataset?.tagCampo) { ev.preventDefault(); ev.stopPropagation(); return this._adicionarTag(alvo); }
+    if (alvo.dataset?.idiomaInput) { ev.preventDefault(); ev.stopPropagation(); return this._adicionarIdioma(alvo); }
+    if (alvo.dataset?.hexCor !== undefined) { ev.preventDefault(); alvo.blur(); return; }
+    if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo) { ev.preventDefault(); ev.stopPropagation(); return; }
     if (alvo.dataset?.recursoValor) { ev.preventDefault(); ev.stopPropagation(); return this._mudarRecurso(alvo); }
+  }
+
+  /** Busca das condições e do catálogo: filtra na hora, sem redesenhar a ficha. */
+  _onDigitar(ev) {
+    const alvo = ev.target;
+    if (alvo.dataset?.buscaCondicao) {
+      ev.stopPropagation();
+      this._condicoesUi.busca = alvo.value;
+      this._filtrarCondicoes();
+    } else if (alvo.dataset?.buscaCatalogo) {
+      ev.stopPropagation();
+      this._bencaosUi.busca = alvo.value;
+      this._filtrarCatalogo();
+    }
+  }
+
+  _filtrarCondicoes() {
+    const aba = this.element?.querySelector(".epm-condicoes");
+    if (!aba) return;
+    const termo = normalizarTexto(this._condicoesUi.busca);
+    let visiveis = 0;
+    for (const cat of aba.querySelectorAll(".epm-categoria-condicao")) {
+      let naCategoria = 0;
+      let ativas = 0;
+      for (const c of cat.querySelectorAll(".epm-condicao")) {
+        const ok = !termo || c.dataset.busca.includes(termo);
+        c.hidden = !ok;
+        if (ok) naCategoria++;
+        if (c.classList.contains("ativa") || c.classList.contains("automatica")) ativas++;
+      }
+      cat.hidden = !naCategoria;
+      cat.classList.toggle("sem-ativas", !ativas);
+      if (termo && naCategoria) cat.open = true;
+      visiveis += naCategoria;
+    }
+    const vazio = aba.querySelector(".epm-busca-vazia");
+    if (vazio) vazio.hidden = visiveis > 0;
+  }
+
+  _filtrarCatalogo() {
+    const cat = this.element?.querySelector(".epm-catalogo");
+    if (!cat) return;
+    const termo = normalizarTexto(this._bencaosUi.busca);
+    let total = 0;
+    for (const grupo of cat.querySelectorAll(".epm-catalogo-grupo")) {
+      let noGrupo = 0;
+      for (const r of grupo.querySelectorAll(".epm-catalogo-raridade")) {
+        let naRaridade = 0;
+        for (const it of r.querySelectorAll(".epm-catalogo-item")) {
+          const ok = !termo || it.dataset.busca.includes(termo);
+          it.hidden = !ok;
+          if (ok) naRaridade++;
+        }
+        r.hidden = !naRaridade;
+        noGrupo += naRaridade;
+      }
+      grupo.hidden = !noGrupo;
+      total += noGrupo;
+    }
+    const vazio = cat.querySelector(".epm-busca-vazia");
+    if (vazio) vazio.hidden = total > 0;
+  }
+
+  /** Lembra quais categorias de condição estão abertas. */
+  _onAbrirCategoria(ev) {
+    const det = ev.target;
+    if (!det?.matches?.(".epm-categoria-condicao")) return;
+    if (!this._condicoesUi.abertas) {
+      this._condicoesUi.abertas = new Set([...this.element.querySelectorAll(".epm-categoria-condicao[open]")].map(d => d.dataset.categoriaCondicao));
+    }
+    if (det.open) this._condicoesUi.abertas.add(det.dataset.categoriaCondicao);
+    else this._condicoesUi.abertas.delete(det.dataset.categoriaCondicao);
   }
 
   /** Aceita "25", "+5", "-3" ou "=10" nos campos de recurso. */
@@ -321,30 +463,142 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.actor.update({ [`${P}.${campo}`]: atual });
   }
 
+  async _adicionarIdioma(input) {
+    const valor = input.value.trim();
+    input.value = "";
+    if (valor) await adicionarIdioma(this.actor, valor);
+  }
+
+  /* -------------------------------------------- */
+  /*  Arrastar: itens, mochilas, abas, categorias */
+  /* -------------------------------------------- */
+
   _onArrastarItem(ev) {
+    const aba = ev.target.closest?.("[data-aba-id][draggable]");
+    if (aba && this._modoEdicao) {
+      ev.dataTransfer.setData(TIPO_ABA, aba.dataset.abaId);
+      ev.dataTransfer.effectAllowed = "move";
+      this._arrasto = { tipo: "aba", id: aba.dataset.abaId };
+      aba.classList.add("arrastando");
+      return;
+    }
+    const cat = ev.target.closest?.("[data-categoria-id][draggable]");
+    if (cat && this._modoEdicao) {
+      ev.dataTransfer.setData(TIPO_CATEGORIA, cat.dataset.categoriaId);
+      ev.dataTransfer.effectAllowed = "move";
+      this._arrasto = { tipo: "categoria", id: cat.dataset.categoriaId };
+      cat.closest(".epm-categoria")?.classList.add("arrastando");
+      return;
+    }
     const li = ev.target.closest?.("[data-item-id][draggable]");
     if (!li) return;
     const item = this.actor.items.get(li.dataset.itemId);
-    if (item) ev.dataTransfer.setData("text/plain", JSON.stringify(item.toDragData()));
+    if (!item) return;
+    this._arrasto = { tipo: "item", id: item.id };
+    ev.dataTransfer.setData("text/plain", JSON.stringify(item.toDragData()));
+  }
+
+  _limparArrasto() {
+    this._arrasto = null;
+    for (const el of this.element.querySelectorAll(".arrastando, .alvo-antes, .alvo-depois, .epm-soltar-aqui")) {
+      el.classList.remove("arrastando", "alvo-antes", "alvo-depois", "epm-soltar-aqui");
+    }
+  }
+
+  /** Mostra onde a aba, a categoria ou o item vai cair. */
+  _onArrastarSobre(ev) {
+    const tipos = [...(ev.dataTransfer?.types ?? [])];
+    const marcar = (alvo, seletor) => {
+      for (const el of this.element.querySelectorAll(seletor)) if (el !== alvo) el.classList.remove("alvo-antes", "alvo-depois");
+      if (!alvo) return;
+      const caixa = alvo.getBoundingClientRect();
+      const antes = ev.clientY < caixa.top + caixa.height / 2;
+      alvo.classList.toggle("alvo-antes", antes);
+      alvo.classList.toggle("alvo-depois", !antes);
+    };
+    if (tipos.includes(TIPO_ABA)) {
+      ev.preventDefault();
+      marcar(ev.target.closest?.(".epm-nav-item"), ".epm-nav-item");
+      return;
+    }
+    if (tipos.includes(TIPO_CATEGORIA)) {
+      ev.preventDefault();
+      marcar(ev.target.closest?.(".epm-categoria"), ".epm-categoria");
+      return;
+    }
+    const mochila = ev.target.closest?.("[data-container-id]");
+    for (const el of this.element.querySelectorAll(".epm-soltar-aqui")) if (el !== mochila) el.classList.remove("epm-soltar-aqui");
+    if (mochila && this._arrasto?.id !== mochila.dataset.containerId) mochila.classList.add("epm-soltar-aqui");
+  }
+
+  _onArrastarFora(ev) {
+    if (ev.target?.classList?.contains("epm-soltar-aqui") && !ev.target.contains(ev.relatedTarget)) ev.target.classList.remove("epm-soltar-aqui");
+  }
+
+  /** Solta uma aba ou categoria (reordenar). Itens e atores seguem para _onDrop. */
+  async _onSoltarReordenar(ev) {
+    const tipos = [...(ev.dataTransfer?.types ?? [])];
+    const eAba = tipos.includes(TIPO_ABA);
+    const eCategoria = tipos.includes(TIPO_CATEGORIA);
+    if (!eAba && !eCategoria) {
+      this.element.querySelectorAll(".epm-soltar-aqui").forEach(el => el.classList.remove("epm-soltar-aqui"));
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    const id = ev.dataTransfer.getData(eAba ? TIPO_ABA : TIPO_CATEGORIA);
+    const alvo = eAba ? ev.target.closest?.(".epm-nav-item") : ev.target.closest?.(".epm-categoria");
+    this._limparArrasto();
+    if (!alvo || !this.isEditable) return;
+    const alvoId = eAba ? alvo.dataset.abaId : alvo.dataset.categoria;
+    if (!alvoId || alvoId === id) return;
+    const caixa = alvo.getBoundingClientRect();
+    const antes = ev.clientY < caixa.top + caixa.height / 2;
+    const ids = eAba ? ABAS.map(a => a.id) : CATEGORIAS_ITEM.map(c => c.id);
+    const salvo = eAba ? this.actor.flags?.[FLAG]?.ui?.ordemAbas : this.actor.flags?.[FLAG]?.ui?.ordemCategorias;
+    const atual = ordenarPorLista(ids, salvo);
+    const semId = atual.filter(x => x !== id);
+    const i = semId.indexOf(alvoId);
+    const antesDe = antes ? alvoId : (semId[i + 1] ?? null);
+    const nova = moverNaLista(atual, id, antesDe);
+    await this.actor.update({ [`${P}.ui.${eAba ? "ordemAbas" : "ordemCategorias"}`]: nova });
   }
 
   async _onDrop(event) {
     event.preventDefault?.();
     if (!this.isEditable) return;
+    const tipos = [...(event.dataTransfer?.types ?? [])];
+    if (tipos.includes(TIPO_ABA) || tipos.includes(TIPO_CATEGORIA)) return;
     const dados = dadosDeArraste(event);
-    if (dados?.type === "Item") return this._soltarItem(dados);
+    this._limparArrasto();
+    if (dados?.type === "Item") return this._soltarItem(dados, event);
     if (dados?.type === "Actor") return this._soltarAtor(dados);
   }
 
-  async _soltarItem(dados) {
+  async _soltarItem(dados, event = null) {
     const item = await Item.implementation.fromDropData(dados);
-    if (!item || item.parent?.uuid === this.actor.uuid) return;
+    if (!item) return;
+    const mochilaId = event?.target?.closest?.("[data-container-id]")?.dataset.containerId ?? null;
+    const mochila = mochilaId ? this.actor.items.get(mochilaId) : null;
+    if (item.parent?.uuid === this.actor.uuid) {
+      if (mochila && mochila.id !== item.id) {
+        if (CATEGORIA_MOCHILAS.tipos.includes(item.type)) return ui.notifications.info("Mochilas não vão dentro de outras mochilas nesta ficha.");
+        if (item.system?.container === mochila.id) return;
+        await item.update({ "system.container": mochila.id });
+        return ui.notifications.info(`${item.name} foi para ${mochila.name}.`);
+      }
+      if (!mochila && item.system?.container && event?.target?.closest?.('[data-zona-inventario="geral"]')) {
+        return item.update({ "system.container": null });
+      }
+      return;
+    }
     if (TIPOS_IGNORADOS.includes(item.type)) {
       return ui.notifications.warn(`Itens do tipo "${item.type}" não são usados na ficha EPM.`);
     }
     if (item.type === "feat" || item.type === "spell") return M.aprenderPorArraste(this.actor, item);
     const data = item.toObject();
     for (const k of ["_id", "folder", "sort", "ownership", "_stats"]) delete data[k];
+    if (data.system) data.system.container = mochila && !CATEGORIA_MOCHILAS.tipos.includes(item.type) ? mochila.id : null;
     return this.actor.createEmbeddedDocuments("Item", [data]);
   }
 
@@ -354,11 +608,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
     const ator = await Actor.implementation.fromDropData(dados);
     if (!ator || ator.uuid === this.actor.uuid) return;
-    const existe = Object.values(this.actor.flags?.[FLAG]?.relacoes ?? {}).some(r => r?.uuid === ator.uuid);
-    if (existe) return ui.notifications.info(`${ator.name} já está nas relações.`);
-    await this.actor.update({
-      [`${P}.relacoes.${novoId()}`]: { nome: ator.name, img: ator.img, uuid: ator.uuid, tipo: "aliado", afinidade: 0, notas: "", criado: Date.now() }
-    });
+    return conectar(this.actor, ator);
   }
 
   /* -------------------------------------------- */
@@ -447,6 +697,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoAlternarEdicao() {
     if (!this.isEditable) return;
     this._modoEdicao = !this._modoEdicao;
+    if (!this._modoEdicao && ABAS.find(a => a.id === this._abas.primary)?.soEdicao) this._abas.primary = "principal";
     this.render();
   }
 
@@ -476,20 +727,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   acaoVerImagem(ev, alvo) { verImagem(alvo.dataset.src, alvo.dataset.titulo); }
 
-  acaoRolarAtributo(ev, alvo) {
-    const { ficha } = this._estado();
-    const a = ficha.atributos[alvo.dataset.atributo];
-    if (!a) return;
-    return M.rolarTeste(this.actor, { rotulo: `Teste de ${a.label}`, bonus: a.total, evento: ev, desvantagens: ficha.desvantagens.testes, nota: M.notaResistencia(ficha) });
-  }
-
-  acaoRolarPericia(ev, alvo) {
-    const { ficha } = this._estado();
-    const p = ficha.periciaPorId[alvo.dataset.pericia];
-    if (!p) return;
-    return M.rolarTeste(this.actor, { rotulo: `Teste de ${p.nome}`, bonus: p.total, evento: ev, desvantagens: ficha.desvantagens.testes, nota: M.notaResistencia(ficha) });
-  }
-
+  acaoRolarAtributo(ev, alvo) { return M.rolarAtributo(this.actor, alvo.dataset.atributo, ev); }
+  acaoRolarPericia(ev, alvo) { return M.rolarPericia(this.actor, alvo.dataset.pericia, ev); }
   acaoRolarIniciativa(ev) { return M.rolarIniciativa(this.actor, ev); }
 
   async acaoAlternarAtributoPericia(ev, alvo) {
@@ -543,7 +782,14 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoAlternarAcao(ev, alvo) {
     const id = alvo.dataset.acao;
-    await this.actor.update({ [`${P}.acoes.${id}`]: !this.actor.flags?.[FLAG]?.acoes?.[id] });
+    const usada = !!this.actor.flags?.[FLAG]?.acoes?.[id];
+    if (!usada) {
+      const { ficha } = this._estado();
+      const bloqueio = ficha.bloqueios.acoes[id] ?? [];
+      if (bloqueio.length) ui.notifications.warn(`${id === "reacao" ? "Reação" : "Ação"} bloqueada por: ${bloqueio.join(", ")}.`);
+      else if (id !== "reacao" && ficha.acoes.esgotadas) ui.notifications.warn(`Limite de ${ficha.acoes.limite} ação por turno (${ficha.acoes.limiteFontes.join(", ")}).`);
+    }
+    await this.actor.update({ [`${P}.acoes.${id}`]: !usada });
   }
 
   acaoNovoTurno() { return M.novoTurno(this.actor); }
@@ -551,20 +797,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async acaoExaustao(ev, alvo) {
     const n = int(alvo.dataset.nivel);
     const atual = this._estado().ficha.exaustao.nivel;
-    await this.actor.update({ [`${P}.exaustao`]: atual === n ? n - 1 : n });
-  }
-
-  async acaoExaustaoMais() {
-    await this.actor.update({ [`${P}.exaustao`]: this._estado().ficha.exaustao.nivel + 1 });
-  }
-
-  acaoRolarComa() {
-    return M.rolarFormula(this.actor, this._estado().ficha.exaustao.formulaComa, "Dias em coma");
-  }
-
-  async acaoAcordarComa() {
-    await this.actor.update({ [`${P}.exaustao`]: 3 });
-    ui.notifications.info(`${this.actor.name} acordou do coma com Exaustão 3.`);
+    return M.definirExaustao(this.actor, atual === n ? n - 1 : n);
   }
 
   acaoDescanso(ev, alvo) { return M.descanso(this.actor, alvo.dataset.tipo); }
@@ -620,7 +853,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async acaoExcluirItem(ev, alvo) {
     const item = this._item(alvo);
     if (!item) return;
-    if (!(await M.confirmar("Excluir", `<p>Excluir <strong>${escapar(item.name)}</strong>?</p>`))) return;
+    const dentro = CATEGORIA_MOCHILAS.tipos.includes(item.type) ? this.actor.items.filter(i => i.system?.container === item.id) : [];
+    const extra = dentro.length ? `<p class="epm-dica">Os ${dentro.length} item(ns) de dentro voltam para o inventário.</p>` : "";
+    if (!(await M.confirmar("Excluir", `<p>Excluir <strong>${escapar(item.name)}</strong>?</p>${extra}`))) return;
+    if (dentro.length) await this.actor.updateEmbeddedDocuments("Item", dentro.map(i => ({ _id: i.id, "system.container": null })));
     this._expandidos.delete(item.id);
     await item.delete();
   }
@@ -628,6 +864,49 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoUsarItem(ev, alvo) {
     const item = this._item(alvo);
     if (item) return M.usarItem(this.actor, item);
+  }
+
+  acaoAbrirMochila(ev, alvo) {
+    const id = alvo.dataset.itemId;
+    if (this._mochilasFechadas.has(id)) this._mochilasFechadas.delete(id);
+    else this._mochilasFechadas.add(id);
+    this.render({ parts: ["inventario"] });
+  }
+
+  async acaoTirarDaMochila(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) await item.update({ "system.container": null });
+  }
+
+  async acaoMoverCategoria(ev, alvo) {
+    const atual = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), this.actor.flags?.[FLAG]?.ui?.ordemCategorias);
+    const i = atual.indexOf(alvo.dataset.categoria);
+    const j = i + int(alvo.dataset.dir);
+    if (i < 0 || j < 0 || j >= atual.length) return;
+    [atual[i], atual[j]] = [atual[j], atual[i]];
+    await this.actor.update({ [`${P}.ui.ordemCategorias`]: atual });
+  }
+
+  async acaoRestaurarOrdemCategorias() {
+    await this.actor.update({ [`${P}.ui.ordemCategorias`]: [] });
+  }
+
+  async acaoAdicionarEfeitoItem(ev, alvo) {
+    const item = this._item(alvo);
+    if (!item) return;
+    const select = this.element.querySelector(`[data-novo-efeito="${item.id}"]`);
+    const tipo = TIPOS_EFEITO_ITEM[select?.value] ? select.value : "mod";
+    await item.update({
+      [`flags.${FLAG}.efeitos.${novoId()}`]: {
+        tipo, alvo: tipo === "mod" && item.type === "equipment" ? "ca" : "", valor: tipo === "rd" ? 1 : (tipo === "mod" ? 1 : 0),
+        tipoDano: "", em: "", recurso: "pv", formula: "", quando: item.type === "weapon" ? "acerto" : "uso", criado: Date.now()
+      }
+    });
+  }
+
+  async acaoRemoverEfeitoItem(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) await item.update({ [`flags.${FLAG}.efeitos.-=${alvo.dataset.efeito}`]: null });
   }
 
   acaoAtacar(ev, alvo) { return M.dialogoAtaque(this.actor, alvo.dataset.tipo, alvo.dataset.ref); }
@@ -749,13 +1028,19 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.actor.update(Object.fromEntries(lista.map((p, k) => [`${P}.notas.paginas.${p.id}.ordem`, k])));
   }
 
+  /* ---------- Condições ---------- */
+
   async acaoAlternarCondicao(ev, alvo) {
     const id = alvo.dataset.condicao;
     const cond = CONDICOES.find(c => c.id === id);
     if (!cond) return;
     const ativa = this.actor.statuses?.has(id);
-    if (!ativa && this._estado().ficha.condicoes.find(c => c.id === id)?.imune) {
+    const info = this._estado().ficha.condicoes.find(c => c.id === id);
+    if (!ativa && info?.imune) {
       ui.notifications.info(`${this.actor.name} é imune a ${cond.label}: a condição fica marcada, mas sem efeito.`);
+    }
+    if (!ativa && info?.automatica) {
+      ui.notifications.info(`${cond.label} já está valendo por causa de ${info.porQue.join(", ")}. Agora fica marcada também por conta própria.`);
     }
     try {
       await this.actor.toggleStatusEffect(id, { active: !ativa });
@@ -765,16 +1050,33 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
   }
 
+  acaoSoAtivas() {
+    this._condicoesUi.soAtivas = !this._condicoesUi.soAtivas;
+    this.render({ parts: ["condicoes"] });
+  }
+
+  acaoAplicarCombinacao(ev, alvo) { return M.aplicarCombinacao(this.actor, alvo.dataset.combinacao, "aplicar"); }
+  acaoRemoverCombinacao(ev, alvo) {
+    if (!COMBINACOES.some(k => k.id === alvo.dataset.combinacao)) return;
+    return M.aplicarCombinacao(this.actor, alvo.dataset.combinacao, "remover");
+  }
+
   async acaoRemoverTag(ev, alvo) {
     const campo = alvo.dataset.campo;
     const lista = (this.actor.flags?.[FLAG]?.[campo] ?? []).filter(v => v !== alvo.dataset.valor);
     await this.actor.update({ [`${P}.${campo}`]: lista });
   }
 
+  acaoRemoverIdioma(ev, alvo) {
+    return removerIdioma(this.actor, { chave: alvo.dataset.chave, rotulo: alvo.dataset.rotulo });
+  }
+
+  /* ---------- Bênçãos e maldições ---------- */
+
   async acaoNovaBencao(ev, alvo) {
     const tipo = alvo.dataset.tipo === "maldicao" ? "maldicao" : "bencao";
     await this.actor.update({
-      [`${P}.bencaos.${novoId()}`]: { nome: "", tipo, ativo: true, origem: "", descricao: "", mods: {}, criado: Date.now() }
+      [`${P}.bencaos.${novoId()}`]: { nome: "", tipo, ativo: true, origem: "", descricao: "", mods: {}, frequencia: "livre", duracao: 0, usado: false, turnosRestantes: 0, criado: Date.now() }
     });
   }
 
@@ -794,6 +1096,39 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.actor.update({ [`${P}.bencaos.${alvo.dataset.bencao}.mods.-=${alvo.dataset.mod}`]: null });
   }
 
+  acaoAbrirCatalogo() {
+    this._bencaosUi.aberto = !this._bencaosUi.aberto;
+    this.render({ parts: ["bencaos"] });
+  }
+
+  acaoTipoCatalogo(ev, alvo) {
+    this._bencaosUi.tipo = alvo.dataset.tipo === "maldicao" ? "maldicao" : "bencao";
+    this.render({ parts: ["bencaos"] });
+  }
+
+  async acaoAdicionarDoCatalogo(ev, alvo) {
+    const c = entradaCatalogo(alvo.dataset.catalogo);
+    if (!c) return;
+    const ja = Object.values(this.actor.flags?.[FLAG]?.bencaos ?? {}).some(b => b?.catalogo === c.id);
+    if (ja && !(await M.confirmar("Já está na ficha", `<p><strong>${escapar(c.nome)}</strong> já está na ficha. Adicionar outra vez?</p>`))) return;
+    let escolha = "";
+    if (c.escolha) {
+      escolha = await M.perguntarTexto(c.nome, `${c.escolha.rotulo} (${c.escolha.sugestoes.join(", ")})`, c.escolha.sugestoes[0] ?? "", "Adicionar");
+      if (escolha === null) return;
+    }
+    await this.actor.update({ [`${P}.bencaos.${novoId()}`]: dadosNovaEntrada(c, { escolha, novoIdFn: novoId }) });
+    ui.notifications.info(`${c.nome} adicionada à ficha de ${this.actor.name}.`);
+  }
+
+  acaoUsarBencao(ev, alvo) { return M.usarBencao(this.actor, alvo.dataset.bencao); }
+  acaoEncerrarBencao(ev, alvo) { return M.terminarBencao(this.actor, alvo.dataset.bencao); }
+  acaoChatBencao(ev, alvo) { return M.cartaoBencao(this.actor, alvo.dataset.bencao); }
+  async acaoRecarregarBencao(ev, alvo) {
+    await this.actor.update({ [`${P}.bencaos.${alvo.dataset.bencao}.usado`]: false });
+  }
+
+  /* ---------- Relações ---------- */
+
   async acaoNovaRelacao() {
     await this.actor.update({
       [`${P}.relacoes.${novoId()}`]: { nome: "", img: "", uuid: "", tipo: "aliado", afinidade: 0, notas: "", criado: Date.now() }
@@ -812,4 +1147,48 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (doc?.sheet) doc.sheet.render(true);
     else ui.notifications.warn("Personagem não encontrado. Ele pode ter sido apagado.");
   }
+
+  acaoConectarRelacao() { return dialogoConectar(this.actor); }
+  acaoRelacaoMultipla() { return relacaoMultipla(this.actor); }
+
+  async acaoAjustarAfinidade(ev, alvo) {
+    if (!this.isEditable || (ajustes().afinidadeSoMestre && !game.user.isGM)) return;
+    const id = alvo.dataset.relacao;
+    const atual = int(this.actor.flags?.[FLAG]?.relacoes?.[id]?.afinidade);
+    const novo = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, atual + int(alvo.dataset.delta)));
+    if (novo !== atual) await this.actor.update({ [`${P}.relacoes.${id}.afinidade`]: novo });
+  }
+
+  acaoAbrirBackground(ev, alvo) {
+    const id = alvo.dataset.relacao;
+    if (this._relacoesAbertas.has(id)) this._relacoesAbertas.delete(id);
+    else this._relacoesAbertas.add(id);
+    this.render({ parts: ["relacoes"] });
+  }
+
+  /* ---------- Personalização ---------- */
+
+  async acaoCorPronta(ev, alvo) {
+    await this.actor.update({ [`${P}.personalizacao.cor`]: alvo.dataset.cor });
+  }
+
+  async acaoCorPadrao() {
+    await this.actor.update({ [`${P}.personalizacao.cor`]: COR_PADRAO, [`${P}.personalizacao.brilho`]: BRILHO_PADRAO });
+  }
+
+  async acaoMoverAba(ev, alvo) {
+    const atual = ordenarPorLista(ABAS.map(a => a.id), this.actor.flags?.[FLAG]?.ui?.ordemAbas);
+    const i = atual.indexOf(alvo.dataset.aba);
+    const j = i + int(alvo.dataset.dir);
+    if (i < 0 || j < 0 || j >= atual.length) return;
+    [atual[i], atual[j]] = [atual[j], atual[i]];
+    await this.actor.update({ [`${P}.ui.ordemAbas`]: atual });
+  }
+
+  async acaoRestaurarOrdemAbas() {
+    await this.actor.update({ [`${P}.ui.ordemAbas`]: [] });
+  }
 }
+
+/** Catálogo exposto para macros (game.modules.get("epm-ficha").api.catalogoBencaos). */
+export const catalogoBencaos = CATALOGO;

@@ -26,7 +26,7 @@ jobs:
              module.json > module.tmp && mv module.tmp module.json
 
       - name: Empacotar
-        run: zip -r module.zip module.json scripts templates styles fonts README.md
+        run: zip -r module.zip module.json scripts templates styles fonts assets README.md
 
       - name: Anexar à release
         uses: softprops/action-gh-release@v2

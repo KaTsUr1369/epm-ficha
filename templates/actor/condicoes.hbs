@@ -1,22 +1,53 @@
-<section class="tab epm-aba epm-condicoes {{cls.condicoes}}" data-group="primary" data-tab="condicoes">
-  <section class="epm-painel">
-    <header class="epm-painel-titulo">
-      <h3>Condições</h3>
-      <span class="epm-dica">Clique para ligar ou desligar. Elas também aparecem no token.</span>
-    </header>
+<section class="tab epm-aba epm-condicoes {{cls.condicoes}}{{#if condicoesUi.soAtivas}} so-ativas{{/if}}" data-group="primary" data-tab="condicoes">
+  <div class="epm-condicoes-barra">
+    <label class="epm-busca">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input type="search" data-busca-condicao="1" value="{{condicoesUi.busca}}" placeholder="Buscar condição ou efeito: reação, lento, −10…" aria-label="Buscar condição" />
+    </label>
+    <button type="button" class="epm-filtro epm-filtro-ativas{{#if condicoesUi.soAtivas}} ativo{{/if}}" style="--cor: var(--epm-erro)" data-action="soAtivas" aria-pressed="{{#if condicoesUi.soAtivas}}true{{else}}false{{/if}}">Só ativas <strong>{{totalCondicoesAtivas}}</strong></button>
+    <span class="epm-dica">Clique para ligar ou desligar. Elas também aparecem no token.</span>
+  </div>
+
+  {{#if combinacoesAtivas.length}}
+  <section class="epm-painel epm-combinacoes-painel">
+    <header class="epm-painel-titulo"><h3>Combinações</h3><span class="epm-dica">Duas condições marcadas juntas</span></header>
+    {{#each combinacoesAtivas}}
+    <div class="epm-combinacao">
+      <span class="epm-combinacao-nome"><i class="fa-solid fa-flask-vial" aria-hidden="true"></i> {{this.titulo}}</span>
+      <span class="epm-combinacao-texto">{{this.texto}}</span>
+      {{#if @root.editavel}}
+      {{#if podeAplicar}}<button type="button" class="epm-botao epm-botao-mini" data-action="aplicarCombinacao" data-combinacao="{{this.id}}">Aplicar</button>{{/if}}
+      {{#if podeRemover}}<button type="button" class="epm-botao epm-botao-mini" data-action="removerCombinacao" data-combinacao="{{this.id}}">Remover</button>{{/if}}
+      {{/if}}
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  <p class="epm-vazio epm-busca-vazia" hidden>Nenhuma condição encontrada.</p>
+  {{#each categoriasCondicao}}
+  <details class="epm-categoria-condicao" data-categoria-condicao="{{this.id}}" {{#if aberta}}open{{/if}}>
+    <summary>
+      <i class="{{this.icone}}" aria-hidden="true"></i>
+      <span class="epm-categoria-nome">{{this.label}}</span>
+      <span class="epm-contador">{{this.total}}</span>
+      {{#if ativas}}<span class="epm-contador epm-contador-ativas">{{this.ativas}} ativa{{#unless (epmEq ativas 1)}}s{{/unless}}</span>{{/if}}
+    </summary>
     <div class="epm-condicoes-grade">
-      {{#each condicoesLista}}
-      <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{this.id}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}>
+      {{#each condicoes}}
+      <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if automatica}} automatica{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{this.id}}" data-busca="{{this.busca}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}} title="{{this.descricao}}">
         <img src="{{this.icone}}" alt="" />
-        <span class="epm-condicao-nome">{{this.label}}{{#if imune}} <em>imune</em>{{/if}}</span>
-        <span class="epm-condicao-desc">{{this.descricao}}</span>
+        <span class="epm-condicao-nome">{{this.label}}{{#if imune}} <em>imune</em>{{/if}}{{#if automatica}} <em class="auto" title="Ativa por causa de {{this.porQueTexto}}">automática</em>{{/if}}</span>
+        <span class="epm-condicao-desc">{{this.efeito}}</span>
+        {{#if automatica}}<span class="epm-condicao-por">por {{this.porQueTexto}}</span>{{/if}}
         {{#if resumo.length}}<span class="epm-condicao-efeitos">{{#each resumo}}<span>{{this}}</span>{{/each}}</span>{{/if}}
       </button>
       {{/each}}
     </div>
-  </section>
+  </details>
+  {{/each}}
 
-  <section class="epm-painel">
+  <section class="epm-painel epm-exaustao-painel">
     {{> "epm-exaustao"}}
   </section>
 
@@ -35,5 +66,10 @@
       {{/if}}
     </section>
     {{/each}}
+    <section class="epm-painel epm-tags epm-tags-nota">
+      <header class="epm-painel-titulo"><h3>Idiomas</h3></header>
+      <p class="epm-dica">Os idiomas agora ficam na aba Sobre.</p>
+      <button type="button" class="epm-link" data-action="irAba" data-tab="sobre">Ir para Sobre</button>
+    </section>
   </div>
 </section>

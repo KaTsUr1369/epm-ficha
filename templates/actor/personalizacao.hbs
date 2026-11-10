@@ -1,0 +1,48 @@
+<section class="tab epm-aba epm-personalizacao {{cls.personalizacao}}" data-group="primary" data-tab="personalizacao">
+  <p class="epm-dica epm-intro">Esta aba só aparece no modo edição. Mais opções de personalização vão entrar aqui com o tempo.</p>
+  <div class="epm-personalizacao-grade">
+    <section class="epm-painel epm-cor-painel">
+      <header class="epm-painel-titulo">
+        <h3>Cor da ficha</h3>
+        {{#unless personalizacao.padrao}}<button type="button" class="epm-link" data-action="corPadrao">Restaurar padrão</button>{{/unless}}
+      </header>
+      <p class="epm-dica">Escolha a cor base na roda. O traço abaixo deixa a ficha mais escura ou mais clara. A mudança aparece na hora; solte o mouse para salvar.</p>
+      <div class="epm-cor-editor">
+        <div class="epm-roda" data-roda-cor="1" role="slider" aria-label="Roda de cor" tabindex="0">
+          <canvas class="epm-roda-canvas" width="220" height="220" aria-hidden="true"></canvas>
+          <span class="epm-roda-marcador" style="left: {{personalizacao.marcadorX}}%; top: {{personalizacao.marcadorY}}%; background: {{personalizacao.cor}}"></span>
+        </div>
+        <div class="epm-cor-controles">
+          <label class="epm-campo"><span>Brilho</span>
+            <input type="range" min="0" max="100" step="1" value="{{personalizacao.brilho}}" data-brilho-cor="1" aria-label="Brilho da ficha" />
+          </label>
+          <label class="epm-campo"><span>Cor (hex)</span>
+            <span class="epm-hex-linha"><span class="epm-hex-amostra" style="background: {{personalizacao.cor}}"></span><input type="text" value="{{personalizacao.cor}}" data-hex-cor="1" maxlength="7" spellcheck="false" aria-label="Cor em hexadecimal" /></span>
+          </label>
+          <div class="epm-cores-prontas" role="group" aria-label="Cores prontas">
+            {{#each personalizacao.prontas}}
+            <button type="button" class="epm-cor-pronta{{#if ativa}} ativa{{/if}}" style="--amostra: {{this.cor}}" data-action="corPronta" data-cor="{{this.cor}}" title="{{this.label}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}"><span aria-hidden="true"></span>{{this.label}}</button>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="epm-painel epm-ordem-painel">
+      <header class="epm-painel-titulo">
+        <h3>Ordem das abas</h3>
+        {{#unless personalizacao.ordemPadrao}}<button type="button" class="epm-link" data-action="restaurarOrdemAbas">Restaurar ordem</button>{{/unless}}
+      </header>
+      <p class="epm-dica">Arraste as abas na barra lateral ou use as setas.</p>
+      <ol class="epm-ordem-lista">
+        {{#each personalizacao.abas}}
+        <li>
+          <i class="{{this.icone}}" aria-hidden="true"></i><span>{{this.label}}</span>
+          <button type="button" class="epm-icone-botao" data-action="moverAba" data-aba="{{this.id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="epm-icone-botao" data-action="moverAba" data-aba="{{this.id}}" data-dir="1" {{#if ultima}}disabled{{/if}} title="Descer"><i class="fa-solid fa-arrow-down"></i></button>
+        </li>
+        {{/each}}
+      </ol>
+    </section>
+  </div>
+</section>

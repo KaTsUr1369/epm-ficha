@@ -1,10 +1,69 @@
 <section class="tab epm-aba epm-bencaos {{cls.bencaos}}" data-group="primary" data-tab="bencaos">
-  <p class="epm-dica epm-intro">Ligue o interruptor para ativar. Os modificadores de bênçãos e maldições ativas entram direto nos números da ficha.</p>
+  <header class="epm-aba-topo">
+    <p class="epm-dica">Ligue o interruptor para ativar. Os modificadores de bênçãos e maldições ativas entram direto nos números da ficha.</p>
+    <div class="epm-aba-acoes">
+      {{#if catalogo.pode}}<button type="button" class="epm-botao epm-botao-forte{{#if catalogo.aberto}} ativo{{/if}}" data-action="abrirCatalogo" aria-expanded="{{#if catalogo.aberto}}true{{else}}false{{/if}}"><i class="fa-solid fa-book-open" aria-hidden="true"></i> {{#if catalogo.aberto}}Fechar a lista{{else}}Adicionar da lista{{/if}}</button>{{/if}}
+    </div>
+  </header>
+
+  {{#if catalogo.aberto}}
+  <section class="epm-painel epm-catalogo">
+    <header class="epm-painel-titulo">
+      <h3>Lista de {{#if (epmEq catalogo.tipo "maldicao")}}maldições{{else}}bênçãos{{/if}}</h3>
+      <div class="epm-alternador" role="group" aria-label="Tipo">
+        <button type="button" class="{{#if (epmEq catalogo.tipo "bencao")}}ativo{{/if}}" data-action="tipoCatalogo" data-tipo="bencao">Bênçãos</button>
+        <button type="button" class="{{#if (epmEq catalogo.tipo "maldicao")}}ativo{{/if}}" data-action="tipoCatalogo" data-tipo="maldicao">Maldições</button>
+      </div>
+    </header>
+    <label class="epm-busca">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input type="search" data-busca-catalogo="1" value="{{catalogo.busca}}" placeholder="Buscar por nome ou efeito" aria-label="Buscar na lista" />
+    </label>
+    {{#if (epmEq catalogo.tipo "bencao")}}
+    <details class="epm-regras-bencao">
+      <summary>Regras gerais das bênçãos</summary>
+      <ol>{{#each catalogo.regras}}<li>{{this}}</li>{{/each}}</ol>
+    </details>
+    {{/if}}
+    <p class="epm-vazio epm-busca-vazia" hidden>Nada encontrado.</p>
+    {{#each catalogo.grupos}}
+    <section class="epm-catalogo-grupo" data-grupo-catalogo="{{this.id}}">
+      <h4>{{this.label}}</h4>
+      <p class="epm-dica">{{this.descricao}}</p>
+      {{#each raridades}}
+      <div class="epm-catalogo-raridade" style="--cor: {{this.cor}}">
+        <h5>{{this.label}}</h5>
+        <div class="epm-catalogo-lista">
+          {{#each itens}}
+          <article class="epm-catalogo-item{{#if naFicha}} na-ficha{{/if}}" data-busca="{{this.busca}}">
+            <header>
+              <div class="epm-catalogo-titulo">
+                <span class="epm-catalogo-num">{{this.numero}}</span>
+                <strong>{{this.nome}}</strong>
+                {{#if frequenciaLabel}}<span class="epm-tag">{{this.frequenciaLabel}}</span>{{/if}}
+                {{#if duracao}}<span class="epm-tag">{{this.duracao}} turnos</span>{{/if}}
+                {{#if automatica}}<span class="epm-tag epm-tag-auto" title="A ficha aplica parte do efeito sozinha"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> automática</span>{{/if}}
+                {{#if naFicha}}<span class="epm-tag epm-tag-ok">na ficha</span>{{/if}}
+              </div>
+              <button type="button" class="epm-botao epm-botao-mini" data-action="adicionarDoCatalogo" data-catalogo="{{this.id}}" title="Adicionar à ficha">Adicionar</button>
+            </header>
+            <p><span class="epm-rotulo">Efeito</span> {{this.efeito}}</p>
+            {{#if segundo}}<p><span class="epm-rotulo">{{this.segundoRotulo}}</span> {{this.segundo}}</p>{{/if}}
+          </article>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+    </section>
+    {{/each}}
+  </section>
+  {{/if}}
+
   <div class="epm-bencaos-grade">
     <section class="epm-coluna-bencao bencao">
       <header class="epm-painel-titulo">
         <h3>Bênçãos</h3>
-        {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaBencao" data-tipo="bencao"><i class="fa-solid fa-plus"></i> Nova bênção</button>{{/if}}
+        {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaBencao" data-tipo="bencao" title="Bênção própria, fora da lista"><i class="fa-solid fa-plus"></i> Nova bênção</button>{{/if}}
       </header>
       {{#unless bencaos.length}}<p class="epm-vazio">Nenhuma bênção recebida.</p>{{/unless}}
       {{#each bencaos}}{{> "epm-bencao"}}{{/each}}
@@ -12,7 +71,7 @@
     <section class="epm-coluna-bencao maldicao">
       <header class="epm-painel-titulo">
         <h3>Maldições</h3>
-        {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaBencao" data-tipo="maldicao"><i class="fa-solid fa-plus"></i> Nova maldição</button>{{/if}}
+        {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaBencao" data-tipo="maldicao" title="Maldição própria, fora da lista"><i class="fa-solid fa-plus"></i> Nova maldição</button>{{/if}}
       </header>
       {{#unless maldicoes.length}}<p class="epm-vazio">Nenhuma maldição. Por enquanto.</p>{{/unless}}
       {{#each maldicoes}}{{> "epm-bencao"}}{{/each}}

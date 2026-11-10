@@ -1,4 +1,4 @@
-<article class="epm-bencao {{this.tipo}}{{#if ativo}} ativa{{/if}}" data-bencao="{{this.id}}">
+<article class="epm-bencao {{this.tipo}}{{#if ativo}} ativa{{/if}}{{#if suspensa}} suspensa{{/if}}{{#if emCurso}} em-curso{{/if}}" data-bencao="{{this.id}}">
   <header class="epm-bencao-topo">
     <label class="epm-interruptor" title="{{#if ativo}}Ativa: os modificadores valem{{else}}Inativa{{/if}}">
       <input type="checkbox" name="flags.epm-ficha.bencaos.{{this.id}}.ativo" {{epmChecked ativo}} aria-label="Ativa" />
@@ -9,11 +9,32 @@
     <button type="button" class="epm-icone-botao perigo" data-action="excluirBencao" data-bencao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
     {{else}}
     <span class="epm-bencao-nome">{{#if nome}}{{this.nome}}{{else}}Sem nome{{/if}}</span>
+    <button type="button" class="epm-icone-botao" data-action="chatBencao" data-bencao="{{this.id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
     {{/if}}
   </header>
+  {{#if naturezaLabel}}
+  <div class="epm-bencao-selos">
+    <span class="epm-tag">{{this.naturezaLabel}}</span>
+    {{#if raridadeLabel}}<span class="epm-raridade" style="--cor: {{this.raridadeCor}}">{{this.raridadeLabel}}</span>{{/if}}
+    {{#if frequenciaLabel}}<span class="epm-tag">{{this.frequenciaLabel}}</span>{{/if}}
+    {{#if duracao}}<span class="epm-tag">{{this.duracao}} turnos</span>{{/if}}
+  </div>
+  {{else}}{{#if frequenciaLabel}}<div class="epm-bencao-selos"><span class="epm-tag">{{this.frequenciaLabel}}</span>{{#if duracao}}<span class="epm-tag">{{this.duracao}} turnos</span>{{/if}}</div>{{/if}}{{/if}}
+  {{#if suspensa}}<p class="epm-aviso"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Suspensa por {{this.suspensa}}.</p>{{/if}}
+
   {{#if @root.edicao}}
   <label class="epm-campo"><span>Origem</span><input type="text" name="flags.epm-ficha.bencaos.{{this.id}}.origem" value="{{this.origem}}" placeholder="quem concedeu, onde foi obtida" /></label>
   <label class="epm-campo"><span>Efeito</span><textarea name="flags.epm-ficha.bencaos.{{this.id}}.descricao" rows="2">{{this.descricao}}</textarea></label>
+  {{#if catalogo}}
+  {{#if condicao}}<p class="epm-texto-livre"><span class="epm-rotulo">Condição</span> {{this.condicao}}</p>{{/if}}
+  {{#if custo}}<p class="epm-texto-livre"><span class="epm-rotulo">Custo</span> {{this.custo}}</p>{{/if}}
+  {{#if consequencia}}<p class="epm-texto-livre"><span class="epm-rotulo">Consequência</span> {{this.consequencia}}</p>{{/if}}
+  {{else}}
+  <div class="epm-dialogo-linha">
+    <label class="epm-campo"><span>Usos</span><select name="flags.epm-ficha.bencaos.{{this.id}}.frequencia">{{#each opcoesFrequencia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+    <label class="epm-campo"><span>Duração (turnos)</span><input type="number" min="0" name="flags.epm-ficha.bencaos.{{this.id}}.duracao" value="{{this.duracao}}" /></label>
+  </div>
+  {{/if}}
   <div class="epm-mods">
     <span class="epm-rotulo">Modificadores na ficha</span>
     {{#each mods}}
@@ -31,6 +52,27 @@
   {{else}}
   {{#if origem}}<p class="epm-dica">{{this.origem}}</p>{{/if}}
   {{#if descricao}}<p class="epm-texto-livre">{{this.descricao}}</p>{{/if}}
+  {{#if condicao}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Condição</span> {{this.condicao}}</p>{{/if}}
+  {{#if custo}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Custo</span> {{this.custo}}</p>{{/if}}
+  {{#if consequencia}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Consequência</span> {{this.consequencia}}</p>{{/if}}
   {{#if mods.length}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag">{{this.alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}</div>{{/if}}
+  {{/if}}
+  {{#if resumoAuto.length}}<div class="epm-chips epm-auto-chips" title="O que a ficha faz sozinha">{{#each resumoAuto}}<span class="epm-tag epm-tag-auto">{{this}}</span>{{/each}}</div>{{/if}}
+  {{#if permanentes.length}}<div class="epm-chips" title="Custos permanentes já pagos">{{#each permanentes}}<span class="epm-tag epm-tag-perm">{{this}}</span>{{/each}}</div>{{/if}}
+
+  {{#if podeUsar}}
+  <footer class="epm-bencao-uso">
+    {{#if emCurso}}
+    <span class="epm-bencao-duracao"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> {{this.restantes}} turno{{#unless (epmEq restantes 1)}}s{{/unless}} restante{{#unless (epmEq restantes 1)}}s{{/unless}}</span>
+    {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="encerrarBencao" data-bencao="{{this.id}}" title="Encerrar agora">Encerrar</button>{{/if}}
+    {{else}}
+    {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini{{#if usado}} usado{{/if}}" data-action="usarBencao" data-bencao="{{this.id}}" title="{{#if usado}}Já usada ({{this.frequenciaLabel}}){{else}}Usar: mostra no chat{{#if duracao}} e liga por {{this.duracao}} turnos{{/if}}{{/if}}"><i class="fa-solid fa-hand-sparkles" aria-hidden="true"></i> Usar</button>{{/if}}
+    {{#if temTermino}}{{#if ativo}}{{#unless duracao}}{{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="encerrarBencao" data-bencao="{{this.id}}">Encerrar</button>{{/if}}{{/unless}}{{/if}}{{/if}}
+    {{/if}}
+    {{#if temFrequencia}}
+    <span class="epm-bencao-freq{{#if usado}} usado{{/if}}">{{#if usado}}<i class="fa-solid fa-circle-check" aria-hidden="true"></i> usada{{else}}<i class="fa-regular fa-circle" aria-hidden="true"></i> disponível{{/if}} ({{this.frequenciaLabel}})</span>
+    {{#if usado}}{{#if @root.editavel}}<button type="button" class="epm-link" data-action="recarregarBencao" data-bencao="{{this.id}}" title="Marcar como disponível de novo">Recarregar</button>{{/if}}{{/if}}
+    {{/if}}
+  </footer>
   {{/if}}
 </article>

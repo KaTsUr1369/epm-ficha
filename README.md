@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.2.3
+
+- Modo de segurança: se algo der errado ao abrir uma ficha, ela abre mesmo assim e mostra a mensagem de erro no topo. Itens que não puderem ser lidos ficam escondidos e listados na aba Principal.
+
 ## Novidades da 0.2.2
 
 - A vida temporária virou a caixa "Temp" no quadro de Vida: clicando, abre um mini editor com « ‹ › » e campo para digitar (Enter confirma, Esc fecha).

@@ -65,6 +65,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   };
 
   static PARTS = {
+    erro: { template: `${CAMINHO}/actor/erro.hbs` },
     header: { template: `${CAMINHO}/actor/header.hbs` },
     nav: { template: `${CAMINHO}/actor/nav.hbs` },
     principal: { template: `${CAMINHO}/actor/principal.hbs`, scrollable: [""] },
@@ -95,7 +96,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     super._configureRenderOptions(options);
     if (!Array.isArray(options.parts)) options.parts = Object.keys(this.constructor.PARTS);
     if (this._visaoLimitada()) {
-      options.parts = options.parts.filter(p => p === "header" || p === "sobre");
+      options.parts = options.parts.filter(p => p === "erro" || p === "header" || p === "sobre");
       return;
     }
     if (options.isFirstRender) return;
@@ -110,45 +111,71 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async _prepareContext(options) {
     const base = await super._prepareContext(options);
-    const actor = this.actor;
-    const bruto = actor.flags?.[FLAG] ?? {};
-    const segredos = actor.isOwner;
-    if (this._modoEdicao === null) {
-      const distribuidos = Object.values(bruto.atributos ?? {}).reduce((soma, a) => soma + Math.abs(int(a?.base)), 0);
-      this._modoEdicao = this.isEditable && distribuidos === 0;
-    }
-    const enriquecidos = { itens: {}, sobre: {} };
-    for (const id of [...this._expandidos]) {
-      const item = actor.items.get(id);
-      if (!item) { this._expandidos.delete(id); continue; }
-      enriquecidos.itens[id] = await enriquecer(item.system?.description?.value ?? "", { relativeTo: item, secrets: item.isOwner });
-    }
-    const editores = { sobre: {}, notas: {} };
-    for (const t of TEXTOS_SOBRE) {
-      const valor = bruto.sobre?.[t.id] ?? "";
-      enriquecidos.sobre[t.id] = await enriquecer(valor, { relativeTo: actor, secrets: segredos });
-      editores.sobre[t.id] = editorHTML({ name: `${P}.sobre.${t.id}`, value: valor, documentUUID: actor.uuid, enriched: enriquecidos.sobre[t.id] });
-    }
-    for (const [pid, pagina] of Object.entries(bruto.notas?.paginas ?? {})) {
-      if (!pagina || pagina.tipo === "mapa") continue;
-      editores.notas[pid] = editorHTML({
-        name: `${P}.notas.paginas.${pid}.texto`, value: pagina.texto ?? "", documentUUID: actor.uuid,
-        enriched: await enriquecer(pagina.texto ?? "", { relativeTo: actor, secrets: segredos })
+    try {
+      const actor = this.actor;
+      const bruto = actor.flags?.[FLAG] ?? {};
+      const segredos = actor.isOwner;
+      if (this._modoEdicao === null) {
+        const distribuidos = Object.values(bruto.atributos ?? {}).reduce((soma, a) => soma + Math.abs(int(a?.base)), 0);
+        this._modoEdicao = this.isEditable && distribuidos === 0;
+      }
+      const enriquecidos = { itens: {}, sobre: {} };
+      for (const id of [...this._expandidos]) {
+        const item = actor.items.get(id);
+        if (!item) { this._expandidos.delete(id); continue; }
+        enriquecidos.itens[id] = await enriquecer(item.system?.description?.value ?? "", { relativeTo: item, secrets: item.isOwner });
+      }
+      const editores = { sobre: {}, notas: {} };
+      for (const t of TEXTOS_SOBRE) {
+        const valor = bruto.sobre?.[t.id] ?? "";
+        enriquecidos.sobre[t.id] = await enriquecer(valor, { relativeTo: actor, secrets: segredos });
+        editores.sobre[t.id] = editorHTML({ name: `${P}.sobre.${t.id}`, value: valor, documentUUID: actor.uuid, enriched: enriquecidos.sobre[t.id] });
+      }
+      for (const [pid, pagina] of Object.entries(bruto.notas?.paginas ?? {})) {
+        if (!pagina || pagina.tipo === "mapa") continue;
+        editores.notas[pid] = editorHTML({
+          name: `${P}.notas.paginas.${pid}.texto`, value: pagina.texto ?? "", documentUUID: actor.uuid,
+          enriched: await enriquecer(pagina.texto ?? "", { relativeTo: actor, secrets: segredos })
+        });
+      }
+      const contexto = montarContexto({
+        actor,
+        itens: actor.items.contents,
+        ui: {
+          abas: this._abas, expandidos: this._expandidos, filtroRaridades: this._filtroRaridades,
+          edicao: this._modoEdicao, tempAberto: this._tempAberto, limitado: this._visaoLimitada()
+        },
+        ajustes: { modoLimites: ajustes().modoLimites, listaPericias: listaPericias() },
+        usuario: { isGM: game.user.isGM },
+        enriquecidos, editores,
+        editavel: this.isEditable
       });
+      return Object.assign(base, contexto);
+    } catch (err) {
+      return Object.assign(base, this._contextoDeErro(err, "montar os dados"));
     }
-    const contexto = montarContexto({
-      actor,
-      itens: actor.items.contents,
-      ui: {
-        abas: this._abas, expandidos: this._expandidos, filtroRaridades: this._filtroRaridades,
-        edicao: this._modoEdicao, tempAberto: this._tempAberto, limitado: this._visaoLimitada()
-      },
-      ajustes: { modoLimites: ajustes().modoLimites, listaPericias: listaPericias() },
-      usuario: { isGM: game.user.isGM },
-      enriquecidos, editores,
-      editavel: this.isEditable
-    });
-    return Object.assign(base, contexto);
+  }
+
+  /** Contexto mínimo para a ficha abrir mostrando o erro em vez de não abrir. */
+  _contextoDeErro(err, etapa) {
+    console.error(`EPM | Erro ao ${etapa} da ficha de ${this.actor?.name}`, err);
+    ui.notifications.error(`Ficha EPM de ${this.actor?.name}: erro ao ${etapa}. A mensagem aparece no topo da ficha e no console (F12).`);
+    return {
+      actor: { id: this.actor?.id, uuid: this.actor?.uuid, name: this.actor?.name, img: this.actor?.img },
+      editavel: false, edicao: false, abas: [], cls: {},
+      erroFicha: `${err?.name ?? "Erro"}: ${err?.message ?? err}`,
+      erroPilha: String(err?.stack ?? "").split("\n").slice(0, 5).join("\n")
+    };
+  }
+
+  /** Se algum template falhar, abre só o aviso de erro em vez de não abrir nada. */
+  async _renderHTML(context, options) {
+    try {
+      return await super._renderHTML(context, options);
+    } catch (err) {
+      Object.assign(context, this._contextoDeErro(err, "desenhar"));
+      return super._renderHTML(context, { ...options, parts: ["erro"] });
+    }
   }
 
   async _onFirstRender(context, options) {
@@ -160,7 +187,9 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
     this.element.classList.toggle("epm-limitado", this._visaoLimitada());
-    if (options.isFirstRender || options.parts?.includes("anotacoes")) this._montarMapas();
+    if (options.isFirstRender || options.parts?.includes("anotacoes")) {
+      try { this._montarMapas(); } catch (err) { console.error("EPM | Falha ao montar o mapa mental", err); }
+    }
     if (this._focarTemp) {
       this._focarTemp = false;
       const campo = this.element.querySelector('[data-recurso-valor="temp"]');
@@ -177,6 +206,15 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   /** Grava a lista de perícias em fichas novas e traz fichas da 0.1 para a lista oficial. */
   async _inicializarDados() {
+    try {
+      await this._prepararDadosIniciais();
+    } catch (err) {
+      console.error(`EPM | Falha ao preparar os dados de ${this.actor.name}`, err);
+      ui.notifications.warn(`Ficha EPM de ${this.actor.name}: não consegui preparar os dados iniciais. Detalhes no console (F12).`);
+    }
+  }
+
+  async _prepararDadosIniciais() {
     if (!this.actor.isOwner) return;
     const bruto = this.actor.flags?.[FLAG] ?? {};
     if (!bruto.pericias) {

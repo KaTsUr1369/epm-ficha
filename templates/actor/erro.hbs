@@ -1,0 +1,8 @@
+<div class="epm-erro-ficha{{#if erroFicha}} ativo{{/if}}" role="alert">
+  {{#if erroFicha}}
+  <strong>A ficha encontrou um erro e abriu em modo de segurança.</strong>
+  <p>{{erroFicha}}</p>
+  {{#if erroPilha}}<pre>{{erroPilha}}</pre>{{/if}}
+  <p class="epm-dica">Copie esta mensagem (ou a mensagem vermelha do console, F12) e envie para quem mantém o módulo. Enquanto isso dá para trocar para a ficha do D&D em "Ficha", no topo da janela.</p>
+  {{/if}}
+</div>

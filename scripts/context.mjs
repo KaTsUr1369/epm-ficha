@@ -119,6 +119,23 @@ export function resumoAtaque(at, ficha, cena) {
   };
 }
 
+/** Aplica `fn` a cada elemento; se um falhar, ele é pulado e o nome vai para `falhas`. */
+function cadaSeguro(lista, fn, falhas) {
+  const out = [];
+  for (const x of lista) {
+    try {
+      const r = fn(x);
+      if (r) out.push(r);
+    } catch (err) {
+      let nome = "?";
+      try { nome = x?.name ?? x?.nome ?? "?"; } catch { /* nome ilegível */ }
+      console.warn(`EPM | Ignorado ao montar a ficha: ${nome}`, err);
+      if (!falhas.includes(nome)) falhas.push(nome);
+    }
+  }
+  return out;
+}
+
 /* -------------------------------------------- */
 
 export function montarContexto({
@@ -132,6 +149,8 @@ export function montarContexto({
   const expandidos = ui.expandidos ?? new Set();
   const filtro = ui.filtroRaridades ?? new Set();
   const cena = bonusCenaAtivos(dados);
+  const falhas = [];
+  const tipoDe = i => { try { return i?.type; } catch { return undefined; } };
 
   const ctx = {
     actor: { id: actor.id, uuid: actor.uuid, name: actor.name, img: actor.img },
@@ -208,13 +227,13 @@ export function montarContexto({
   ctx.acoesTurno = [...ACOES_TURNO, "reacao"].map(id => ({ id, label: ACOES[id].curto, usada: !!ficha.acoes[id] }));
   ctx.defesasPendentes = Array.from({ length: 3 }, (_, i) => ({ ativa: i < ficha.acoes.defesas }));
   const opcoesPericia = selecionada => ficha.pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === selecionada }));
-  const armas = itens.filter(i => i.type === "weapon").map(ataqueDeArma);
-  const custom = Object.entries(dados.ataques ?? {}).filter(([, a]) => a).map(([id, a]) => ataqueCustom(id, a))
+  const armas = cadaSeguro(itens.filter(i => tipoDe(i) === "weapon"), ataqueDeArma, falhas);
+  const custom = cadaSeguro(Object.entries(dados.ataques ?? {}).filter(([, a]) => a && typeof a === "object"), ([id, a]) => ataqueCustom(id, a), falhas)
     .sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.ataques = {
-    armas: armas.filter(a => a.equipado).map(a => resumoAtaque(a, ficha, cena)),
+    armas: cadaSeguro(armas.filter(a => a.equipado), a => resumoAtaque(a, ficha, cena), falhas),
     armasGuardadas: armas.filter(a => !a.equipado).length,
-    custom: custom.map(a => ({ ...resumoAtaque(a, ficha, cena), opcoesPericia: opcoesPericia(a.periciaId) }))
+    custom: cadaSeguro(custom, a => ({ ...resumoAtaque(a, ficha, cena), opcoesPericia: opcoesPericia(a.periciaId) }), falhas)
   };
   ctx.ataques.vazio = !ctx.ataques.armas.length && !ctx.ataques.custom.length;
   ctx.bonusCena = Object.entries(dados.bonusCena ?? {}).filter(([, b]) => b).map(([id, b]) => ({
@@ -223,7 +242,7 @@ export function montarContexto({
   ctx.cena = cena;
 
   /* ---------- Poderes (habilidades e magias) ---------- */
-  const poderes = itens.filter(i => i.type === "feat" || i.type === "spell").map(item => {
+  const poderes = cadaSeguro(itens.filter(i => tipoDe(i) === "feat" || tipoDe(i) === "spell"), item => {
     const p = lerPoder(item);
     const formas = p.formas.map(fo => {
       const av = avaliarForma(fo, ficha, { raridade: p.raridade, melhorias: p.melhorias, dadosRolagem: rolagem });
@@ -249,7 +268,7 @@ export function montarContexto({
       alertas, alertasTexto: alertas.join("\n"),
       expandido: expandidos.has(item.id), descricao: enriquecidos.itens?.[item.id] ?? ""
     };
-  });
+  }, falhas);
   const ordenarPoderes = (a, b) => (b.favorito - a.favorito) || a.name.localeCompare(b.name, "pt-BR");
   const contagem = contarRaridades(poderes);
   const modo = ajustes.modoLimites ?? "separados";
@@ -295,11 +314,14 @@ export function montarContexto({
 
   /* ---------- Inventário ---------- */
   const contidos = {};
-  for (const i of itens) if (i.system?.container) contidos[i.system.container] = (contidos[i.system.container] ?? 0) + 1;
-  const nomes = Object.fromEntries(itens.map(i => [i.id, i.name]));
+  for (const i of itens) {
+    try { if (i.system?.container) contidos[i.system.container] = (contidos[i.system.container] ?? 0) + 1; } catch { /* item ilegível */ }
+  }
+  const nomes = {};
+  for (const i of itens) { try { nomes[i.id] = i.name; } catch { /* item ilegível */ } }
   let pesoTotal = 0;
   ctx.categorias = CATEGORIAS_ITEM.map(cat => {
-    const lista = itens.filter(i => cat.tipos.includes(i.type)).map(item => {
+    const lista = cadaSeguro(itens.filter(i => cat.tipos.includes(tipoDe(i))), item => {
       const raridade = raridadeItem(item);
       const r = RARIDADES_ITEM[raridade];
       const qtd = num(item.system?.quantity, 1);
@@ -324,7 +346,7 @@ export function montarContexto({
         opcoesRaridade: Object.entries(RARIDADES_ITEM).map(([id, rr]) => ({ id, label: rr.label, selected: id === raridade })),
         opcoesPericia: eArma ? opcoesPericia(ataque.periciaId) : []
       };
-    });
+    }, falhas);
     const visiveis = lista.filter(i => !filtro.size || filtro.has(i.raridade));
     const porNome = (a, b) => a.name.localeCompare(b.name, "pt-BR");
     const grupos = [];
@@ -406,6 +428,7 @@ export function montarContexto({
     };
   }).sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.afinidade = AFINIDADE;
+  ctx.itensComErro = falhas;
 
   return ctx;
 }

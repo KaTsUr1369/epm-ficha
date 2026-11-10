@@ -19,6 +19,8 @@
     </div>
   </section>
 
+  {{#if itensComErro.length}}<p class="epm-aviso">Alguns itens não puderam ser lidos e ficaram escondidos: {{epmJoin itensComErro}}. Detalhes no console (F12).</p>{{/if}}
+
   <div class="epm-caixas-estado">
     <section class="epm-painel epm-caixa epm-caixa-condicoes">
       <header class="epm-painel-titulo"><h3>Condições</h3><button type="button" class="epm-link" data-action="irAba" data-tab="condicoes">Gerenciar</button></header>

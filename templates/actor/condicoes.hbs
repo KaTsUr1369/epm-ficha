@@ -51,25 +51,4 @@
     {{> "epm-exaustao"}}
   </section>
 
-  <div class="epm-tags-grade">
-    {{#each tagsCondicoes}}
-    <section class="epm-painel epm-tags" data-campo="{{this.campo}}">
-      <header class="epm-painel-titulo"><h3>{{this.label}}</h3></header>
-      <p class="epm-dica">{{this.dica}}</p>
-      <ul class="epm-tag-lista">
-        {{#each itens}}<li class="epm-chip">{{this}}{{#if @root.edicao}}<button type="button" data-action="removerTag" data-campo="{{../campo}}" data-valor="{{this}}" aria-label="Remover {{this}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}
-      </ul>
-      {{#unless itens.length}}<p class="epm-vazio">Nenhum.</p>{{/unless}}
-      {{#if @root.edicao}}
-      <input type="text" class="epm-tag-input" data-tag-campo="{{this.campo}}" list="epm-sug-{{this.campo}}-{{@root.actor.id}}" placeholder="Digite e tecle Enter" aria-label="Adicionar em {{this.label}}" />
-      <datalist id="epm-sug-{{this.campo}}-{{@root.actor.id}}">{{#each sugestoes}}<option value="{{this}}"></option>{{/each}}</datalist>
-      {{/if}}
-    </section>
-    {{/each}}
-    <section class="epm-painel epm-tags epm-tags-nota">
-      <header class="epm-painel-titulo"><h3>Idiomas</h3></header>
-      <p class="epm-dica">Os idiomas agora ficam na aba Sobre.</p>
-      <button type="button" class="epm-link" data-action="irAba" data-tab="sobre">Ir para Sobre</button>
-    </section>
-  </div>
 </section>

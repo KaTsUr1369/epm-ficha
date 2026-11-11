@@ -689,8 +689,9 @@ export function montarContexto({
     sugestoes: ["Todos os danos", ...SUGESTOES.dano]
   };
   ctx.rdBox.vazio = !ctx.rdBox.manuais.some(r => r.ativa) && !ctx.rdBox.deItens.length;
+  ctx.defesasBox.deFora = [...ctx.defesasBox.resistencias, ...ctx.defesasBox.imunidades, ...ctx.defesasBox.vulnerabilidades].some(t => t.fonte);
   ctx.defesasBox.vazio = !ctx.defesasBox.resistencias.length && !ctx.defesasBox.imunidades.length
-    && !ctx.defesasBox.vulnerabilidades.length && !ctx.defesasBox.reducoes.length;
+    && !ctx.defesasBox.vulnerabilidades.length;
 
   ctx.idiomas = idiomasDoAtor(actor, idiomas.catalogo ?? []);
   ctx.idiomasInfo = {

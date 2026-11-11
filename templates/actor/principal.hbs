@@ -46,14 +46,6 @@
       </ul>
       {{/if}}
     </section>
-    <section class="epm-painel epm-caixa epm-caixa-defesas">
-      <header class="epm-painel-titulo"><h3>Resistências</h3></header>
-      {{#if defesasBox.vazio}}<p class="epm-vazio">Nenhuma resistência, imunidade ou vulnerabilidade.</p>{{/if}}
-      {{#if defesasBox.resistencias.length}}<div class="epm-chips"><span class="epm-rotulo">Resiste</span>{{#each defesasBox.resistencias}}<span class="epm-chip" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
-      {{#if defesasBox.reducoes.length}}<div class="epm-chips"><span class="epm-rotulo">Reduz</span>{{#each defesasBox.reducoes}}<span class="epm-chip epm-chip-rd" title="{{this.fonte}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
-      {{#if defesasBox.imunidades.length}}<div class="epm-chips"><span class="epm-rotulo">Imune</span>{{#each defesasBox.imunidades}}<span class="epm-chip epm-chip-imune" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
-      {{#if defesasBox.vulnerabilidades.length}}<div class="epm-chips"><span class="epm-rotulo">Vulnerável</span>{{#each defesasBox.vulnerabilidades}}<span class="epm-chip epm-chip-vulneravel{{#if anulada}} anulada{{/if}}" title="{{this.fonte}}{{#if anulada}}&#10;Anulada por {{this.anulada}}{{/if}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
-    </section>
     <section class="epm-painel epm-caixa epm-caixa-idiomas">
       <header class="epm-painel-titulo"><h3>Idiomas</h3>{{#if editavel}}<button type="button" class="epm-link" data-action="irAba" data-tab="sobre" title="Os idiomas são editados na aba Sobre">Editar</button>{{/if}}</header>
       {{#unless idiomas.length}}<p class="epm-vazio">Nenhum idioma.</p>{{/unless}}

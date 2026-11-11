@@ -2706,3 +2706,10 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-sd-op { padding: 2px 8px; min-height: 0; height: auto; line-height: 1.5; font-size: 12.5px; border: 1px solid #2E4845; border-radius: 5px; background: #1a2625; color: #E6E0D2; cursor: pointer; width: auto; flex: none; }
 .epm-sd-op:hover { border-color: #D3A85E; background: #24332f; }
 .epm-sd-vazio { margin: 6px 2px; color: #9fb0ac; font-size: 12px; }
+
+/* 0.5.10 · Resistências na aba Combate; Principal com 2 caixas */
+.epm-caixas-estado { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.epm-defesas-dano .epm-tags-grade { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 0; }
+.epm-defesas-dano .epm-tags { display: flex; flex-direction: column; gap: 4px; }
+.epm-defesas-dano .epm-tags .epm-dica { margin: 0; }
+.epm-defesas-dano .epm-chips { margin-bottom: 4px; }

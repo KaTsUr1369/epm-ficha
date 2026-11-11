@@ -14,6 +14,11 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.10
+
+- **Resistências, imunidades e vulnerabilidades** agora ficam só na aba **Combate** (painel "Defesas contra dano", embaixo da RD): fora do modo edição mostra tudo (inclusive o que vem de itens, bênçãos e condições, com a origem ao passar o mouse); no modo edição, os três campos para adicionar e remover.
+- Saíram da aba Condições (junto com o aviso de Idiomas) e da Principal (que agora tem só Condições e Idiomas).
+
 ## Novidades da 0.5.9
 
 - **Seletor de tipo de dano** novo: a lista do navegador não cabia na tela e não rolava. Agora, ao clicar num campo de tipo de dano (ataques, armas, habilidades, resistências, imunidades, vulnerabilidades, RD, Escudo), abre uma lista própria com rolagem, separada por grupo (Físicos, Elementais…), com os grupos inteiros e os outros itens (condições, "Todos os danos") no fim. O nível (Natural, Mágico, Verdadeiro, Límbico, Arcaico) é escolhido nos botões do topo. Digitar filtra a lista.

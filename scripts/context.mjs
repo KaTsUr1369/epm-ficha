@@ -18,7 +18,7 @@ import {
 } from "./arquetipos.mjs";
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
-  situacaoLimite, raridadeItem, valorEmCobre, formatarMoedas, arredondar, bonusCenaAtivos, entradaPericia, lerCaminho,
+  situacaoLimite, raridadeItem, valorEmCobre, formatarMoedas, arredondar, bonusCenaAtivos, entradaPericia, lerCaminho, municaoDaArma,
   efeitosDeItens, lerEfeitosItem, resumoEfeitoItem, itemAtivo, ordenarPorLista, normalizarTexto
 } from "./data.mjs";
 import {
@@ -761,16 +761,16 @@ export function montarContexto({
       // Munição e cargas da arma (descontadas no ataque)
       const it = itens.find(i => i.id === a.id);
       const fi = it?.flags?.[FLAG] ?? {};
-      const mun = fi.municao ? itens.find(i => i.id === fi.municao) : null;
+      const md = municaoDaArma(fi);
+      const mun = md.itemId ? itens.find(i => i.id === md.itemId) : null;
       const cMax = Math.max(0, int(fi.cargas?.max));
       r.favoritaCombatente = !!it && nivelArquetipo(dados, "combatente") > 0 && eTipoFavorito(it, dados);
       r.tipoArma = tipoDaArma(it);
-      r.municaoTexto = fi.municao ? (mun ? `${mun.name} ×${num(mun.system?.quantity, 0)}` : "munição não encontrada") : "";
-      r.semMunicao = !!fi.municao && (!mun || num(mun.system?.quantity, 0) <= 0);
-      const pMax = Math.max(0, int(fi.pente?.max));
-      r.penteTexto = pMax ? `Pente ${Math.max(0, int(fi.pente?.atual))}/${pMax}` : "";
-      r.penteVazio = pMax > 0 && int(fi.pente?.atual) <= 0;
-      r.temPente = pMax > 0;
+      r.municaoTexto = md.usa ? (md.itemId ? (mun ? `${mun.name} ×${num(mun.system?.quantity, 0)}` : "munição não encontrada") : (md.pente ? "" : "escolha a munição")) : "";
+      r.semMunicao = md.usa && !md.pente && (!mun || num(mun.system?.quantity, 0) <= 0);
+      r.penteTexto = md.pente ? `Pente ${md.pente.atual}/${md.pente.max}` : "";
+      r.penteVazio = !!md.pente && md.pente.atual <= 0;
+      r.temPente = !!md.pente;
       r.recargaTexto = ACOES[fi.recargaAcao]?.curto ?? "Padrão";
       r.cargasTexto = cMax ? `${limitar(int(fi.cargas?.valor), 0, cMax)}/${cMax} cargas` : "";
       return r;
@@ -1021,13 +1021,14 @@ export function montarContexto({
     const ataque = eArma ? resumoAtaque(ataqueDeArma(item), ficha, cena) : null;
     const efeitos = lerEfeitosItem(item);
     const ativo = itemAtivo(item);
-    const municaoItem = eArma && f.municao ? itens.find(i => i.id === f.municao) : null;
+    const md = eArma ? municaoDaArma(f) : { usa: false };
+    const municaoItem = md.usa && md.itemId ? itens.find(i => i.id === md.itemId) : null;
     const cargasMax = Math.max(0, int(f.cargas?.max));
     return {
       id: item.id, uuid: item.uuid, name: item.name, img: item.img, type: item.type,
-      municao: eArma && f.municao ? { nome: municaoItem?.name ?? "munição não encontrada", qtd: municaoItem ? num(municaoItem.system?.quantity, 0) : 0,
+      municao: md.usa && md.itemId ? { nome: municaoItem?.name ?? "munição não encontrada", qtd: municaoItem ? num(municaoItem.system?.quantity, 0) : 0,
         acabou: !municaoItem || num(municaoItem.system?.quantity, 0) <= 0 } : null,
-      pente: eArma && int(f.pente?.max) > 0 ? { atual: Math.max(0, int(f.pente.atual)), max: int(f.pente.max), vazio: int(f.pente.atual) <= 0 } : null,
+      pente: md.usa && md.pente ? { atual: md.pente.atual, max: md.pente.max, vazio: md.pente.atual <= 0 } : null,
       cargas: cargasMax ? { valor: limitar(int(f.cargas?.valor), 0, cargasMax), max: cargasMax, recarga: f.cargas?.recarga && f.cargas.recarga !== "nenhuma" ? RECARGAS[f.cargas.recarga] ?? "" : "" } : null,
       quantidade: qtd, peso: arredondar(peso, 2), pesoLinha: arredondar(peso * qtd, 2),
       raridade, raridadeLabel: r.label, raridadeCor: r.cor, raridadeOrdem: r.ordem,
@@ -1495,11 +1496,14 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     ctx.tipoArma = String(f.tipoArma ?? "");
     ctx.sugestoesTipoArma = TIPOS_ARMA;
     const candidatos = doDono.filter(i => ["consumable", "loot"].includes(i.type) && i.id !== item.id);
+    const md = municaoDaArma(f);
     ctx.municao = {
-      porAtaque: Math.max(1, int(f.municaoPorAtaque, 1)), temDono: !!item.actor,
+      usa: md.usa, unitario: md.usa && md.tipo === "unitario", temPente: md.usa && md.tipo === "pente",
+      opcoesTipo: [{ id: "unitario", label: "Unitário (1 por disparo)" }, { id: "pente", label: "Pente" }].map(x => ({ ...x, selected: x.id === md.tipo })),
+      porAtaque: md.porAtaque, temDono: !!item.actor,
       opcoesRecarga: ["padrao", "bonus", "movimento", "reacao", "livre"].map(id => ({ id, label: ACOES[id].label, selected: id === (ACOES[f.recargaAcao] ? f.recargaAcao : "padrao") })),
-      penteMax: Math.max(0, int(f.pente?.max)), penteAtual: Math.max(0, int(f.pente?.atual)), temPente: int(f.pente?.max) > 0,
-      opcoes: [{ id: "", label: "Não usa munição", selected: !f.municao },
+      penteMax: md.pente?.max ?? (int(f.pente?.max) || 6), penteAtual: md.pente?.atual ?? Math.max(0, int(f.pente?.atual)),
+      opcoes: [{ id: "", label: "— escolha a munição —", selected: !f.municao },
         ...candidatos.map(i => ({ id: i.id, label: `${i.name} (×${num(i.system?.quantity, 0)})`, selected: i.id === f.municao }))]
     };
   }

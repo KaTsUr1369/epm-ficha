@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.12
+
+- **Munição da arma**: no editor da arma, a caixa **"Gasta munição"**. Marcada, escolhe o tipo:
+  - **Unitário** (1 flecha, 1 virote…): cada ataque tira direto do item de munição escolhido (quantos por ataque).
+  - **Pente**: tamanho do pente, quantos tiros tem agora, munição usada para recarregar e qual ação recarregar gasta. Os tiros saem do pente; o botão Recarregar enche com a munição.
+  Desmarcada, a arma não gasta nada. Armas antigas continuam como estavam (munição ligada = unitário; pente > 0 = pente).
+
 ## Novidades da 0.5.11
 
 - **Armas com mais de um modo de ataque**: no editor da arma, "Modos de ataque" adiciona outros jeitos de atacar com a mesma arma (ex.: lança: ponta 1d6 Perfurante, cabo 1d4 Contundente). Cada modo tem nome, dano, tipo de dano e, se quiser, perícia e bônus de acerto próprios (vazio = igual à arma). Cada modo vira uma linha em Combate → Ataques, com munição, cargas, Maestria e defesas funcionando igual. O contra-ataque também deixa escolher o modo.

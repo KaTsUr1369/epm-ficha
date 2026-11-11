@@ -2725,3 +2725,8 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-modo-linha .epm-mini input, .epm-modo-linha .epm-mini select { width: 100%; }
 .epm-modos-arma > .epm-botao { align-self: flex-start; }
 .epm-tag-modo { color: var(--epm-destaque, #D3A85E); border-color: currentColor; }
+
+/* 0.5.12 · Munição da arma */
+.epm-municao-arma { margin: 10px 0 4px; padding: 6px 10px 8px; border: 1px solid var(--epm-linha); border-radius: 6px; }
+.epm-municao-arma legend { padding: 0 6px; }
+.epm-municao-arma .epm-dica { margin: 6px 0 0; }

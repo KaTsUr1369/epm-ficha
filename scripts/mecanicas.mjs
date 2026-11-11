@@ -11,7 +11,7 @@ import {
   num, int, novoId, lerPoder, avaliarForma, textoCusto, eSustentada, contarRaridades, situacaoLimite, raridadeItem,
   maxFormula, tetoDano, contarEfeitos, somarFormula, valorEmCobre, pagarMoedas, consolidarMoedas,
   formatarMoedas, formaPadrao, moedaPorId, multiplicarDados, bonusCenaAtivos, limitar, lerEfeitosItem,
-  custoEfetivo, condicaoPorId, danoRecebido
+  custoEfetivo, condicaoPorId, danoRecebido, municaoDaArma
 } from "./data.mjs";
 import { lerAtor, dadosRolagemEPM, danoArma, periciaAtaquePadrao, ataqueDeArma, ataqueCustom, modsDoAtaque } from "./context.mjs";
 import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos.mjs";
@@ -1147,8 +1147,9 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const presa = comb >= ARQUETIPOS.combatente.cacador.nivel ? (dados.usos?.presa ?? "") : "";
   const penalExtra = Math.abs(int(ajustes().penalidadeAtaqueExtra ?? 5));
   const peDisp = ficha.recursos.pe.value + Math.max(0, ficha.recursos.pe.temp ?? 0);
-  const municao = fi.municao ? actor.items.get(fi.municao) : null;
-  const porAtaque = Math.max(1, int(fi.municaoPorAtaque, 1));
+  const md = municaoDaArma(fi);
+  const municao = md.itemId ? actor.items.get(md.itemId) : null;
+  const porAtaque = md.porAtaque;
   const cargas = int(fi.cargas?.max) > 0 ? { valor: int(fi.cargas.valor), max: int(fi.cargas.max) } : null;
   let margemPadrao = at.critMargem;
   let multPadrao = at.critMult;
@@ -1184,9 +1185,10 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (estilos.includes("dupla") && armasEquipadas >= 2) notas.push(`Arma Dupla: +${ARQUETIPOS.combatente.estilos.dupla.acerto} de Acerto (duas armas equipadas)`);
   if (presa) opcoesArq.push(chk("presa", `Contra a Presa (${escapar(presa)}): +${ARQUETIPOS.combatente.cacador.acerto} de Acerto e +1 dado de dano`));
   const avisosRecurso = [];
-  const penteInfo = int(fi.pente?.max) > 0 ? `Pente: ${Math.max(0, int(fi.pente.atual))} de ${int(fi.pente.max)} (${porAtaque} por ataque)` : "";
+  const penteInfo = md.pente ? `Pente: ${md.pente.atual} de ${md.pente.max} (${porAtaque} por ataque)` : "";
   if (penteInfo) avisosRecurso.push(penteInfo);
-  if (fi.municao && !penteInfo) avisosRecurso.push(municao ? `Munição: ${escapar(municao.name)} ×${num(municao.system?.quantity, 0)} (${porAtaque} por ataque)` : "A munição ligada a esta arma não foi encontrada.");
+  if (md.usa && !md.pente && !md.itemId) avisosRecurso.push("Esta arma gasta munição, mas nenhuma foi escolhida no editor da arma.");
+  if (md.usa && md.itemId && !penteInfo) avisosRecurso.push(municao ? `Munição: ${escapar(municao.name)} ×${num(municao.system?.quantity, 0)} (${porAtaque} por ataque)` : "A munição ligada a esta arma não foi encontrada.");
   if (cargas) avisosRecurso.push(`Cargas: ${cargas.valor} de ${cargas.max} (1 por ataque)`);
   const content = `
     ${oportunidade ? `<p class="epm-aviso">Ataque de oportunidade: gasta a Reação. Só 1 golpe simples, sem ataque extra nem ação bônus.</p>` : ""}
@@ -1255,15 +1257,16 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     gastos.push(`${pe} PE`);
   }
   const mudancasItens = [];
-  const pente = int(fi.pente?.max) > 0 ? { max: int(fi.pente.max), atual: Math.max(0, int(fi.pente.atual)) } : null;
+  const pente = md.pente;
   if (pente) {
     // Arma de fogo: os tiros saem do pente; recarregar puxa da munição ligada
     const precisa = total * porAtaque;
     if (pente.atual < precisa) return ui.notifications.warn(`${item.name}: pente com ${pente.atual} de ${pente.max} (precisa de ${precisa}). Recarregue.`);
     mudancasItens.push({ _id: item.id, [`flags.${FLAG}.pente.atual`]: pente.atual - precisa });
     gastos.push(`${precisa} tiro${precisa > 1 ? "s" : ""} (pente ${pente.atual - precisa}/${pente.max})`);
-  } else if (fi.municao) {
+  } else if (md.usa) {
     const precisa = total * porAtaque;
+    if (!md.itemId) return ui.notifications.warn(`${item.name} gasta munição: escolha qual no editor da arma.`);
     const tem = municao ? num(municao.system?.quantity, 0) : 0;
     if (tem < precisa) return ui.notifications.warn(`Munição insuficiente: precisa de ${precisa}${municao ? ` ${municao.name}` : ""} e tem ${tem}.`);
     mudancasItens.push({ _id: municao.id, "system.quantity": tem - precisa });
@@ -1314,14 +1317,15 @@ export async function encerrarSustentada(actor, id) {
 /** Recarrega o pente de uma arma de fogo com a munição ligada (ou enche, se a arma não tiver munição ligada). */
 export async function recarregarArma(actor, item) {
   const fi = item?.flags?.[FLAG] ?? {};
-  const max = int(fi.pente?.max);
-  if (max <= 0) return ui.notifications.warn(`${item?.name ?? "A arma"} não tem pente.`);
-  const atual = Math.max(0, int(fi.pente?.atual));
+  const md = municaoDaArma(fi);
+  if (!md.pente) return ui.notifications.warn(`${item?.name ?? "A arma"} não usa pente.`);
+  const max = md.pente.max;
+  const atual = md.pente.atual;
   const falta = max - atual;
   if (falta <= 0) return ui.notifications.info(`${item.name}: pente já está cheio (${max}).`);
-  const mun = fi.municao ? actor.items.get(fi.municao) : null;
+  const mun = md.itemId ? actor.items.get(md.itemId) : null;
   let entra = falta;
-  if (fi.municao) {
+  if (md.itemId) {
     const tem = mun ? num(mun.system?.quantity, 0) : 0;
     if (tem <= 0) return ui.notifications.warn(`Sem munição para recarregar ${item.name}.`);
     entra = Math.min(falta, tem);

@@ -1397,6 +1397,24 @@ export function danoRecebido(ficha, valor, tipoDano = "") {
   return { final: dano, passos };
 }
 
+/**
+ * Munição da arma. "usaMunicao" (checkbox do editor) liga; "municaoTipo" escolhe:
+ *  - unitario: cada disparo gasta direto do item de munição (1 flecha);
+ *  - pente: os disparos saem do pente (tamanho escolhido); recarregar puxa do item de munição.
+ * Armas antigas (sem a checkbox) valem pelo que já tinham: munição ligada ou pente > 0.
+ */
+export function municaoDaArma(flags = {}) {
+  const f = flags ?? {};
+  const penteMax = Math.max(0, int(f.pente?.max));
+  const usa = f.usaMunicao === undefined || f.usaMunicao === null ? !!(f.municao || penteMax > 0) : !!f.usaMunicao;
+  const tipo = f.municaoTipo === "pente" || f.municaoTipo === "unitario" ? f.municaoTipo : (penteMax > 0 ? "pente" : "unitario");
+  if (!usa) return { usa: false, tipo, itemId: "", porAtaque: 1, pente: null };
+  return {
+    usa: true, tipo, itemId: f.municao ?? "", porAtaque: Math.max(1, int(f.municaoPorAtaque, 1)),
+    pente: tipo === "pente" ? { max: penteMax || 6, atual: Math.min(Math.max(0, int(f.pente?.atual)), penteMax || 6) } : null
+  };
+}
+
 /** Multiplica a quantidade de dados de uma fórmula (crítico ×3: "2d10 + 4" → "6d10 + 4"). */
 export function multiplicarDados(formula, mult) {
   const m = Math.max(1, int(mult, 1));

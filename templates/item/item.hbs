@@ -38,14 +38,27 @@
       <label class="epm-campo"><span>Tipo de dano</span><input type="text" name="flags.epm-ficha.tipoDano" value="{{ataque.tipoDano}}" list="epm-item-sug-dano" placeholder="Cortante" /></label>
       <label class="epm-campo" title="Menor resultado no d20 que conta como crítico"><span>Margem de crítico</span><input type="number" min="2" max="20" name="flags.epm-ficha.critMargem" value="{{ataque.critMargem}}" /></label>
       <label class="epm-campo" title="No crítico, os dados da arma são multiplicados por este valor"><span>Multiplicador</span><input type="number" min="2" name="flags.epm-ficha.critMult" value="{{ataque.critMult}}" /></label>
-      {{#if municao.temDono}}
-      <label class="epm-campo" title="Consumível ou loot do inventário que a arma gasta a cada ataque (flechas, balas, virotes…)"><span>Munição</span><select name="flags.epm-ficha.municao">{{#each municao.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
-      <label class="epm-campo"><span>Gasta por ataque</span><input type="number" min="1" name="flags.epm-ficha.municaoPorAtaque" value="{{municao.porAtaque}}" /></label>
-      {{/if}}
-      <label class="epm-campo" title="Armas de fogo: quantos tiros cabem no pente. 0 = sem pente (gasta direto da munição)"><span>Pente (tiros)</span><input type="number" min="0" name="flags.epm-ficha.pente.max" value="{{municao.penteMax}}" /></label>
-      {{#if municao.temPente}}<label class="epm-campo" title="Ação gasta ao recarregar esta arma"><span>Recarregar gasta</span><select name="flags.epm-ficha.recargaAcao">{{#each municao.opcoesRecarga}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
-      {{#if municao.temPente}}<div class="epm-campo"><span>No pente agora</span><div class="epm-custo"><input type="number" min="0" name="flags.epm-ficha.pente.atual" value="{{municao.penteAtual}}" />{{#if municao.temDono}}<button type="button" class="epm-botao" data-action="recarregar" title="Enche o pente com a munição ligada"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar</button>{{/if}}</div></div>{{/if}}
     </div>
+    <fieldset class="epm-municao-arma">
+      <legend><label class="epm-check"><input type="checkbox" name="flags.epm-ficha.usaMunicao" {{epmChecked municao.usa}} /> Gasta munição</label></legend>
+      {{#if municao.usa}}
+      <div class="epm-item-editor-campos">
+        <label class="epm-campo"><span>Tipo de munição</span><select name="flags.epm-ficha.municaoTipo">{{#each municao.opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        {{#if municao.temDono}}
+        <label class="epm-campo" title="Consumível ou loot do inventário: flechas, virotes, balas…"><span>{{#if municao.temPente}}Munição para recarregar{{else}}Munição{{/if}}</span><select name="flags.epm-ficha.municao">{{#each municao.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        {{else}}
+        <p class="epm-dica">A munição é escolhida quando a arma estiver na ficha de alguém.</p>
+        {{/if}}
+        <label class="epm-campo"><span>{{#if municao.temPente}}Tiros por ataque{{else}}Gasta por ataque{{/if}}</span><input type="number" min="1" name="flags.epm-ficha.municaoPorAtaque" value="{{municao.porAtaque}}" /></label>
+        {{#if municao.temPente}}
+        <label class="epm-campo" title="Quantos tiros cabem no pente"><span>Tamanho do pente</span><input type="number" min="1" name="flags.epm-ficha.pente.max" value="{{municao.penteMax}}" /></label>
+        <div class="epm-campo"><span>No pente agora</span><div class="epm-custo"><input type="number" min="0" name="flags.epm-ficha.pente.atual" value="{{municao.penteAtual}}" />{{#if municao.temDono}}<button type="button" class="epm-botao" data-action="recarregar" title="Enche o pente com a munição escolhida"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar</button>{{/if}}</div></div>
+        <label class="epm-campo" title="Ação gasta ao recarregar esta arma"><span>Recarregar gasta</span><select name="flags.epm-ficha.recargaAcao">{{#each municao.opcoesRecarga}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        {{/if}}
+      </div>
+      <p class="epm-dica">{{#if municao.temPente}}Pente: os tiros saem do pente; quando acaba, Recarregar puxa da munição escolhida e gasta a ação acima.{{else}}Unitário: cada ataque tira direto do item de munição (ex.: 1 flecha).{{/if}}</p>
+      {{/if}}
+    </fieldset>
     <div class="epm-modos-arma">
       <div class="epm-modos-topo">
         <h4>Modos de ataque</h4>

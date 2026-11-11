@@ -7,7 +7,7 @@
       {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaRelacao" title="Relação com alguém que não tem ficha"><i class="fa-solid fa-plus"></i> Sem ficha</button>{{/if}}
     </div>
   </header>
-  {{#if edicao}}{{#unless isGM}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Com personagens de outros jogadores, vocês decidem a afinidade; com NPCs, quem decide é o Mestre.</p>{{/unless}}{{/if}}
+  {{#if edicao}}{{#unless isGM}}{{#unless podeAfinidade}}{{#if relacoes.length}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Neste mundo a afinidade é definida pelo Mestre.</p>{{/if}}{{/unless}}{{/unless}}{{/if}}
   {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
   <div class="epm-relacoes-grade">
     {{#each relacoes}}
@@ -40,7 +40,7 @@
               <button type="button" class="epm-seta" data-action="ajustarAfinidade" data-relacao="{{this.id}}" data-delta="1" aria-label="Aumentar afinidade"><i class="fa-solid fa-plus"></i></button>
             </div>
             {{else}}
-            <div class="epm-medidor" {{#if soMestreAqui}}title="Com NPCs, a afinidade é definida pelo Mestre"{{/if}}><span style="width: {{this.afinidadePct}}%"></span></div>
+            <div class="epm-medidor" {{#if soMestreAqui}}title="Neste mundo a afinidade é definida pelo Mestre"{{/if}}><span style="width: {{this.afinidadePct}}%"></span></div>
             {{/if}}
           </div>
           {{#if @root.edicao}}

@@ -19,7 +19,7 @@ import { MapaMental } from "./mind-map.mjs";
 import { abrirEditorPoder } from "./poder-sheet.mjs";
 import { escolherImagem, verImagem } from "./imagens.mjs";
 import { catalogoIdiomas, polyglotAtivo, adicionarIdioma, removerIdioma, migrarIdiomas } from "./idiomas.mjs";
-import { dadosDoParceiro, dialogoConectar, relacaoMultipla, conectar, eDeJogador } from "./relacoes.mjs";
+import { dadosDoParceiro, dialogoConectar, relacaoMultipla, conectar } from "./relacoes.mjs";
 import { aplicarPaleta, ligarPersonalizacao } from "./personalizacao.mjs";
 import { CATALOGO, entradaCatalogo, dadosNovaEntrada } from "./bencaos.mjs";
 import { jogarMinijogo } from "./minijogos.mjs";
@@ -1191,11 +1191,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async acaoAjustarAfinidade(ev, alvo) {
     if (!this.isEditable || !this._modoEdicao) return;
     const id = alvo.dataset.relacao;
-    if (!game.user.isGM) {
-      const rel = this.actor.flags?.[FLAG]?.relacoes?.[id];
-      const outro = rel?.uuid ? fromUuidSync(rel.uuid) : null;
-      if (ajustes().afinidadeSoMestre || !eDeJogador(outro)) return ui.notifications.info("Com NPCs, a afinidade é definida pelo Mestre.");
-    }
+    if (!game.user.isGM && ajustes().afinidadeSoMestre) return ui.notifications.info("Neste mundo a afinidade é definida pelo Mestre.");
     const atual = int(this.actor.flags?.[FLAG]?.relacoes?.[id]?.afinidade);
     const novo = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, atual + int(alvo.dataset.delta)));
     if (novo !== atual) await this.actor.update({ [`${P}.relacoes.${id}.afinidade`]: novo });

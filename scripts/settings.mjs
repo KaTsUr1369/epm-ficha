@@ -16,7 +16,7 @@ export function registrarAjustes() {
   });
   reg("afinidadeSoMestre", {
     name: "Só o Mestre muda a afinidade",
-    hint: "Desligado (padrão): entre personagens de jogadores, cada jogador ajusta a afinidade na própria ficha; com NPCs, só o Mestre. Ligado: só o Mestre muda qualquer afinidade.",
+    hint: "Desligado (padrão): jogadores e Mestre mudam a afinidade com qualquer personagem ou NPC (no modo edição). Ligado: só o Mestre muda.",
     scope: "world", config: true, type: Boolean, default: false
   });
   reg("relacaoMutua", {

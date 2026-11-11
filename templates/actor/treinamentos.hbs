@@ -1,0 +1,103 @@
+<section class="tab epm-aba epm-treinamentos {{cls.treinamentos}}" data-group="primary" data-tab="treinamentos">
+  <header class="epm-aba-topo">
+    <div class="epm-aba-resumo">
+      <span class="epm-contador" title="Pontos de Treinamento disponíveis">{{treinos.pt}} PT</span>
+      <span class="epm-contador epm-horas-dia{{#unless treinos.livres}} cheio{{/unless}}" title="Horas de treino usadas hoje. Zeram no descanso longo.">
+        <i class="fa-regular fa-clock" aria-hidden="true"></i> {{treinos.horasHoje}} de {{treinos.horasDia}} h hoje
+      </span>
+    </div>
+    {{#if editavel}}
+    <div class="epm-treino-botoes">
+      <button type="button" class="epm-botao" data-action="treinoGanharPT" {{#unless treinos.podeAcao}}disabled title="Faltam horas de treino hoje (precisa de {{treinos.acao.horas}} h)"{{/unless}}><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Treinar ou estudar ({{treinos.acao.horas}} h, +{{treinos.acao.pt}} PT)</button>
+      <button type="button" class="epm-botao" data-action="treinoConversa" title="Conversar com alguém ou ter um tutor: 1 a 3 PT, conforme o tempo"><i class="fa-solid fa-comments" aria-hidden="true"></i> Conversa ou tutor</button>
+      <button type="button" class="epm-botao epm-botao-forte" data-action="novoTreinamento"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo treinamento</button>
+    </div>
+    {{/if}}
+  </header>
+  <div class="epm-medidor epm-medidor-dia" aria-hidden="true"><span style="width: {{treinos.pctDia}}%"></span></div>
+
+  <section class="epm-painel epm-minijogos">
+    <header class="epm-painel-titulo"><h3>Treino rápido</h3><span class="epm-contador">1 h · até 2 PT</span></header>
+    <p class="epm-dica">Numa hora de descanso, jogue um minijogo de 5 rodadas: 2 ou 3 acertos valem 1 PT, 4 ou 5 valem 2 PT. Usa 1 hora de treino do dia.</p>
+    <div class="epm-minijogos-lista">
+      {{#each treinos.minijogos}}
+      <button type="button" class="epm-minijogo-botao" data-action="minijogo" data-jogo="{{this.id}}" {{#unless @root.treinos.podeMinijogo}}disabled{{/unless}} title="{{this.dica}}">
+        <i class="{{this.icone}}" aria-hidden="true"></i><strong>{{this.label}}</strong><span>{{this.dica}}</span>
+      </button>
+      {{/each}}
+    </div>
+  </section>
+
+  {{#unless treinos.total}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Treinamentos</h3></header>
+    <p class="epm-vazio">Nenhum treinamento ainda. Crie um com "Novo treinamento" ou comece por um exemplo:</p>
+    {{#if editavel}}<div class="epm-chips">{{#each treinos.exemplos}}<button type="button" class="epm-botao" data-action="exemploTreinamento" data-indice="{{this.indice}}">{{this.nome}}</button>{{/each}}</div>{{/if}}
+  </section>
+  {{/unless}}
+
+  {{#each treinos.grupos}}
+  {{#unless vazio}}
+  <section class="epm-painel epm-treino-grupo" data-secao="treino-{{this.id}}">
+    <header class="epm-painel-titulo"><h3><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</h3><span class="epm-contador">{{this.itens.length}}</span></header>
+    <div class="epm-treinos">
+      {{#each itens}}
+      <article class="epm-treino estado-{{this.estado}}">
+        <header class="epm-treino-topo">
+          <strong>{{this.nome}}</strong>
+          {{#if foraDaFaixa}}<span class="epm-tag epm-tag-aviso" title="Fora da faixa do livro (1 a 20 PT, 6 h a 1 mês). Combine com o Mestre.">fora da faixa</span>{{/if}}
+          {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="excluirTreinamento" data-treino="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>{{/if}}
+        </header>
+        {{#if @root.edicao}}
+        <div class="epm-treino-campos">
+          <label class="epm-campo largo"><span>Nome</span><input type="text" name="flags.epm-ficha.treinamentos.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Corredor" /></label>
+          <label class="epm-campo"><span>Tempo</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.treinamentos.{{this.id}}.tempo" value="{{this.tempo}}" /><select name="flags.epm-ficha.treinamentos.{{this.id}}.unidade">{{#each unidades}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
+          <label class="epm-campo"><span>PT</span><input type="number" min="0" name="flags.epm-ficha.treinamentos.{{this.id}}.pt" value="{{this.pt}}" /></label>
+          <label class="epm-campo largo"><span>Requisitos</span><input type="text" name="flags.epm-ficha.treinamentos.{{this.id}}.requisitos" value="{{this.requisitos}}" placeholder="4 de Destreza" /></label>
+          <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.treinamentos.{{this.id}}.treinador" {{#if treinador}}checked{{/if}} /> Precisa de treinador</label>
+          <label class="epm-campo largo"><span>Benefícios</span><textarea rows="2" name="flags.epm-ficha.treinamentos.{{this.id}}.beneficios" placeholder="Seu deslocamento aumenta em 3 metros…">{{this.beneficios}}</textarea></label>
+        </div>
+        <div class="epm-mods">
+          <span class="epm-rotulo">Entra na ficha quando concluído</span>
+          {{#each mods}}
+          <div class="epm-mod-linha">
+            <select name="flags.epm-ficha.treinamentos.{{../id}}.mods.{{this.id}}.alvo" aria-label="O que muda">
+              <option value="">Escolha o que muda…</option>
+              {{#each grupos}}<optgroup label="{{this.grupo}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</optgroup>{{/each}}
+            </select>
+            <input type="number" step="any" name="flags.epm-ficha.treinamentos.{{../id}}.mods.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
+            <button type="button" class="epm-icone-botao perigo" data-action="removerModTreino" data-treino="{{../id}}" data-mod="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          {{/each}}
+          <button type="button" class="epm-link" data-action="adicionarModTreino" data-treino="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modificador</button>
+        </div>
+        {{else}}
+        <dl class="epm-treino-ficha">
+          <dt>Tempo</dt><dd>{{this.tempoTexto}}{{#unless (epmEq unidade "horas")}} <span class="epm-dica">({{this.horas}} h de treino)</span>{{/unless}}</dd>
+          <dt>PT</dt><dd>{{this.pt}}</dd>
+          <dt>Requisitos</dt><dd>{{#if requisitos}}{{this.requisitos}}{{else}}Nenhum{{/if}} <span class="epm-treinador {{#if treinador}}sim{{else}}nao{{/if}}" title="{{#if treinador}}Precisa de treinador{{else}}Não precisa de treinador{{/if}}"><i class="fa-solid {{#if treinador}}fa-check{{else}}fa-xmark{{/if}}" aria-hidden="true"></i> Treinador</span></dd>
+          <dt>Benefícios</dt><dd>{{#if beneficios}}{{this.beneficios}}{{else}}<span class="epm-vazio">A definir.</span>{{/if}}</dd>
+        </dl>
+        {{#if temMods}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag{{#if (epmEq ../estado "concluido")}} epm-tag-ok{{/if}}">{{this.alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}{{#unless (epmEq estado "concluido")}}<span class="epm-dica">entra na ficha ao concluir</span>{{/unless}}</div>{{/if}}
+        {{/if}}
+        <footer class="epm-treino-rodape">
+          {{#unless (epmEq estado "planejado")}}
+          <div class="epm-medidor epm-medidor-treino" title="{{this.feitas}} de {{this.horas}} horas"><span style="width: {{this.pct}}%"></span></div>
+          <span class="epm-treino-horas">{{this.feitas}} / {{this.horas}} h</span>
+          {{/unless}}
+          {{#if podeComecar}}<button type="button" class="epm-botao{{#unless semPT}} epm-botao-forte{{/unless}}" data-action="comecarTreinamento" data-treino="{{this.id}}" title="{{#if semPT}}PT insuficientes{{else}}Paga os PT e começa{{/if}}"><i class="fa-solid fa-play" aria-hidden="true"></i> Começar (−{{this.pt}} PT)</button>{{/if}}
+          {{#if podeTreinar}}<button type="button" class="epm-botao epm-botao-forte" data-action="treinarHoras" data-treino="{{this.id}}"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i> Treinar horas</button>{{/if}}
+          {{#if (epmEq estado "andamento")}}{{#unless podeTreinar}}<span class="epm-dica">Sem horas de treino hoje.</span>{{/unless}}{{/if}}
+          {{#if (epmEq estado "concluido")}}<span class="epm-tag epm-tag-ok"><i class="fa-solid fa-medal" aria-hidden="true"></i> Concluído</span>{{/if}}
+        </footer>
+      </article>
+      {{/each}}
+    </div>
+  </section>
+  {{/unless}}
+  {{/each}}
+
+  {{#if treinos.total}}{{#if editavel}}
+  <p class="epm-dica">Modelos do livro: {{#each treinos.exemplos}}<button type="button" class="epm-link" data-action="exemploTreinamento" data-indice="{{this.indice}}">{{this.nome}}</button>{{#unless @last}}, {{/unless}}{{/each}}. Tempo e PT seguem a faixa do livro (6 h a 1 mês, 1 a 20 PT); o Mestre pode liberar mais.</p>
+  {{/if}}{{/if}}
+</section>

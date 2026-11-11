@@ -7,9 +7,9 @@ import {
   FLAG, ATRIBUTOS, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
   AFINIDADE, ABAS, SUGESTOES, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
-  PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CD,
+  PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
   CATEGORIAS_CONDICAO, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
-  CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE
+  CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO
 } from "./config.mjs";
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
@@ -291,9 +291,12 @@ export function montarContexto({
     return {
       ...r, eVida,
       nomeMax: eVida ? "system.attributes.hp.max" : `flags.${FLAG}.recursos.${id}.max`,
-      temTemp: eVida && r.temp > 0,
-      tempPct: eVida && r.max > 0 ? limitar(r.temp / r.max, 0, 1) : 0,
-      corTemp: COR_VIDA_TEMP,
+      temTemp: r.temp > 0,
+      tempPct: r.max > 0 ? limitar(r.temp / r.max, 0, 1) : 0,
+      corTemp: CORES_TEMP[id] ?? COR_VIDA_TEMP,
+      tempId: eVida ? "temp" : `temp-${id}`,
+      tempAberto: editavel && ui.tempAberto === id,
+      tempLabel: `${r.label} temporária`,
       bloqueado: r.semRecuperar.length > 0,
       motivosTexto: [...r.motivos, ...r.fontes.map(f => `${f.fonte}: ${f.valor > 0 ? "+" : ""}${f.valor}`), ...avisos].join("\n")
     };
@@ -435,6 +438,13 @@ export function montarContexto({
   ctx.bonusCena = Object.entries(dados.bonusCena ?? {}).filter(([, b]) => b).map(([id, b]) => ({
     id, nome: b.nome ?? "", ativo: !!b.ativo, acerto: int(b.acerto), dano: b.dano ?? "", criado: num(b.criado)
   })).sort((a, b) => a.criado - b.criado);
+  /* ---------- CA ---------- */
+  const caF = ficha.ca;
+  ctx.caAtributos = [...Object.entries(ATRIBUTOS).map(([id, a]) => ({ id, abrev: a.abrev, label: a.label })), { id: "nenhum", abrev: "—", label: "Nenhum" }]
+    .map(o => ({ ...o, selected: o.id === caF.atributo }));
+  ctx.caFormula = [`Base ${caF.base}`, `${caF.atributoLabel} ${sinal(caF.atributoValor)}`, `Armadura ${caF.armadura}${caF.armaduraFontes.length ? ` (${caF.armaduraFontes.join(", ")})` : ""}`, `Outros ${sinal(caF.bonus)}`,
+    ...(caF.mod ? [`Efeitos ${sinal(caF.mod)}`] : [])].join(" + ") + ` = ${caF.total - caF.penal}`;
+
   ctx.cena = cena;
   ctx.efeitosTurno = { dots: ficha.dots.length, insano: ficha.turnoEfeitos.length > 0 };
 
@@ -534,6 +544,50 @@ export function montarContexto({
   }
   ctx.modoLimites = modo;
 
+  /* ---------- Treinamentos ---------- */
+  {
+    const alvosT = alvosModificador(ficha.pericias.map(p => ({ id: p.id, nome: p.nome })));
+    const gruposT = [...new Set(alvosT.map(a => a.grupo))];
+    const rotuloT = Object.fromEntries(alvosT.map(a => [a.id, a.label]));
+    const horasHoje = Math.max(0, num(dados.treinoDia?.horas));
+    const livres = Math.max(0, TREINO.horasDia - horasHoje);
+    const lista = Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t).map(([id, t]) => {
+      const unidade = UNIDADES_TEMPO[t.unidade] ? t.unidade : "horas";
+      const qtd = Math.max(0, num(t.tempo));
+      const horas = Math.max(1, Math.round(qtd * UNIDADES_TEMPO[unidade].horas));
+      const feitas = Math.min(horas, Math.max(0, num(t.horasFeitas)));
+      const estado = ESTADOS_TREINO[t.estado] ? t.estado : "planejado";
+      const pt = Math.max(0, int(t.pt));
+      const mods = Object.entries(t.mods ?? {}).filter(([, m]) => m).map(([mid, m]) => ({
+        id: mid, alvo: m.alvo ?? "", valor: num(m.valor), alvoLabel: rotuloT[m.alvo] ?? "",
+        grupos: gruposT.map(g => ({ grupo: g, opcoes: alvosT.filter(a => a.grupo === g).map(a => ({ ...a, selected: a.id === m.alvo })) }))
+      }));
+      return {
+        id, nome: t.nome || "Treinamento sem nome", nomeBruto: t.nome ?? "", tempo: qtd, unidade, horas, feitas,
+        tempoTexto: `${arredondar(qtd, 2)} ${qtd === 1 ? UNIDADES_TEMPO[unidade].umLabel : UNIDADES_TEMPO[unidade].label}`,
+        unidades: Object.entries(UNIDADES_TEMPO).map(([uid, u]) => ({ id: uid, label: u.label, selected: uid === unidade })),
+        pt, requisitos: t.requisitos ?? "", treinador: !!t.treinador, beneficios: t.beneficios ?? "", estado,
+        estadoLabel: ESTADOS_TREINO[estado].label, estadoIcone: ESTADOS_TREINO[estado].icone,
+        pct: Math.round((feitas / horas) * 100), faltam: horas - feitas,
+        podeComecar: editavel && estado === "planejado", semPT: pt > ficha.pontos.pt,
+        podeTreinar: editavel && estado === "andamento" && livres > 0,
+        foraDaFaixa: pt > TREINO.ptMax || horas > TREINO.horasMax || (pt > 0 && pt < TREINO.ptMin) || horas < TREINO.horasMin,
+        mods, temMods: mods.some(m => m.alvoLabel), criado: num(t.criado)
+      };
+    }).sort((a, b) => a.criado - b.criado);
+    ctx.treinos = {
+      pt: ficha.pontos.pt, horasHoje, horasDia: TREINO.horasDia, livres, pctDia: Math.round((Math.min(horasHoje, TREINO.horasDia) / TREINO.horasDia) * 100),
+      acao: TREINO.acao, podeAcao: editavel && livres >= TREINO.acao.horas, podeMinijogo: editavel && livres >= TREINO.minijogo.horas,
+      minijogos: Object.entries(MINIJOGOS).map(([mid, j]) => ({ id: mid, ...j })),
+      exemplos: EXEMPLOS_TREINAMENTO.map((e, i) => ({ indice: i, nome: e.nome })),
+      grupos: ["andamento", "planejado", "concluido"].map(estado => {
+        const itens = lista.filter(t => t.estado === estado);
+        return { id: estado, label: ESTADOS_TREINO[estado].label, icone: ESTADOS_TREINO[estado].icone, itens, vazio: !itens.length };
+      }),
+      total: lista.length
+    };
+  }
+
   /* ---------- Inventário ---------- */
   const alvos = alvosModificador(ficha.pericias.map(p => ({ id: p.id, nome: p.nome })));
   const gruposAlvo = [...new Set(alvos.map(a => a.grupo))];
@@ -565,6 +619,7 @@ export function montarContexto({
       equipavel: ["weapon", "equipment"].includes(item.type),
       equipado: !!item.system?.equipped,
       eArma, eConsumivel: item.type === "consumable", ataque,
+      eArmadura: item.type === "equipment", armadura: int(f.armadura),
       formulaUso: f.formula ?? "",
       containerNome: item.system?.container ? (nomes[item.system.container] ?? "") : "",
       expandido: expandidos.has(item.id),
@@ -572,7 +627,8 @@ export function montarContexto({
       opcoesRaridade: Object.entries(RARIDADES_ITEM).map(([id, rr]) => ({ id, label: rr.label, selected: id === raridade })),
       opcoesPericia: eArma ? opcoesPericia(ataque.periciaId) : [],
       efeitosAtivos: ativo || item.type === "consumable",
-      resumoEfeitos: efeitos.map(e => resumoEfeitoItem(e, { alvos: rotuloAlvo, em: rotuloEm })).filter(Boolean),
+      resumoEfeitos: [...(item.type === "equipment" && int(f.armadura) ? [`Armadura ${int(f.armadura)}`] : []),
+        ...efeitos.map(e => resumoEfeitoItem(e, { alvos: rotuloAlvo, em: rotuloEm })).filter(Boolean)],
       efeitos: efeitos.map(e => ({
         ...e,
         eMod: e.tipo === "mod", eRd: e.tipo === "rd", eTipoDano: ["resistencia", "imunidade", "vulnerabilidade", "danoExtra"].includes(e.tipo),
@@ -607,6 +663,7 @@ export function montarContexto({
     const pesoDentro = arredondar(conteudo.reduce((s, x) => s + x.pesoLinha, 0), 2);
     return {
       ...base, conteudo, qtdDentro: conteudo.length, pesoDentro,
+      moedas: moedasDaMochila(item), temMoedas: moedasDaMochila(item).length > 0,
       capacidade, cheia: capacidade > 0 && pesoDentro > capacidade,
       aberta: !(ui.mochilasFechadas ?? new Set()).has(item.id)
     };
@@ -753,8 +810,9 @@ export function montarContexto({
   }
 
   /* ---------- Relações ---------- */
-  const soMestre = ajustes.afinidadeSoMestre !== false;
-  ctx.podeAfinidade = editavel && (isGM || !soMestre);
+  // Entre personagens de jogadores, os donos decidem a afinidade; com NPCs (ou sem ficha ligada), só o Mestre.
+  const soMestre = ajustes.afinidadeSoMestre === true;
+  const podeAjustar = jogador => editavel && (isGM || (!soMestre && !!jogador));
   const relAbertas = ui.relacoesAbertas ?? new Set();
   ctx.relacoes = Object.entries(dados.relacoes ?? {}).filter(([, r]) => r).map(([id, r]) => {
     const af = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, int(r.afinidade)));
@@ -777,7 +835,8 @@ export function montarContexto({
     return {
       id, nome, img, uuid: r.uuid ?? "", ligado: !!ator, perdido: !!r.uuid && !ator,
       tipo: r.tipo ?? "outro", tipoLabel: TIPOS_RELACAO[r.tipo ?? "outro"] ?? "Outro",
-      afinidade: af, afinidadeLabel: rotuloAfinidade(af),
+      afinidade: af, afinidadeLabel: rotuloAfinidade(af), podeAfinidade: podeAjustar(ator?.jogador),
+      soMestreAqui: editavel && !isGM && !podeAjustar(ator?.jogador),
       afinidadePct: Math.round(((af - AFINIDADE.min) / (AFINIDADE.max - AFINIDADE.min)) * 100),
       notas: r.notas ?? "", criado: num(r.criado),
       background, liberadas, totalPartes: background?.length ?? 0, aberta: relAbertas.has(id),
@@ -785,6 +844,7 @@ export function montarContexto({
     };
   }).sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.afinidade = AFINIDADE;
+  ctx.podeAfinidade = ctx.relacoes.some(r => r.podeAfinidade);
   ctx.itensComErro = falhas;
 
   return ctx;
@@ -887,4 +947,79 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     editorDescricao: editores.descricao ?? "",
     sugestoesDano: [...SUGESTOES.dano, "Cura"]
   };
+}
+
+
+/* -------------------------------------------- */
+/*  Editor de item EPM (janela própria)         */
+/* -------------------------------------------- */
+
+const TIPOS_ITEM_LABEL = { weapon: "Arma", equipment: "Armadura / equipamento", consumable: "Consumível", tool: "Ferramenta", loot: "Loot", container: "Mochila", backpack: "Mochila" };
+
+/** Moedas guardadas numa mochila (só as que têm quantidade). */
+export function moedasDaMochila(item) {
+  const m = item?.flags?.[FLAG]?.moedas ?? {};
+  return MOEDAS.map(x => ({ id: x.id, label: x.label, abrev: x.abrev, img: x.img, qtd: Math.max(0, int(m[x.id])) })).filter(x => x.qtd > 0);
+}
+
+/** Contexto do editor de item: dados gerais, ataque, armadura, efeitos, preço e (mochila) conteúdo e moedas. */
+export function montarContextoItem({ item, ficha = null, editores = {}, editavel = false }) {
+  const f = item.flags?.[FLAG] ?? {};
+  const tipo = item.type;
+  const eMochila = CATEGORIA_MOCHILAS.tipos.includes(tipo);
+  const eArma = tipo === "weapon";
+  const raridade = raridadeItem(item);
+  const r = RARIDADES_ITEM[raridade];
+  const pericias = ficha?.pericias ?? PERICIAS_PADRAO.map(entradaPericia);
+  const alvos = alvosModificador(pericias.map(p => ({ id: p.id, nome: p.nome })));
+  const gruposAlvo = [...new Set(alvos.map(a => a.grupo))];
+  const opcoesEm = [
+    { id: "testes", label: "Todos os testes" }, { id: "ataques", label: "Ataques" }, { id: "iniciativa", label: "Iniciativa" },
+    ...pericias.map(p => ({ id: `pericia.${p.id}`, label: p.nome }))
+  ];
+  const ataque = eArma ? ataqueDeArma(item) : null;
+  const efeitos = lerEfeitosItem(item).map(e => ({
+    ...e,
+    eMod: e.tipo === "mod", eRd: e.tipo === "rd", eTipoDano: ["resistencia", "imunidade", "vulnerabilidade", "danoExtra"].includes(e.tipo),
+    eEm: e.tipo === "desvantagem" || e.tipo === "vantagem", eCura: e.tipo === "cura", eFormula: e.tipo === "cura" || e.tipo === "danoExtra",
+    tipoLabel: TIPOS_EFEITO_ITEM[e.tipo]?.label ?? e.tipo,
+    grupos: gruposAlvo.map(g => ({ grupo: g, opcoes: alvos.filter(a => a.grupo === g).map(a => ({ ...a, selected: a.id === e.alvo })) })),
+    opcoesEm: opcoesEm.map(o => ({ ...o, selected: o.id === e.em })),
+    opcoesRecurso: Object.entries(RECURSOS).map(([id, rr]) => ({ id, label: rr.label, selected: id === e.recurso })),
+    opcoesQuando: Object.entries(QUANDO_CURA).map(([id, label]) => ({ id, label, selected: id === e.quando }))
+  }));
+  const preco = f.preco ?? {};
+  const ctx = {
+    item: { id: item.id, uuid: item.uuid, name: item.name, img: item.img, tipo, tipoLabel: TIPOS_ITEM_LABEL[tipo] ?? tipo },
+    editavel, raridadeCor: r.cor, raridadeLabel: r.label,
+    opcoesRaridade: Object.entries(RARIDADES_ITEM).map(([id, rr]) => ({ id, label: rr.label, selected: id === raridade })),
+    quantidade: num(item.system?.quantity, 1), peso: num(item.system?.weight?.value ?? item.system?.weight, 0),
+    equipavel: ["weapon", "equipment"].includes(tipo), equipado: !!item.system?.equipped,
+    preco: { valor: num(preco.valor), moedas: MOEDAS.map(m => ({ id: m.id, label: m.label, selected: m.id === (preco.moeda ?? "po") })) },
+    eArma, ataque, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
+    eArmadura: tipo === "equipment", armadura: int(f.armadura),
+    eConsumivel: tipo === "consumable", formulaUso: f.formula ?? "",
+    eMochila, efeitos, temEfeitos: efeitos.length > 0,
+    tiposEfeitoItem: Object.entries(TIPOS_EFEITO_ITEM).map(([id, t]) => ({ id, label: t.label, dica: t.dica ?? "" })),
+    sugestoesDano: SUGESTOES.dano ?? [],
+    dicaAtivo: ["weapon", "equipment"].includes(tipo) ? "Os bônus valem com o item equipado"
+      : tipo === "consumable" ? "Curas e recuperações acontecem ao usar" : "Os bônus valem enquanto o item estiver no inventário",
+    descricao: editores.descricao ?? ""
+  };
+  if (eMochila) {
+    const actor = item.actor;
+    const conteudo = (actor?.items?.contents ?? [...(actor?.items ?? [])]).filter(i => i.system?.container === item.id)
+      .map(i => ({ id: i.id, name: i.name, img: i.img, qtd: num(i.system?.quantity, 1), peso: num(i.system?.weight?.value ?? i.system?.weight, 0) }))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    const m = f.moedas ?? {};
+    const carteira = actor?.flags?.[FLAG]?.moedas ?? {};
+    ctx.mochila = {
+      conteudo, vazia: !conteudo.length, temDono: !!actor,
+      capacidade: num(item.system?.capacity?.weight?.value ?? item.system?.capacity?.value, 0),
+      pesoDentro: arredondar(conteudo.reduce((s, x) => s + x.peso * x.qtd, 0), 2),
+      moedas: MOEDAS.map(x => ({ id: x.id, label: x.label, abrev: x.abrev, img: x.img, qtd: Math.max(0, int(m[x.id])), naCarteira: Math.max(0, int(carteira[x.id])) })),
+      totalTexto: [...MOEDAS].reverse().filter(x => int(m[x.id]) > 0).map(x => `${int(m[x.id])} ${x.abrev}`).join(", ") || "vazia"
+    };
+  }
+  return ctx;
 }

@@ -3,10 +3,11 @@
  */
 import { MODULE_ID, CAMINHO, FLAG } from "./config.mjs";
 import { registrarHelpers, fvtt, escapar } from "./helpers.mjs";
-import { registrarAjustes, ajustes } from "./settings.mjs";
+import { registrarAjustes, ajustes, migrarListaPericiasMundo } from "./settings.mjs";
 import { registrarCondicoes } from "./conditions.mjs";
 import { EPMActorSheet, catalogoBencaos } from "./actor-sheet.mjs";
 import { EPMPoderSheet, abrirEditorPoder } from "./poder-sheet.mjs";
+import { EPMItemSheet, abrirEditorItem } from "./item-sheet.mjs";
 import * as mecanicas from "./mecanicas.mjs";
 import { prepararPastaImagens } from "./imagens.mjs";
 import { relacaoMultipla } from "./relacoes.mjs";
@@ -22,6 +23,8 @@ Hooks.once("init", () => {
   DSC.registerSheet(Actor, MODULE_ID, EPMActorSheet, { types: ["character"], makeDefault: true, label: rotulo });
   DSC.registerSheet(Actor, MODULE_ID, EPMActorSheet, { types: ["npc"], makeDefault: false, label: rotulo });
   DSC.registerSheet(Item, MODULE_ID, EPMPoderSheet, { types: ["feat", "spell"], makeDefault: false, label: "Editor de poder EPM" });
+  const tiposItem = ["weapon", "equipment", "consumable", "tool", "loot", "container"].filter(t => !CONFIG.Item?.dataModels || t in CONFIG.Item.dataModels);
+  DSC.registerSheet(Item, MODULE_ID, EPMItemSheet, { types: tiposItem, makeDefault: true, label: "Editor de item EPM" });
 
   fvtt.loadTemplates({
     "epm-item-linha": `${CAMINHO}/partials/item-linha.hbs`,
@@ -31,7 +34,7 @@ Hooks.once("init", () => {
   });
 
   const modulo = game.modules.get(MODULE_ID);
-  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, abrirEditorPoder, mecanicas, relacaoMultipla, catalogoBencaos };
+  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, relacaoMultipla, catalogoBencaos };
 });
 
 Hooks.once("setup", () => registrarCondicoes());
@@ -41,6 +44,7 @@ Hooks.once("ready", () => {
   mecanicas.integrarIniciativa(EPMActorSheet);
   prepararPastaImagens();
   verificarFichaPadrao();
+  migrarListaPericiasMundo().catch(err => console.warn("EPM | Migração da lista de perícias", err));
   console.log(`${MODULE_ID} | Ficha Escolhidos pelo Multiverso pronta`);
 });
 

@@ -1,0 +1,125 @@
+<div class="epm-item-editor" style="--cor: {{this.raridadeCor}}">
+  <header class="epm-item-editor-topo">
+    <img class="epm-item-editor-img" src="{{item.img}}" alt="" {{#if editavel}}data-action="editarImagem" title="Trocar imagem"{{/if}} />
+    <div class="epm-item-editor-titulo">
+      <input type="text" name="name" value="{{item.name}}" class="epm-item-editor-nome" aria-label="Nome" {{#unless editavel}}disabled{{/unless}} />
+      <div class="epm-item-editor-sub">
+        <span class="epm-tag">{{item.tipoLabel}}</span>
+        <label class="epm-mini"><span>raridade</span><select name="flags.epm-ficha.raridade">{{#each opcoesRaridade}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        {{#if equipavel}}<label class="epm-check"><input type="checkbox" name="system.equipped" {{#if equipado}}checked{{/if}} /> Equipado</label>{{/if}}
+      </div>
+    </div>
+  </header>
+
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Detalhes</h3></header>
+    <div class="epm-item-editor-campos">
+      <label class="epm-campo"><span>Quantidade</span><input type="number" min="0" name="system.quantity" value="{{this.quantidade}}" /></label>
+      <label class="epm-campo"><span>Peso (cada)</span><input type="number" min="0" step="any" name="system.weight.value" value="{{this.peso}}" /></label>
+      <label class="epm-campo"><span>Preço</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.preco.valor" value="{{preco.valor}}" /><select name="flags.epm-ficha.preco.moeda">{{#each preco.moedas}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
+      {{#if eArmadura}}<label class="epm-campo" title="Soma no campo Armadura da CA quando equipado"><span>Armadura (CA)</span><input type="number" name="flags.epm-ficha.armadura" value="{{this.armadura}}" /></label>{{/if}}
+      {{#if eConsumivel}}<label class="epm-campo largo"><span>Rolagem ao usar</span><input type="text" name="flags.epm-ficha.formula" value="{{this.formulaUso}}" placeholder="2d4 + 2" /></label>{{/if}}
+      {{#if eMochila}}<label class="epm-campo"><span>Capacidade (peso)</span><input type="number" min="0" step="any" name="system.capacity.weight.value" value="{{mochila.capacidade}}" /></label>{{/if}}
+    </div>
+  </section>
+
+  {{#if eArma}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Ataque</h3></header>
+    <div class="epm-item-editor-campos">
+      <label class="epm-campo"><span>Perícia de ataque</span><select name="flags.epm-ficha.periciaAtaque">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+      <label class="epm-campo"><span>Bônus de acerto</span><input type="number" name="flags.epm-ficha.bonusAcerto" value="{{ataque.bonusAcerto}}" /></label>
+      <label class="epm-campo"><span>Dano</span><input type="text" name="flags.epm-ficha.dano" value="{{ataque.dano}}" placeholder="2d10 + @atr.forca" /></label>
+      <label class="epm-campo"><span>Tipo de dano</span><input type="text" name="flags.epm-ficha.tipoDano" value="{{ataque.tipoDano}}" list="epm-item-sug-dano" placeholder="Corte" /></label>
+      <label class="epm-campo" title="Menor resultado no d20 que conta como crítico"><span>Margem de crítico</span><input type="number" min="2" max="20" name="flags.epm-ficha.critMargem" value="{{ataque.critMargem}}" /></label>
+      <label class="epm-campo" title="No crítico, os dados da arma são multiplicados por este valor"><span>Multiplicador</span><input type="number" min="2" name="flags.epm-ficha.critMult" value="{{ataque.critMult}}" /></label>
+    </div>
+    <p class="epm-dica">Fórmulas aceitam @atr.forca, @atr.destreza, @per.luta, @nivel…</p>
+  </section>
+  {{/if}}
+
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Bônus e efeitos</h3><span class="epm-dica">{{this.dicaAtivo}}</span></header>
+    <div class="epm-efeitos-editor">
+      {{#unless temEfeitos}}<p class="epm-vazio">Nenhum. Adicione CA, RD, resistência, desvantagem, cura, dano extra…</p>{{/unless}}
+      {{#each efeitos}}
+      <div class="epm-efeito-item" data-efeito="{{this.id}}">
+        <span class="epm-efeito-tipo">{{this.tipoLabel}}</span>
+        {{#if eMod}}
+        <select name="flags.epm-ficha.efeitos.{{this.id}}.alvo" aria-label="O que muda">
+          <option value="">Escolha o que muda…</option>
+          {{#each grupos}}<optgroup label="{{this.grupo}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</optgroup>{{/each}}
+        </select>
+        <input type="number" step="any" name="flags.epm-ficha.efeitos.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
+        {{/if}}
+        {{#if eRd}}
+        <input type="number" min="0" name="flags.epm-ficha.efeitos.{{this.id}}.valor" value="{{this.valor}}" aria-label="Quanto reduz" />
+        <input type="text" name="flags.epm-ficha.efeitos.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="tipos (vazio = todos)" list="epm-item-sug-dano" aria-label="Tipos de dano" />
+        {{/if}}
+        {{#if eTipoDano}}{{#unless eFormula}}
+        <input type="text" name="flags.epm-ficha.efeitos.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="tipo de dano ou condição" list="epm-item-sug-dano" aria-label="Tipo" />
+        {{/unless}}{{/if}}
+        {{#if eEm}}
+        <select name="flags.epm-ficha.efeitos.{{this.id}}.em" aria-label="Em quê"><option value="">Em quê…</option>{{#each opcoesEm}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+        {{/if}}
+        {{#if eCura}}
+        <select name="flags.epm-ficha.efeitos.{{this.id}}.recurso" aria-label="Recurso">{{#each opcoesRecurso}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+        <select name="flags.epm-ficha.efeitos.{{this.id}}.quando" aria-label="Quando">{{#each opcoesQuando}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+        {{/if}}
+        {{#if eFormula}}
+        <input type="text" name="flags.epm-ficha.efeitos.{{this.id}}.formula" value="{{this.formula}}" placeholder="1d6 + 2" aria-label="Fórmula" />
+        {{#if eTipoDano}}<input type="text" name="flags.epm-ficha.efeitos.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="tipo (Fogo…)" list="epm-item-sug-dano" aria-label="Tipo de dano" />{{/if}}
+        {{/if}}
+        <button type="button" class="epm-icone-botao perigo" data-action="removerEfeito" data-efeito="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      {{/each}}
+      {{#if editavel}}
+      <div class="epm-efeito-novo">
+        <select class="epm-efeito-novo-tipo" aria-label="Tipo de bônus" data-novo-efeito="1">{{#each tiposEfeitoItem}}<option value="{{this.id}}" title="{{this.dica}}">{{this.label}}</option>{{/each}}</select>
+        <button type="button" class="epm-link" data-action="adicionarEfeito"><i class="fa-solid fa-plus" aria-hidden="true"></i> Adicionar</button>
+      </div>
+      {{/if}}
+    </div>
+    <datalist id="epm-item-sug-dano">{{#each sugestoesDano}}<option value="{{this}}"></option>{{/each}}</datalist>
+  </section>
+
+  {{#if eMochila}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Moedas na mochila</h3><span class="epm-contador">{{mochila.totalTexto}}</span></header>
+    <div class="epm-mochila-moedas-editor">
+      {{#each mochila.moedas}}
+      <label class="epm-moeda-campo" title="{{this.label}}">
+        <img src="{{this.img}}" alt="" />
+        <input type="number" min="0" name="flags.epm-ficha.moedas.{{this.id}}" value="{{this.qtd}}" aria-label="{{this.label}}" />
+        <span>{{this.abrev}}{{#if @root.mochila.temDono}} · carteira {{this.naCarteira}}{{/if}}</span>
+      </label>
+      {{/each}}
+    </div>
+    {{#if mochila.temDono}}{{#if editavel}}
+    <div class="epm-chips">
+      <button type="button" class="epm-botao" data-action="guardarMoedas"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> Guardar da carteira</button>
+      <button type="button" class="epm-botao" data-action="pegarMoedas"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Pegar para a carteira</button>
+    </div>
+    {{/if}}{{/if}}
+  </section>
+
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Conteúdo</h3><span class="epm-contador">peso {{epmNumero mochila.pesoDentro}}{{#if mochila.capacidade}} de {{epmNumero mochila.capacidade}}{{/if}}</span></header>
+    {{#if mochila.vazia}}<p class="epm-vazio">Vazia. Na ficha, arraste itens do inventário para a mochila.</p>{{/if}}
+    <ol class="epm-mochila-lista">
+      {{#each mochila.conteudo}}
+      <li>
+        <img src="{{this.img}}" alt="" /><button type="button" class="epm-link" data-action="abrirItem" data-item-id="{{this.id}}">{{this.name}}</button>
+        <span class="epm-dica">×{{this.qtd}} · peso {{epmNumero peso}}</span>
+        {{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="tirarItem" data-item-id="{{this.id}}" title="Tirar da mochila"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>{{/if}}
+      </li>
+      {{/each}}
+    </ol>
+  </section>
+  {{/if}}
+
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Descrição</h3></header>
+    {{{this.descricao}}}
+  </section>
+</div>

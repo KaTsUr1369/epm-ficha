@@ -16,8 +16,8 @@ export function registrarAjustes() {
   });
   reg("afinidadeSoMestre", {
     name: "Só o Mestre muda a afinidade",
-    hint: "A afinidade revela partes do background dos outros personagens. Ligado: jogadores veem o medidor, mas só o Mestre muda.",
-    scope: "world", config: true, type: Boolean, default: true
+    hint: "Desligado (padrão): entre personagens de jogadores, cada jogador ajusta a afinidade na própria ficha; com NPCs, só o Mestre. Ligado: só o Mestre muda qualquer afinidade.",
+    scope: "world", config: true, type: Boolean, default: false
   });
   reg("relacaoMutua", {
     name: "Conectar relações nas duas fichas",
@@ -51,6 +51,7 @@ export function registrarAjustes() {
     scope: "world", config: true, type: Boolean, default: true
   });
   reg("paineisRecolhidos", { scope: "client", config: false, type: Array, default: [] });
+  reg("migracaoVontade", { scope: "world", config: false, type: Boolean, default: false });
   reg("periciasPadrao", { scope: "world", config: false, type: Array, default: [] });
 }
 
@@ -71,7 +72,7 @@ export function ajustes() {
     formulaTeste: ler("formulaTeste", "1d20"),
     marcarAcoes: ler("marcarAcoes", true),
     condicoesHudTodas: ler("condicoesHudTodas", false),
-    afinidadeSoMestre: ler("afinidadeSoMestre", true),
+    afinidadeSoMestre: ler("afinidadeSoMestre", false),
     relacaoMutua: ler("relacaoMutua", true),
     avisoFichaPadrao: ler("avisoFichaPadrao", true)
   };
@@ -81,6 +82,25 @@ export function ajustes() {
 export function listaPericias() {
   const salva = ler("periciasPadrao", null);
   return Array.isArray(salva) && salva.length ? salva : PERICIAS_PADRAO;
+}
+
+/**
+ * 0.5.2: na lista de perícias padrão salva pelo Mestre, Vontade troca Núcleo por Autocontrole
+ * (só se ainda estiver no padrão antigo). Roda uma vez por mundo.
+ */
+export async function migrarListaPericiasMundo() {
+  if (!game.user?.isGM || ler("migracaoVontade", false)) return;
+  const salva = ler("periciasPadrao", null);
+  if (Array.isArray(salva) && salva.length) {
+    const nova = salva.map(e => {
+      if (!Array.isArray(e) || e[0] !== "vontade") return e;
+      const soNucleo = v => Array.isArray(v) && v.length === 1 && v[0] === "nucleo";
+      const [id, nome, possiveis, somados] = e;
+      return [id, nome, soNucleo(possiveis) ? ["autocontrole"] : possiveis, soNucleo(somados) || (somados === undefined && soNucleo(possiveis)) ? ["autocontrole"] : somados];
+    });
+    if (JSON.stringify(nova) !== JSON.stringify(salva)) await game.settings.set(MODULE_ID, "periciasPadrao", nova);
+  }
+  await game.settings.set(MODULE_ID, "migracaoVontade", true);
 }
 
 export function salvarListaPericias(lista) {

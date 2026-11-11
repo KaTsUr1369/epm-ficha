@@ -34,6 +34,7 @@
     {{#if @root.edicao}}
     <div class="epm-item-config">
       <label class="epm-mini"><span>raridade</span><select data-item-campo="flags.epm-ficha.raridade" data-item-id="{{this.id}}">{{#each opcoesRaridade}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      {{#if eArmadura}}<label class="epm-mini curto" title="Soma na CA (campo Armadura) quando equipado"><span>armadura</span><input type="number" value="{{this.armadura}}" data-item-campo="flags.epm-ficha.armadura" data-item-id="{{this.id}}" /></label>{{/if}}
       {{#if eArma}}
       <label class="epm-mini"><span>perícia de ataque</span><select data-item-campo="flags.epm-ficha.periciaAtaque" data-item-id="{{this.id}}">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
       <label class="epm-mini curto"><span>acerto</span><input type="number" value="{{ataque.bonusAcerto}}" data-item-campo="flags.epm-ficha.bonusAcerto" data-item-id="{{this.id}}" /></label>

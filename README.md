@@ -14,6 +14,16 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.2
+
+- **CA = 10 + Destreza + Armadura + outros.** No modo edição, o atributo da CA pode ser trocado (Destreza é o padrão). Armaduras e equipamentos ganham o campo "Armadura", que soma na CA quando equipados.
+- **Aba Treinamentos.** Ganhe PT com "Treinar ou estudar" (6 h = 5 PT) ou "Conversa ou tutor" (1 a 3 PT), com o limite de 8 horas de treino por dia (zera no descanso longo). Crie treinamentos com tempo, PT, requisitos, treinador (✓/✗), benefícios e modificadores que entram na ficha ao concluir; comece pagando os PT e registre as horas até concluir. Modelos do livro: Corredor e Flash Step.
+- **Treino rápido:** três minijogos (Sequência, Na mira e Explosão) de 5 rodadas para uma hora de descanso: 2 ou 3 acertos valem 1 PT, 4 ou 5 valem 2 PT.
+- **Editor de item EPM.** Armas, armaduras, consumíveis, ferramentas, loot e mochilas abrem numa janela própria (no lugar da do D&D) com raridade, quantidade, peso, preço em moedas EPM, ataque, armadura, bônus e efeitos e descrição. **Mochilas guardam moedas EPM** (Guardar da carteira / Pegar para a carteira) e mostram o conteúdo.
+- **Relações:** entre personagens de jogadores, cada jogador decide a afinidade na própria ficha; com NPCs, só o Mestre. A opção "Só o Mestre muda a afinidade" agora vem desligada.
+- **Recursos temporários** também para Estamina (verde), Mana (roxa) e Sanidade (cinza), além da Vida (amarela). Custos e perdas saem primeiro da reserva temporária.
+- **Vontade** passa a somar Autocontrole por padrão (fichas que ainda estavam com Núcleo, o padrão antigo, são atualizadas sozinhas).
+
 ## Novidades da 0.5.1
 
 - Corrigido: ao atacar com um alvo marcado, o dano ia para o atacante (o token selecionado) e somava o resultado do acerto. O cartão de ataque agora tem o botão **Aplicar dano**, que tira só o valor do dano dos alvos marcados no momento do ataque (primeiro da vida temporária). Se ninguém estava marcado, marque o alvo e clique no botão. Em alvos que não são seus, quem aplica é o Mestre, pelo mesmo botão.
@@ -133,7 +143,7 @@ Itens com Active Effects podem mexer nos números da ficha usando chaves como `f
 Em **Configurar opções → Escolhidos pelo Multiverso: Ficha**:
 
 - Condições no HUD do token (só EPM ou junto com as do D&D 5e) e se o HUD mostra só as 43 básicas ou todas as 131.
-- Só o Mestre muda a afinidade (ligado por padrão).
+- Só o Mestre muda a afinidade (desligado por padrão: entre personagens de jogadores, eles decidem; com NPCs, só o Mestre).
 - Conectar relações nas duas fichas (ligado por padrão).
 - Avisar se a ficha padrão não for a EPM.
 - Limites de raridade separados ou somados e bloqueio de limites para jogadores.

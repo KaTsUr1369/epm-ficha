@@ -41,7 +41,7 @@
         <div class="epm-recurso-topo">
           <span class="epm-recurso-sigla">{{this.abrev}}</span>
           <span class="epm-recurso-nome">{{this.label}}</span>
-          {{#if eVida}}<button type="button" class="epm-temp-caixa{{#if temTemp}} ativa{{/if}}{{#if @root.tempAberto}} aberta{{/if}}" data-action="alternarTemp" aria-expanded="{{#if @root.tempAberto}}true{{else}}false{{/if}}" title="Vida temporária: clique para ajustar" {{#unless @root.editavel}}disabled{{/unless}}>Temp{{#if temTemp}} <strong>{{this.temp}}</strong>{{/if}}</button>{{/if}}
+          <button type="button" class="epm-temp-caixa{{#if temTemp}} ativa{{/if}}{{#if tempAberto}} aberta{{/if}}" style="--cor-temp: {{this.corTemp}}" data-action="alternarTemp" data-recurso="{{this.id}}" aria-expanded="{{#if tempAberto}}true{{else}}false{{/if}}" title="{{this.tempLabel}}: clique para ajustar" {{#unless @root.editavel}}disabled{{/unless}}>Temp{{#if temTemp}} <strong>{{this.temp}}</strong>{{/if}}</button>
         </div>
         <div class="epm-recurso-valores">
           <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{this.id}}" data-delta="-5" title="Diminuir 5" aria-label="Diminuir {{this.label}} em 5" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-angles-left"></i></button>
@@ -59,17 +59,17 @@
         </div>
         <div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pct}}"></span></div>
         {{#if temTemp}}<div class="epm-barra epm-barra-temp" aria-hidden="true"><span style="width: {{epmPct tempPct}}; background: {{this.corTemp}}"></span></div>{{/if}}
-        {{#if eVida}}{{#if @root.tempAberto}}
-        <div class="epm-temp-editor" role="group" aria-label="Vida temporária">
+        {{#if tempAberto}}
+        <div class="epm-temp-editor" role="group" aria-label="{{this.tempLabel}}" style="--cor-temp: {{this.corTemp}}">
           <span class="epm-temp-rotulo">Temp.</span>
-          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="-5" title="Diminuir 5" aria-label="Diminuir vida temporária em 5"><i class="fa-solid fa-angles-left"></i></button>
-          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="-1" title="Diminuir 1" aria-label="Diminuir vida temporária em 1"><i class="fa-solid fa-angle-left"></i></button>
-          <input type="text" inputmode="numeric" class="epm-temp-input" data-recurso-valor="temp" value="{{this.temp}}" aria-label="Vida temporária" title="Digite o valor, ou +5 / -3. Enter confirma, Esc fecha." />
-          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="1" title="Aumentar 1" aria-label="Aumentar vida temporária em 1"><i class="fa-solid fa-angle-right"></i></button>
-          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="temp" data-delta="5" title="Aumentar 5" aria-label="Aumentar vida temporária em 5"><i class="fa-solid fa-angles-right"></i></button>
-          <button type="button" class="epm-icone-botao epm-temp-fechar" data-action="alternarTemp" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-check"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{this.tempId}}" data-delta="-5" title="Diminuir 5" aria-label="Diminuir {{this.tempLabel}} em 5"><i class="fa-solid fa-angles-left"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{this.tempId}}" data-delta="-1" title="Diminuir 1" aria-label="Diminuir {{this.tempLabel}} em 1"><i class="fa-solid fa-angle-left"></i></button>
+          <input type="text" inputmode="numeric" class="epm-temp-input" data-recurso-valor="{{this.tempId}}" value="{{this.temp}}" aria-label="{{this.tempLabel}}" title="Digite o valor, ou +5 / -3. Enter confirma, Esc fecha." />
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{this.tempId}}" data-delta="1" title="Aumentar 1" aria-label="Aumentar {{this.tempLabel}} em 1"><i class="fa-solid fa-angle-right"></i></button>
+          <button type="button" class="epm-seta" data-action="ajustarRecurso" data-recurso="{{this.tempId}}" data-delta="5" title="Aumentar 5" aria-label="Aumentar {{this.tempLabel}} em 5"><i class="fa-solid fa-angles-right"></i></button>
+          <button type="button" class="epm-icone-botao epm-temp-fechar" data-action="alternarTemp" data-recurso="{{this.id}}" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-check"></i></button>
         </div>
-        {{/if}}{{/if}}
+        {{/if}}
       </div>
       {{/each}}
     </div>

@@ -7,7 +7,7 @@
       {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaRelacao" title="Relação com alguém que não tem ficha"><i class="fa-solid fa-plus"></i> Sem ficha</button>{{/if}}
     </div>
   </header>
-  {{#unless podeAfinidade}}{{#if editavel}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> A afinidade é definida pelo Mestre.</p>{{/if}}{{/unless}}
+  {{#if editavel}}{{#unless isGM}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Com personagens de outros jogadores, vocês decidem a afinidade; com NPCs, quem decide é o Mestre.</p>{{/unless}}{{/if}}
   {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
   <div class="epm-relacoes-grade">
     {{#each relacoes}}
@@ -33,14 +33,14 @@
           {{#if perdido}}<p class="epm-aviso">A ficha ligada não foi encontrada (pode ter sido apagada).</p>{{/if}}
           <div class="epm-afinidade" title="Afinidade {{epmSinal afinidade}}">
             <span>Afinidade <strong>{{this.afinidadeLabel}}</strong> ({{epmSinal afinidade}})</span>
-            {{#if @root.podeAfinidade}}
+            {{#if podeAfinidade}}
             <div class="epm-afinidade-controle">
               <button type="button" class="epm-seta" data-action="ajustarAfinidade" data-relacao="{{this.id}}" data-delta="-1" aria-label="Diminuir afinidade"><i class="fa-solid fa-minus"></i></button>
               <div class="epm-medidor"><span style="width: {{this.afinidadePct}}%"></span></div>
               <button type="button" class="epm-seta" data-action="ajustarAfinidade" data-relacao="{{this.id}}" data-delta="1" aria-label="Aumentar afinidade"><i class="fa-solid fa-plus"></i></button>
             </div>
             {{else}}
-            <div class="epm-medidor"><span style="width: {{this.afinidadePct}}%"></span></div>
+            <div class="epm-medidor" {{#if soMestreAqui}}title="Com NPCs, a afinidade é definida pelo Mestre"{{/if}}><span style="width: {{this.afinidadePct}}%"></span></div>
             {{/if}}
           </div>
           {{#if @root.edicao}}

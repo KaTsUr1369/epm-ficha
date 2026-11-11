@@ -5,7 +5,7 @@
 import {
   FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS, ABAS, CATEGORIAS_ITEM,
   CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, AFINIDADE, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM,
-  MODULE_ID, SUBABAS_HABILIDADE
+  MODULE_ID, SUBABAS_HABILIDADE, EXEMPLOS_TREINAMENTO
 } from "./config.mjs";
 import {
   num, int, slug, novoId, normalizarTexto, periciasParaLista, periciasParaObjeto, migrarPericias, atributosDaPericia,
@@ -19,9 +19,11 @@ import { MapaMental } from "./mind-map.mjs";
 import { abrirEditorPoder } from "./poder-sheet.mjs";
 import { escolherImagem, verImagem } from "./imagens.mjs";
 import { catalogoIdiomas, polyglotAtivo, adicionarIdioma, removerIdioma, migrarIdiomas } from "./idiomas.mjs";
-import { dadosDoParceiro, dialogoConectar, relacaoMultipla, conectar } from "./relacoes.mjs";
+import { dadosDoParceiro, dialogoConectar, relacaoMultipla, conectar, eDeJogador } from "./relacoes.mjs";
 import { aplicarPaleta, ligarPersonalizacao } from "./personalizacao.mjs";
 import { CATALOGO, entradaCatalogo, dadosNovaEntrada } from "./bencaos.mjs";
+import { jogarMinijogo } from "./minijogos.mjs";
+import { abrirEditorItem } from "./item-sheet.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -44,7 +46,9 @@ const ACOES_FICHA = [
   "usarBencao", "encerrarBencao", "recarregarBencao", "chatBencao",
   "novaRelacao", "excluirRelacao", "abrirRelacao", "conectarRelacao", "relacaoMultipla", "ajustarAfinidade", "abrirBackground",
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
-  "favoritarPericia", "favoritasNoTopo", "recolherPainel"
+  "favoritarPericia", "favoritasNoTopo", "recolherPainel",
+  "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
+  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -65,7 +69,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this._filtroRaridades = new Set();
     this._modoEdicao = null;
     this._ajustesRecurso = {};
-    this._tempAberto = false;
+    this._tempAberto = null;
     this._focarTemp = false;
     this._estadoMapas = {};
     this._mapas = [];
@@ -96,6 +100,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     habilidades: { template: `${CAMINHO}/actor/habilidades.hbs`, scrollable: [""] },
     arqclasse: { template: `${CAMINHO}/actor/arqclasse.hbs`, scrollable: [""] },
     magias: { template: `${CAMINHO}/actor/magias.hbs`, scrollable: [""] },
+    treinamentos: { template: `${CAMINHO}/actor/treinamentos.hbs`, scrollable: [""] },
     sobre: { template: `${CAMINHO}/actor/sobre.hbs`, scrollable: [""] },
     anotacoes: { template: `${CAMINHO}/actor/anotacoes.hbs`, scrollable: [""] },
     condicoes: { template: `${CAMINHO}/actor/condicoes.hbs`, scrollable: [""] },
@@ -242,7 +247,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     try { this._ligarRecolher(); } catch (err) { console.error("EPM | Falha ao preparar os painéis recolhíveis", err); }
     if (this._focarTemp) {
       this._focarTemp = false;
-      const campo = this.element.querySelector('[data-recurso-valor="temp"]');
+      const campo = this.element.querySelector('[data-recurso-valor^="temp"]');
       campo?.focus();
       campo?.select();
     }
@@ -281,7 +286,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (int(this.actor.flags?.[FLAG]?.versao) < VERSAO_DADOS) await this._migrarPara3();
   }
 
-  /** 0.2.x → 0.4: Kan vira Dracmas, idiomas vão para o campo do dnd5e, condições renomeadas. */
+  /** Migração para os dados atuais: Kan vira Dracmas, idiomas no campo do dnd5e, condições renomeadas, Vontade com Autocontrole. */
   async _migrarPara3() {
     const bruto = this.actor.flags?.[FLAG] ?? {};
     const updates = Object.fromEntries(Object.entries(migrarDados(bruto)).map(([k, v]) => [`${P}.${k}`, v]));
@@ -332,17 +337,18 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _onTeclaLocal(ev) {
     const alvo = ev.target;
-    if (ev.key === "Escape" && alvo.dataset?.recursoValor === "temp") {
+    const eTemp = String(alvo.dataset?.recursoValor ?? "").startsWith("temp");
+    if (ev.key === "Escape" && eTemp) {
       ev.preventDefault();
       ev.stopPropagation();
-      this._tempAberto = false;
+      this._tempAberto = null;
       return this.render({ parts: ["header"] });
     }
     if (ev.key !== "Enter") return;
-    if (alvo.dataset?.recursoValor === "temp") {
+    if (eTemp) {
       ev.preventDefault();
       ev.stopPropagation();
-      this._tempAberto = false;
+      this._tempAberto = null;
       return this._mudarRecurso(alvo).then(() => this.render({ parts: ["header"] }));
     }
     if (alvo.dataset?.tagCampo) { ev.preventDefault(); ev.stopPropagation(); return this._adicionarTag(alvo); }
@@ -449,6 +455,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   _infoRecurso(id) {
     const recursos = this._estado().ficha.recursos;
     if (id === "temp") return { value: recursos.pv.temp, max: 0, caminho: "system.attributes.hp.temp" };
+    if (id.startsWith("temp-")) {
+      const rid = id.slice(5);
+      if (!recursos[rid]) return null;
+      return { value: recursos[rid].temp ?? 0, max: 0, caminho: `${P}.recursos.${rid}.temp` };
+    }
     const r = recursos[id];
     if (!r) return null;
     return { value: r.value, max: r.max, caminho: id === "pv" ? "system.attributes.hp.value" : `${P}.recursos.${id}.value` };
@@ -694,7 +705,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const input = this.element.querySelector(`[data-recurso-valor="${id}"]`);
     if (input) input.value = novo;
     const barra = input?.closest(".epm-recurso")?.querySelector(".epm-barra:not(.epm-barra-temp) span");
-    if (barra && r.max > 0 && id !== "temp") barra.style.width = `${Math.round(Math.min(1, novo / r.max) * 100)}%`;
+    if (barra && r.max > 0 && !id.startsWith("temp")) barra.style.width = `${Math.round(Math.min(1, novo / r.max) * 100)}%`;
     if (pendente) clearTimeout(pendente.timer);
     const timer = setTimeout(async () => {
       delete this._ajustesRecurso[id];
@@ -858,7 +869,20 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (item) return M.cartaoItem(this.actor, item);
   }
 
-  acaoEditarItem(ev, alvo) { this._item(alvo)?.sheet?.render(true); }
+  acaoEditarItem(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) abrirEditorItem(item);
+  }
+
+  acaoGuardarMoedasMochila(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) return M.moverMoedasMochila(item, "guardar");
+  }
+
+  acaoPegarMoedasMochila(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) return M.moverMoedasMochila(item, "pegar");
+  }
 
   async acaoExcluirItem(ev, alvo) {
     const item = this._item(alvo);
@@ -941,10 +965,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.actor.update({ [`${P}.bonusCena.-=${alvo.dataset.ref}`]: null });
   }
 
-  acaoAlternarTemp() {
+  acaoAlternarTemp(ev, alvo) {
     if (!this.isEditable) return;
-    this._tempAberto = !this._tempAberto;
-    this._focarTemp = this._tempAberto;
+    const rid = alvo?.dataset?.recurso || "pv";
+    this._tempAberto = this._tempAberto === rid ? null : rid;
+    this._focarTemp = !!this._tempAberto;
     this.render({ parts: ["header"] });
   }
 
@@ -1164,8 +1189,13 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoRelacaoMultipla() { return relacaoMultipla(this.actor); }
 
   async acaoAjustarAfinidade(ev, alvo) {
-    if (!this.isEditable || (ajustes().afinidadeSoMestre && !game.user.isGM)) return;
+    if (!this.isEditable) return;
     const id = alvo.dataset.relacao;
+    if (!game.user.isGM) {
+      const rel = this.actor.flags?.[FLAG]?.relacoes?.[id];
+      const outro = rel?.uuid ? fromUuidSync(rel.uuid) : null;
+      if (ajustes().afinidadeSoMestre || !eDeJogador(outro)) return ui.notifications.info("Com NPCs, a afinidade é definida pelo Mestre.");
+    }
     const atual = int(this.actor.flags?.[FLAG]?.relacoes?.[id]?.afinidade);
     const novo = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, atual + int(alvo.dataset.delta)));
     if (novo !== atual) await this.actor.update({ [`${P}.relacoes.${id}.afinidade`]: novo });
@@ -1213,6 +1243,55 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (!id || !this.isEditable) return;
     const atual = !!this.actor.flags?.[FLAG]?.pericias?.[id]?.favorita;
     await this.actor.update({ [`${P}.pericias.${id}.favorita`]: !atual });
+  }
+
+  /* ---------- Treinamentos ---------- */
+
+  acaoTreinoGanharPT() { return M.treinoGanharPT(this.actor); }
+  acaoTreinoConversa() { return M.treinoConversa(this.actor); }
+  acaoComecarTreinamento(ev, alvo) { return M.comecarTreinamento(this.actor, alvo.dataset.treino); }
+  acaoTreinarHoras(ev, alvo) { return M.treinarHoras(this.actor, alvo.dataset.treino); }
+
+  async acaoNovoTreinamento() {
+    const id = novoId();
+    await this.actor.update({ [`${P}.treinamentos.${id}`]: {
+      nome: "", tempo: 6, unidade: "horas", pt: 1, requisitos: "", treinador: false, beneficios: "",
+      estado: "planejado", horasFeitas: 0, mods: {}, criado: Date.now()
+    } });
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+
+  async acaoExemploTreinamento(ev, alvo) {
+    const e = EXEMPLOS_TREINAMENTO[int(alvo.dataset.indice)];
+    if (!e) return;
+    const mods = Object.fromEntries(e.mods.map(m => [novoId(), { ...m }]));
+    await this.actor.update({ [`${P}.treinamentos.${novoId()}`]: {
+      nome: e.nome, tempo: e.tempo, unidade: e.unidade, pt: e.pt, requisitos: e.requisitos, treinador: e.treinador,
+      beneficios: e.beneficios, estado: "planejado", horasFeitas: 0, mods, criado: Date.now()
+    } });
+  }
+
+  async acaoExcluirTreinamento(ev, alvo) {
+    const id = alvo.dataset.treino;
+    const t = this.actor.flags?.[FLAG]?.treinamentos?.[id];
+    if (!t) return;
+    if (!(await M.confirmar("Excluir treinamento", `<p>Excluir <strong>${escapar(t.nome || "este treinamento")}</strong>? Os PT gastos não voltam.</p>`))) return;
+    await this.actor.update({ [`${P}.treinamentos.-=${id}`]: null });
+  }
+
+  async acaoAdicionarModTreino(ev, alvo) {
+    await this.actor.update({ [`${P}.treinamentos.${alvo.dataset.treino}.mods.${novoId()}`]: { alvo: "", valor: 1 } });
+  }
+
+  async acaoRemoverModTreino(ev, alvo) {
+    await this.actor.update({ [`${P}.treinamentos.${alvo.dataset.treino}.mods.-=${alvo.dataset.mod}`]: null });
+  }
+
+  async acaoMinijogo(ev, alvo) {
+    if (M.horasLivres(this.actor) < 1) return ui.notifications.warn("Sem horas de treino livres hoje.");
+    const acertos = await jogarMinijogo(alvo.dataset.jogo);
+    if (acertos === null) return;
+    return M.resultadoMinijogo(this.actor, alvo.dataset.jogo, acertos);
   }
 
   async acaoFavoritasNoTopo() {

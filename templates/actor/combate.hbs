@@ -6,10 +6,13 @@
         <div class="epm-combate-numeros">
           <div class="epm-numero">
             <span class="epm-rotulo">CA</span>
-            <span class="epm-numero-valor{{#if ficha.ca.penal}} penalizado{{/if}}" {{#if ficha.ca.penal}}title="Defesa {{epmSinal ficha.ca.penal}}: {{@root.caPenalTexto}}"{{/if}}>{{ficha.ca.total}}</span>
-            {{#if edicao}}<div class="epm-numero-campos">
+            <span class="epm-numero-valor{{#if ficha.ca.penal}} penalizado{{/if}}" title="{{caFormula}}{{#if ficha.ca.penal}}&#10;Defesa {{epmSinal ficha.ca.penal}}: {{@root.caPenalTexto}}{{/if}}">{{ficha.ca.total}}</span>
+            <span class="epm-numero-nota epm-ca-formula">{{ficha.ca.base}} + {{ficha.ca.atributoLabel}} {{epmSinal ficha.ca.atributoValor}}{{#if ficha.ca.armadura}} + Armadura {{ficha.ca.armadura}}{{/if}}</span>
+            {{#if edicao}}<div class="epm-numero-campos epm-ca-campos">
               <label class="epm-mini"><span>base</span><input type="number" name="flags.epm-ficha.ca.base" value="{{dados.ca.base}}" /></label>
-              <label class="epm-mini"><span>bônus</span><input type="number" name="flags.epm-ficha.ca.bonus" value="{{dados.ca.bonus}}" /></label>
+              <label class="epm-mini epm-ca-atributo"><span>atributo</span><select name="flags.epm-ficha.ca.atributo" aria-label="Atributo somado na CA">{{#each caAtributos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.abrev}}</option>{{/each}}</select></label>
+              <label class="epm-mini"><span>armadura</span><input type="number" name="flags.epm-ficha.ca.armadura" value="{{dados.ca.armadura}}" /></label>
+              <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.ca.bonus" value="{{dados.ca.bonus}}" /></label>
             </div>{{/if}}
           </div>
           <div class="epm-numero{{#if ficha.deslocamento.reduzido}} reduzido{{/if}}">

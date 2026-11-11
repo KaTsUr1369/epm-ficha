@@ -134,7 +134,7 @@ export function migrarPericias(pericias = {}, lista = PERICIAS_PADRAO, obsoletas
 }
 
 /** Versão atual do formato dos dados (normalizarDados e migrarDados levam fichas antigas até ela). */
-export const VERSAO_DADOS = 3;
+export const VERSAO_DADOS = 4;
 
 export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
   return {
@@ -149,7 +149,7 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     },
     atributos: Object.fromEntries(Object.keys(ATRIBUTOS).map(k => [k, { base: 0, raca: 0, aumento: 0, outros: 0 }])),
     pericias: periciasParaObjeto(listaPericias),
-    ca: { base: 10, bonus: 0 },
+    ca: { base: 10, atributo: "destreza", armadura: 0, bonus: 0 },
     deslocamento: { base: 9 },
     iniciativa: { bonus: 0 },
     exaustao: 0,
@@ -163,6 +163,8 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     sobre: {},
     notas: { paginas: {} },
     bencaos: {},
+    treinamentos: {},
+    treinoDia: { horas: 0 },
     relacoes: {},
     ataques: {},
     bonusCena: {},
@@ -201,8 +203,9 @@ export function camposFaltando(bruto = {}, listaPericias = PERICIAS_PADRAO) {
 }
 
 /**
- * Atualizações (caminhos relativos a flags.epm-ficha) que levam uma ficha da versão 2 para a 3:
- * Joias de Kan viram Dracmas, a exaustão acima de 6 volta a 6 (não há mais coma).
+ * Atualizações (caminhos relativos a flags.epm-ficha) que levam uma ficha para a versão atual:
+ * Joias de Kan viram Dracmas, a exaustão acima de 6 volta a 6 (não há mais coma) e
+ * Vontade troca Núcleo por Autocontrole se ainda estava no padrão antigo.
  * Idiomas são migrados pela ficha, porque dependem da lista de idiomas do mundo.
  */
 export function migrarDados(bruto = {}) {
@@ -214,6 +217,14 @@ export function migrarDados(bruto = {}) {
     updates[`moedas.-=${antiga}`] = null;
   }
   if (int(bruto?.exaustao) > EXAUSTAO_MAX) updates.exaustao = EXAUSTAO_MAX;
+  // 0.5.2: Vontade passa a somar Autocontrole por padrão (só muda quem ainda estava no padrão antigo, Núcleo)
+  const vontade = bruto?.pericias?.vontade;
+  const soNucleo = v => (Array.isArray(v) ? v.length === 1 && v[0] === "nucleo" : v === "nucleo");
+  if (vontade && soNucleo(vontade.atributos ?? vontade.atributo)) {
+    updates["pericias.vontade.atributos"] = ["autocontrole"];
+    if (vontade.atributo !== undefined) updates["pericias.vontade.-=atributo"] = null;
+  }
+  if (vontade && soNucleo(vontade.sugestoes)) updates["pericias.vontade.sugestoes"] = ["autocontrole"];
   updates.versao = VERSAO_DADOS;
   return updates;
 }
@@ -274,11 +285,13 @@ export function efeitosDeItens(itens = []) {
   const out = [];
   for (const item of itens) {
     let efeitos;
+    let armadura = 0;
     try {
       if (!itemAtivo(item)) continue;
       efeitos = lerEfeitosItem(item).filter(e => !["cura", "danoExtra"].includes(e.tipo));
+      if (item.type === "equipment") armadura = int(item.flags?.[FLAG]?.armadura);
     } catch { continue; }
-    if (efeitos.length) out.push({ id: item.id, nome: item.name, efeitos });
+    if (efeitos.length || armadura) out.push({ id: item.id, nome: item.name, efeitos, armadura });
   }
   return out;
 }
@@ -583,6 +596,10 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     for (const m of Object.values(x.b.mods ?? {})) somar(m?.alvo, m?.valor, fonte);
   }
   for (const c of efetivas) for (const m of c.efeitos.mods ?? []) somar(m.alvo, m.valor, c.label);
+  for (const t of Object.values(d.treinamentos ?? {})) {
+    if (t?.estado !== "concluido") continue;
+    for (const m of Object.values(t.mods ?? {})) somar(m?.alvo, m?.valor, `Treinamento: ${t.nome || "sem nome"}`);
+  }
   for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome);
   lerModsAE(modsAE, somar);
   const mod = alvo => mods[alvo]?.total ?? 0;
@@ -678,7 +695,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   for (const id of ["pm", "pe", "ps"]) {
     const r = d.recursos?.[id] ?? {};
     recursos[id] = {
-      id, ...RECURSOS[id], value: num(r.value), maxFonte: num(r.max),
+      id, ...RECURSOS[id], value: num(r.value), maxFonte: num(r.max), temp: Math.max(0, num(r.temp)),
       max: num(r.max) + mod(`recurso.${id}`), mod: mod(`recurso.${id}`), fontes: fontes(`recurso.${id}`), motivos: []
     };
   }
@@ -690,8 +707,16 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   }
 
   // CA (Defesa)
-  const ca = { base: int(d.ca?.base, 10), bonus: int(d.ca?.bonus), mod: mod("ca"), fontes: [...fontes("ca"), ...penal.defesa], penal: somaLista(penal.defesa) };
-  ca.total = ca.base + ca.bonus + ca.mod + ca.penal;
+  // CA = 10 + atributo (Destreza por padrão, escolhível) + armadura + outros (+ efeitos e penalidades)
+  const caAtr = ATRIBUTOS[d.ca?.atributo] ? d.ca.atributo : (d.ca?.atributo === "nenhum" ? "nenhum" : "destreza");
+  const ca = {
+    base: int(d.ca?.base, 10), atributo: caAtr, atributoLabel: ATRIBUTOS[caAtr]?.label ?? "Nenhum",
+    atributoValor: caAtr === "nenhum" ? 0 : int(atributos[caAtr]?.total), armaduraManual: int(d.ca?.armadura),
+    armaduraItens: itens.reduce((s, x) => s + int(x.armadura), 0), armaduraFontes: itens.filter(x => int(x.armadura)).map(x => `${x.nome} ${int(x.armadura)}`),
+    bonus: int(d.ca?.bonus), mod: mod("ca"), fontes: [...fontes("ca"), ...penal.defesa], penal: somaLista(penal.defesa)
+  };
+  ca.armadura = ca.armaduraManual + ca.armaduraItens;
+  ca.total = ca.base + ca.atributoValor + ca.armadura + ca.bonus + ca.mod + ca.penal;
 
   // Deslocamento
   const deslocamento = { base: num(d.deslocamento?.base, 9), mod: mod("deslocamento"), fontes: fontes("deslocamento"), motivos: [...new Set(deslMotivos)] };

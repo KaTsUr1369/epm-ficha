@@ -66,7 +66,7 @@ export const PERICIAS_PADRAO = [
   ["religiao", "Religião", ["inteligencia"]],
   ["sobrevivencia", "Sobrevivência", ["inteligencia"]],
   ["tecnologia", "Tecnologia", ["inteligencia"]],
-  ["vontade", "Vontade", ["nucleo"]]
+  ["vontade", "Vontade", ["autocontrole"]]
 ];
 
 /** Perícias da lista provisória da versão 0.1 (removidas na migração se estiverem zeradas). */
@@ -203,6 +203,8 @@ export const CD = { base: 8, pericia: "arcanismo" };
 
 export const CRITICO_PADRAO = { margem: 20, mult: 2 };
 export const COR_VIDA_TEMP = "#E8C547";
+/** Cores das barras temporárias: Vida amarela, Estamina verde, Mana roxa, Sanidade cinza. */
+export const CORES_TEMP = { pv: COR_VIDA_TEMP, pe: "#5FBF6A", pm: "#9B6BE0", ps: "#A3A9AE" };
 
 export const RECARGAS = {
   nenhuma: "Sem recarga automática",
@@ -410,6 +412,7 @@ export const ABAS = [
   { id: "habilidades", label: "Habilidades", icone: "fa-solid fa-hand-sparkles" },
   { id: "arqclasse",   label: "Arquétipo",   titulo: "Arquétipo e Classe", icone: "fa-solid fa-chess-knight", opcional: true },
   { id: "magias",      label: "Magias",      icone: "fa-solid fa-wand-sparkles" },
+  { id: "treinamentos", label: "Treinamentos", icone: "fa-solid fa-dumbbell" },
   { id: "sobre",       label: "Sobre",       icone: "fa-solid fa-feather-pointed" },
   { id: "anotacoes",   label: "Anotações",   icone: "fa-solid fa-diagram-project" },
   { id: "condicoes",   label: "Condições",   icone: "fa-solid fa-heart-pulse" },
@@ -419,6 +422,52 @@ export const ABAS = [
 ];
 
 /** Cores prontas da Personalização (a primeira é a padrão: verdete). */
+/* -------------------------------------------- */
+/*  Treinamentos                                */
+/* -------------------------------------------- */
+
+/** Regras de PT e horas de treino. */
+export const TREINO = {
+  horasDia: 8,                       // horas de treino por dia
+  acao: { horas: 6, pt: 5 },         // Treinamento ou Estudo: 6 h → 5 PT
+  conversa: { min: 1, max: 3 },      // conversa ou tutor: 1 a 3 PT
+  minijogo: { horas: 1 },            // treino rápido (minijogo) numa hora de descanso
+  ptMin: 1, ptMax: 20,               // faixa recomendada (o Mestre pode passar)
+  horasMin: 6, horasMax: 240         // 6 h a 1 mês (idem)
+};
+
+/** Unidades de tempo dos treinamentos, em horas de treino (o dia de treino tem 8 h). */
+export const UNIDADES_TEMPO = {
+  horas:   { label: "horas",   umLabel: "hora",   horas: 1 },
+  dias:    { label: "dias",    umLabel: "dia",    horas: 8 },
+  semanas: { label: "semanas", umLabel: "semana", horas: 56 },
+  meses:   { label: "meses",   umLabel: "mês",    horas: 240 }
+};
+
+export const ESTADOS_TREINO = {
+  planejado: { label: "Planejado", icone: "fa-regular fa-clipboard" },
+  andamento: { label: "Em andamento", icone: "fa-solid fa-person-running" },
+  concluido: { label: "Concluído", icone: "fa-solid fa-medal" }
+};
+
+/** Modelos que vêm com o sistema (exemplos do livro). */
+export const EXEMPLOS_TREINAMENTO = [
+  { nome: "Corredor", tempo: 48, unidade: "horas", pt: 5, requisitos: "4 de Destreza", treinador: false,
+    beneficios: "Seu deslocamento aumenta em 3 metros e você pode realizar a ação Disparada como ação bônus.",
+    mods: [{ alvo: "deslocamento", valor: 3 }] },
+  { nome: "Flash Step", tempo: 1, unidade: "meses", pt: 100, requisitos: "12 de Destreza ou Força, 8 de Núcleo", treinador: true,
+    beneficios: "Defina com o Mestre.", mods: [] }
+];
+
+/** Minijogos do treino rápido. */
+export const MINIJOGOS = {
+  sequencia: { label: "Sequência", icone: "fa-solid fa-arrows-up-down-left-right", dica: "Reflexos: repita as setas antes do tempo acabar." },
+  mira:      { label: "Na mira",   icone: "fa-solid fa-bullseye", dica: "Foco: pare o marcador dentro da faixa." },
+  forca:     { label: "Explosão",  icone: "fa-solid fa-hand-fist", dica: "Força: aperte o mais rápido que puder para encher a barra." }
+};
+/** PT ganhos por acertos no minijogo (de 5 rodadas). */
+export const PT_POR_ACERTOS = [0, 0, 1, 1, 2, 2];
+
 /** Sub-abas da aba Habilidades (origem da habilidade). Arquétipo e Classe só usam Passiva e Comum. */
 export const SUBABAS_HABILIDADE = [
   { id: "geral",     label: "Geral" },

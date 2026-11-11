@@ -34,7 +34,7 @@ export async function dadosDoParceiro(uuid) {
     const valor = dados.sobre?.[t.id] ?? "";
     ricos[t.id] = valor ? await enriquecer(valor, { relativeTo: ator, secrets: false }) : "";
   }
-  return { uuid: ator.uuid, name: ator.name, img: ator.img, dados, revelacoes: conteudoRevelacoes(dados, ricos) };
+  return { uuid: ator.uuid, name: ator.name, img: ator.img, dados, revelacoes: conteudoRevelacoes(dados, ricos), jogador: eDeJogador(ator) };
 }
 
 const temRelacao = (actor, uuid) => Object.values(actor.flags?.[FLAG]?.relacoes ?? {}).some(r => r?.uuid === uuid);
@@ -172,4 +172,9 @@ export async function mudarAfinidade(ator, com, delta, tipo = "aliado") {
     return ator.update({ [`${P}.relacoes.${existente[0]}.afinidade`]: limitarAf(int(existente[1].afinidade) + delta) });
   }
   return ator.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(com, TIPOS_RELACAO[tipo] ? tipo : "aliado", limitarAf(delta)) });
+}
+
+/** Personagem de jogador? (afinidade entre jogadores é decidida por eles; com NPCs, só pelo Mestre) */
+export function eDeJogador(ator) {
+  return !!ator && ator.type === "character" && !!ator.hasPlayerOwner;
 }

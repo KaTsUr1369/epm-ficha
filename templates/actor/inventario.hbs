@@ -40,6 +40,7 @@
             <i class="fa-solid fa-chevron-{{#if aberta}}down{{else}}right{{/if}}" aria-hidden="true"></i>
             <span class="epm-item-titulo">{{this.name}}</span>
             <span class="epm-item-dentro">{{this.qtdDentro}} {{#if (epmEq qtdDentro 1)}}item{{else}}itens{{/if}}, peso {{epmNumero pesoDentro}}{{#if capacidade}} de {{epmNumero capacidade}}{{/if}}</span>
+            {{#if temMoedas}}<span class="epm-mochila-moedas">{{#each moedas}}<span title="{{this.label}}"><img src="{{this.img}}" alt="" />{{this.qtd}}</span>{{/each}}</span>{{/if}}
             {{#if resumoEfeitos.length}}<span class="epm-item-efeitos">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
           </button>
           <div class="epm-item-controles">
@@ -52,6 +53,11 @@
         </header>
         {{#if aberta}}
         <div class="epm-mochila-conteudo" data-container-id="{{this.id}}">
+          {{#if @root.editavel}}<div class="epm-mochila-acoes-moedas">
+            <span class="epm-rotulo">Moedas</span>
+            <button type="button" class="epm-link" data-action="guardarMoedasMochila" data-item-id="{{this.id}}"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> guardar da carteira</button>
+            <button type="button" class="epm-link" data-action="pegarMoedasMochila" data-item-id="{{this.id}}"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> pegar para a carteira</button>
+          </div>{{/if}}
           {{#unless conteudo.length}}<p class="epm-mochila-vazia">Arraste itens do inventário para cá.</p>{{/unless}}
           <ol class="epm-itens">{{#each conteudo}}{{> "epm-item-linha"}}{{/each}}</ol>
         </div>

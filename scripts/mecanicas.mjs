@@ -11,7 +11,7 @@ import {
   num, int, novoId, lerPoder, avaliarForma, textoCusto, eSustentada, contarRaridades, situacaoLimite, raridadeItem,
   maxFormula, tetoDano, contarEfeitos, somarFormula, valorEmCobre, pagarMoedas, consolidarMoedas,
   formatarMoedas, formaPadrao, moedaPorId, multiplicarDados, bonusCenaAtivos, limitar, lerEfeitosItem,
-  custoEfetivo, condicaoPorId
+  custoEfetivo, condicaoPorId, danoRecebido
 } from "./data.mjs";
 import { lerAtor, dadosRolagemEPM, danoArma, periciaAtaquePadrao, ataqueDeArma, ataqueCustom, modsDoAtaque } from "./context.mjs";
 import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos.mjs";
@@ -942,16 +942,21 @@ export async function aplicarDanoDoCartao(atacante, botao) {
   if (!alvos.length) return ui.notifications.warn("Marque o alvo (tecla T ou clique com o botão direito no token → alvo) e clique de novo.");
   const semPermissao = alvos.filter(a => !a.isOwner);
   if (semPermissao.length) return ui.notifications.warn(`Só o Mestre aplica dano em ${semPermissao.map(a => a.name).join(", ")}. Ele pode clicar neste mesmo botão no chat.`);
+  const tipoDano = botao.dataset.tipoDano ?? "";
+  const partes = [];
   for (const alvo of alvos) {
     const hp = alvo.system?.attributes?.hp;
     if (!hp) continue;
-    let resto = valor;
+    // Fichas EPM: imunidade, RD e resistência entram sozinhas
+    const calc = alvo.flags?.[FLAG] ? danoRecebido(estadoAtor(alvo).ficha, valor, tipoDano) : { final: valor, passos: [] };
+    let resto = calc.final;
     const temp = int(hp.temp);
     const usaTemp = Math.min(temp, resto);
     resto -= usaTemp;
     await alvo.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - resto) });
+    partes.push(`${alvo.name} ${calc.final}${calc.passos.length ? ` (${calc.passos.join("; ")})` : ""}`);
   }
-  ui.notifications.info(`${valor} de dano${botao.dataset.tipoDano ? ` (${botao.dataset.tipoDano})` : ""} em ${alvos.map(a => a.name).join(", ")}.`);
+  ui.notifications.info(`Dano de ${valor}${tipoDano ? ` ${tipoDano}` : ""}: ${partes.join(", ")}.`);
 }
 
 /** Tira do menu do chat as opções de dano do D&D 5e nos cartões EPM (elas somavam acerto + dano e usavam o token selecionado). */

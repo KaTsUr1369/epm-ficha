@@ -2,8 +2,8 @@
  * Escudo do Mestre: janela do Mestre para conduzir o combate, aplicar dano, cura e condições,
  * dar itens e moedas, pedir testes ao grupo e consultar as regras. Só o Mestre abre.
  */
-import { FLAG, CAMINHO, MOEDAS, RECURSOS, COR_PADRAO, BRILHO_PADRAO } from "./config.mjs";
-import { int, num } from "./data.mjs";
+import { FLAG, CAMINHO, MOEDAS, RECURSOS, COR_PADRAO, BRILHO_PADRAO, SUGESTOES } from "./config.mjs";
+import { int, num, danoRecebido } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import { aplicarPaleta } from "./personalizacao.mjs";
 import { listaPericias } from "./settings.mjs";
@@ -22,7 +22,8 @@ const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo",
-  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "rolarTestes", "rolarLivre", "abrirItem"
+  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "rolarTestes", "rolarLivre", "abrirItem",
+  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo"
 ];
 
 export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -45,8 +46,64 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* ---------- Dados ---------- */
 
+  /** Configuração do grupo: fichas adicionadas à mão e personagens de jogador tirados. */
+  _cfgGrupo() {
+    const c = game.settings.get(FLAG, "escudoGrupo") ?? {};
+    return { extras: Array.isArray(c.extras) ? c.extras : [], fora: Array.isArray(c.fora) ? c.fora : [] };
+  }
+
+  /** Grupo = personagens de jogador (menos os tirados) + qualquer ficha adicionada. */
   _grupo() {
-    return game.actors.filter(a => a.type === "character" && a.hasPlayerOwner).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    const { extras, fora } = this._cfgGrupo();
+    const base = game.actors.filter(a => a.type === "character" && a.hasPlayerOwner && !fora.includes(a.id));
+    const mais = extras.map(id => game.actors.get(id)).filter(a => a && !base.includes(a));
+    return [...base, ...mais].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }
+
+  async _salvarGrupo(cfg) {
+    await game.settings.set(FLAG, "escudoGrupo", cfg);
+    this.render();
+  }
+
+  async _incluirNoGrupo(actor) {
+    if (!actor || actor.pack) return ui.notifications.warn("Só fichas do mundo (da aba Atores) entram no grupo.");
+    const cfg = this._cfgGrupo();
+    cfg.fora = cfg.fora.filter(id => id !== actor.id);
+    if (!(actor.type === "character" && actor.hasPlayerOwner) && !cfg.extras.includes(actor.id)) cfg.extras.push(actor.id);
+    await this._salvarGrupo(cfg);
+    ui.notifications.info(`${actor.name} entrou no grupo do Escudo.`);
+  }
+
+  async _adicionarAoGrupo() {
+    const dentro = new Set(this._grupo().map(a => a.id));
+    const opcoes = game.actors.filter(a => !dentro.has(a.id)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    if (!opcoes.length) return ui.notifications.info("Todas as fichas do mundo já estão no grupo.");
+    const tipo = a => a.hasPlayerOwner ? "jogador" : (a.type === "npc" ? "NPC" : "sem jogador");
+    const id = await foundry.applications.api.DialogV2.wait({
+      window: { title: "Adicionar ficha ao grupo" }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+      content: `<p class="epm-dica">Qualquer ficha do mundo: NPC, aliado, montaria, invocação… Também dá para arrastar da aba Atores para esta aba.</p>
+        <label class="epm-campo"><span>Ficha</span><select name="ator">${opcoes.map(a => `<option value="${a.id}">${escapar(a.name)} (${tipo(a)})</option>`).join("")}</select></label>`,
+      buttons: [
+        { action: "ok", label: "Adicionar", icon: "fa-solid fa-user-plus", default: true, callback: (ev, b) => b.form?.elements?.ator?.value ?? null },
+        { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+      ]
+    });
+    if (id && id !== "cancelar") await this._incluirNoGrupo(game.actors.get(id));
+  }
+
+  async _tirarDoGrupo(ev, alvo) {
+    const actor = game.actors.get(alvo.dataset.id);
+    if (!actor) return;
+    const cfg = this._cfgGrupo();
+    cfg.extras = cfg.extras.filter(id => id !== actor.id);
+    if (actor.type === "character" && actor.hasPlayerOwner && !cfg.fora.includes(actor.id)) cfg.fora.push(actor.id);
+    this._marcados.delete(actor.uuid);
+    await this._salvarGrupo(cfg);
+  }
+
+  async _restaurarGrupo() {
+    this._marcados.clear();
+    await this._salvarGrupo({ extras: [], fora: [] });
   }
 
   /** Alvos das ações rápidas: marcados no escudo; se nenhum, os tokens selecionados na cena. */
@@ -80,9 +137,11 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       aba: this._aba, combate, grupo: this._grupo(),
       itensMundo: game.items.contents.map(i => ({ id: i.id, uuid: i.uuid, name: i.name, img: i.img, type: i.type })),
       ui: { ...this._ui, marcados: this._marcados, nomesAlvos: alvos.atores.map(a => a.name), origemAlvos: alvos.origem,
-        condicoesDosAlvos, pericias, notas: game.settings.get(FLAG, "escudoNotas") ?? "" }
+        condicoesDosAlvos, pericias, notas: game.settings.get(FLAG, "escudoNotas") ?? "",
+        grupoAjustado: (() => { const c = this._cfgGrupo(); return c.extras.length + c.fora.length > 0; })() }
     });
     ctx.dtTeste = this._ui.dtTeste ?? 15;
+    ctx.tiposDano = SUGESTOES.dano ?? [];
     return ctx;
   }
 
@@ -90,6 +149,20 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     await super._onRender(context, options);
     aplicarPaleta(this.element, COR_PADRAO, BRILHO_PADRAO);
     const raiz = this.element;
+    const zona = raiz.querySelector("[data-soltar-grupo]");
+    if (zona) {
+      zona.addEventListener("dragover", ev => { ev.preventDefault(); zona.classList.add("soltando"); });
+      zona.addEventListener("dragleave", () => zona.classList.remove("soltando"));
+      zona.addEventListener("drop", async ev => {
+        ev.preventDefault();
+        zona.classList.remove("soltando");
+        let dados;
+        try { dados = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch { return; }
+        if (dados?.type !== "Actor") return ui.notifications.warn("Arraste uma ficha (ator) da aba Atores.");
+        const actor = await fromUuid(dados.uuid);
+        await this._incluirNoGrupo(actor);
+      });
+    }
     raiz.querySelectorAll("[data-marcar]").forEach(cx => cx.addEventListener("change", () => {
       if (cx.checked) this._marcados.add(cx.dataset.marcar); else this._marcados.delete(cx.dataset.marcar);
       this.render();
@@ -166,14 +239,21 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const { atores, origem } = this._alvos();
     if (!atores.length) return ui.notifications.warn("Marque alguém no escudo ou selecione tokens na cena.");
     const linhas = [];
+    const tipoDano = this._valor("[data-rapido-tipo]") || "";
     for (const a of atores) {
       const { ficha } = estadoAtor(a);
       let updates = {};
-      if (tipo === "dano") updates = calcularPerda(ficha, recurso, valor).updates;
+      let nome = a.name;
+      if (tipo === "dano") {
+        // Dano de PV: imunidade, RD e resistência do alvo entram sozinhas
+        const calc = recurso === "pv" && a.flags?.[FLAG] ? danoRecebido(ficha, valor, tipoDano) : { final: valor, passos: [] };
+        if (calc.passos.length) nome = `${a.name} ${calc.final} (${calc.passos.join("; ")})`;
+        updates = calc.final ? calcularPerda(ficha, recurso, calc.final).updates : {};
+      }
       else if (tipo === "cura") updates = calcularRecuperacao(ficha, recurso, valor, { fonte: "Mestre", trocaPm: false }).updates;
       else if (tipo === "temp") updates = recurso === "pv" ? { "system.attributes.hp.temp": Math.max(int(a.system?.attributes?.hp?.temp), valor) } : { [`${P}.recursos.${recurso}.temp`]: valor };
       if (Object.keys(updates).length) await a.update(updates);
-      linhas.push(a.name);
+      linhas.push(nome);
     }
     const rot = { dano: "perdem", cura: "recuperam", temp: "recebem temporário de" }[tipo];
     ui.notifications.info(`${linhas.join(", ")} ${rot} ${valor} ${RECURSOS[recurso]?.abrev ?? recurso} (${origem}).`);

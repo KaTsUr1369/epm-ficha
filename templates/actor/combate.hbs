@@ -41,6 +41,29 @@
         </div>
       </section>
 
+      <section class="epm-painel epm-rd">
+        <header class="epm-painel-titulo"><h3>Redução de dano (RD)</h3>
+          {{#if edicao}}<button type="button" class="epm-link" data-action="novaRd"><i class="fa-solid fa-plus" aria-hidden="true"></i> RD</button>{{/if}}</header>
+        <p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano" (antes da resistência).</p>
+        {{#if edicao}}
+        {{#each rdBox.manuais}}
+        <div class="epm-rd-linha">
+          <label class="epm-mini"><span>RD</span><input type="number" min="0" name="flags.epm-ficha.rd.{{this.id}}.valor" value="{{this.valor}}" /></label>
+          <label class="epm-mini largo"><span>tipo de dano</span><input type="text" name="flags.epm-ficha.rd.{{this.id}}.tipo" value="{{this.tipo}}" list="epm-sug-rd-{{@root.actor.id}}" placeholder="Todos os danos" /></label>
+          <button type="button" class="epm-icone-botao" data-action="removerRd" data-rd="{{this.id}}" title="Remover" aria-label="Remover RD"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        {{/each}}
+        <datalist id="epm-sug-rd-{{@root.actor.id}}">{{#each rdBox.sugestoes}}<option value="{{this}}"></option>{{/each}}</datalist>
+        {{#unless rdBox.manuais.length}}<p class="epm-vazio">Nenhuma RD na ficha. Clique em + RD.</p>{{/unless}}
+        {{else}}
+        <div class="epm-chips">
+          {{#each rdBox.manuais}}{{#if ativa}}<span class="epm-chip epm-chip-rd">{{this.texto}}</span>{{/if}}{{/each}}
+        </div>
+        {{#if rdBox.vazio}}<p class="epm-vazio">Nenhuma redução de dano.</p>{{/if}}
+        {{/if}}
+        {{#if rdBox.deItens.length}}<div class="epm-chips"><span class="epm-rotulo">De itens</span>{{#each rdBox.deItens}}<span class="epm-chip epm-chip-rd" title="{{this.fonte}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
+      </section>
+
       <section class="epm-painel">
         <header class="epm-painel-titulo"><h3>Turno</h3></header>
         <div class="epm-turno">

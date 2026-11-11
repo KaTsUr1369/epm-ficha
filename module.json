@@ -2,7 +2,7 @@
   "id": "epm-ficha",
   "title": "Escolhidos pelo Multiverso: Ficha",
   "description": "Ficha de personagem do sistema Escolhidos pelo Multiverso (EPM) para o D&D 5e no Foundry VTT: atributos e perícias próprios, Vida, Mana, Estamina e Sanidade, habilidades e magias com formas e raridades, inventário com mochilas, efeitos de itens e Dracmas, 131 condições com combinações e efeitos automáticos, lista de 100 bênçãos e 100 maldições, relações que revelam o background, idiomas ligados ao Polyglot, anotações com mapa mental e cor da ficha personalizável.",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "authors": [
     {
       "name": "KaTsUr1369"
@@ -43,6 +43,6 @@
   ],
   "url": "https://github.com/KaTsUr1369/epm-ficha",
   "manifest": "https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json",
-  "download": "https://github.com/KaTsUr1369/epm-ficha/releases/download/v0.5.5/module.zip",
+  "download": "https://github.com/KaTsUr1369/epm-ficha/releases/download/v0.5.6/module.zip",
   "bugs": "https://github.com/KaTsUr1369/epm-ficha/issues"
 }

@@ -73,6 +73,7 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
   /* Grupo */
   ctx.grupo = grupo.map(a => resumoAtor(a, { marcado: marcados.has(a.uuid) }));
   ctx.grupoVazio = !ctx.grupo.length;
+  ctx.grupoAjustado = !!(ui.grupoAjustado);
 
   /* Alvos (marcados no escudo ou tokens selecionados) */
   ctx.alvos = { nomes: ui.nomesAlvos ?? [], qtd: (ui.nomesAlvos ?? []).length, origem: ui.origemAlvos ?? "" };

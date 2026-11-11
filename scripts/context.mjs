@@ -679,6 +679,15 @@ export function montarContexto({
     vulnerabilidades: vuln,
     reducoes: ficha.tags.reducoes.map(r => ({ texto: `RD ${r.valor} (${r.tipos})`, fonte: r.fonte }))
   };
+  // Caixa de RD na aba Combate: as da ficha (editáveis) e as que vêm de itens
+  ctx.rdBox = {
+    manuais: Object.entries(dados.rd ?? {}).filter(([, r]) => r && typeof r === "object")
+      .sort(([, a], [, b]) => (a.criado ?? 0) - (b.criado ?? 0))
+      .map(([id, r]) => ({ id, tipo: r.tipo ?? "", valor: r.valor ?? 0, texto: `RD ${Number(r.valor) || 0} (${String(r.tipo ?? "").trim() || "todos os danos"})`, ativa: Number(r.valor) > 0 })),
+    deItens: ficha.tags.reducoes.filter(r => r.fonte !== "Ficha").map(r => ({ texto: `RD ${r.valor} (${r.tipos})`, fonte: r.fonte })),
+    sugestoes: ["Todos os danos", ...SUGESTOES.dano]
+  };
+  ctx.rdBox.vazio = !ctx.rdBox.manuais.some(r => r.ativa) && !ctx.rdBox.deItens.length;
   ctx.defesasBox.vazio = !ctx.defesasBox.resistencias.length && !ctx.defesasBox.imunidades.length
     && !ctx.defesasBox.vulnerabilidades.length && !ctx.defesasBox.reducoes.length;
 

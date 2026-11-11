@@ -2619,3 +2619,13 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-projeto-pronto .epm-projeto-estado { color: #6FBF73; font-weight: 600; }
 .epm-projeto-efeito { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 13px; background: color-mix(in srgb, #C9A55A 18%, transparent); }
 .epm-projeto-efeito .epm-link { margin-left: auto; }
+
+/* 0.5.5 · RD na aba Combate e grupo do Escudo */
+.epm-rd .epm-dica { margin: 0 0 6px; }
+.epm-rd-linha { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 5px; }
+.epm-rd-linha .epm-mini input[type="number"] { width: 56px; }
+.epm-rd-linha .epm-mini.largo { flex: 1; }
+.epm-rd-linha .epm-mini.largo input { width: 100%; }
+.epm-escudo-soltar { border: 1px dashed transparent; border-radius: 6px; padding: 4px; }
+.epm-escudo-soltar.soltando { border-color: var(--epm-destaque, #D3A85E); background: color-mix(in srgb, #D3A85E 10%, transparent); }
+.epm-escudo-tipo-dano { width: 130px; }

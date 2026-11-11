@@ -62,6 +62,7 @@ const ACOES_FICHA = [
   "novaFaccao", "excluirFaccao", "imagemFaccao", "ajustarReputacao",
   "ataqueOportunidade", "atrasarTurno", "ressonancia", "pularHoras",
   "imagemFundo", "removerFundo", "visualPadrao", "tocarMusica", "recarregarArma", "encerrarSustentada",
+  "novaRd", "removerRd",
   "criarProjeto", "usarProjeto", "apagarProjeto", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto"
 ];
 const despachar = nome => function (evento, alvo) {
@@ -1445,6 +1446,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   acaoRecuperarMana() { return X.recuperarMana(this.actor); }
+
+  /* ---------- RD (aba Combate) ---------- */
+
+  acaoNovaRd() { return this.actor.update({ [`${P}.rd.${novoId()}`]: { tipo: "", valor: 1, criado: Date.now() } }); }
+  acaoRemoverRd(ev, alvo) { return this.actor.update({ [`${P}.rd.-=${alvo.dataset.rd}`]: null }); }
 
   /* ---------- Projetos do Artífice ---------- */
 

@@ -174,6 +174,7 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     transformacao: { ativa: "", turnos: 0 },
     companheiros: {},
     bestiario: {},
+    rd: {},
     projetos: {},
     projetosEfeitos: {},
     livroProjetos: {},
@@ -588,6 +589,10 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
 
   /* ---------- Itens: desvantagem, vantagem, resistências, RD ---------- */
   const reducoes = [];
+  // RD da própria ficha (aba Combate): reduz o número escolhido do dano daquele tipo
+  for (const r of Object.values(d.rd ?? {})) {
+    if (r && num(r.valor) > 0) reducoes.push({ valor: num(r.valor), tipos: String(r.tipo ?? "").trim() || "todos os danos", fonte: "Ficha" });
+  }
   const tagsItens = { resistencias: [], vulnerabilidades: [] };
   for (const fonteItem of itens) {
     for (const e of fonteItem.efeitos) {
@@ -1271,6 +1276,31 @@ export function moedaPorId(id) {
 /* -------------------------------------------- */
 /*  Ataques                                     */
 /* -------------------------------------------- */
+
+/** O tipo de uma resistência/RD vale para este dano? ("todos os danos" vale para qualquer um; aceita lista com vírgula.) */
+export function tipoCobre(tipos, tipoDano) {
+  const lista = String(tipos ?? "").split(/[,;/]| e /).map(t => normalizarTexto(t)).filter(Boolean);
+  if (!lista.length || lista.some(t => t.startsWith("todo"))) return true;
+  const alvo = normalizarTexto(tipoDano);
+  return !!alvo && lista.includes(alvo);
+}
+
+/**
+ * Dano que o alvo recebe: imunidade zera, a RD tira o número fixo e a resistência corta à metade
+ * (RD antes da resistência). Devolve { final, passos } para explicar no aviso.
+ */
+export function danoRecebido(ficha, valor, tipoDano = "") {
+  let dano = Math.max(0, Math.floor(num(valor)));
+  const passos = [];
+  const tags = ficha?.tags ?? {};
+  const imune = (tags.imunidades ?? []).find(t => tipoCobre(t.tipo, tipoDano));
+  if (dano && imune) return { final: 0, passos: [`imune (${imune.tipo})`] };
+  const rd = (tags.reducoes ?? []).filter(r => tipoCobre(r.tipos, tipoDano)).reduce((s, r) => s + num(r.valor), 0);
+  if (dano && rd) { const antes = dano; dano = Math.max(0, dano - rd); passos.push(`RD ${rd}: ${antes} → ${dano}`); }
+  const resiste = (tags.resistencias ?? []).find(t => tipoCobre(t.tipo, tipoDano));
+  if (dano && resiste) { const antes = dano; dano = Math.floor(dano / 2); passos.push(`resistência (${resiste.tipo}): ${antes} → ${dano}`); }
+  return { final: dano, passos };
+}
 
 /** Multiplica a quantidade de dados de uma fórmula (crítico ×3: "2d10 + 4" → "6d10 + 4"). */
 export function multiplicarDados(formula, mult) {

@@ -62,6 +62,7 @@ export function registrarAjustes() {
   });
   reg("paineisRecolhidos", { scope: "client", config: false, type: Array, default: [] });
   reg("escudoNotas", { scope: "world", config: false, type: String, default: "" });
+  reg("escudoGrupo", { scope: "world", config: false, type: Object, default: { extras: [], fora: [] } });
   reg("dockConfigurado", { scope: "world", config: false, type: Boolean, default: false });
   reg("migracaoVontade", { scope: "world", config: false, type: Boolean, default: false });
   reg("periciasPadrao", { scope: "world", config: false, type: Array, default: [] });

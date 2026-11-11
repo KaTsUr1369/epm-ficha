@@ -16,6 +16,8 @@
       <div class="epm-escudo-aplicar">
         <input type="number" min="0" data-rapido-valor placeholder="valor" aria-label="Valor" />
         <select data-rapido-recurso aria-label="Recurso"><option value="pv">PV</option><option value="pm">PM</option><option value="pe">PE</option><option value="ps">PS</option></select>
+        <input type="text" class="epm-escudo-tipo-dano" data-rapido-tipo list="epm-escudo-tipos-dano" placeholder="tipo (opcional)" aria-label="Tipo de dano (para RD, resistência e imunidade)" title="Opcional. Com o tipo, a RD, a resistência e a imunidade do alvo entram sozinhas no dano de PV." />
+        <datalist id="epm-escudo-tipos-dano">{{#each this.tiposDano}}<option value="{{this}}"></option>{{/each}}</datalist>
         <button type="button" class="epm-botao perigo" data-action="aplicarRapido" data-tipo="dano"><i class="fa-solid fa-burst" aria-hidden="true"></i> Dano</button>
         <button type="button" class="epm-botao epm-botao-cura" data-action="aplicarRapido" data-tipo="cura"><i class="fa-solid fa-heart" aria-hidden="true"></i> Cura</button>
         <button type="button" class="epm-botao" data-action="aplicarRapido" data-tipo="temp"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> Temp</button>
@@ -98,7 +100,12 @@
         <button type="button" class="epm-botao" data-action="relacaoMultipla"><i class="fa-solid fa-people-arrows"></i> Relação múltipla</button>
       </div>
     </section>
-    {{#if grupoVazio}}<p class="epm-vazio">Nenhum personagem de jogador no mundo.</p>{{/if}}
+    <div class="epm-escudo-barra epm-escudo-soltar" data-soltar-grupo>
+      <button type="button" class="epm-botao" data-action="adicionarAoGrupo"><i class="fa-solid fa-user-plus"></i> Adicionar ficha</button>
+      <span class="epm-dica">ou arraste qualquer ficha da aba Atores para cá (NPC, aliado, montaria…)</span>
+      {{#if this.grupoAjustado}}<button type="button" class="epm-link" data-action="restaurarGrupo" title="Volta a ser só os personagens dos jogadores">restaurar padrão</button>{{/if}}
+    </div>
+    {{#if grupoVazio}}<p class="epm-vazio">Ninguém no grupo. Adicione uma ficha.</p>{{/if}}
     <ol class="epm-escudo-lista">
       {{#each grupo}}
       <li class="epm-escudo-linha{{#if marcado}} marcado{{/if}}">
@@ -106,7 +113,7 @@
         <span></span>
         <img src="{{this.img}}" alt="" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha" />
         <div class="epm-escudo-info">
-          <div class="epm-escudo-nome"><strong>{{this.name}}</strong><span class="epm-tag fraca">Nv. {{this.nivel}}</span>
+          <div class="epm-escudo-nome"><strong>{{this.name}}</strong><span class="epm-tag fraca">Nv. {{this.nivel}}</span>{{#unless jogador}}<span class="epm-tag fraca">sem jogador</span>{{/unless}}
             <span class="epm-escudo-ca">CA <strong>{{this.ca}}</strong></span>
             <span class="epm-escudo-def">PEv {{this.pontos.pev}} · PT {{this.pontos.pt}} · PH {{this.pontos.ph}}</span>
             {{#if exaustao}}<span class="epm-tag epm-tag-perigo">Exaustão {{this.exaustao}}</span>{{/if}}</div>
@@ -117,7 +124,8 @@
           </div>
           {{#if temCondicoes}}<div class="epm-escudo-conds">{{#each condicoes}}<button type="button" class="epm-escudo-cond{{#if automatica}} auto{{/if}}" data-action="removerCondicao" data-uuid="{{../uuid}}" data-id="{{this.id}}" title="{{this.label}}" {{#if automatica}}disabled{{/if}}><img src="{{this.icone}}" alt="{{this.label}}" /></button>{{/each}}</div>{{/if}}
         </div>
-        <div class="epm-escudo-acoes"><button type="button" class="epm-icone-botao" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha"><i class="fa-solid fa-id-card"></i></button></div>
+        <div class="epm-escudo-acoes"><button type="button" class="epm-icone-botao" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha"><i class="fa-solid fa-id-card"></i></button>
+          <button type="button" class="epm-icone-botao" data-action="tirarDoGrupo" data-id="{{this.id}}" title="Tirar do grupo (a ficha não é apagada)"><i class="fa-solid fa-user-minus"></i></button></div>
       </li>
       {{/each}}
     </ol>

@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.3
+
+- **Sobre → Traços:** novos campos Apelido, Vulgo e Sexualidade. Também aparecem nas relações, junto com os outros traços, quando a afinidade libera.
+
 ## Novidades da 0.5.2
 
 - **CA = 10 + Destreza + Armadura + outros.** No modo edição, o atributo da CA pode ser trocado (Destreza é o padrão). Armaduras e equipamentos ganham o campo "Armadura", que soma na CA quando equipados.

@@ -357,6 +357,8 @@ export const MOEDAS_ANTIGAS = { kan: "dr" };
 /* -------------------------------------------- */
 
 export const CAMPOS_SOBRE = [
+  { id: "apelido", label: "Apelido" },
+  { id: "vulgo",  label: "Vulgo" },
   { id: "idade",  label: "Idade" },
   { id: "altura", label: "Altura" },
   { id: "peso",   label: "Peso" },
@@ -364,6 +366,7 @@ export const CAMPOS_SOBRE = [
   { id: "cabelo", label: "Cabelo" },
   { id: "pele",   label: "Pele" },
   { id: "genero", label: "Gênero" },
+  { id: "sexualidade", label: "Sexualidade" },
   { id: "origem", label: "Terra natal" },
   { id: "tema",   label: "Tema", dica: "Caos, Luz, Trevas, Sangue, Estrelas, Tempo…" }
 ];

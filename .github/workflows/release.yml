@@ -1,10 +1,16 @@
-# Ao publicar uma release com tag "vX.Y.Z", gera module.zip e module.json com a versão certa
-# e anexa os dois à release. O Foundry instala pela URL do manifest em module.json.
+# Publica o módulo no GitHub.
+# - Envio para a main: se a versão do module.json ainda não tem release, cria a tag vX.Y.Z,
+#   a release (com as novidades do README) e anexa module.zip e module.json.
+# - Release publicada à mão com tag vX.Y.Z: gera e anexa os mesmos arquivos.
+# O Foundry instala e atualiza pela URL do manifest em module.json.
 name: Publicar release
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,25 +18,50 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ajustar versão e links do manifest
+      - name: Descobrir a versão
+        id: versao
         run: |
-          VERSAO="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v$(jq -r .version module.json)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "versao=${TAG#v}" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" != "release" ] && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG já existe; nada a fazer."
+            echo "pular=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ajustar versão e links do manifest
+        if: steps.versao.outputs.pular != '1'
+        run: |
+          TAG="${{ steps.versao.outputs.tag }}"
           REPO="https://github.com/${GITHUB_REPOSITORY}"
-          jq --arg v "$VERSAO" --arg url "$REPO" \
+          jq --arg v "${{ steps.versao.outputs.versao }}" --arg url "$REPO" \
              --arg man "$REPO/releases/latest/download/module.json" \
-             --arg dl "$REPO/releases/download/${GITHUB_REF_NAME}/module.zip" \
+             --arg dl "$REPO/releases/download/$TAG/module.zip" \
              '.version=$v | .url=$url | .manifest=$man | .download=$dl | .bugs=($url + "/issues")' \
              module.json > module.tmp && mv module.tmp module.json
 
       - name: Empacotar
+        if: steps.versao.outputs.pular != '1'
         run: zip -r module.zip module.json scripts templates styles fonts assets README.md
 
-      - name: Anexar à release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            module.json
-            module.zip
+      - name: Criar a release (envio para a main)
+        if: steps.versao.outputs.pular != '1' && github.event_name != 'release'
+        run: |
+          TAG="${{ steps.versao.outputs.tag }}"
+          VERSAO="${{ steps.versao.outputs.versao }}"
+          awk -v t="## Novidades da $VERSAO" '$0==t{f=1;next} /^## /{if(f)exit} f' README.md > notas.md
+          [ -s notas.md ] || echo "Versão $VERSAO." > notas.md
+          gh release create "$TAG" module.json module.zip --target "$GITHUB_SHA" --title "$TAG" --notes-file notas.md
+
+      - name: Anexar à release publicada à mão
+        if: steps.versao.outputs.pular != '1' && github.event_name == 'release'
+        run: gh release upload "${{ steps.versao.outputs.tag }}" module.json module.zip --clobber

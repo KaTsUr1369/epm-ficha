@@ -1286,8 +1286,8 @@ export function tipoCobre(tipos, tipoDano) {
 }
 
 /**
- * Dano que o alvo recebe: imunidade zera, a RD tira o número fixo e a resistência corta à metade
- * (RD antes da resistência). Devolve { final, passos } para explicar no aviso.
+ * Dano que o alvo recebe, nesta ordem: imunidade zera; vulnerabilidade dobra; resistência corta à metade
+ * (com as duas, uma anula a outra); por último a RD tira o número fixo. Devolve { final, passos } para o aviso.
  */
 export function danoRecebido(ficha, valor, tipoDano = "") {
   let dano = Math.max(0, Math.floor(num(valor)));
@@ -1295,10 +1295,13 @@ export function danoRecebido(ficha, valor, tipoDano = "") {
   const tags = ficha?.tags ?? {};
   const imune = (tags.imunidades ?? []).find(t => tipoCobre(t.tipo, tipoDano));
   if (dano && imune) return { final: 0, passos: [`imune (${imune.tipo})`] };
+  const vulneravel = [...(tags.vulnerabilidades ?? []), ...(ficha?.vulneraveis ?? []).filter(v => !v.anulada)].find(t => tipoCobre(t.tipo, tipoDano));
+  const resiste = (tags.resistencias ?? []).find(t => tipoCobre(t.tipo, tipoDano));
+  if (dano && vulneravel && resiste) passos.push(`vulnerável e resistente (${resiste.tipo}): uma anula a outra`);
+  else if (dano && vulneravel) { const antes = dano; dano *= 2; passos.push(`vulnerável (${vulneravel.tipo}): ${antes} → ${dano}`); }
+  else if (dano && resiste) { const antes = dano; dano = Math.floor(dano / 2); passos.push(`resistência (${resiste.tipo}): ${antes} → ${dano}`); }
   const rd = (tags.reducoes ?? []).filter(r => tipoCobre(r.tipos, tipoDano)).reduce((s, r) => s + num(r.valor), 0);
   if (dano && rd) { const antes = dano; dano = Math.max(0, dano - rd); passos.push(`RD ${rd}: ${antes} → ${dano}`); }
-  const resiste = (tags.resistencias ?? []).find(t => tipoCobre(t.tipo, tipoDano));
-  if (dano && resiste) { const antes = dano; dano = Math.floor(dano / 2); passos.push(`resistência (${resiste.tipo}): ${antes} → ${dano}`); }
   return { final: dano, passos };
 }
 

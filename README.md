@@ -14,10 +14,15 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.7
+
+- Ordem do dano corrigida: **imunidade → vulnerabilidade (×2) → resistência (metade) → RD**. Vulnerável e resistente ao mesmo tipo: uma anula a outra.
+- Tipo de dano novo: **Corrupção**.
+
 ## Novidades da 0.5.6
 
 - **Redução de dano (RD)** na aba Combate: caixa nova para RDs da ficha (valor + tipo de dano; vazio = todos os danos; aceita lista como "Fogo, Gelo"). Funciona como uma resistência, mas tira o número escolhido em vez de cortar à metade. As RDs de itens aparecem junto.
-- **Aplicar dano** agora considera, nas fichas EPM, a imunidade (zera), a RD (tira o número) e a resistência (metade), nessa ordem. O aviso mostra a conta de cada alvo.
+- **Aplicar dano** agora considera, nas fichas EPM, a imunidade (zera), a vulnerabilidade (×2), a resistência (metade) e a RD (tira o número), nessa ordem. O aviso mostra a conta de cada alvo.
 - **Escudo do Mestre → Grupo**: botão **Adicionar ficha** (qualquer ator do mundo: NPC, aliado, montaria…) ou arrastar da aba Atores. Cada linha tem **Tirar do grupo** (a ficha não é apagada) e há **restaurar padrão**. O grupo vale para Dar pontos, Descanso, Testes e Itens.
 - Escudo: campo opcional **tipo de dano** no dano rápido, para a RD, a resistência e a imunidade entrarem sozinhas.
 

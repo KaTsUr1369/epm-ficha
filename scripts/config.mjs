@@ -547,7 +547,7 @@ export const CORES_NO = ["#2B4440", "#3A3355", "#4A2F33", "#4A4128", "#26404F", 
 
 /** Sugestões para os campos de tags (o jogador pode digitar qualquer valor). */
 export const SUGESTOES = {
-  dano: ["Corte", "Perfuração", "Impacto", "Fogo", "Gelo", "Elétrico", "Ácido", "Veneno", "Psíquico", "Necrótico", "Radiante", "Trovão", "Força", "Mágico", "Espiritual", "Sanidade", "Caos", "Luz", "Trevas", "Sangue"]
+  dano: ["Corte", "Perfuração", "Impacto", "Fogo", "Gelo", "Elétrico", "Ácido", "Veneno", "Psíquico", "Necrótico", "Radiante", "Trovão", "Força", "Mágico", "Espiritual", "Sanidade", "Caos", "Luz", "Trevas", "Sangue", "Corrupção"]
 };
 
 /** Tipos de arma sugeridos (Arma Favorita do Combatente vale para um tipo). Dá para escrever outro. */

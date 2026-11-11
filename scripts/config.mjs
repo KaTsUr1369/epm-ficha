@@ -454,6 +454,7 @@ export const ABAS = [
   { id: "relacoes",    label: "Relações",    icone: "fa-solid fa-people-arrows" },
   { id: "companheiros", label: "Companheiros", icone: "fa-solid fa-paw", seConteudo: "companheiros" },
   { id: "bestiario",   label: "Bestiário",   icone: "fa-solid fa-dragon" },
+  { id: "producao",    label: "Produção",    titulo: "Produção: forja, alquimia, rituais e encantamento", icone: "fa-solid fa-hammer", seConteudo: "receitas" },
   { id: "personalizacao", label: "Personalizar", titulo: "Personalização da ficha", icone: "fa-solid fa-palette", soEdicao: true }
 ];
 
@@ -546,8 +547,67 @@ export const BRILHO_PADRAO = 50;
 export const CORES_NO = ["#2B4440", "#3A3355", "#4A2F33", "#4A4128", "#26404F", "#3B4A2B"];
 
 /** Sugestões para os campos de tags (o jogador pode digitar qualquer valor). */
+/**
+ * Tipos de dano do RPG (20 + Corrupção), em grupos. "aliases" são nomes antigos ou alternativos
+ * que continuam valendo nas fichas (ex.: uma resistência a "Corte" vale para dano Cortante).
+ */
+export const GRUPOS_DANO = {
+  fisicos: "Físicos", elementais: "Elementais", misticos: "Energéticos e místicos", mentais: "Mentais", biologicos: "Biológicos"
+};
+export const TIPOS_DANO = [
+  { id: "contundente", label: "Contundente", grupo: "fisicos", aliases: ["impacto", "concussao", "esmagamento"], desc: "Impactos, golpes, esmagamentos e colisões." },
+  { id: "cortante", label: "Cortante", grupo: "fisicos", aliases: ["corte"], desc: "Lâminas, garras e objetos capazes de cortar." },
+  { id: "perfurante", label: "Perfurante", grupo: "fisicos", aliases: ["perfuracao"], desc: "Ataques que atravessam ou perfuram o alvo." },
+  { id: "fogo", label: "Fogo", grupo: "elementais", aliases: [], desc: "Chamas, combustão e calor extremo." },
+  { id: "agua", label: "Água", grupo: "elementais", aliases: [], desc: "Jatos, ondas e impactos de água." },
+  { id: "ar", label: "Ar", grupo: "elementais", aliases: ["vento"], desc: "Correntes de vento, rajadas e lâminas de ar." },
+  { id: "terra", label: "Terra", grupo: "elementais", aliases: [], desc: "Rochas, minerais, areia e movimentos do solo." },
+  { id: "gelo", label: "Gelo", grupo: "elementais", aliases: ["frio"], desc: "Congelamento, cristais de gelo e temperaturas extremamente baixas." },
+  { id: "raio", label: "Raio", grupo: "elementais", aliases: ["eletrico", "eletricidade"], desc: "Descargas elétricas e fenômenos eletromagnéticos." },
+  { id: "acido", label: "Ácido", grupo: "elementais", aliases: [], desc: "Substâncias corrosivas que deterioram materiais e tecidos." },
+  { id: "sonoro", label: "Sonoro", grupo: "elementais", aliases: ["trovao", "som"], desc: "Ondas sonoras, vibrações e frequências destrutivas." },
+  { id: "forca", label: "Força", grupo: "misticos", aliases: ["magico"], desc: "Energia mágica concentrada, impactos arcanos e energia pura." },
+  { id: "radiante", label: "Radiante", grupo: "misticos", aliases: ["sagrado", "radiante (sagrado)"], desc: "Energia divina, santidade e poderes sagrados." },
+  { id: "luz", label: "Luz", grupo: "misticos", aliases: [], desc: "Energia luminosa concentrada, feixes de luz e radiação luminosa." },
+  { id: "necrotico", label: "Necrótico", grupo: "misticos", aliases: [], desc: "Morte, decomposição, corrupção e drenagem de energia vital." },
+  { id: "sombra", label: "Sombra", grupo: "misticos", aliases: ["trevas", "escuridao"], desc: "Trevas, escuridão sobrenatural e energias sombrias." },
+  { id: "espiritual", label: "Espiritual", grupo: "misticos", aliases: ["alma"], desc: "Afeta diretamente a alma e a essência espiritual de um ser." },
+  { id: "temporal", label: "Temporal", grupo: "misticos", aliases: ["tempo"], desc: "Manipulação do tempo, envelhecimento acelerado e distorções temporais." },
+  { id: "corrupcao", label: "Corrupção", grupo: "misticos", aliases: [], desc: "Corrupção." },
+  { id: "psiquico", label: "Psíquico", grupo: "mentais", aliases: ["mental"], desc: "Ataques mentais, manipulação da mente e destruição cognitiva." },
+  { id: "venenoso", label: "Venenoso", grupo: "biologicos", aliases: ["veneno"], desc: "Toxinas e venenos que prejudicam o organismo." }
+];
+
+/**
+ * Níveis de dano (hierarquia). Resistência, imunidade e RD têm um nível (padrão Natural) e só valem
+ * contra dano do mesmo nível ou abaixo: resistência a Fogo (Natural) não segura Fogo (Verdadeiro).
+ */
+export const NIVEIS_DANO = [
+  { id: "natural", label: "Natural", valor: 1 },
+  { id: "magico", label: "Mágico", valor: 2 },
+  { id: "verdadeiro", label: "Verdadeiro", valor: 3 },
+  { id: "limbico", label: "Límbico", valor: 4 },
+  { id: "arcaico", label: "Arcaico", valor: 5 }
+];
+
+/** Bônus situacionais de habilidades e magias (valem pela cena, viram um Bônus de cena na aba Combate). */
+export const TIPOS_BONUS_SITUACIONAL = {
+  rd: { label: "RD", texto: v => `+${v} de RD` },
+  ca: { label: "CA", texto: v => `+${v} de CA` },
+  dano: { label: "Dano", texto: v => `+${v} de dano` },
+  acerto: { label: "Acerto", texto: v => `+${v} no teste de ataque` },
+  testes: { label: "Testes", texto: v => `+${v} em todos os testes` },
+  deslocamento: { label: "Deslocamento", texto: v => `+${v} m de deslocamento` }
+};
+export const GATILHOS_BONUS = { uso: "Ao usar", dano: "Ao sofrer dano (automático, se tiver o custo)" };
+
+/** Sugestões dos campos de tipo de dano: os tipos, os grupos e cada tipo com o nível entre parênteses. */
 export const SUGESTOES = {
-  dano: ["Corte", "Perfuração", "Impacto", "Fogo", "Gelo", "Elétrico", "Ácido", "Veneno", "Psíquico", "Necrótico", "Radiante", "Trovão", "Força", "Mágico", "Espiritual", "Sanidade", "Caos", "Luz", "Trevas", "Sangue", "Corrupção"]
+  dano: [
+    ...TIPOS_DANO.map(t => t.label),
+    ...Object.values(GRUPOS_DANO),
+    ...TIPOS_DANO.flatMap(t => NIVEIS_DANO.slice(1).map(n => `${t.label} (${n.label})`))
+  ]
 };
 
 /** Tipos de arma sugeridos (Arma Favorita do Combatente vale para um tipo). Dá para escrever outro. */
@@ -556,3 +616,67 @@ export const TIPOS_ARMA = [
   "Martelo de guerra", "Lança", "Alabarda", "Foice", "Cajado", "Chicote", "Manopla", "Desarmado", "Arco curto", "Arco longo",
   "Besta", "Arma de arremesso", "Funda", "Pistola", "Revólver", "Rifle", "Espingarda", "Submetralhadora", "Escudo"
 ];
+
+/* -------------------------------------------- */
+/*  Produção (profissões)                       */
+/* -------------------------------------------- */
+
+/** Dificuldades das receitas (CD do teste). */
+export const DIFICULDADES_PRODUCAO = {
+  baixa: { label: "Baixa", cd: 15 },
+  media: { label: "Média", cd: 25 },
+  superior: { label: "Superior", cd: 35 }
+};
+
+/** Regras gerais: 4 horas por profissão; um teste por profissão, no fim do processo. */
+export const PRODUCAO = { horasPorProfissao: 4, historico: 12 };
+
+/**
+ * Profissões. "pericias": a primeira que existir na ficha é usada (por id ou nome); se nenhuma existir, Ofício.
+ * O teste é 1d20 + perícia (sem o atributo dela) + o atributo da profissão.
+ */
+export const PROFISSOES = {
+  forja: {
+    label: "Forja", icone: "fa-solid fa-hammer", pericias: ["ferraria", "forja"], atributo: "forca",
+    etapas: [
+      ["Preparação", "Selecionar e examinar os materiais, preparar a fornalha e separar as ferramentas."],
+      ["Aquecimento", "Levar o metal à temperatura adequada para ser trabalhado."],
+      ["Modelagem", "Martelar, dobrar, esticar e dar forma à peça."],
+      ["Tratamento", "Resfriamento, têmpera ou outro tratamento que muda as propriedades do metal."],
+      ["Acabamento", "Remover imperfeições, afiar, polir e finalizar a peça."]
+    ],
+    resultado: "Equipamentos com +3 Pontos de Estrutura, além das propriedades da receita.", estrutura: 3
+  },
+  alquimia: {
+    label: "Alquimia", icone: "fa-solid fa-flask", pericias: ["alquimia"], atributo: "inteligencia",
+    etapas: [
+      ["Preparação", "Separar, limpar e organizar os ingredientes e instrumentos."],
+      ["Extração", "Retirar dos ingredientes as propriedades necessárias (moagem, fervura, destilação…)."],
+      ["Composição", "Combinar os extratos nas proporções indicadas pela receita."],
+      ["Transformação", "Produzir a reação alquímica desejada."],
+      ["Estabilização", "Controlar a reação, resfriar e armazenar o produto final."]
+    ],
+    resultado: "Poções, óleos, pós, compostos, venenos e outros produtos alquímicos, conforme a receita."
+  },
+  ritual: {
+    label: "Ritual mágico", icone: "fa-solid fa-circle-nodes", pericias: ["arcanismo"], atributo: "nucleo",
+    etapas: [
+      ["Preparação", "Escolher o local, reunir os materiais e preparar os componentes."],
+      ["Inscrição", "Desenhar círculos, símbolos, runas e demais estruturas mágicas."],
+      ["Condução", "Iniciar o ritual e direcionar a mana pelos símbolos e componentes."],
+      ["Manifestação", "Executar a parte principal do ritual, produzindo o efeito mágico."],
+      ["Fixação", "Estabilizar o resultado e encerrar o ritual corretamente."]
+    ],
+    resultado: "Efeitos ritualísticos: selamentos, invocações, proteções, alterações ambientais e outros da receita."
+  },
+  encantamento: {
+    label: "Encantamento", icone: "fa-solid fa-wand-magic-sparkles", pericias: ["arcanismo"], atributo: "nucleo",
+    etapas: [
+      ["Preparação", "Escolher o objeto, reunir os materiais e preparar a mana necessária."],
+      ["Escrita", "Registrar no objeto os símbolos, runas e inscrições do encantamento."],
+      ["Imbuição de Mana", "Inserir mana na estrutura escrita, tornando-a funcional."],
+      ["Alocação de Feitiço", "Inserir e conectar a magia desejada, definindo como funciona."]
+    ],
+    resultado: "Objetos encantados com os efeitos definidos pela receita."
+  }
+};

@@ -242,6 +242,7 @@ function marcos(dados) {
   const out = [];
   for (const p of Object.values(dados.projetos ?? {})) if (p) out.push(Number(p.prontoEm) || 0, Number(p.voltaEm) || 0);
   for (const e of Object.values(dados.projetosEfeitos ?? {})) if (e) out.push(Number(e.ate) || 0);
+  for (const p of Object.values(dados.producoes ?? {})) if (p && p.estado === "andamento") out.push(Number(p.fim) || 0);
   return out.filter(Boolean);
 }
 
@@ -256,8 +257,11 @@ export function registrarRelogioProjetos() {
       const dados = actor?.flags?.[FLAG];
       if (!dados || !app.rendered || app.document !== actor) continue;
       const temProjetos = Object.keys(dados.projetos ?? {}).length || Object.keys(dados.projetosEfeitos ?? {}).length;
-      if (!temProjetos) continue;
-      if (diaMudou || marcos(dados).some(m => m > Math.min(antes, novo) && m <= Math.max(antes, novo))) app.render();
+      const produzindo = Object.values(dados.producoes ?? {}).some(p => p?.estado === "andamento");
+      if (!temProjetos && !produzindo) continue;
+      if (diaMudou || marcos(dados).some(m => m > Math.min(antes, novo) && m <= Math.max(antes, novo))) { app.render(); continue; }
+      // Produção em andamento: só a aba Produção, no máximo a cada 3 s (o relógio do Simple Calendar pode andar a cada segundo)
+      if (produzindo && Date.now() - (app._epmRelogio ?? 0) > 3000) { app._epmRelogio = Date.now(); app.render({ parts: ["producao"] }); }
     }
   });
 }

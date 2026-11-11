@@ -6,7 +6,7 @@
 import {
   FLAG, ATRIBUTOS, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
-  AFINIDADE, ABAS, SUGESTOES, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
+  AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
   CATEGORIAS_CONDICAO, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
   CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO,
@@ -25,6 +25,7 @@ import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
+import { contextoProducao } from "./producao.mjs";
 import { normalizarHex, posicaoNaRoda, estiloPaleta } from "./cores.mjs";
 
 /** Dados de rolagem do EPM (@atr.forca, @per.luta, @nivel, @cd …). */
@@ -740,7 +741,8 @@ export function montarContexto({
   };
   ctx.ataques.vazio = !ctx.ataques.armas.length && !ctx.ataques.custom.length;
   ctx.bonusCena = Object.entries(dados.bonusCena ?? {}).filter(([, b]) => b).map(([id, b]) => ({
-    id, nome: b.nome ?? "", ativo: !!b.ativo, acerto: int(b.acerto), dano: b.dano ?? "", criado: num(b.criado)
+    id, nome: b.nome ?? "", ativo: !!b.ativo, acerto: int(b.acerto), dano: b.dano ?? "", criado: num(b.criado),
+    ca: int(b.ca), rd: int(b.rd), rdTipo: b.rdTipo ?? "", testes: int(b.testes), deslocamento: num(b.deslocamento), cena: !!b.cena
   })).sort((a, b) => a.criado - b.criado);
   /* ---------- CA ---------- */
   const caF = ficha.ca;
@@ -1137,9 +1139,9 @@ export function montarContexto({
   ctx.totalCondicoesAtivas = ficha.condicoesAtivas.length;
   ctx.combinacoesAtivas = ficha.combinacoes;
   ctx.tagsCondicoes = [
-    { campo: "resistencias", label: "Resistências", dica: "Tipos de dano que você resiste", itens: dados.resistencias, sugestoes: SUGESTOES.dano },
-    { campo: "imunidades", label: "Imunidades", dica: "Danos ou condições. Uma condição com o mesmo nome é ignorada.", itens: dados.imunidades, sugestoes: [...SUGESTOES.dano, ...ficha.condicoes.map(c => c.label)] },
-    { campo: "vulnerabilidades", label: "Vulnerabilidades", dica: "Tipos de dano que te ferem mais", itens: dados.vulnerabilidades, sugestoes: SUGESTOES.dano }
+    { campo: "resistencias", label: "Resistências", dica: "Tipos de dano que você resiste (recebe metade). Nível entre parênteses: Fogo (Mágico) segura até dano Mágico; sem nível, só Natural. Vale também um grupo: Elementais.", itens: dados.resistencias, sugestoes: SUGESTOES.dano },
+    { campo: "imunidades", label: "Imunidades", dica: "Danos ou condições. Uma condição com o mesmo nome é ignorada. O dano aceita nível: Veneno (Verdadeiro).", itens: dados.imunidades, sugestoes: [...SUGESTOES.dano, ...ficha.condicoes.map(c => c.label)] },
+    { campo: "vulnerabilidades", label: "Vulnerabilidades", dica: "Tipos de dano que você recebe em dobro (vale para qualquer nível)", itens: dados.vulnerabilidades, sugestoes: SUGESTOES.dano }
   ];
 
   /* ---------- Bênçãos e maldições ---------- */
@@ -1266,6 +1268,9 @@ export function montarContexto({
     };
   }).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.bestiarioVazio = !ctx.bestiario.length;
+
+  /* ---------- Produção (forja, alquimia, rituais, encantamento) ---------- */
+  ctx.producao = contextoProducao({ dados, ficha, itens, edicao, editavel });
   ctx.itensComErro = falhas;
 
   return ctx;
@@ -1349,6 +1354,17 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     opcoesTeste: Object.entries(TIPOS_TESTE).map(([id, label]) => ({ id, label, selected: id === fo.teste.tipo })),
     opcoesPericia: pericias.map(x => ({ ...x, selected: x.id === fo.teste.pericia })),
     requisitosLista: Object.entries(REQUISITOS).map(([id, q]) => ({ id, label: q.label, dica: q.dica, checked: fo.requisitos[id] })),
+    bonusSit: {
+      ...fo.bonus,
+      tem: fo.bonus.opcoes.length > 0,
+      dado: `d${fo.bonus.opcoes.length || 1}`,
+      opcoesGatilho: Object.entries(GATILHOS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.gatilho })),
+      opcoesEscolha: [{ id: "escolher", label: "Escolhe na hora" }, { id: "rolar", label: "Rola o dado" }].map(x => ({ ...x, selected: x.id === fo.bonus.escolha })),
+      linhas: fo.bonus.opcoes.map((o, i) => ({
+        ...o, n: i + 1, eRd: o.tipo === "rd",
+        tipos: Object.entries(TIPOS_BONUS_SITUACIONAL).map(([id, t]) => ({ id, label: t.label, selected: id === o.tipo }))
+      }))
+    },
     editorEfeito: editores.formas?.[fo.id] ?? ""
   }));
   return {

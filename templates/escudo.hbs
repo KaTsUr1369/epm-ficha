@@ -221,6 +221,10 @@
         <ul class="epm-escudo-ref">{{#each regras.progressao}}<li>{{this}}</li>{{/each}}</ul></section>
       <section class="epm-painel"><header class="epm-painel-titulo"><h3>Magias do Conjurador</h3></header>
         <div class="epm-arq-custos">{{#each regras.custosMagia}}<span class="epm-arq-custo" title="Libera no nível {{this.nivel}}"><strong>{{this.label}}</strong> {{this.pm}} PM · Nv. {{this.nivel}}</span>{{/each}}</div></section>
+      <section class="epm-painel epm-escudo-danos"><header class="epm-painel-titulo"><h3>Tipos e níveis de dano</h3></header>
+        {{#each regras.tiposDano}}<p><strong>{{this.label}}:</strong> {{#each tipos}}<span class="epm-tag" title="{{this.desc}}">{{this.label}}</span> {{/each}}</p>{{/each}}
+        <p><strong>Níveis:</strong> {{epmJoin regras.niveisDano " → "}}. Resistência, imunidade e RD só seguram dano do nível delas ou abaixo (padrão Natural). Escreva o nível entre parênteses: "Fogo (Mágico)".</p>
+        <p>Ordem: imunidade → vulnerabilidade (×2) → resistência (metade) → RD.</p></section>
       <section class="epm-painel"><header class="epm-painel-titulo"><h3>Reputação</h3></header>
         <div class="epm-chips">{{#each regras.reputacao}}<span class="epm-tag">{{this.valor}} {{this.label}}</span>{{/each}}</div></section>
     </div>

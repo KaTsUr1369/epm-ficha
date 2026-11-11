@@ -75,6 +75,20 @@ Hooks.on("deleteCombat", combate => {
 });
 
 /** Quando um personagem muda, as fichas que têm relação com ele atualizam nome, imagem e background. */
+/* Gatilho "ao sofrer dano" dos bônus situacionais (roda no cliente do dono do personagem) */
+Hooks.on("preUpdateActor", (ator, mudancas, opcoes) => {
+  const hp = ator.system?.attributes?.hp;
+  if (hp && foundry.utils.hasProperty(mudancas, "system.attributes.hp")) opcoes.epmPvAntes = (Number(hp.value) || 0) + (Number(hp.temp) || 0);
+});
+Hooks.on("updateActor", (ator, mudancas, opcoes) => {
+  if (opcoes?.epmPvAntes === undefined || !ator.flags?.[FLAG]) return;
+  const hp = ator.system?.attributes?.hp ?? {};
+  if ((Number(hp.value) || 0) + (Number(hp.temp) || 0) >= opcoes.epmPvAntes) return;
+  const donos = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"));
+  const responsavel = donos[0] ?? game.users.activeGM;
+  if (responsavel?.isSelf) mecanicas.gatilhosAoSofrerDano(ator).catch(err => console.warn("EPM | gatilho ao sofrer dano", err));
+});
+
 Hooks.on("updateActor", ator => {
   for (const app of fichasAbertas()) {
     if (app.actor?.uuid === ator.uuid) continue;

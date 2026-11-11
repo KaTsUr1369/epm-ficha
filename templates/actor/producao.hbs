@@ -1,0 +1,124 @@
+<section class="tab epm-aba epm-producao {{cls.producao}}" data-group="primary" data-tab="producao">
+  <header class="epm-aba-topo">
+    <p class="epm-dica">Receitas que você conhece. Produzir gasta os ingredientes, leva 4 h por profissão no relógio do mundo (o mesmo do Simple Calendar) e termina com um teste por profissão.</p>
+    <div class="epm-aba-acoes">
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaReceita"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova receita</button>{{/if}}
+    </div>
+  </header>
+
+  {{#if this.producao.temProducoes}}
+  <section class="epm-painel epm-producoes">
+    <header class="epm-painel-titulo"><h3>Em produção</h3></header>
+    {{#each this.producao.producoes}}
+    <div class="epm-producao-linha {{#if andamento}}andamento{{/if}}{{#if pronta}}pronta{{/if}}{{#if concluida}}concluida{{/if}}{{#if falhou}}falhou{{/if}}">
+      <div class="epm-producao-info">
+        <strong>{{this.nome}}</strong> <span class="epm-tag fraca">{{this.profsTexto}}</span> <span class="epm-tag">CD {{this.cd}}</span>
+        {{#if andamento}}<span class="epm-dica">falta {{this.faltaTexto}}{{#if etapa}} · {{etapa.profLabel}}: <em title="{{etapa.etapaTexto}}">{{etapa.etapaNome}}</em>{{/if}}</span>{{/if}}
+        {{#if pronta}}<span class="epm-producao-status">pronta para os testes</span>{{/if}}
+        {{#if concluida}}<span class="epm-producao-status ok">concluída: {{this.resultadoNome}}</span>{{/if}}
+        {{#if falhou}}<span class="epm-producao-status ruim">{{#if critica}}falha crítica{{else}}falhou{{/if}}: materiais perdidos</span>{{/if}}
+        {{#if testes.length}}<span class="epm-producao-testes">{{#each testes}}<span class="epm-tag {{#if passou}}ok{{else}}ruim{{/if}}" title="{{this.formula}}">{{this.label}} {{this.total}}{{#if (epmEq natural 1)}} (1 natural){{/if}}</span>{{/each}}</span>{{/if}}
+        {{#if andamento}}<div class="epm-barra epm-producao-barra"><span style="width: {{this.pct}}%"></span></div>{{/if}}
+      </div>
+      <div class="epm-producao-acoes">
+        {{#if @root.editavel}}
+        {{#if pronta}}<button type="button" class="epm-botao epm-botao-forte" data-action="testarProducao" data-producao="{{this.id}}"><i class="fa-solid fa-dice-d20" aria-hidden="true"></i> Fazer os testes</button>{{/if}}
+        {{#if andamento}}{{#if @root.edicao}}<button type="button" class="epm-botao" data-action="terminarProducao" data-producao="{{this.id}}" title="Timeskip: termina o tempo agora"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>{{/if}}{{/if}}
+        <button type="button" class="epm-icone-botao perigo" data-action="apagarProducao" data-producao="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+        {{/if}}
+      </div>
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if this.producao.vazio}}<div class="epm-vazio-grande"><p>Nenhuma receita ainda.{{#if editavel}} Crie uma com "Nova receita".{{/if}}</p></div>{{/if}}
+
+  <div class="epm-receitas">
+    {{#each this.producao.receitas}}
+    <article class="epm-receita" data-receita="{{this.id}}">
+      <header class="epm-receita-topo">
+        {{#if @root.edicao}}
+        <input type="text" class="epm-receita-nome" name="flags.epm-ficha.receitas.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da receita" />
+        <button type="button" class="epm-icone-botao perigo" data-action="apagarReceita" data-receita="{{this.id}}" title="Apagar receita"><i class="fa-solid fa-trash"></i></button>
+        {{else}}
+        <h4>{{this.nome}}</h4>
+        {{/if}}
+      </header>
+      {{#if @root.edicao}}
+      <div class="epm-chips epm-receita-profs">{{#each opcoesProf}}<button type="button" class="epm-chip-botao{{#if marcada}} ativo{{/if}}" data-action="alternarProfissao" data-receita="{{../id}}" data-profissao="{{this.id}}" aria-pressed="{{#if marcada}}true{{else}}false{{/if}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}</div>
+      <div class="epm-receita-campos">
+        <label class="epm-mini"><span>dificuldade</span><select name="flags.epm-ficha.receitas.{{this.id}}.dificuldade">{{#each opcoesDif}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-mini largo"><span>ferramentas</span><input type="text" name="flags.epm-ficha.receitas.{{this.id}}.ferramentas" value="{{this.ferramentas}}" placeholder="Bigorna, martelo, fornalha…" /></label>
+      </div>
+      {{else}}
+      <div class="epm-chips">
+        {{#each profs}}<span class="epm-tag"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</span>{{/each}}
+        {{#if semProfissao}}<span class="epm-tag epm-tag-perigo">sem profissão</span>{{/if}}
+        <span class="epm-tag">{{this.difLabel}} · CD {{this.cd}}</span>
+        <span class="epm-tag fraca">{{this.horasTexto}} · {{this.testes}} teste(s)</span>
+      </div>
+      {{#if ferramentas}}<p class="epm-receita-linha"><strong>Ferramentas:</strong> {{this.ferramentas}}</p>{{/if}}
+      {{/if}}
+
+      <div class="epm-receita-ing">
+        <span class="epm-rotulo">Ingredientes</span>
+        {{#each ing}}
+        <div class="epm-ing{{#unless ok}} falta{{/unless}}">
+          {{#if @root.edicao}}
+          <input type="text" name="flags.epm-ficha.receitas.{{../id}}.ingredientes.{{this.id}}.nome" value="{{this.nome}}" placeholder="nome do item no inventário" aria-label="Ingrediente" />
+          <input type="number" min="1" name="flags.epm-ficha.receitas.{{../id}}.ingredientes.{{this.id}}.qtd" value="{{this.qtd}}" aria-label="Quantidade" />
+          <button type="button" class="epm-icone-botao" data-action="removerIngrediente" data-receita="{{../id}}" data-ingrediente="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+          {{else}}
+          <span>{{this.nome}} ×{{this.qtd}}</span> <span class="epm-dica">tem {{this.tem}}</span>
+          {{/if}}
+        </div>
+        {{else}}
+        <p class="epm-vazio">Nenhum ingrediente listado.</p>
+        {{/each}}
+        {{#if @root.edicao}}<button type="button" class="epm-link" data-action="novoIngrediente" data-receita="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> ingrediente</button>{{/if}}
+      </div>
+
+      <div class="epm-receita-resultado">
+        <span class="epm-rotulo">Resultado</span>
+        {{#if resultado.img}}<img src="{{resultado.img}}" alt="" />{{/if}}
+        {{#if @root.edicao}}
+        <input type="text" name="flags.epm-ficha.receitas.{{this.id}}.resultado.nome" value="{{resultado.nome}}" placeholder="Poção de cura, Espada longa…" aria-label="Resultado" />
+        <input type="number" min="1" name="flags.epm-ficha.receitas.{{this.id}}.resultado.qtd" value="{{resultado.qtd}}" aria-label="Quantidade produzida" />
+        <button type="button" class="epm-botao epm-botao-sutil" data-action="ligarResultado" data-receita="{{this.id}}" title="Ligar a um item do inventário ou do mundo"><i class="fa-solid fa-link" aria-hidden="true"></i> item</button>
+        {{else}}
+        <span>{{#if resultado.nome}}{{resultado.nome}}{{#if (epmMenor 1 resultado.qtd)}} ×{{resultado.qtd}}{{/if}}{{else}}<em class="epm-dica">não definido</em>{{/if}}</span>
+        {{/if}}
+      </div>
+
+      {{#if @root.edicao}}
+      <label class="epm-campo"><span>Notas</span><textarea name="flags.epm-ficha.receitas.{{this.id}}.notas" rows="2" placeholder="Propriedades, onde aprendeu, segredos…">{{this.notas}}</textarea></label>
+      {{else}}{{#if notas}}<p class="epm-receita-linha">{{this.notas}}</p>{{/if}}{{/if}}
+
+      <details class="epm-receita-etapas">
+        <summary>Etapas e testes</summary>
+        {{#each profs}}
+        <div class="epm-receita-prof">
+          <strong><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</strong>
+          <span class="epm-dica">Teste: 1d20 + {{this.periciaNome}} ({{epmSinal valorPericia}}) + {{this.atributoNome}} ({{epmSinal valorAtributo}}) = 1d20 {{epmSinal bonus}}{{#if reserva}} · a ficha não tem a perícia {{this.pedida}}, usando {{this.periciaNome}}{{/if}}</span>
+          <ol>{{#each etapasLista}}<li><strong>{{this.nome}}:</strong> {{this.texto}}</li>{{/each}}</ol>
+          <p class="epm-dica">{{this.resultado}}</p>
+        </div>
+        {{/each}}
+      </details>
+
+      {{#if podeProduzir}}<button type="button" class="epm-botao epm-botao-forte epm-receita-produzir" data-action="produzir" data-receita="{{this.id}}"><i class="fa-solid fa-fire" aria-hidden="true"></i> Produzir ({{this.horasTexto}})</button>{{/if}}
+    </article>
+    {{/each}}
+  </div>
+
+  <details class="epm-painel epm-producao-regras">
+    <summary><h3>Regras gerais</h3></summary>
+    <ul>
+      <li>Dificuldade: {{#each this.producao.dificuldades}}{{this.label}} CD {{this.cd}}{{#unless @last}} · {{/unless}}{{/each}}.</li>
+      <li>Tempo: 4 horas por profissão. É preciso conhecer a receita, ter os ingredientes e as ferramentas.</li>
+      <li>O teste é feito ao terminar. Sucesso: produção concluída. Falha: materiais consumidos e produção perdida. Falha crítica (1 natural): além da perda, um acidente ou um produto defeituoso.</li>
+      <li>Combinações: cada profissão a mais tem o próprio processo, tempo e teste. {{#each this.producao.combinacoes}}{{this.nome}}: {{this.horas}} h, {{this.testes}} testes{{#unless @last}}; {{/unless}}{{/each}}.</li>
+    </ul>
+  </details>
+</section>

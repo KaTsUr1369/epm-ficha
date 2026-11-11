@@ -2629,3 +2629,64 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-escudo-soltar { border: 1px dashed transparent; border-radius: 6px; padding: 4px; }
 .epm-escudo-soltar.soltando { border-color: var(--epm-destaque, #D3A85E); background: color-mix(in srgb, #D3A85E 10%, transparent); }
 .epm-escudo-tipo-dano { width: 130px; }
+
+/* 0.5.8 · Bônus situacional no editor de poder */
+.epm-bonus-sit { margin: 8px 0; padding: 6px 10px 10px; border: 1px solid var(--epm-linha); border-radius: 6px; }
+.epm-bonus-sit legend { padding: 0 6px; font-weight: 600; }
+.epm-bonus-sit-topo { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.epm-bonus-sit-linha { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.epm-bonus-sit .epm-bonus-sit-linha > select { flex: 0 0 130px; width: 130px; }
+.epm-bonus-sit .epm-bonus-sit-linha > input { flex: 0 0 80px; width: 80px; }
+.epm-bonus-sit .epm-bonus-sit-linha > input[list] { flex: 0 0 170px; width: 170px; }
+.epm-bonus-sit .epm-bonus-sit-linha > .epm-dica { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.epm-bonus-sit .epm-bonus-sit-topo .epm-campo { flex: 0 1 auto; }
+.epm-bonus-sit-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--epm-entrada); border: 1px solid var(--epm-linha); font-size: 12px; }
+.epm-dialogo-bonus .form-footer { flex-direction: column; }
+
+/* 0.5.8 · Produção */
+.epm-producao .epm-aba-topo { display: flex; align-items: flex-start; gap: 10px; }
+.epm-producao .epm-aba-topo .epm-dica { flex: 1; margin: 0; }
+.epm-producoes { margin-bottom: 10px; }
+.epm-producao-linha { display: flex; align-items: center; gap: 10px; padding: 6px 8px; margin-bottom: 5px; border: 1px solid var(--epm-linha); border-left: 3px solid #8A9BB0; border-radius: 6px; background: var(--epm-entrada); }
+.epm-producao-linha.pronta { border-left-color: var(--epm-destaque, #D3A85E); }
+.epm-producao-linha.concluida { border-left-color: #6FBF73; opacity: .85; }
+.epm-producao-linha.falhou { border-left-color: #D2544A; opacity: .85; }
+.epm-producao-info { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-producao-acoes { display: flex; align-items: center; gap: 6px; flex: none; }
+.epm-producao-status { font-size: 12px; font-weight: 600; color: var(--epm-destaque, #D3A85E); }
+.epm-producao-status.ok { color: #6FBF73; }
+.epm-producao-status.ruim { color: #E07A6F; }
+.epm-producao-testes { display: inline-flex; gap: 4px; }
+.epm-producao-testes .epm-tag.ok { color: #6FBF73; }
+.epm-producao-testes .epm-tag.ruim { color: #E07A6F; }
+.epm-producao-barra { flex-basis: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+.epm-producao-barra > span { display: block; height: 100%; background: linear-gradient(90deg, #C98A4B, #E8C547); transition: width .6s ease; }
+.epm-receitas { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+.epm-receita { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--epm-linha); border-radius: 8px; background: var(--epm-painel, rgba(0,0,0,.15)); }
+.epm-receita-topo { display: flex; align-items: center; gap: 6px; }
+.epm-receita-topo h4, .epm-receita-nome { flex: 1; margin: 0; font-size: 16px; }
+.epm-receita-campos { display: flex; gap: 6px; flex-wrap: wrap; }
+.epm-receita-campos .largo { flex: 1; }
+.epm-receita-linha { margin: 0; font-size: 13px; }
+.epm-receita-ing { display: flex; flex-direction: column; gap: 3px; }
+.epm-ing { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.epm-ing input[type="text"] { flex: 1; }
+.epm-ing input[type="number"] { width: 56px; }
+.epm-ing.falta > span:first-child { color: #E07A6F; }
+.epm-receita-resultado { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.epm-receita-resultado img { width: 28px; height: 28px; max-width: 28px; object-fit: contain; border: 0; border-radius: 4px; flex: none; }
+.epm-receita-resultado input[type="text"] { flex: 1; }
+.epm-receita-resultado input[type="number"] { width: 56px; }
+.epm-receita-etapas summary { cursor: pointer; font-size: 13px; color: var(--epm-destaque, #D3A85E); }
+.epm-receita-prof { margin: 6px 0; font-size: 12.5px; }
+.epm-receita-prof ol { margin: 4px 0 2px 18px; padding: 0; }
+.epm-receita-prof .epm-dica { display: block; }
+.epm-receita-produzir { align-self: flex-start; }
+.epm-producao-regras { margin-top: 10px; }
+.epm-producao-regras summary { cursor: pointer; }
+.epm-producao-regras summary h3 { display: inline; }
+.epm-producao-regras ul { margin: 6px 0 0 18px; padding: 0; font-size: 13px; }
+.epm-receita .epm-ing > input[type="text"], .epm-receita .epm-receita-resultado > input[type="text"] { flex: 1 1 auto; width: auto; min-width: 0; }
+.epm-receita .epm-ing > input[type="number"], .epm-receita .epm-receita-resultado > input[type="number"] { flex: 0 0 60px; width: 60px; }
+.epm-receita .epm-receita-resultado > button { flex: none; }
+.epm-receita .epm-ing > button { flex: none; }

@@ -7,7 +7,8 @@ import {
   FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
   MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
-  TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO
+  TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO,
+  TIPOS_BONUS_SITUACIONAL, GATILHOS_BONUS
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
 
@@ -175,6 +176,8 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     companheiros: {},
     bestiario: {},
     rd: {},
+    receitas: {},
+    producoes: {},
     projetos: {},
     projetosEfeitos: {},
     livroProjetos: {},
@@ -589,6 +592,9 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
 
   /* ---------- Itens: desvantagem, vantagem, resistências, RD ---------- */
   const reducoes = [];
+  for (const b of Object.values(d.bonusCena ?? {})) {
+    if (b?.ativo && num(b.rd) > 0) reducoes.push({ valor: num(b.rd), tipos: String(b.rdTipo ?? "").trim() || "todos os danos", fonte: b.nome || "Bônus de cena" });
+  }
   // RD da própria ficha (aba Combate): reduz o número escolhido do dano daquele tipo
   for (const r of Object.values(d.rd ?? {})) {
     if (r && num(r.valor) > 0) reducoes.push({ valor: num(r.valor), tipos: String(r.tipo ?? "").trim() || "todos os danos", fonte: "Ficha" });
@@ -654,6 +660,11 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`);
   // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
   for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora)) somar(m.alvo, m.valor, m.fonte);
+  // Bônus de cena ligados: CA, testes e deslocamento (acerto e dano entram no ataque; RD nas reduções)
+  for (const b of Object.values(d.bonusCena ?? {})) {
+    if (!b?.ativo) continue;
+    for (const chave of ["ca", "testes", "deslocamento"]) if (num(b[chave])) somar(chave, num(b[chave]), b.nome || "Bônus de cena");
+  }
   lerModsAE(modsAE, somar);
   const mod = alvo => mods[alvo]?.total ?? 0;
   const fontes = alvo => mods[alvo]?.fontes ?? [];
@@ -968,8 +979,25 @@ export function normalizarForma(id, fo = {}) {
     },
     dano: { formula: String(fo.dano?.formula ?? "").trim(), tipo: fo.dano?.tipo ?? "" },
     efeito: fo.efeito ?? "",
-    requisitos: Object.fromEntries(Object.keys(REQUISITOS).map(k => [k, !!fo.requisitos?.[k]]))
+    requisitos: Object.fromEntries(Object.keys(REQUISITOS).map(k => [k, !!fo.requisitos?.[k]])),
+    bonus: normalizarBonusSituacional(fo.bonus)
   };
+}
+
+/**
+ * Bônus situacional da forma: opções (RD, CA, dano, acerto…) das quais uma vale pela cena.
+ * escolha "escolher" (o jogador decide) ou "rolar" (dado com uma face por opção); gatilho "uso" ou "dano".
+ */
+export function normalizarBonusSituacional(b = {}) {
+  const opcoes = Object.entries(eObjeto(b?.opcoes) ? b.opcoes : {})
+    .filter(([, o]) => o && TIPOS_BONUS_SITUACIONAL[o.tipo])
+    .map(([id, o]) => ({
+      id, tipo: o.tipo, valor: o.tipo === "dano" ? (String(o.valor ?? "").trim() || "0") : int(o.valor),
+      tipoDano: String(o.tipoDano ?? "").trim(), criado: num(o.criado)
+    }))
+    .sort((a, c) => a.criado - c.criado);
+  for (const o of opcoes) o.texto = TIPOS_BONUS_SITUACIONAL[o.tipo].texto(o.valor) + (o.tipo === "rd" && o.tipoDano ? ` (${o.tipoDano})` : "");
+  return { gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha: b?.escolha === "rolar" ? "rolar" : "escolher", opcoes };
 }
 
 export function formaPadrao(ordem = 0, nome = "Padrão") {
@@ -1277,31 +1305,93 @@ export function moedaPorId(id) {
 /*  Ataques                                     */
 /* -------------------------------------------- */
 
-/** O tipo de uma resistência/RD vale para este dano? ("todos os danos" vale para qualquer um; aceita lista com vírgula.) */
-export function tipoCobre(tipos, tipoDano) {
-  const lista = String(tipos ?? "").split(/[,;/]| e /).map(t => normalizarTexto(t)).filter(Boolean);
-  if (!lista.length || lista.some(t => t.startsWith("todo"))) return true;
-  const alvo = normalizarTexto(tipoDano);
-  return !!alvo && lista.includes(alvo);
+/* ---------- Tipos e níveis de dano ---------- */
+
+const NIVEL_POR_NOME = new Map(NIVEIS_DANO.map(n => [normalizarTexto(n.label), n]));
+const TIPO_POR_NOME = new Map();
+for (const t of TIPOS_DANO) for (const nome of [t.id, t.label, ...t.aliases]) TIPO_POR_NOME.set(normalizarTexto(nome), t);
+const GRUPO_POR_NOME = new Map(Object.entries(GRUPOS_DANO).flatMap(([id, label]) => [[normalizarTexto(label), id], [id, id]]));
+
+/**
+ * Lê um texto de tipo de dano: "Fogo", "Fogo (Mágico)", "Cortante, Perfurante", "Elementais (Verdadeiro)", "todos os danos".
+ * Devolve { todos, tipos: Set de ids (ou nomes livres), grupos: Set, nivel (1–5), nivelLabel }.
+ */
+export function lerTipoDano(texto) {
+  let nivel = null;
+  let resto = normalizarTexto(texto);
+  for (const [nome, n] of NIVEL_POR_NOME) {
+    const re = new RegExp(`(^|[\\s(,;/-])${nome}($|[\\s),;/-])`);
+    if (re.test(resto)) { nivel = n; resto = resto.replace(new RegExp(nome, "g"), " "); }
+  }
+  // "Radiante (Sagrado)" e parênteses vazios
+  const partes = resto.replace(/[()]/g, ",").split(/[,;/]| e /).map(t => t.replace(/\b(dano|de)\b/g, "").trim()).filter(Boolean);
+  const tipos = new Set();
+  const grupos = new Set();
+  let todos = false;
+  for (const p of partes) {
+    if (p.startsWith("todo") || p === "qualquer") { todos = true; continue; }
+    const t = TIPO_POR_NOME.get(p);
+    if (t) { tipos.add(t.id); continue; }
+    const g = GRUPO_POR_NOME.get(p);
+    if (g) { grupos.add(g); continue; }
+    tipos.add(p);
+  }
+  if (!tipos.size && !grupos.size && !partes.length) todos = true;
+  const n = nivel ?? NIVEIS_DANO[0];
+  return { todos, tipos, grupos, nivel: n.valor, nivelLabel: n.label, nivelExplicito: !!nivel };
+}
+
+/** Nome bonito de um tipo de dano ("Fogo (Mágico)"). */
+export function rotuloTipoDano(texto) {
+  const l = lerTipoDano(texto);
+  const nomes = [...l.tipos].map(id => TIPOS_DANO.find(t => t.id === id)?.label ?? id);
+  const base = l.todos && !nomes.length ? "" : nomes.join(", ");
+  return l.nivelExplicito ? `${base}${base ? " " : ""}(${l.nivelLabel})` : base;
+}
+
+/**
+ * Uma proteção (resistência, imunidade, RD ou vulnerabilidade) vale para este dano?
+ * Tipo: "todos os danos", o próprio tipo, o grupo dele ou um nome antigo. Nível: a proteção só segura dano
+ * do mesmo nível ou abaixo (a vulnerabilidade passa `ignorarNivel`).
+ */
+export function tipoCobre(protecao, tipoDano, { ignorarNivel = false } = {}) {
+  const p = lerTipoDano(protecao);
+  const d = lerTipoDano(tipoDano);
+  if (!ignorarNivel && d.nivel > p.nivel) return false;
+  if (p.todos) return true;
+  for (const id of d.tipos) {
+    if (p.tipos.has(id)) return true;
+    const grupo = TIPOS_DANO.find(t => t.id === id)?.grupo;
+    if (grupo && p.grupos.has(grupo)) return true;
+  }
+  for (const g of d.grupos) if (p.grupos.has(g)) return true;
+  return false;
 }
 
 /**
  * Dano que o alvo recebe, nesta ordem: imunidade zera; vulnerabilidade dobra; resistência corta à metade
- * (com as duas, uma anula a outra); por último a RD tira o número fixo. Devolve { final, passos } para o aviso.
+ * (com as duas, uma anula a outra); por último a RD tira o número fixo. Cada proteção só vale contra dano
+ * do nível dela ou abaixo. Devolve { final, passos } para o aviso.
  */
 export function danoRecebido(ficha, valor, tipoDano = "") {
   let dano = Math.max(0, Math.floor(num(valor)));
   const passos = [];
   const tags = ficha?.tags ?? {};
+  const nivelDano = lerTipoDano(tipoDano);
+  const furou = lista => lista.some(t => tipoCobre(t, tipoDano, { ignorarNivel: true }) && !tipoCobre(t, tipoDano));
+  const imunes = (tags.imunidades ?? []).map(t => t.tipo);
   const imune = (tags.imunidades ?? []).find(t => tipoCobre(t.tipo, tipoDano));
   if (dano && imune) return { final: 0, passos: [`imune (${imune.tipo})`] };
-  const vulneravel = [...(tags.vulnerabilidades ?? []), ...(ficha?.vulneraveis ?? []).filter(v => !v.anulada)].find(t => tipoCobre(t.tipo, tipoDano));
+  if (dano && furou(imunes)) passos.push(`dano ${nivelDano.nivelLabel} passa a imunidade`);
+  const vulneravel = [...(tags.vulnerabilidades ?? []), ...(ficha?.vulneraveis ?? []).filter(v => !v.anulada)].find(t => tipoCobre(t.tipo, tipoDano, { ignorarNivel: true }));
   const resiste = (tags.resistencias ?? []).find(t => tipoCobre(t.tipo, tipoDano));
+  if (dano && !resiste && furou((tags.resistencias ?? []).map(t => t.tipo))) passos.push(`dano ${nivelDano.nivelLabel} passa a resistência`);
   if (dano && vulneravel && resiste) passos.push(`vulnerável e resistente (${resiste.tipo}): uma anula a outra`);
   else if (dano && vulneravel) { const antes = dano; dano *= 2; passos.push(`vulnerável (${vulneravel.tipo}): ${antes} → ${dano}`); }
   else if (dano && resiste) { const antes = dano; dano = Math.floor(dano / 2); passos.push(`resistência (${resiste.tipo}): ${antes} → ${dano}`); }
   const rd = (tags.reducoes ?? []).filter(r => tipoCobre(r.tipos, tipoDano)).reduce((s, r) => s + num(r.valor), 0);
   if (dano && rd) { const antes = dano; dano = Math.max(0, dano - rd); passos.push(`RD ${rd}: ${antes} → ${dano}`); }
+  else if (dano && furou((tags.reducoes ?? []).map(r => r.tipos))) passos.push(`dano ${nivelDano.nivelLabel} passa a RD`);
   return { final: dano, passos };
 }
 

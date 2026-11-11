@@ -14,6 +14,7 @@ import {
 import { montarContexto, lerAtor, visualDaFicha } from "./context.mjs";
 import * as X from "./extras.mjs";
 import * as PJ from "./projetos.mjs";
+import * as PR from "./producao.mjs";
 import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar } from "./helpers.mjs";
 import { ajustes, listaPericias, salvarListaPericias } from "./settings.mjs";
 import * as M from "./mecanicas.mjs";
@@ -63,6 +64,8 @@ const ACOES_FICHA = [
   "ataqueOportunidade", "atrasarTurno", "ressonancia", "pularHoras",
   "imagemFundo", "removerFundo", "visualPadrao", "tocarMusica", "recarregarArma", "encerrarSustentada",
   "novaRd", "removerRd",
+  "novaReceita", "apagarReceita", "alternarProfissao", "novoIngrediente", "removerIngrediente", "ligarResultado",
+  "produzir", "testarProducao", "terminarProducao", "apagarProducao",
   "criarProjeto", "usarProjeto", "apagarProjeto", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto"
 ];
 const despachar = nome => function (evento, alvo) {
@@ -125,6 +128,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     relacoes: { template: `${CAMINHO}/actor/relacoes.hbs`, scrollable: [""] },
     companheiros: { template: `${CAMINHO}/actor/companheiros.hbs`, scrollable: [""] },
     bestiario: { template: `${CAMINHO}/actor/bestiario.hbs`, scrollable: [""] },
+    producao: { template: `${CAMINHO}/actor/producao.hbs`, scrollable: [""] },
     personalizacao: { template: `${CAMINHO}/actor/personalizacao.hbs`, scrollable: [""] }
   };
 
@@ -1446,6 +1450,33 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   acaoRecuperarMana() { return X.recuperarMana(this.actor); }
+
+  /* ---------- Produção ---------- */
+
+  async acaoNovaReceita() {
+    await this.actor.update({ [`${P}.receitas.${novoId()}`]: PR.novaReceita() });
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+  async acaoApagarReceita(ev, alvo) {
+    const r = this.actor.flags?.[FLAG]?.receitas?.[alvo.dataset.receita];
+    if (!(await M.confirmar("Apagar receita", `<p>Apagar <strong>${escapar(r?.nome || "esta receita")}</strong>?</p>`))) return;
+    return this.actor.update({ [`${P}.receitas.-=${alvo.dataset.receita}`]: null });
+  }
+  acaoAlternarProfissao(ev, alvo) { return PR.alternarProfissao(this.actor, alvo.dataset.receita, alvo.dataset.profissao); }
+  acaoNovoIngrediente(ev, alvo) {
+    return this.actor.update({ [`${P}.receitas.${alvo.dataset.receita}.ingredientes.${novoId()}`]: { nome: "", qtd: 1, criado: Date.now() } });
+  }
+  acaoRemoverIngrediente(ev, alvo) {
+    return this.actor.update({ [`${P}.receitas.${alvo.dataset.receita}.ingredientes.-=${alvo.dataset.ingrediente}`]: null });
+  }
+  acaoLigarResultado(ev, alvo) { return PR.escolherResultado(this.actor, alvo.dataset.receita); }
+  acaoProduzir(ev, alvo) { return PR.produzir(this.actor, alvo.dataset.receita); }
+  acaoTestarProducao(ev, alvo) { return PR.testarProducao(this.actor, alvo.dataset.producao); }
+  acaoTerminarProducao(ev, alvo) { return PR.terminarAgora(this.actor, alvo.dataset.producao); }
+  async acaoApagarProducao(ev, alvo) {
+    if (!(await M.confirmar("Apagar produção", "<p>Apagar esta produção da lista? Os ingredientes gastos não voltam.</p>"))) return;
+    return this.actor.update({ [`${P}.producoes.-=${alvo.dataset.producao}`]: null });
+  }
 
   /* ---------- RD (aba Combate) ---------- */
 

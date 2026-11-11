@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.8
+
+- **Tipos de dano do RPG**: Contundente, Cortante, Perfurante (Físicos); Fogo, Água, Ar, Terra, Gelo, Raio, Ácido, Sonoro (Elementais); Força, Radiante (Sagrado), Luz, Necrótico, Sombra, Espiritual, Temporal e Corrupção (Energéticos e místicos); Psíquico (Mentais); Venenoso (Biológicos). Nomes antigos continuam valendo (Corte = Cortante, Trevas = Sombra, Elétrico = Raio…), e dá para proteger um grupo inteiro ("Elementais").
+- **Níveis de dano**: Natural → Mágico → Verdadeiro → Límbico → Arcaico. Resistência, imunidade e RD têm nível (padrão Natural) e só seguram dano do nível delas ou abaixo: "Fogo (Mágico)". A vulnerabilidade vale em qualquer nível. O aviso do dano diz quando o nível passou a proteção. Referência no Escudo → Regras.
+- **Bônus situacionais** em habilidades e magias: cada forma pode ter opções (RD, CA, dano, acerto, testes, deslocamento) que valem pela cena. Escolhe na hora ou rola o dado (d4 com 4 opções). Gatilho "ao sofrer dano": conjura sozinha se tiver o custo (ex.: Sentido de sobrevivência). Vira um Bônus de cena (que agora também soma CA, RD, testes e deslocamento) e some no fim do combate ou no descanso.
+- **Aba Produção** (aparece quando há receita): forja, alquimia, rituais mágicos e encantamento. Receitas com profissões combináveis, dificuldade (CD 15/25/35), ingredientes conferidos e gastos do inventário, ferramentas, resultado (item ligado ou simples). 4 h por profissão no relógio do mundo (Simple Calendar), barra e etapa atual, "Pular tempo" no modo edição, um teste por profissão no fim (1d20 + perícia + atributo). Sucesso cria o item (Forja: +3 Pontos de Estrutura); falha perde os materiais; 1 natural é falha crítica (acidente ou produto defeituoso).
+
 ## Novidades da 0.5.7
 
 - Ordem do dano corrigida: **imunidade → vulnerabilidade (×2) → resistência (metade) → RD**. Vulnerável e resistente ao mesmo tipo: uma anula a outra.

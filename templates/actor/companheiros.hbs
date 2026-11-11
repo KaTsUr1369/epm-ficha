@@ -77,7 +77,7 @@
           <input type="text" name="{{../base}}.ataques.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome do ataque" />
           <label class="epm-mini"><span>acerto</span><input type="number" name="{{../base}}.ataques.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
           <label class="epm-mini"><span>dano</span><input type="text" name="{{../base}}.ataques.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d6 + 2" /></label>
-          <label class="epm-mini"><span>tipo</span><input type="text" name="{{../base}}.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="Perfuração" /></label>
+          <label class="epm-mini"><span>tipo</span><input type="text" name="{{../base}}.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="Perfurante" /></label>
           <button type="button" class="epm-icone-botao perigo" data-action="excluirAtaqueCompanheiro" data-companheiro="{{../id}}" data-ataque="{{this.id}}" title="Excluir ataque"><i class="fa-solid fa-xmark"></i></button>
           {{else}}
           <span class="epm-comp-ataque-nome">{{this.nome}}</span>

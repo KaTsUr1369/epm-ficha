@@ -61,6 +61,27 @@
         <legend>Requisitos (condições podem bloquear)</legend>
         {{#each requisitosLista}}<label class="epm-check" title="{{this.dica}}"><input type="checkbox" name="flags.epm-ficha.formas.{{../id}}.requisitos.{{this.id}}" {{epmChecked checked}} /> {{this.label}}</label>{{/each}}
       </fieldset>
+      <fieldset class="epm-bonus-sit">
+        <legend>Bônus situacional (pela cena){{#if bonusSit.tem}} <span class="epm-contador">{{bonusSit.dado}}</span>{{/if}}</legend>
+        <p class="epm-dica">Ao usar, vale uma destas opções até o fim do combate (vira um Bônus de cena na aba Combate). Ex.: +10 de RD, +3 de CA, +10 de dano ou +3 no ataque.</p>
+        {{#if bonusSit.tem}}
+        <div class="epm-bonus-sit-topo">
+          <label class="epm-campo"><span>Quando</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.gatilho">{{#each bonusSit.opcoesGatilho}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+          <label class="epm-campo"><span>Qual opção</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.escolha">{{#each bonusSit.opcoesEscolha}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        </div>
+        {{/if}}
+        {{#each bonusSit.linhas}}
+        <div class="epm-bonus-sit-linha">
+          <span class="epm-bonus-sit-n">{{this.n}}</span>
+          <select name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.tipo" aria-label="Tipo do bônus">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+          <input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
+          {{#if eRd}}<input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-tipos-dano-{{@root.item.id}}" placeholder="todos os danos" aria-label="Tipo de dano da RD" />{{/if}}
+          <span class="epm-dica">{{this.texto}}</span>
+          {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="removerOpcaoBonus" data-forma="{{../id}}" data-opcao="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>{{/if}}
+        </div>
+        {{/each}}
+        {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaOpcaoBonus" data-forma="{{this.id}}"><i class="fa-solid fa-plus"></i> Opção de bônus</button>{{/if}}
+      </fieldset>
       <div class="epm-forma-efeito">
         <span class="epm-rotulo">Efeito</span>
         {{{this.editorEfeito}}}

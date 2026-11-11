@@ -44,7 +44,7 @@
       <section class="epm-painel epm-rd">
         <header class="epm-painel-titulo"><h3>Redução de dano (RD)</h3>
           {{#if edicao}}<button type="button" class="epm-link" data-action="novaRd"><i class="fa-solid fa-plus" aria-hidden="true"></i> RD</button>{{/if}}</header>
-        <p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade (×2) e da resistência (metade).</p>
+        <p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade (×2) e da resistência (metade). Nível entre parênteses: "Fogo (Mágico)" segura até dano Mágico; sem nível, só Natural.</p>
         {{#if edicao}}
         {{#each rdBox.manuais}}
         <div class="epm-rd-linha">
@@ -147,7 +147,7 @@
               <label class="epm-mini"><span>perícia</span><select name="flags.epm-ficha.ataques.{{this.id}}.pericia">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
               <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.ataques.{{this.id}}.bonusAcerto" value="{{this.bonusAcerto}}" /></label>
               <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8 + @atr.forca" /></label>
-              <label class="epm-mini"><span>tipo</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="Corte" /></label>
+              <label class="epm-mini"><span>tipo</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="Cortante" /></label>
               <label class="epm-mini"><span>margem</span><input type="number" min="2" max="20" name="flags.epm-ficha.ataques.{{this.id}}.critMargem" value="{{this.critMargem}}" /></label>
               <label class="epm-mini"><span>×crítico</span><input type="number" min="2" name="flags.epm-ficha.ataques.{{this.id}}.critMult" value="{{this.critMult}}" /></label>
               <label class="epm-mini largo"><span>notas</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.notas" value="{{this.notas}}" placeholder="alcance, efeito…" /></label>
@@ -165,7 +165,7 @@
           <h3>Bônus de cena</h3>
           {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novoBonusCena"><i class="fa-solid fa-plus"></i> Novo bônus</button>{{/if}}
         </header>
-        <p class="epm-dica">Ligados, somam em todos os ataques. Ex.: uma habilidade que dá +1d8 de dano pela cena.</p>
+        <p class="epm-dica">Ligados, somam em todos os ataques (acerto e dano), na CA e na RD. Ex.: uma habilidade que dá +1d8 de dano pela cena. Os criados por bônus situacionais de habilidades somem no fim do combate.</p>
         {{#unless bonusCena.length}}<p class="epm-vazio">Nenhum bônus preparado.{{#unless edicao}} Crie no modo edição.{{/unless}}</p>{{/unless}}
         {{#each bonusCena}}
         <div class="epm-bonus{{#if ativo}} ativo{{/if}}">
@@ -177,11 +177,18 @@
           <input type="text" class="epm-bonus-nome" name="flags.epm-ficha.bonusCena.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome do bônus" aria-label="Nome" />
           <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
           <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.bonusCena.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8" /></label>
+          <label class="epm-mini"><span>CA</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.ca" value="{{this.ca}}" /></label>
+          <label class="epm-mini"><span>RD</span><input type="number" min="0" name="flags.epm-ficha.bonusCena.{{this.id}}.rd" value="{{this.rd}}" /></label>
           <button type="button" class="epm-icone-botao perigo" data-action="excluirBonusCena" data-ref="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
           {{else}}
           <span class="epm-bonus-nome">{{#if nome}}{{this.nome}}{{else}}Bônus sem nome{{/if}}</span>
           {{#if acerto}}<span class="epm-tag">{{epmSinal acerto}} acerto</span>{{/if}}
           {{#if dano}}<span class="epm-tag epm-tag-dano">+{{this.dano}} dano</span>{{/if}}
+          {{#if ca}}<span class="epm-tag">{{epmSinal ca}} CA</span>{{/if}}
+          {{#if rd}}<span class="epm-tag epm-chip-rd">RD {{this.rd}}{{#if rdTipo}} ({{this.rdTipo}}){{/if}}</span>{{/if}}
+          {{#if testes}}<span class="epm-tag">{{epmSinal testes}} testes</span>{{/if}}
+          {{#if deslocamento}}<span class="epm-tag">+{{this.deslocamento}} m</span>{{/if}}
+          {{#if cena}}<span class="epm-tag fraca" title="Some no fim do combate ou no descanso">pela cena</span>{{/if}}
           {{/if}}
         </div>
         {{/each}}

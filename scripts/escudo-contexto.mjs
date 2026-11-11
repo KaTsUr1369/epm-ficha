@@ -3,6 +3,7 @@
  * Quem chama (escudo.mjs) junta o combate, os personagens, os itens do mundo e o estado da janela.
  */
 import {
+  TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO,
   CONDICOES, CATEGORIAS_CONDICAO, EXAUSTAO, ACOES, DEFESAS, MOEDAS, ROTULOS_REPUTACAO, RECURSOS, REGRAS, TIPOS_ARMA
 } from "./config.mjs";
 import { lerAtor } from "./context.mjs";
@@ -121,7 +122,9 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
       `PT: ${REGRAS.ptPorPh ?? 5} PT = 1 PH. 6 h de treino = 5 PT (até 8 h por dia).`,
       `Subir nível de arquétipo: 2 × (novo nível − 1) PEv.`
     ],
-    tiposArma: TIPOS_ARMA.slice(0, 12).join(", ")
+    tiposArma: TIPOS_ARMA.slice(0, 12).join(", "),
+    tiposDano: Object.entries(GRUPOS_DANO).map(([id, label]) => ({ label, tipos: TIPOS_DANO.filter(t => t.grupo === id).map(t => ({ label: t.label, desc: t.desc })) })),
+    niveisDano: NIVEIS_DANO.map(n => n.label)
   };
 
   /* Notas */

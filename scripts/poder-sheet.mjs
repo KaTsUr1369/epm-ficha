@@ -15,7 +15,7 @@ const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
 const P = `flags.${FLAG}`;
 
-const ACOES_EDITOR = ["novaForma", "excluirForma", "duplicarForma", "moverForma", "aplicarMelhoria", "removerMelhoria", "editarImagem"];
+const ACOES_EDITOR = ["novaForma", "excluirForma", "duplicarForma", "moverForma", "aplicarMelhoria", "removerMelhoria", "editarImagem", "novaOpcaoBonus", "removerOpcaoBonus"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -66,6 +66,18 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     const formas = lerPoder(this.item).formas;
     const ordem = formas.length ? Math.max(...formas.map(f => f.ordem)) + 1 : 0;
     await this.item.update({ [`${P}.formas.${novoId()}`]: formaPadrao(ordem, `Forma ${formas.length + 1}`) });
+  }
+
+  async acaoNovaOpcaoBonus(ev, alvo) {
+    const forma = alvo.dataset.forma;
+    const n = lerPoder(this.item).formas.find(f => f.id === forma)?.bonus.opcoes.length ?? 0;
+    const tipo = ["rd", "ca", "dano", "acerto"][n % 4];
+    const valor = { rd: 10, ca: 3, dano: "10", acerto: 3 }[tipo];
+    await this.item.update({ [`${P}.formas.${forma}.bonus.opcoes.${novoId()}`]: { tipo, valor, tipoDano: "", criado: Date.now() } });
+  }
+
+  async acaoRemoverOpcaoBonus(ev, alvo) {
+    await this.item.update({ [`${P}.formas.${alvo.dataset.forma}.bonus.opcoes.-=${alvo.dataset.opcao}`]: null });
   }
 
   async acaoExcluirForma(ev, alvo) {

@@ -285,7 +285,7 @@ async function marcarAcao(actor, acao, ficha) {
   return aviso;
 }
 
-export async function usarPoder(actor, item, { evento = null } = {}) {
+export async function usarPoder(actor, item, { evento = null, automatico = false, formaId = "" } = {}) {
   const { ficha, dados } = estadoAtor(actor);
   const p = lerPoder(item);
   if (p.origem === "transformacao" && p.transformacao && dados.transformacoes?.[p.transformacao] && dados.transformacao?.ativa !== p.transformacao) {
@@ -296,7 +296,8 @@ export async function usarPoder(actor, item, { evento = null } = {}) {
   const rolagem = dadosRolagemEPM(ficha);
   const poder = { tipo: p.tipo, origem: p.origem };
   let forma = null;
-  if (p.formas.length === 1) forma = p.formas[0];
+  if (formaId) forma = p.formas.find(f => f.id === formaId) ?? null;
+  if (forma) { /* já escolhida (gatilho automático) */ } else if (p.formas.length === 1) forma = p.formas[0];
   else if (p.formas.length > 1) {
     forma = await escolherForma(item, p, ficha, rolagem);
     if (!forma) return null;
@@ -321,6 +322,7 @@ export async function usarPoder(actor, item, { evento = null } = {}) {
     const sigla = CUSTO_RECURSOS[rec]?.sigla ?? rec.toUpperCase();
     if (custo.extra) avisos.push(`+${custo.extra} ${sigla} por ${ficha.especiais.custoExtraMagia.fontes.join(", ")}.`);
     if (atual < custo.valor) {
+      if (automatico) return null;
       if (!(await confirmar("Recurso insuficiente", `<p>Custa <strong>${custo.valor} ${sigla}</strong> e você tem ${atual}.</p><p>Usar mesmo assim? O recurso vai a 0.</p>`))) return null;
       avisos.push(`${sigla} insuficiente.`);
     }
@@ -351,7 +353,84 @@ export async function usarPoder(actor, item, { evento = null } = {}) {
     const aviso = await marcarAcao(actor, forma.acao, ficha);
     if (aviso) avisos.push(aviso);
   }
-  return cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, custo });
+  if (automatico) avisos.unshift("Conjurada automaticamente ao sofrer dano.");
+  const msg = await cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, custo });
+  if (forma?.bonus?.opcoes?.length) await escolherBonusSituacional(actor, item, forma, { nome });
+  return msg;
+}
+
+/* -------------------------------------------- */
+/*  Bônus situacionais (pela cena)              */
+/* -------------------------------------------- */
+
+/**
+ * Escolhe (ou rola) uma das opções de bônus da forma e grava como Bônus de cena ligado.
+ * Um bônus por habilidade: usar de novo troca o anterior.
+ */
+export async function escolherBonusSituacional(actor, item, forma, { nome = item.name } = {}) {
+  const opcoes = forma.bonus.opcoes;
+  const n = opcoes.length;
+  let escolhida = null;
+  let rolagemTexto = "";
+  const rolar = async () => {
+    const r = await new Roll(`1d${n}`).evaluate();
+    rolagemTexto = `d${n} = ${r.total}`;
+    return opcoes[r.total - 1];
+  };
+  if (forma.bonus.escolha === "rolar") escolhida = await rolar();
+  else {
+    const botoes = opcoes.map((o, i) => ({ action: `o${i}`, label: `${i + 1}. ${o.texto}`, callback: () => i }));
+    botoes.push({ action: "rolar", label: `Rolar d${n}`, icon: "fa-solid fa-dice", callback: () => "rolar" });
+    const r = await fvtt.DialogV2.wait({
+      window: { title: `${nome}: bônus pela cena` }, classes: ["epm-dialogo", "epm-dialogo-bonus"], rejectClose: false, modal: true,
+      content: `<p class="epm-dica">Escolha o efeito que mais faz sentido para a ameaça, ou role d${n}.</p>`, buttons: botoes
+    });
+    if (r === "rolar") escolhida = await rolar();
+    else if (Number.isInteger(r)) escolhida = opcoes[r];
+  }
+  if (!escolhida) return null;
+  await aplicarBonusSituacional(actor, item, escolhida, nome);
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>: ${escapar(escolhida.texto)} pela cena${rolagemTexto ? ` <em>(${rolagemTexto})</em>` : ""}.</p><p class="epm-dica">Já está somado na ficha (aba Combate → Bônus de cena). Some no fim do combate.</p></div>`
+  });
+  return escolhida;
+}
+
+export async function aplicarBonusSituacional(actor, item, o, nome = item.name) {
+  const atuais = actor.flags?.[FLAG]?.bonusCena ?? {};
+  const updates = {};
+  for (const [id, b] of Object.entries(atuais)) if (b?.origem === item.id) updates[`${P}.bonusCena.-=${id}`] = null;
+  if (Object.keys(updates).length) await actor.update(updates);
+  const b = { nome: `${nome}: ${o.texto}`, ativo: true, acerto: 0, dano: "", ca: 0, rd: 0, rdTipo: "", testes: 0, deslocamento: 0, origem: item.id, cena: true, criado: Date.now() };
+  if (o.tipo === "dano") b.dano = String(o.valor);
+  else if (o.tipo === "rd") { b.rd = int(o.valor); b.rdTipo = o.tipoDano ?? ""; }
+  else b[o.tipo] = int(o.valor);
+  return actor.update({ [`${P}.bonusCena.${novoId()}`]: b });
+}
+
+/** Ao sofrer dano: dispara as formas com gatilho "dano" que ainda não estão valendo nesta cena. */
+const gatilhosRodando = new Set();
+export async function gatilhosAoSofrerDano(actor) {
+  if (gatilhosRodando.has(actor.uuid)) return;
+  gatilhosRodando.add(actor.uuid);
+  try { await dispararGatilhos(actor); } finally { gatilhosRodando.delete(actor.uuid); }
+}
+async function dispararGatilhos(actor) {
+  const ativosPor = new Set(Object.values(actor.flags?.[FLAG]?.bonusCena ?? {}).filter(b => b?.ativo && b.origem).map(b => b.origem));
+  for (const item of poderesDoAtor(actor)) {
+    if (ativosPor.has(item.id)) continue;
+    const forma = lerPoder(item).formas.find(f => f.bonus?.gatilho === "dano" && f.bonus.opcoes.length);
+    if (!forma) continue;
+    await usarPoder(actor, item, { automatico: true, formaId: forma.id });
+  }
+}
+
+/** Remove os bônus "pela cena" (fim do combate ou descanso). */
+export function limparBonusDaCena(dados) {
+  const up = {};
+  for (const [id, b] of Object.entries(dados?.bonusCena ?? {})) if (b?.cena) up[`${P}.bonusCena.-=${id}`] = null;
+  return up;
 }
 
 async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, custo = null }) {
@@ -770,7 +849,7 @@ export async function descanso(actor, tipo) {
     ]
   });
   if (!escolha || typeof escolha !== "object") return;
-  const updates = {};
+  const updates = { ...limparBonusDaCena(actor.flags?.[FLAG]) };
   const feitos = [];
   let ganhoPv = 0;
   for (const id of ["pv", "pm", "pe", "ps"]) {
@@ -1736,6 +1815,7 @@ export async function fimDeCombate(combate) {
     const updates = {};
     if (dados.usos?.recuperarMana) updates[`${P}.usos.recuperarMana`] = false;
     if (dados.usos?.presa) updates[`${P}.usos.presa`] = "";
+    Object.assign(updates, limparBonusDaCena(dados));
     for (const [id, b] of Object.entries(dados.bencaos ?? {})) {
       if (!b || typeof b !== "object") continue;
       if (automacaoDe(b).frequencia === "combate" && b.usado) updates[`${P}.bencaos.${id}.usado`] = false;

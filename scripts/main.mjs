@@ -44,6 +44,10 @@ Hooks.once("ready", () => {
   console.log(`${MODULE_ID} | Ficha Escolhidos pelo Multiverso pronta`);
 });
 
+/** Menu do chat: as opções de dano do D&D 5e não valem para os cartões EPM (eles têm o botão Aplicar dano). */
+Hooks.on("getChatMessageContextOptions", mecanicas.filtrarMenuChat);
+Hooks.on("getChatLogEntryContext", mecanicas.filtrarMenuChat);
+
 /** Fim de combate: recarrega usos "por combate" e aplica maldições de fim de combate. */
 Hooks.on("deleteCombat", combate => {
   mecanicas.fimDeCombate(combate).catch(err => console.error("EPM | Fim de combate", err));

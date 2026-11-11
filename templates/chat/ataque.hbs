@@ -12,7 +12,7 @@
   {{#each notas}}<p class="epm-chat-requisitos">{{this}}</p>{{/each}}
   {{#if botoes.length}}
   <div class="epm-chat-botoes">
-    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
+    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}}{{#if valor}} data-valor="{{this.valor}}"{{/if}}{{#if alvos}} data-alvos="{{this.alvos}}"{{/if}}{{#if tipoDano}} data-tipo-dano="{{this.tipoDano}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
   </div>
   {{/if}}
 </div>

@@ -14,6 +14,11 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.1
+
+- Corrigido: ao atacar com um alvo marcado, o dano ia para o atacante (o token selecionado) e somava o resultado do acerto. O cartão de ataque agora tem o botão **Aplicar dano**, que tira só o valor do dano dos alvos marcados no momento do ataque (primeiro da vida temporária). Se ninguém estava marcado, marque o alvo e clique no botão. Em alvos que não são seus, quem aplica é o Mestre, pelo mesmo botão.
+- As opções de dano do menu do chat do D&D 5e não aparecem mais nos cartões da ficha EPM, porque eram elas que somavam acerto e dano.
+
 ## Novidades da 0.5.0
 
 - **Conectar personagem e Relação múltipla:** a lista de personagens tem imagens pequenas e rola, dá para marcar vários sem a janela quebrar.

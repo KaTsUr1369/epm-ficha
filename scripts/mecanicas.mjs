@@ -840,6 +840,46 @@ async function atorDoCartao(cartao) {
 }
 
 let chatLigado = false;
+/**
+ * Botão "Aplicar dano" do cartão de ataque: aplica só o total do dano (nunca o do acerto)
+ * nos alvos marcados no momento do ataque ou, se não havia, nos alvos marcados agora.
+ * O atacante nunca recebe o dano por estar selecionado.
+ */
+export async function aplicarDanoDoCartao(atacante, botao) {
+  const valor = Math.max(0, int(botao.dataset.valor));
+  let alvos = (botao.dataset.alvos ?? "").split(",").filter(Boolean).map(u => fromUuidSync(u)).filter(Boolean);
+  if (!alvos.length) alvos = [...(game.user?.targets ?? [])].map(t => t.actor).filter(Boolean);
+  alvos = alvos.filter(a => a.uuid !== atacante?.uuid);
+  if (!alvos.length) return ui.notifications.warn("Marque o alvo (tecla T ou clique com o botão direito no token → alvo) e clique de novo.");
+  const semPermissao = alvos.filter(a => !a.isOwner);
+  if (semPermissao.length) return ui.notifications.warn(`Só o Mestre aplica dano em ${semPermissao.map(a => a.name).join(", ")}. Ele pode clicar neste mesmo botão no chat.`);
+  for (const alvo of alvos) {
+    const hp = alvo.system?.attributes?.hp;
+    if (!hp) continue;
+    let resto = valor;
+    const temp = int(hp.temp);
+    const usaTemp = Math.min(temp, resto);
+    resto -= usaTemp;
+    await alvo.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - resto) });
+  }
+  ui.notifications.info(`${valor} de dano${botao.dataset.tipoDano ? ` (${botao.dataset.tipoDano})` : ""} em ${alvos.map(a => a.name).join(", ")}.`);
+}
+
+/** Tira do menu do chat as opções de dano do D&D 5e nos cartões EPM (elas somavam acerto + dano e usavam o token selecionado). */
+export function filtrarMenuChat(_app, opcoes) {
+  if (!Array.isArray(opcoes)) return;
+  const eEPM = li => {
+    const el = li?.[0] ?? li;
+    const id = el?.dataset?.messageId ?? el?.closest?.("[data-message-id]")?.dataset?.messageId;
+    return !!game.messages?.get(id)?.flags?.[FLAG];
+  };
+  for (const o of opcoes) {
+    if (!/ChatContext(Damage|Healing|TempHP|DoubleDamage|HalfDamage)/i.test(o?.name ?? "")) continue;
+    const original = o.condition;
+    o.condition = li => !eEPM(li) && (typeof original === "function" ? original(li) : original ?? true);
+  }
+}
+
 export function registrarChat() {
   if (chatLigado) return;
   chatLigado = true;
@@ -862,6 +902,7 @@ export function registrarChat() {
       }
       return rolarTeste(actor, { rotulo: rotulo || "Teste", bonus: per?.testeTotal ?? 0, evento: ev, desvantagens: [...ficha.desvantagens.testes, ...(per?.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(per?.vantagem ?? [])], penalidades: per?.testeFontes ?? [] });
     }
+    if (acao === "dano") return aplicarDanoDoCartao(actor, botao);
     if (acao === "cura") {
       if (!actor) return ui.notifications.warn("Não encontrei o personagem deste cartão.");
       if (!actor.isOwner) return ui.notifications.warn("Só o dono do personagem aplica a cura.");
@@ -1012,6 +1053,16 @@ export async function rolarAtaque(actor, at, { modo = "normal", extraAcerto = ""
     acao: "cura", formula: c.formula, recurso: c.recurso, rotulo: `${at.nome}: cura ao acertar`,
     label: `Acertou: +${c.formula} ${RECURSOS[c.recurso]?.abrev ?? "PV"}`, icone: "fa-solid fa-heart"
   }));
+  if (dmg) {
+    // Dano vai só para os alvos marcados (nunca para o atacante por estar selecionado)
+    const alvos = [...(game.user?.targets ?? [])].map(t => t.actor).filter(a => a && a.uuid !== actor.uuid);
+    const valor = Math.max(0, Math.round(dmg.total));
+    botoes.unshift({
+      acao: "dano", valor, alvos: alvos.map(a => a.uuid).join(","), tipoDano: at.tipoDano ?? "",
+      rotulo: `${at.nome}: dano`, icone: "fa-solid fa-burst",
+      label: alvos.length ? `Aplicar ${valor} de dano em ${alvos.map(a => a.name).join(", ")}` : `Aplicar ${valor} de dano no alvo`
+    });
+  }
   const rotulos = { normal: "", vantagem: "com vantagem", desvantagem: "com desvantagem" };
   const content = await fvtt.renderTemplate(`${CAMINHO}/chat/ataque.hbs`, {
     actorUuid: actor.uuid, img: at.img, nome: at.nome, periciaNome: per?.nome ?? "sem perícia",

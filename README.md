@@ -20,7 +20,7 @@ Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para 
 - **Aba Treinamentos.** Ganhe PT com "Treinar ou estudar" (6 h = 5 PT) ou "Conversa ou tutor" (1 a 3 PT), com o limite de 8 horas de treino por dia (zera no descanso longo). Crie treinamentos com tempo, PT, requisitos, treinador (✓/✗), benefícios e modificadores que entram na ficha ao concluir; comece pagando os PT e registre as horas até concluir. Modelos do livro: Corredor e Flash Step.
 - **Treino rápido:** três minijogos (Sequência, Na mira e Explosão) de 5 rodadas para uma hora de descanso: 2 ou 3 acertos valem 1 PT, 4 ou 5 valem 2 PT.
 - **Editor de item EPM.** Armas, armaduras, consumíveis, ferramentas, loot e mochilas abrem numa janela própria (no lugar da do D&D) com raridade, quantidade, peso, preço em moedas EPM, ataque, armadura, bônus e efeitos e descrição. **Mochilas guardam moedas EPM** (Guardar da carteira / Pegar para a carteira) e mostram o conteúdo.
-- **Relações:** entre personagens de jogadores, cada jogador decide a afinidade na própria ficha; com NPCs, só o Mestre. A opção "Só o Mestre muda a afinidade" agora vem desligada.
+- **Relações:** entre personagens de jogadores, cada jogador decide a afinidade na própria ficha; com NPCs, só o Mestre. A afinidade só muda no modo edição. A opção "Só o Mestre muda a afinidade" agora vem desligada.
 - **Recursos temporários** também para Estamina (verde), Mana (roxa) e Sanidade (cinza), além da Vida (amarela). Custos e perdas saem primeiro da reserva temporária.
 - **Vontade** passa a somar Autocontrole por padrão (fichas que ainda estavam com Núcleo, o padrão antigo, são atualizadas sozinhas).
 

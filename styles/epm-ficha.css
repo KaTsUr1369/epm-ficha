@@ -2128,8 +2128,7 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-treino-botoes { display: flex; flex-wrap: wrap; gap: 6px; }
 .epm-horas-dia.cheio { border-color: var(--epm-alerta); color: var(--epm-alerta); }
 .epm-medidor-dia { height: 4px; margin-top: -6px; }
-.epm-medidor { position: relative; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
-.epm-medidor > span { position: absolute; inset: 0 auto 0 0; background: var(--epm-latao); border-radius: inherit; }
+.epm-medidor-dia > span, .epm-medidor-treino > span { background: var(--epm-latao); }
 .epm-minijogos-lista { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .application.epm .epm-minijogo-botao {
   display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center;

@@ -7,7 +7,7 @@
       {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaRelacao" title="Relação com alguém que não tem ficha"><i class="fa-solid fa-plus"></i> Sem ficha</button>{{/if}}
     </div>
   </header>
-  {{#if editavel}}{{#unless isGM}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Com personagens de outros jogadores, vocês decidem a afinidade; com NPCs, quem decide é o Mestre.</p>{{/unless}}{{/if}}
+  {{#if edicao}}{{#unless isGM}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Com personagens de outros jogadores, vocês decidem a afinidade; com NPCs, quem decide é o Mestre.</p>{{/unless}}{{/if}}
   {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
   <div class="epm-relacoes-grade">
     {{#each relacoes}}

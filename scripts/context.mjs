@@ -812,7 +812,7 @@ export function montarContexto({
   /* ---------- Relações ---------- */
   // Entre personagens de jogadores, os donos decidem a afinidade; com NPCs (ou sem ficha ligada), só o Mestre.
   const soMestre = ajustes.afinidadeSoMestre === true;
-  const podeAjustar = jogador => editavel && (isGM || (!soMestre && !!jogador));
+  const podeAjustar = jogador => edicao && (isGM || (!soMestre && !!jogador));
   const relAbertas = ui.relacoesAbertas ?? new Set();
   ctx.relacoes = Object.entries(dados.relacoes ?? {}).filter(([, r]) => r).map(([id, r]) => {
     const af = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, int(r.afinidade)));
@@ -836,7 +836,7 @@ export function montarContexto({
       id, nome, img, uuid: r.uuid ?? "", ligado: !!ator, perdido: !!r.uuid && !ator,
       tipo: r.tipo ?? "outro", tipoLabel: TIPOS_RELACAO[r.tipo ?? "outro"] ?? "Outro",
       afinidade: af, afinidadeLabel: rotuloAfinidade(af), podeAfinidade: podeAjustar(ator?.jogador),
-      soMestreAqui: editavel && !isGM && !podeAjustar(ator?.jogador),
+      soMestreAqui: edicao && !isGM && !podeAjustar(ator?.jogador),
       afinidadePct: Math.round(((af - AFINIDADE.min) / (AFINIDADE.max - AFINIDADE.min)) * 100),
       notas: r.notas ?? "", criado: num(r.criado),
       background, liberadas, totalPartes: background?.length ?? 0, aberta: relAbertas.has(id),

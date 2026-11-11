@@ -1189,7 +1189,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoRelacaoMultipla() { return relacaoMultipla(this.actor); }
 
   async acaoAjustarAfinidade(ev, alvo) {
-    if (!this.isEditable) return;
+    if (!this.isEditable || !this._modoEdicao) return;
     const id = alvo.dataset.relacao;
     if (!game.user.isGM) {
       const rel = this.actor.flags?.[FLAG]?.relacoes?.[id];

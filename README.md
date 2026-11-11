@@ -25,6 +25,8 @@ Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para 
 - **Artífice** entre os arquétipos sugeridos.
 
 
+## Novidades da 0.4.0
+
 Esta versão junta o que tinha sido feito entre a 0.2.5 e a 0.3.0 (refeito a partir da 0.2.4) com o patch note novo.
 
 ### Patch note

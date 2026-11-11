@@ -14,8 +14,10 @@ import { relacaoMultipla } from "./relacoes.mjs";
 import { PainelGrupo, abrirPainelGrupo, atualizarPainelGrupo, botaoNoDiretorio } from "./grupo.mjs";
 import { EscudoMestre, abrirEscudo, atualizarEscudo, botaoEscudo } from "./escudo.mjs";
 import { integrarDock } from "./integracao-dock.mjs";
+import { registrarRelogioProjetos } from "./projetos.mjs";
 
 integrarDock();
+registrarRelogioProjetos();
 import * as extras from "./extras.mjs";
 
 const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;

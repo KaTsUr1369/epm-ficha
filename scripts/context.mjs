@@ -24,6 +24,7 @@ import {
 import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
+import { painelProjetos } from "./projetos.mjs";
 import { normalizarHex, posicaoNaRoda, estiloPaleta } from "./cores.mjs";
 
 /** Dados de rolagem do EPM (@atr.forca, @per.luta, @nivel, @cd …). */
@@ -49,7 +50,8 @@ export function lerAtor(actor, listaPericias) {
   const statuses = actor?.statuses ? [...actor.statuses] : [];
   let itens = [];
   try { itens = efeitosDeItens(actor?.items?.contents ?? actor?.items ?? []); } catch { itens = []; }
-  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens });
+  const agora = Number(globalThis.game?.time?.worldTime) || 0;
+  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora });
   return { dados, ficha, hp };
 }
 
@@ -385,6 +387,7 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
       const escolhidas = (Array.isArray(opcoes.artifice?.utensilios) ? opcoes.artifice.utensilios : []).filter(p => !cfg.utensilios.exceto.includes(p)).slice(0, cfg.utensilios.qtd);
       painel.artifice = {
         intel: i, projetos: proj, porDia: cfg.projetosPorDia, livro: limiteLivro(nivel, intel),
+        dia: proj ? painelProjetos(dados, nivel, intel, editavel) : null,
         encantados: enc ? {
           dano: `${enc.dano}${enc.danoInt ? ` + ${i}` : ""}`, cura: `+${enc.cura + (enc.curaInt ? i : 0)}`, auxilio: `+${enc.auxilio + (enc.auxilioInt ? i : 0)}`
         } : null,

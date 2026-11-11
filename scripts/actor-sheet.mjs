@@ -13,6 +13,7 @@ import {
 } from "./data.mjs";
 import { montarContexto, lerAtor, visualDaFicha } from "./context.mjs";
 import * as X from "./extras.mjs";
+import * as PJ from "./projetos.mjs";
 import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar } from "./helpers.mjs";
 import { ajustes, listaPericias, salvarListaPericias } from "./settings.mjs";
 import * as M from "./mecanicas.mjs";
@@ -60,7 +61,8 @@ const ACOES_FICHA = [
   "novaSessao", "excluirSessao", "somarSessao",
   "novaFaccao", "excluirFaccao", "imagemFaccao", "ajustarReputacao",
   "ataqueOportunidade", "atrasarTurno", "ressonancia", "pularHoras",
-  "imagemFundo", "removerFundo", "visualPadrao", "tocarMusica", "recarregarArma", "encerrarSustentada"
+  "imagemFundo", "removerFundo", "visualPadrao", "tocarMusica", "recarregarArma", "encerrarSustentada",
+  "criarProjeto", "usarProjeto", "apagarProjeto", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -1443,6 +1445,18 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   acaoRecuperarMana() { return X.recuperarMana(this.actor); }
+
+  /* ---------- Projetos do Artífice ---------- */
+
+  acaoCriarProjeto() { return PJ.criarProjeto(this.actor); }
+  acaoUsarProjeto(ev, alvo) { return PJ.usarProjeto(this.actor, alvo.dataset.projeto); }
+  async acaoApagarProjeto(ev, alvo) {
+    if (!(await M.confirmar("Apagar projeto", "<p>Apagar este projeto? Ele continua contando no limite do dia.</p>"))) return;
+    return PJ.apagarProjeto(this.actor, alvo.dataset.projeto);
+  }
+  acaoGuardarProjeto(ev, alvo) { return PJ.guardarNoLivro(this.actor, alvo.dataset.projeto); }
+  acaoApagarDoLivro(ev, alvo) { return PJ.apagarDoLivro(this.actor, alvo.dataset.livro); }
+  acaoEncerrarEfeitoProjeto(ev, alvo) { return PJ.encerrarEfeitoProjeto(this.actor, alvo.dataset.efeito); }
   acaoCacadorNatural() { return X.cacadorNatural(this.actor); }
 
   /* ---------- Companheiros ---------- */

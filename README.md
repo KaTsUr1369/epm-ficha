@@ -14,6 +14,15 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.5
+
+- **Projetos do Artífice** no painel do arquétipo (abas Habilidades e Arquétipo e Classe):
+  - **Criar projeto** (Dano, Cura, Soma ou Proteção): 2 por dia, fica pronto depois de 1 minuto de produção.
+  - **Usar**: Dano e Cura rolam no chat com botão para aplicar nos alvos marcados (a cura vai no próprio Artífice se ninguém estiver marcado). Soma dá +X em todos os testes e Proteção dá +X de CA, por 1 hora, já somados na ficha.
+  - O projeto usado some e volta depois de 1 hora. Tudo termina quando o dia muda.
+  - **Livro de Projetos**: guarde um projeto do dia para recriá-lo depois (limite pelo nível e Inteligência).
+  - O tempo segue o relógio do mundo. Com o **Simple Calendar** ativo, usa o calendário dele (hora e virada do dia), e a ficha se atualiza sozinha quando o tempo avança.
+
 ## Novidades da 0.5.4
 
 - **Arquétipos modelo 0.5 (Combatente, Conjurador, Artífice):** em Habilidades → Arquétipo, a progressão do 1 ao 50, as habilidades liberadas (botão para criar na ficha) e as automações:

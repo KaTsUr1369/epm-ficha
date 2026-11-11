@@ -174,6 +174,9 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     transformacao: { ativa: "", turnos: 0 },
     companheiros: {},
     bestiario: {},
+    projetos: {},
+    projetosEfeitos: {},
+    livroProjetos: {},
     arquetipoOpcoes: { combatente: { tipoFavorito: "", maestria: "", estilos: [] }, artifice: { utensilios: [] }, conjurador: { dominio: "" } },
     usos: { ataqueExtraTurno: false, gemeaTurno: false, recuperarMana: false, presa: "" },
     combate: { atrasou: "" },
@@ -422,7 +425,7 @@ export function dtDe(d, atributos, periciaPorId) {
   };
 }
 
-export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [] }) {
+export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [], agora = null }) {
   const d = dados;
   const st = new Set(statuses);
   const nivel1 = Math.max(0, int(d.nivel, 1));
@@ -644,8 +647,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   // Transformação ativa (sub-aba Transformações)
   const tAtiva = d.transformacao?.ativa ? d.transformacoes?.[d.transformacao.ativa] : null;
   if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`);
-  // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla
-  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma))) somar(m.alvo, m.valor, m.fonte);
+  // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
+  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora)) somar(m.alvo, m.valor, m.fonte);
   lerModsAE(modsAE, somar);
   const mod = alvo => mods[alvo]?.total ?? 0;
   const fontes = alvo => mods[alvo]?.fontes ?? [];

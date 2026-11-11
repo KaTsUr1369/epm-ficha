@@ -141,7 +141,7 @@ export const ARQUETIPOS = {
     recursos: "Subclasses: Alquimista, Curandeiro, Mecânico de Guerra e Armadura Viva (escolhidas nos níveis de Subclasse).",
     progressao: progressao(`1 Criar Projetos • 2 AS • 3 Subclasse + Livro de Projetos • 4 AS • 5 Utensílios + Perícia • 6 AS + Subclasse • 7 Bolsa Automática • 8 AS • 9 Subclasse + Itens Encantados • 10 AS + Livro de Projetos 2.0 + Perícia • 11 Modificações Permanentes • 12 AS + Subclasse • 13 Criar Projetos 2.0 • 14 AS • 15 Subclasse + Perícia • 16 AS • 17 Pequeno Autômato • 18 AS + Subclasse • 19 Corpo Modificado • 20 AS + Livro de Projetos 3.0 + Perícia • 21 Subclasse • 22 AS • 23 Mudança de Planos • 24 AS + Subclasse • 25 Criar Projetos 3.0 + Perícia • 26 AS • 27 Subclasse • 28 AS • 29 Pequeno Autômato 2.0 • 30 AS + Subclasse + Perícia • 31 Roupas Modificadas • 32 AS • 33 Subclasse • 34 AS • 35 Livro de Projetos 4.0 + Perícia • 36 AS + Subclasse • 37 Criar Projetos 4.0 • 38 AS • 39 Subclasse • 40 AS + Perícia • 41 Pequeno Autômato 3.0 • 42 AS + Subclasse • 43 Estudo das Almas • 44 AS • 45 Subclasse + Livro de Projetos 5.0 + Perícia • 46 AS • 47 Criar Projetos 5.0 • 48 AS + Subclasse • 49 Recriando Almas • 50 AS x2 + Perícia`),
     habilidades: [
-      { nivel: 1, nome: "Criar Projetos", resumo: "Pode criar 2 projetos por dia; cada um fica pronto após 1 minuto de produção. Depois de 1 hora, fica inativo. Os projetos do dia terminam ao fim do dia." },
+      { nivel: 1, nome: "Criar Projetos", resumo: "Pode criar 2 projetos por dia; cada um fica pronto após 1 minuto de produção. Ao ser usado, some e volta depois de 1 hora. Soma e Proteção valem por 1 hora. Os projetos do dia terminam ao fim do dia." },
       { nivel: 3, nome: "Livro de Projetos", resumo: "No fim do dia, pode guardar um projeto. Limite: Nv. 3 = Inteligência (mín. 1); Nv. 10 = 5 + Inteligência; Nv. 20 = 8 + Inteligência; Nv. 35 = 10 + Inteligência; Nv. 45 = 15 + Inteligência." },
       { nivel: 5, nome: "Utensílios", resumo: "Escolha 3 perícias, exceto Luta e Pontaria; recebe +2 nos testes delas." },
       { nivel: 7, nome: "Bolsa Automática", resumo: "Pegar ou guardar item na mochila usa Meia Ação (Ação Bônus), em vez de Ação Normal." },
@@ -169,6 +169,8 @@ export const ARQUETIPOS = {
       { nivel: 47, dano: "8d10", cura: "5d10", soma: 10, protecao: 5 }
     ],
     projetosPorDia: 2,
+    /** Tempos dos projetos (no relógio do mundo, o mesmo do Simple Calendar). */
+    tempoProjeto: { producaoMin: 1, voltaHoras: 1, efeitoHoras: 1 },
     livro: [{ nivel: 3, base: 0 }, { nivel: 10, base: 5 }, { nivel: 20, base: 8 }, { nivel: 35, base: 10 }, { nivel: 45, base: 15 }],
     encantados: [
       { nivel: 9, dano: "1d4", danoInt: false, cura: 1, curaInt: false, auxilio: 1, auxilioInt: false },
@@ -334,8 +336,9 @@ export function circuloLiberado(circulo, nivel) {
  * @param {object} dados       flags da ficha (normalizadas)
  * @param {object[]} armasEquipadas  [{ id }] armas equipadas
  */
-export function modsDeArquetipo(dados = {}, armasEquipadas = []) {
+export function modsDeArquetipo(dados = {}, armasEquipadas = [], agora = null) {
   const out = [];
+  if (agora !== null) out.push(...modsDeProjetos(dados, agora));
   const opc = dados.arquetipoOpcoes ?? {};
   const conj = nivelArquetipo(dados, "conjurador");
   if (conj) {
@@ -363,6 +366,44 @@ export function estilosEscolhidos(dados = {}, nivel = null) {
   const n = nivel ?? nivelArquetipo(dados, "combatente");
   const lista = Array.isArray(dados.arquetipoOpcoes?.combatente?.estilos) ? dados.arquetipoOpcoes.combatente.estilos : [];
   return [...new Set(lista.filter(e => ARQUETIPOS.combatente.estilos[e]))].slice(0, estilosPermitidos(n));
+}
+
+/** Tipos de projeto do Artífice. */
+export const TIPOS_PROJETO = {
+  dano: { label: "Dano", icone: "fa-solid fa-bomb" },
+  cura: { label: "Cura", icone: "fa-solid fa-kit-medical" },
+  soma: { label: "Soma", icone: "fa-solid fa-plus" },
+  protecao: { label: "Proteção", icone: "fa-solid fa-shield-halved" }
+};
+
+/** Efeitos de Soma (testes) e Proteção (CA) de projetos ainda valendo no momento `agora`. */
+export function efeitosProjetoValendo(dados = {}, agora = 0) {
+  return Object.entries(dados.projetosEfeitos ?? {})
+    .filter(([, e]) => e && (e.tipo === "soma" || e.tipo === "protecao") && Number(e.ate) > agora)
+    .map(([id, e]) => ({ id, ...e }));
+}
+
+/** Mods dos projetos ativos: Soma vai em todos os testes, Proteção na CA. */
+export function modsDeProjetos(dados = {}, agora = 0) {
+  return efeitosProjetoValendo(dados, agora).map(e => ({
+    alvo: e.tipo === "soma" ? "testes" : "ca", valor: Math.floor(Number(e.valor) || 0), fonte: `Projeto: ${e.nome || TIPOS_PROJETO[e.tipo].label}`
+  }));
+}
+
+/**
+ * Estado dos projetos do dia: em produção, pronto ou recarregando (usado, volta depois de 1 hora).
+ * Projetos de outro dia não contam (terminam ao fim do dia).
+ */
+export function estadoProjetos(dados = {}, agora = 0, dia = "") {
+  return Object.entries(dados.projetos ?? {})
+    .filter(([, p]) => p && TIPOS_PROJETO[p.tipo] && p.dia === dia)
+    .map(([id, p]) => {
+      const prontoEm = Number(p.prontoEm) || 0;
+      const voltaEm = Number(p.voltaEm) || 0;
+      const estado = agora < prontoEm ? "producao" : (agora < voltaEm ? "recarga" : "pronto");
+      return { id, nome: p.nome || TIPOS_PROJETO[p.tipo].label, tipo: p.tipo, tipoLabel: TIPOS_PROJETO[p.tipo].label,
+        icone: TIPOS_PROJETO[p.tipo].icone, estado, apagado: !!p.apagado, faltam: estado === "producao" ? prontoEm - agora : (estado === "recarga" ? voltaEm - agora : 0) };
+    });
 }
 
 export { INT as ATRIBUTO_INTELECTO };

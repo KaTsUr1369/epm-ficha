@@ -58,9 +58,41 @@
       <span><strong>Dano</strong> {{artifice.projetos.dano}}</span><span><strong>Cura</strong> {{artifice.projetos.cura}}</span>
       <span><strong>Soma</strong> +{{artifice.projetos.soma}}</span><span><strong>Proteção</strong> +{{artifice.projetos.protecao}}</span>
     </div>
-    <p class="epm-dica">Inteligência {{artifice.intel}} já somada (mínimo 1). Fica pronto em 1 minuto, ativo por 1 hora e some no fim do dia.{{#if artifice.projetos.proximo}} Próxima etapa no nível {{artifice.projetos.proximo}}.{{/if}}</p>
+    <p class="epm-dica">Inteligência {{artifice.intel}} já somada (mínimo 1; a Proteção não soma). Fica pronto em 1 minuto. Usado, some e volta depois de 1 hora. Soma e Proteção valem por 1 hora. Tudo termina no fim do dia.{{#if artifice.projetos.proximo}} Próxima etapa no nível {{artifice.projetos.proximo}}.{{/if}}</p>
+    {{#with artifice.dia}}
+    <div class="epm-projetos">
+      <div class="epm-projetos-topo">
+        <span class="epm-contador">{{this.criadosHoje}}/{{../artifice.porDia}} hoje</span>
+        {{#if this.calendario}}<span class="epm-contador" title="O tempo segue o Simple Calendar"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Simple Calendar</span>{{/if}}
+        {{#if this.podeUsar}}<button type="button" class="epm-botao" data-action="criarProjeto" {{#unless this.podeCriar}}disabled{{/unless}}><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Criar projeto</button>{{/if}}
+      </div>
+      {{#each this.efeitos}}
+      <div class="epm-projeto-efeito"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> <span><strong>{{this.nome}}</strong>: +{{this.valor}} {{this.alvo}}</span> <span class="epm-dica">falta {{this.faltamTexto}}</span>
+        {{#if ../podeUsar}}<button type="button" class="epm-link" data-action="encerrarEfeitoProjeto" data-efeito="{{this.id}}" title="Encerrar agora"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>{{/if}}</div>
+      {{/each}}
+      {{#each this.lista}}
+      <div class="epm-projeto epm-projeto-{{this.estado}}">
+        <i class="{{this.icone}}" aria-hidden="true"></i>
+        <span class="epm-projeto-nome"><strong>{{this.nome}}</strong> <em>{{this.tipoLabel}} {{this.valor}}</em></span>
+        <span class="epm-projeto-estado">{{#if this.producao}}em produção · {{this.faltamTexto}}{{else if this.recarga}}volta em {{this.faltamTexto}}{{else}}pronto{{/if}}</span>
+        {{#if ../podeUsar}}
+        <button type="button" class="epm-botao" data-action="usarProjeto" data-projeto="{{this.id}}" {{#unless this.pronto}}disabled{{/unless}}>Usar</button>
+        {{#if ../limiteLivro}}<button type="button" class="epm-link" data-action="guardarProjeto" data-projeto="{{this.id}}" title="Guardar no Livro de Projetos"><i class="fa-solid fa-book-bookmark" aria-hidden="true"></i></button>{{/if}}
+        <button type="button" class="epm-link" data-action="apagarProjeto" data-projeto="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+        {{/if}}
+      </div>
+      {{else}}
+      <p class="epm-vazio">Nenhum projeto hoje.</p>
+      {{/each}}
+    </div>
+    {{/with}}
     {{/if}}
-    {{#if artifice.livro}}<p><strong>Livro de Projetos:</strong> guarda até {{artifice.livro}} projetos.</p>{{/if}}
+    {{#if artifice.livro}}
+    <h4>Livro de Projetos <span class="epm-contador">{{#if artifice.dia}}{{artifice.dia.livro.length}}/{{/if}}{{artifice.livro}}</span></h4>
+    {{#if artifice.dia.livro.length}}
+    <div class="epm-chips">{{#each artifice.dia.livro}}<span class="epm-chip"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.nome}} <em>{{this.tipoLabel}}</em>{{#if ../artifice.dia.podeUsar}} <button type="button" class="epm-link" data-action="apagarDoLivro" data-livro="{{this.id}}" title="Tirar do livro"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>{{/if}}</span>{{/each}}</div>
+    {{else}}<p class="epm-dica">Guarde um projeto do dia com <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i> para recriá-lo depois.</p>{{/if}}
+    {{/if}}
     {{#if artifice.encantados}}<p><strong>Itens Encantados:</strong> dano {{artifice.encantados.dano}}, cura {{artifice.encantados.cura}}, auxílio {{artifice.encantados.auxilio}}.</p>{{/if}}
     {{#if artifice.utensilios}}
     <h4>Utensílios <span class="epm-contador">+{{artifice.utensilios.bonus}} em {{artifice.utensilios.qtd}} perícias</span></h4>

@@ -12,6 +12,7 @@ import {
   ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, bonusAutomato
 } from "./arquetipos.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
+import { curaDoCartao } from "./projetos.mjs";
 import {
   estadoAtor, confirmar, calcularPerda, calcularRecuperacao, rolarFormula, horasDoTreino, usarPoder, cartaoItem, dialogoAtaque, rolarTeste
 } from "./mecanicas.mjs";
@@ -745,6 +746,7 @@ export async function cliqueChatExtra(acao, actor, botao) {
     await dialogoAtaque(defensor, escolha.tipo, escolha.ref, { contra: true });
     return true;
   }
+  if (acao === "curaProjeto") { await curaDoCartao(actor, botao); return true; }
   const novos = ["destrutivo", "alongado", "manipulacao", "sobrecarga"];
   if (!novos.includes(acao)) return false;
   if (!actor) { ui.notifications.warn("Não encontrei o personagem deste cartão."); return true; }

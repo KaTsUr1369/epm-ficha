@@ -2604,3 +2604,18 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-escudo-ref strong { color: var(--epm-texto); }
 .epm-escudo-notas textarea { width: 100%; min-height: 420px; font-family: var(--epm-ui); font-size: 13px; line-height: 1.5; }
 .epm-botao-escudo { flex: 0 0 100%; margin-top: 4px; }
+
+/* 0.5.5 · Projetos do Artífice */
+.epm-projetos { display: flex; flex-direction: column; gap: 5px; margin: 6px 0 8px; }
+.epm-projetos-topo { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.epm-projetos-topo .epm-botao { margin-left: auto; }
+.epm-projeto { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--epm-linha); border-left: 3px solid var(--epm-destaque, #C9A55A); border-radius: 6px; background: var(--epm-entrada); }
+.epm-projeto-nome { flex: 1; min-width: 0; }
+.epm-projeto-nome em { opacity: .75; font-size: 12px; margin-left: 4px; }
+.epm-projeto-estado { font-size: 12px; opacity: .85; }
+.epm-projeto-producao { border-left-color: #8A9BB0; }
+.epm-projeto-producao .epm-projeto-estado::before { content: "⚙ "; }
+.epm-projeto-recarga { opacity: .6; border-left-color: #6E6E6E; }
+.epm-projeto-pronto .epm-projeto-estado { color: #6FBF73; font-weight: 600; }
+.epm-projeto-efeito { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 13px; background: color-mix(in srgb, #C9A55A 18%, transparent); }
+.epm-projeto-efeito .epm-link { margin-left: auto; }

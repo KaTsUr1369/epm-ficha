@@ -4,6 +4,8 @@
     <button type="button" class="epm-item-nome" data-action="expandirItem" data-item-id="{{this.id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">
       <span class="epm-item-titulo">{{this.name}}</span>
       {{#if eArma}}<span class="epm-item-dentro">{{ataque.periciaNome}} {{epmSinal ataque.acertoTotal}}, crítico {{ataque.critTexto}}</span>{{/if}}
+      {{#if pente}}<span class="epm-item-recurso{{#if pente.vazio}} acabou{{/if}}" title="Tiros no pente"><i class="fa-solid fa-gun" aria-hidden="true"></i> {{pente.atual}}/{{pente.max}}</span> {{/if}}{{#if municao}}<span class="epm-item-recurso{{#if municao.acabou}} acabou{{/if}}" title="Munição gasta a cada ataque"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{municao.nome}} ×{{municao.qtd}}</span>{{/if}}
+      {{#if cargas}}<span class="epm-item-recurso{{#unless cargas.valor}} acabou{{/unless}}" title="Cargas{{#if cargas.recarga}}: recarregam em {{cargas.recarga}}{{/if}}"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{cargas.valor}}/{{cargas.max}}</span>{{/if}}
       {{#if resumoEfeitos.length}}<span class="epm-item-efeitos{{#unless efeitosAtivos}} inativos{{/unless}}" title="{{#if efeitosAtivos}}Bônus valendo{{else}}{{this.dicaAtivo}}{{/if}}">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
     </button>
     <span class="epm-raridade" title="Raridade">{{this.raridadeLabel}}</span>
@@ -34,7 +36,7 @@
     {{#if @root.edicao}}
     <div class="epm-item-config">
       <label class="epm-mini"><span>raridade</span><select data-item-campo="flags.epm-ficha.raridade" data-item-id="{{this.id}}">{{#each opcoesRaridade}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
-      {{#if eArmadura}}<label class="epm-mini curto" title="Soma na CA (campo Armadura) quando equipado"><span>armadura</span><input type="number" value="{{this.armadura}}" data-item-campo="flags.epm-ficha.armadura" data-item-id="{{this.id}}" /></label>{{/if}}
+      {{#if eArmadura}}<label class="epm-mini curto" title="Soma na CA (Armaduras e escudos) quando equipado"><span>CA</span><input type="number" value="{{this.armadura}}" data-item-campo="flags.epm-ficha.armadura" data-item-id="{{this.id}}" /></label>{{/if}}
       {{#if eArma}}
       <label class="epm-mini"><span>perícia de ataque</span><select data-item-campo="flags.epm-ficha.periciaAtaque" data-item-id="{{this.id}}">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
       <label class="epm-mini curto"><span>acerto</span><input type="number" value="{{ataque.bonusAcerto}}" data-item-campo="flags.epm-ficha.bonusAcerto" data-item-id="{{this.id}}" /></label>

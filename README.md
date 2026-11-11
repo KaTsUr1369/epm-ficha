@@ -14,6 +14,29 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.4
+
+- **Arquétipos modelo 0.5 (Combatente, Conjurador, Artífice):** em Habilidades → Arquétipo, a progressão do 1 ao 50, as habilidades liberadas (botão para criar na ficha) e as automações:
+  - Combatente: Arma Favorita (um tipo de arma, escrito no editor de cada arma) com as 8 Maestrias por etapa (Certeiro e Arma Longa no diálogo de ataque; Destrutivo e Alongado no cartão do chat; Protetora na CA; Perigosa no crítico; Gêmea como ataques extras), Ataque Extra por PE (1×/turno), Estilos de Combate (Duelista, Atirador, Arma Dupla) e Caçador Natural.
+  - Conjurador: custo das magias por círculo (já vem nas magias novas), círculos trancados até o nível, Reserva Arcana no PM máximo, Recuperar Mana (1×/cena) e Manipulação Mágica e Sobrecarga direto no cartão da magia.
+  - Artífice: valores de Criar Projetos, Livro de Projetos e Itens Encantados pela Inteligência, Utensílios (+2 em 3 perícias) e o Pequeno Autômato (2.0 e 3.0) na aba Companheiros.
+- **Defesa no chat:** o cartão de ataque mostra Esquiva, Bloqueio e Contra-ataque para cada alvo; o resultado já calcula o dano (2/3, metade ou nada no Bloqueio) e gasta a ação do próximo turno. Contra-ataque abre o ataque de volta.
+- **DT das magias e habilidades** = 10 + atributo (Núcleo) + perícia (Arcanismo), os dois escolhíveis. O alvo clica em Resistir e rola a perícia pedida (Vontade, Fortitude, Acrobacia…), gastando a Reação.
+- **Combate:** ataque extra comum (Ação Bônus ou de Movimento, com penalidade configurável), ataque de oportunidade (gasta a Reação) e atrasar turno (1×/combate). Munição e cargas descontam sozinhas no ataque e recarregam no descanso ou no fim do combate.
+- **Sustentadas:** cada forma de habilidade ou magia pode ter um gasto por turno (PM, PE…). Ao usar, ela fica "Sustentando" (Combate, Habilidades e Magias) e o custo sai a cada Novo turno; se faltar recurso, termina sozinha. Um X encerra.
+- **Armas de fogo com pente:** a arma tem quantos tiros cabem no pente; cada ataque gasta do pente e "Recarregar" puxa da munição ligada e gasta a ação escolhida na arma (Padrão, Bônus, Movimento, Reação ou Livre).
+- **Habilidades:** sub-aba Transformações (imagem, custo, duração, modificadores enquanto ativa, habilidades que só funcionam transformado, troca opcional do token); Habilidade Única em destaque; seleção de várias habilidades ou magias para usar, favoritar, mover, mudar raridade ou círculo, duplicar ou apagar de uma vez.
+- **Sobre:** bordão (aparece embaixo do nome), música tema, Segredos (só o dono e o Mestre) e o botão Ressonância de Alma na Marca.
+- **Relações:** selo colorido do vínculo, nota privada, histórico da afinidade (quem mudou, quando e por quê) e Facções com reputação de −5 a +5.
+- **Abas novas:** Companheiros (mini-fichas; aparece fora do modo edição quando tem alguém) e Bestiário (criaturas, fraquezas, encontros; registra sozinho no fim do combate, opção do módulo). Anotações ganhou o Diário de sessões (ganhos de PEv, PT e PH somados com um clique).
+- **Treinamentos:** "Pular tempo" no modo edição (timeskip sem o limite do dia; o que sobra pode virar PT de estudo).
+- **Personalizar:** imagem de fundo com véu, moldura do retrato, estilo de letra, tamanho do texto e esconder abas que não usa.
+- **Escudo do Mestre:** janela só do Mestre (botão na aba Atores e no Combat Tracker), no estilo da ficha, com abas Combate (iniciativa editável, recursos, defesas, condições, próximo turno, Novo turno EPM), Grupo (dar PEv/PT/PH, descansos, Relação múltipla), Condições (as 131 em um clique e Exaustão), Itens (dar itens do mundo e moedas), Testes (teste em grupo contra DT, rolagem livre), Regras e Notas. Dano, cura e temporário rápido nos alvos marcados ou nos tokens selecionados.
+- **Combat Tracker Dock:** com o módulo ativo, o carrossel mostra PV, PM, PE, PS, CA, Esquiva, Bloqueio, Contra-ataque e DT do EPM (configurado sozinho na primeira vez; a 2ª barra é a Mana) e ganha o botão do Escudo do Mestre.
+- **Mestre:** Painel do grupo (botão na aba Atores) com recursos, CA, Exaustão e condições de todos, e "Dar aos marcados" (PEv, PT e PH).
+- **CA:** "Armaduras e escudos" é um valor fixo que vem só do que está equipado no Inventário (o campo manual antigo foi para "outros").
+- **Barras:** Vida, Mana, Estamina, Sanidade e os temporários descem (e sobem) deslizando; o que foi perdido deixa um rastro claro.
+
 ## Novidades da 0.5.3
 
 - **Sobre → Traços:** novos campos Apelido, Vulgo e Sexualidade. Também aparecem nas relações, junto com os outros traços, quando a afinidade libera.

@@ -28,17 +28,39 @@
       </div>
     </section>
 
+    <section class="epm-painel epm-visual-painel">
+      <header class="epm-painel-titulo">
+        <h3>Visual</h3>
+        {{#unless personalizacao.visualPadrao}}<button type="button" class="epm-link" data-action="visualPadrao">Restaurar padrão</button>{{/unless}}
+      </header>
+      <div class="epm-visual-grade">
+        <label class="epm-campo"><span>Moldura do retrato</span><select name="flags.epm-ficha.personalizacao.moldura">{{#each personalizacao.opcoesMoldura}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Letra</span><select name="flags.epm-ficha.personalizacao.fonte">{{#each personalizacao.opcoesFonte}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Tamanho do texto: {{personalizacao.escala}}%</span><input type="range" min="{{personalizacao.escalaMin}}" max="{{personalizacao.escalaMax}}" step="{{personalizacao.escalaPasso}}" name="flags.epm-ficha.personalizacao.escala" value="{{personalizacao.escala}}" aria-label="Tamanho do texto" /></label>
+      </div>
+      <div class="epm-fundo-editor">
+        <figure class="epm-imagem-slot epm-fundo-amostra{{#unless personalizacao.fundo}} vazia{{/unless}}" data-action="imagemFundo" title="Escolher imagem de fundo">
+          {{#if personalizacao.fundo}}<img src="{{personalizacao.fundo}}" alt="" />{{else}}<span>Imagem de fundo (opcional): clique para escolher</span>{{/if}}
+        </figure>
+        <div class="epm-fundo-controles">
+          <label class="epm-campo"><span>Véu sobre a imagem: {{personalizacao.fundoVeu}}%</span><input type="range" min="0" max="95" step="5" name="flags.epm-ficha.personalizacao.fundoVeu" value="{{personalizacao.fundoVeu}}" aria-label="Quanto a cor da ficha cobre a imagem" /></label>
+          <p class="epm-dica">Quanto maior o véu, mais a cor da ficha cobre a imagem e mais fácil é ler.</p>
+          {{#if personalizacao.fundo}}<button type="button" class="epm-link" data-action="removerFundo">Remover imagem</button>{{/if}}
+        </div>
+      </div>
+    </section>
+
     <section class="epm-painel epm-ordem-painel">
       <header class="epm-painel-titulo">
         <h3>Ordem das abas</h3>
         {{#unless personalizacao.ordemPadrao}}<button type="button" class="epm-link" data-action="restaurarOrdemAbas">Restaurar ordem</button>{{/unless}}
       </header>
-      <p class="epm-dica">Arraste as abas na barra lateral ou use as setas. Abas opcionais aparecem quando "mostrar" está marcado.</p>
+      <p class="epm-dica">Arraste as abas na barra lateral ou use as setas. Desmarque "mostrar" para esconder uma aba que você não usa (Principal e Personalizar ficam sempre).</p>
       <ol class="epm-ordem-lista">
         {{#each personalizacao.abas}}
         <li>
           <i class="{{this.icone}}" aria-hidden="true"></i><span{{#unless ligada}} class="desligada"{{/unless}}>{{this.label}}</span>
-          {{#if opcional}}<button type="button" class="epm-check-botao{{#if ligada}} ativo{{/if}}" data-action="alternarAbaOpcional" data-aba="{{this.id}}" aria-pressed="{{#if ligada}}true{{else}}false{{/if}}" title="Aba opcional: mostrar ou esconder"><i class="{{#if ligada}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> mostrar</button>{{/if}}
+          {{#if alternavel}}<button type="button" class="epm-check-botao{{#if ligada}} ativo{{/if}}" data-action="alternarAbaOpcional" data-aba="{{this.id}}" aria-pressed="{{#if ligada}}true{{else}}false{{/if}}" title="{{this.dicaMostrar}}"><i class="{{#if ligada}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> mostrar</button>{{/if}}
           <button type="button" class="epm-icone-botao" data-action="moverAba" data-aba="{{this.id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
           <button type="button" class="epm-icone-botao" data-action="moverAba" data-aba="{{this.id}}" data-dir="1" {{#if ultima}}disabled{{/if}} title="Descer"><i class="fa-solid fa-arrow-down"></i></button>
         </li>

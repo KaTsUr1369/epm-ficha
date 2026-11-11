@@ -1,4 +1,22 @@
 <section class="tab epm-aba epm-sobre {{cls.sobre}}" data-group="primary" data-tab="sobre">
+  {{#if edicao}}
+  <section class="epm-painel epm-voz-painel">
+    <header class="epm-painel-titulo"><h3>Bordão e música tema</h3></header>
+    <div class="epm-voz-campos">
+      <label class="epm-campo largo"><span>Bordão ou frase marcante</span><input type="text" name="flags.epm-ficha.sobre.bordao" value="{{voz.bordao}}" placeholder="“As estrelas não mentem. Eu, às vezes.”" /></label>
+      <label class="epm-campo"><span>Música tema (link)</span><input type="url" name="flags.epm-ficha.sobre.musica" value="{{voz.musica}}" placeholder="https://…" /></label>
+      <label class="epm-campo"><span>Nome da música (opcional)</span><input type="text" name="flags.epm-ficha.sobre.musicaNome" value="{{voz.musicaNome}}" /></label>
+    </div>
+    <p class="epm-dica">O bordão aparece embaixo do nome, no topo da ficha. A música vira um botão ♪ ao lado do nome (abre o link em outra aba).</p>
+  </section>
+  {{else}}
+  {{#unless voz.vazia}}
+  <section class="epm-voz">
+    {{#if bordao}}<blockquote class="epm-voz-bordao">“{{bordao}}”</blockquote>{{/if}}
+    {{#if musica}}<button type="button" class="epm-botao" data-action="tocarMusica" data-url="{{musica}}"><i class="fa-solid fa-music" aria-hidden="true"></i> {{#if musicaNome}}{{musicaNome}}{{else}}Música tema{{/if}}</button>{{/if}}
+  </section>
+  {{/unless}}
+  {{/if}}
   <div class="epm-sobre-grade">
     <section class="epm-painel epm-sobre-campos">
       <header class="epm-painel-titulo"><h3>Traços</h3></header>
@@ -58,6 +76,7 @@
       </figure>
       <div class="epm-marca-textos">
         <p class="epm-dica">A tatuagem sobrenatural que liga você aos seus outros personagens e permite a Ressonância de Alma.</p>
+        {{#if editavel}}<button type="button" class="epm-botao epm-ressonancia" data-action="ressonancia" title="Chamar outro personagem seu pela Marca (registra no chat e abre a ficha dele)"><i class="fa-solid fa-link" aria-hidden="true"></i> Ressonância de Alma</button>{{/if}}
         {{#if edicao}}
         <label class="epm-campo"><span>Onde fica</span><input type="text" name="flags.epm-ficha.sobre.marcaLocal" value="{{marca.local}}" placeholder="nuca, palma da mão esquerda…" /></label>
         <label class="epm-campo"><span>Como ela é</span><textarea name="flags.epm-ficha.sobre.marcaAparencia" rows="4">{{marca.aparencia}}</textarea></label>
@@ -89,4 +108,11 @@
     {{#if @root.edicao}}{{{this.editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{this.texto}}}</div>{{else}}<p class="epm-vazio">Vazio. Escreva no modo edição.</p>{{/if}}{{/if}}
   </section>
   {{/each}}
+
+  {{#if podeVerSegredos}}
+  <section class="epm-painel epm-texto-longo epm-segredos">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-user-secret" aria-hidden="true"></i> Segredos</h3><span class="epm-dica">Só você e o Mestre veem. Nunca aparece nas relações.</span></header>
+    {{#if edicao}}{{{segredos.editor}}}{{else}}{{#if segredos.texto}}<div class="epm-descricao">{{{segredos.texto}}}</div>{{else}}<p class="epm-vazio">Nenhum segredo anotado. Escreva no modo edição.</p>{{/if}}{{/if}}
+  </section>
+  {{/if}}
 </section>

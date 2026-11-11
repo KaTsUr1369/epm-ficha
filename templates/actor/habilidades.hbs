@@ -2,11 +2,36 @@
   <header class="epm-aba-topo">
     <div class="epm-aba-resumo">
       <span class="epm-contador" title="Pontos de Habilidade disponíveis">{{ficha.pontos.ph}} PH</span>
-      <span class="epm-contador" title="CD dos testes de resistência contra você: 8 + {{ficha.cd.periciaNome}}">CD {{ficha.cd.valor}}</span>
+      <span class="epm-contador" title="DT dos testes de resistência contra as suas habilidades e magias: {{ficha.cd.formula}}">DT {{ficha.cd.valor}}</span>
       <span class="epm-contador" title="Habilidades conhecidas (sub-aba Geral) e espaços. Habilidades Únicas e as de Arquétipo e Classe não contam.">{{habilidades.conhecidas}} de {{habilidades.espacos}} conhecidas</span>
     </div>
-    {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="habilidade" title="Cria na sub-aba aberta"><i class="fa-solid fa-plus"></i> Nova habilidade</button>{{/if}}
+    <div class="epm-aba-acoes">
+      <button type="button" class="epm-botao{{#if selecao.habilidades}} ativo{{/if}}" data-action="selecionarPoderes" data-aba="habilidades" aria-pressed="{{#if selecao.habilidades}}true{{else}}false{{/if}}" title="Marcar várias para usar, favoritar, mover ou apagar de uma vez"><i class="fa-solid fa-list-check" aria-hidden="true"></i> {{#if selecao.habilidades}}Sair da seleção{{else}}Selecionar{{/if}}</button>
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="habilidade" title="Cria na sub-aba aberta"><i class="fa-solid fa-plus"></i> Nova habilidade</button>{{/if}}
+    </div>
   </header>
+  {{#if temSustentadas}}<div class="epm-sustentadas" aria-label="Sustentadas"><span class="epm-rotulo"><i class="fa-solid fa-hourglass-start" aria-hidden="true"></i> Sustentando</span>{{#each sustentadas}}<span class="epm-tag epm-sustentada">{{this.nome}} · {{this.custoTexto}}{{#if editavel}} <button type="button" class="epm-icone-botao" data-action="encerrarSustentada" data-sustentada="{{this.id}}" title="Encerrar (para de gastar)"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{/each}}</div>{{/if}}
+  {{#if selecao.habilidades}}
+  <div class="epm-selecao-barra" role="toolbar" aria-label="Ações nas selecionadas">
+    <span class="epm-selecao-qtd"><strong>{{selecao.qtd}}</strong> selecionada{{#unless (epmEq selecao.qtd 1)}}s{{/unless}}</span>
+    <button type="button" class="epm-link" data-action="selecaoTudo">Marcar todas desta aba</button>
+    <button type="button" class="epm-link" data-action="selecaoLimpar" {{#unless selecao.qtd}}disabled{{/unless}}>Limpar</button>
+    <span class="epm-selecao-acoes">
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="usar" {{#unless selecao.qtd}}disabled{{/unless}} title="Usa uma por uma (as que têm várias formas perguntam qual)"><i class="fa-solid fa-play" aria-hidden="true"></i> Usar</button>
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="favoritar" {{#unless selecao.qtd}}disabled{{/unless}}><i class="fa-solid fa-star" aria-hidden="true"></i> Favoritar</button>
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="chat" {{#unless selecao.qtd}}disabled{{/unless}}><i class="fa-solid fa-comment" aria-hidden="true"></i> No chat</button>
+      {{#if edicao}}
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="raridade" {{#unless selecao.qtd}}disabled{{/unless}}><i class="fa-solid fa-gem" aria-hidden="true"></i> Raridade</button>
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="mover" {{#unless selecao.qtd}}disabled{{/unless}} title="Geral, Arquétipo, Classe, Raça ou uma Transformação"><i class="fa-solid fa-right-left" aria-hidden="true"></i> Mover</button>
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="passiva" {{#unless selecao.qtd}}disabled{{/unless}}><i class="fa-solid fa-moon" aria-hidden="true"></i> Passiva</button>
+      <button type="button" class="epm-botao" data-action="selecaoAcao" data-op="duplicar" {{#unless selecao.qtd}}disabled{{/unless}}><i class="fa-solid fa-clone" aria-hidden="true"></i> Duplicar</button>
+      <button type="button" class="epm-botao perigo" data-action="selecaoAcao" data-op="apagar" {{#unless selecao.qtd}}disabled{{/unless}}><i class="fa-solid fa-trash" aria-hidden="true"></i> Apagar</button>
+      {{/if}}
+    </span>
+    {{#unless edicao}}<span class="epm-dica">Raridade, mover, duplicar e apagar: no modo edição.</span>{{/unless}}
+  </div>
+  {{/if}}
+
   <nav class="epm-subnav" aria-label="Tipos de habilidade">
     {{#each habilidades.subabas}}
     <button type="button" class="epm-subnav-item {{this.cls}}" data-action="aba" data-group="habilidades" data-tab="{{this.id}}">{{this.label}}<span class="epm-subnav-qtd">{{this.total}}</span></button>
@@ -14,17 +39,25 @@
   </nav>
   {{#each habilidades.subabas}}
   <div class="tab epm-subaba-habilidades {{this.cls}}" data-group="habilidades" data-tab="{{this.id}}">
+    {{#if eTransformacoes}}
+    {{> "epm-transformacoes"}}
+    {{else}}
+    {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
     {{#if origem}}<p class="epm-dica">Habilidades de {{this.label}} usam só Passiva e Comum.{{#if @root.dados.personalizacao.abasExtras.arqclasse}} Elas também aparecem na aba Arquétipo e Classe.{{/if}}</p>{{/if}}
     {{#each secoes}}
-    <section class="epm-secao-poder" style="--cor: {{this.cor}}" data-secao="{{../id}}-{{this.id}}">
+    {{#unless (epmAnd destaque vazia)}}
+    <section class="epm-secao-poder{{#if destaque}} epm-secao-unica{{/if}}" style="--cor: {{this.cor}}" data-secao="{{../id}}-{{this.id}}">
       <header class="epm-secao-titulo">
-        <h3>{{this.label}}</h3>
+        <h3>{{#if destaque}}<i class="fa-solid fa-crown" aria-hidden="true"></i> {{/if}}{{this.label}}</h3>
+        {{#if dica}}<span class="epm-dica">{{this.dica}}</span>{{/if}}
         {{#if limite}}<span class="epm-contador{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" title="Limite desta raridade{{#if (epmEq @root.modoLimites "combinados")}} (habilidades e magias somadas){{/if}}">{{this.usados}} de {{this.limite}}</span>{{/if}}
       </header>
       {{#if vazia}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}
       <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>
     </section>
+    {{/unless}}
     {{/each}}
+    {{/if}}
   </div>
   {{/each}}
 </section>

@@ -12,6 +12,7 @@
       </header>
       {{#if @root.edicao}}{{{this.editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{this.texto}}}</div>{{else}}<p class="epm-vazio">Sem anotações. Escreva no modo edição: características, progressão por nível, lembretes…</p>{{/if}}{{/if}}
     </section>
+    {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
     <section class="epm-painel">
       <header class="epm-painel-titulo">
         <h3>Habilidades de {{this.label}}</h3>

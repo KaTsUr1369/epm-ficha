@@ -1,0 +1,15 @@
+{{#unless historico.vazio}}
+<details class="epm-historico">
+  <summary><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Histórico ({{historico.total}})</summary>
+  <ol>
+    {{#each historico.itens}}
+    <li class="{{#if subiu}}subiu{{else}}desceu{{/if}}">
+      <span class="epm-hist-quando">{{this.quandoTexto}}</span>
+      <span class="epm-hist-mudanca">{{this.deTexto}} → <strong>{{this.paraTexto}}</strong></span>
+      <span class="epm-hist-quem">{{this.quem}}{{#if origem}} · {{this.origem}}{{/if}}</span>
+      {{#if @root.edicao}}<input type="text" class="epm-hist-motivo" name="{{../base}}.historico.{{this.id}}.motivo" value="{{this.motivo}}" placeholder="motivo (opcional)" aria-label="Motivo" />{{else if motivo}}<span class="epm-hist-motivo">“{{this.motivo}}”</span>{{/if}}
+    </li>
+    {{/each}}
+  </ol>
+</details>
+{{/unless}}

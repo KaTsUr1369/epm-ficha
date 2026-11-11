@@ -1,0 +1,53 @@
+<section class="tab epm-aba epm-bestiario {{cls.bestiario}}" data-group="primary" data-tab="bestiario">
+  <header class="epm-aba-topo">
+    <input type="search" class="epm-busca" data-busca-bestiario="1" placeholder="Buscar criatura, fraqueza, lugar…" aria-label="Buscar no bestiário" />
+    <div class="epm-aba-acoes">
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaCriatura"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova criatura</button>{{/if}}
+    </div>
+  </header>
+  <p class="epm-dica">Criaturas enfrentadas e o que se descobriu sobre elas. Arraste um NPC da barra lateral para cá. No fim de cada combate, as criaturas entram sozinhas (opção do módulo).</p>
+  {{#if bestiarioVazio}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma criatura registrada.</p></div>{{/if}}
+  <p class="epm-vazio epm-busca-vazia" hidden>Nada encontrado.</p>
+  <div class="epm-bestiario-grade">
+    {{#each bestiario}}
+    <article class="epm-criatura" data-criatura="{{this.id}}" data-busca="{{this.busca}}">
+      <img class="epm-criatura-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemCriatura" data-criatura="{{this.id}}" title="Trocar imagem"{{else}}data-action="verImagem" data-src="{{this.img}}" data-titulo="{{this.nome}}" title="Ampliar"{{/if}} />
+      <div class="epm-criatura-corpo">
+        <div class="epm-criatura-topo">
+          {{#if @root.edicao}}
+          <input type="text" class="epm-criatura-nome" name="flags.epm-ficha.bestiario.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Nome" aria-label="Nome" />
+          {{else}}
+          <h4 class="epm-criatura-nome">{{this.nome}}</h4>
+          {{/if}}
+          {{#if uuid}}<button type="button" class="epm-icone-botao" data-action="abrirLigado" data-uuid="{{this.uuid}}" title="Abrir a ficha (se tiver permissão)"><i class="fa-solid fa-up-right-from-square"></i></button>{{/if}}
+          {{#if @root.edicao}}<button type="button" class="epm-icone-botao perigo" data-action="excluirCriatura" data-criatura="{{this.id}}" title="Tirar do bestiário"><i class="fa-solid fa-trash"></i></button>{{/if}}
+        </div>
+        {{#if @root.edicao}}
+        <div class="epm-criatura-campos">
+          <label class="epm-mini"><span>tipo</span><input type="text" name="flags.epm-ficha.bestiario.{{this.id}}.tipo" value="{{this.tipo}}" placeholder="Morto-vivo, fera…" /></label>
+          <label class="epm-mini largo"><span>onde</span><input type="text" name="flags.epm-ficha.bestiario.{{this.id}}.local" value="{{this.local}}" placeholder="Pântano de Vel" /></label>
+        </div>
+        {{else}}
+        <p class="epm-dica">{{#if tipo}}{{this.tipo}}{{/if}}{{#if local}}{{#if tipo}} · {{/if}}{{this.local}}{{/if}}</p>
+        {{/if}}
+        <div class="epm-criatura-contadores">
+          <span title="Vezes enfrentada">{{#if @root.edicao}}<button type="button" class="epm-seta" data-action="contarCriatura" data-criatura="{{this.id}}" data-campo="encontros" data-delta="-1" aria-label="Menos um encontro"><i class="fa-solid fa-minus"></i></button>{{/if}}<i class="fa-solid fa-eye" aria-hidden="true"></i> {{this.encontros}}{{#if @root.edicao}}<button type="button" class="epm-seta" data-action="contarCriatura" data-criatura="{{this.id}}" data-campo="encontros" data-delta="1" aria-label="Mais um encontro"><i class="fa-solid fa-plus"></i></button>{{/if}}</span>
+          <span title="Vezes derrotada">{{#if @root.edicao}}<button type="button" class="epm-seta" data-action="contarCriatura" data-criatura="{{this.id}}" data-campo="derrotados" data-delta="-1" aria-label="Menos uma derrota"><i class="fa-solid fa-minus"></i></button>{{/if}}<i class="fa-solid fa-skull" aria-hidden="true"></i> {{this.derrotados}}{{#if @root.edicao}}<button type="button" class="epm-seta" data-action="contarCriatura" data-criatura="{{this.id}}" data-campo="derrotados" data-delta="1" aria-label="Mais uma derrota"><i class="fa-solid fa-plus"></i></button>{{/if}}</span>
+        </div>
+        <div class="epm-criatura-tags">
+          <div><span class="epm-rotulo">Fraquezas</span><ul class="epm-tag-lista">{{#each fraquezas}}<li class="epm-chip epm-chip-fraqueza">{{this}}{{#if @root.edicao}}<button type="button" data-action="removerTag" data-campo="{{../campoFraquezas}}" data-valor="{{this}}" aria-label="Remover {{this}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}</ul>
+            {{#if @root.edicao}}<input type="text" class="epm-tag-input" data-tag-campo="{{this.campoFraquezas}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="+ fraqueza (Enter)" aria-label="Adicionar fraqueza" />{{/if}}</div>
+          <div><span class="epm-rotulo">Resistências</span><ul class="epm-tag-lista">{{#each resistencias}}<li class="epm-chip">{{this}}{{#if @root.edicao}}<button type="button" data-action="removerTag" data-campo="{{../campoResistencias}}" data-valor="{{this}}" aria-label="Remover {{this}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}</ul>
+            {{#if @root.edicao}}<input type="text" class="epm-tag-input" data-tag-campo="{{this.campoResistencias}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="+ resistência (Enter)" aria-label="Adicionar resistência" />{{/if}}</div>
+          <div><span class="epm-rotulo">Imunidades</span><ul class="epm-tag-lista">{{#each imunidades}}<li class="epm-chip epm-chip-imune">{{this}}{{#if @root.edicao}}<button type="button" data-action="removerTag" data-campo="{{../campoImunidades}}" data-valor="{{this}}" aria-label="Remover {{this}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}</ul>
+            {{#if @root.edicao}}<input type="text" class="epm-tag-input" data-tag-campo="{{this.campoImunidades}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="+ imunidade (Enter)" aria-label="Adicionar imunidade" />{{/if}}</div>
+        </div>
+        {{#if @root.edicao}}
+        <textarea name="flags.epm-ficha.bestiario.{{this.id}}.notas" rows="2" placeholder="Comportamento, ataques perigosos, como venceram…" aria-label="Notas">{{this.notas}}</textarea>
+        {{else}}{{#if notas}}<p class="epm-texto-livre">{{this.notas}}</p>{{/if}}{{/if}}
+      </div>
+    </article>
+    {{/each}}
+  </div>
+  <datalist id="epm-sug-dano-{{actor.id}}">{{#each sugestoesDano}}<option value="{{this}}"></option>{{/each}}</datalist>
+</section>

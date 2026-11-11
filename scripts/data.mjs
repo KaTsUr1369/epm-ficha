@@ -2,6 +2,7 @@
  * Camada de regras "pura": não depende do Foundry, para poder ser testada fora dele.
  * Recebe dados simples e devolve números prontos para a ficha.
  */
+import { modsDeArquetipo } from "./arquetipos.mjs";
 import {
   FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
@@ -134,7 +135,7 @@ export function migrarPericias(pericias = {}, lista = PERICIAS_PADRAO, obsoletas
 }
 
 /** Versão atual do formato dos dados (normalizarDados e migrarDados levam fichas antigas até ela). */
-export const VERSAO_DADOS = 4;
+export const VERSAO_DADOS = 5;
 
 export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
   return {
@@ -149,7 +150,8 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     },
     atributos: Object.fromEntries(Object.keys(ATRIBUTOS).map(k => [k, { base: 0, raca: 0, aumento: 0, outros: 0 }])),
     pericias: periciasParaObjeto(listaPericias),
-    ca: { base: 10, atributo: "destreza", armadura: 0, bonus: 0 },
+    ca: { base: 10, atributo: "destreza", bonus: 0 },
+    dt: { atributo: CD.atributo, pericia: CD.pericia },
     deslocamento: { base: 9 },
     iniciativa: { bonus: 0 },
     exaustao: 0,
@@ -166,9 +168,22 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     treinamentos: {},
     treinoDia: { horas: 0 },
     relacoes: {},
+    faccoes: {},
+    diario: {},
+    transformacoes: {},
+    transformacao: { ativa: "", turnos: 0 },
+    companheiros: {},
+    bestiario: {},
+    arquetipoOpcoes: { combatente: { tipoFavorito: "", maestria: "", estilos: [] }, artifice: { utensilios: [] }, conjurador: { dominio: "" } },
+    usos: { ataqueExtraTurno: false, gemeaTurno: false, recuperarMana: false, presa: "" },
+    combate: { atrasou: "" },
+    sustentadas: {},
     ataques: {},
     bonusCena: {},
-    personalizacao: { cor: COR_PADRAO, brilho: BRILHO_PADRAO, abasExtras: {} },
+    personalizacao: {
+      cor: COR_PADRAO, brilho: BRILHO_PADRAO, abasExtras: {}, abasOcultas: {},
+      fundo: "", fundoVeu: 70, moldura: "astrolabio", fonte: "classica", escala: 100
+    },
     arqclasse: { arquetipo: { notas: "" }, classe: { notas: "" } },
     ui: { ordemAbas: [], ordemCategorias: [], periciasFavoritasTopo: false }
   };
@@ -210,7 +225,8 @@ export function camposFaltando(bruto = {}, listaPericias = PERICIAS_PADRAO) {
  */
 export function migrarDados(bruto = {}) {
   const updates = {};
-  if (int(bruto?.versao) >= VERSAO_DADOS) return updates;
+  const versao = int(bruto?.versao);
+  if (versao >= VERSAO_DADOS) return updates;
   for (const [antiga, nova] of Object.entries(MOEDAS_ANTIGAS)) {
     if (bruto?.moedas?.[antiga] === undefined) continue;
     updates[`moedas.${nova}`] = int(bruto.moedas?.[nova]) + int(bruto.moedas[antiga]);
@@ -218,13 +234,19 @@ export function migrarDados(bruto = {}) {
   }
   if (int(bruto?.exaustao) > EXAUSTAO_MAX) updates.exaustao = EXAUSTAO_MAX;
   // 0.5.2: Vontade passa a somar Autocontrole por padrão (só muda quem ainda estava no padrão antigo, Núcleo)
-  const vontade = bruto?.pericias?.vontade;
+  const vontade = versao < 4 ? bruto?.pericias?.vontade : null;
   const soNucleo = v => (Array.isArray(v) ? v.length === 1 && v[0] === "nucleo" : v === "nucleo");
   if (vontade && soNucleo(vontade.atributos ?? vontade.atributo)) {
     updates["pericias.vontade.atributos"] = ["autocontrole"];
     if (vontade.atributo !== undefined) updates["pericias.vontade.-=atributo"] = null;
   }
   if (vontade && soNucleo(vontade.sugestoes)) updates["pericias.vontade.sugestoes"] = ["autocontrole"];
+  // 0.5.4: a CA não tem mais o campo Armadura manual (vem só das armaduras equipadas); o valor vai para "outros"
+  const armaduraManual = int(bruto?.ca?.armadura);
+  if (bruto?.ca && bruto.ca.armadura !== undefined) {
+    if (armaduraManual) updates["ca.bonus"] = int(bruto.ca.bonus) + armaduraManual;
+    updates["ca.-=armadura"] = null;
+  }
   updates.versao = VERSAO_DADOS;
   return updates;
 }
@@ -286,12 +308,14 @@ export function efeitosDeItens(itens = []) {
   for (const item of itens) {
     let efeitos;
     let armadura = 0;
+    let arma = false;
     try {
       if (!itemAtivo(item)) continue;
       efeitos = lerEfeitosItem(item).filter(e => !["cura", "danoExtra"].includes(e.tipo));
       if (item.type === "equipment") armadura = int(item.flags?.[FLAG]?.armadura);
+      arma = item.type === "weapon";
     } catch { continue; }
-    if (efeitos.length || armadura) out.push({ id: item.id, nome: item.name, efeitos, armadura });
+    if (efeitos.length || armadura || arma) out.push({ id: item.id, nome: item.name, efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "" });
   }
   return out;
 }
@@ -382,6 +406,22 @@ export function lerBencaos(bencaos = {}, { suspensaoCondicao = [] } = {}) {
  * @param {object} p.modsAE      actor.flags[FLAG].mods depois dos Active Effects
  * @param {Array} p.itens        fontes de bônus dos itens ativos (efeitosDeItens)
  */
+/** DT das habilidades e magias: 10 + atributo escolhido + perícia escolhida (sem o atributo dela). */
+export function dtDe(d, atributos, periciaPorId) {
+  const atributo = ATRIBUTOS[d?.dt?.atributo] ? d.dt.atributo : CD.atributo;
+  const pericia = periciaPorId[d?.dt?.pericia] ? d.dt.pericia : CD.pericia;
+  const valorAtr = int(atributos?.[atributo]?.total);
+  const per = periciaPorId[pericia];
+  const valorPer = per?.bonusProprio ?? 0;
+  const atributoNome = ATRIBUTOS[atributo]?.label ?? atributo;
+  const periciaNome = per?.nome ?? pericia;
+  return {
+    valor: CD.base + valorAtr + valorPer, base: CD.base, atributo, atributoNome, valorAtributo: valorAtr,
+    pericia, periciaNome, valorPericia: valorPer,
+    formula: `${CD.base} + ${atributoNome} ${valorAtr} + ${periciaNome} ${valorPer}`
+  };
+}
+
 export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [] }) {
   const d = dados;
   const st = new Set(statuses);
@@ -601,6 +641,11 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     for (const m of Object.values(t.mods ?? {})) somar(m?.alvo, m?.valor, `Treinamento: ${t.nome || "sem nome"}`);
   }
   for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome);
+  // Transformação ativa (sub-aba Transformações)
+  const tAtiva = d.transformacao?.ativa ? d.transformacoes?.[d.transformacao.ativa] : null;
+  if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`);
+  // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla
+  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma))) somar(m.alvo, m.valor, m.fonte);
   lerModsAE(modsAE, somar);
   const mod = alvo => mods[alvo]?.total ?? 0;
   const fontes = alvo => mods[alvo]?.fontes ?? [];
@@ -707,15 +752,16 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   }
 
   // CA (Defesa)
-  // CA = 10 + atributo (Destreza por padrão, escolhível) + armadura + outros (+ efeitos e penalidades)
+  // CA = 10 + atributo (Destreza por padrão, escolhível) + armaduras e escudos equipados + outros (+ efeitos e penalidades)
   const caAtr = ATRIBUTOS[d.ca?.atributo] ? d.ca.atributo : (d.ca?.atributo === "nenhum" ? "nenhum" : "destreza");
   const ca = {
     base: int(d.ca?.base, 10), atributo: caAtr, atributoLabel: ATRIBUTOS[caAtr]?.label ?? "Nenhum",
     atributoValor: caAtr === "nenhum" ? 0 : int(atributos[caAtr]?.total), armaduraManual: int(d.ca?.armadura),
     armaduraItens: itens.reduce((s, x) => s + int(x.armadura), 0), armaduraFontes: itens.filter(x => int(x.armadura)).map(x => `${x.nome} ${int(x.armadura)}`),
-    bonus: int(d.ca?.bonus), mod: mod("ca"), fontes: [...fontes("ca"), ...penal.defesa], penal: somaLista(penal.defesa)
+    // Ficha antiga ainda não migrada: o campo Armadura manual conta como "outros"
+    bonus: int(d.ca?.bonus) + int(d.ca?.armadura), mod: mod("ca"), fontes: [...fontes("ca"), ...penal.defesa], penal: somaLista(penal.defesa)
   };
-  ca.armadura = ca.armaduraManual + ca.armaduraItens;
+  ca.armadura = ca.armaduraItens;  // só armaduras e escudos equipados
   ca.total = ca.base + ca.atributoValor + ca.armadura + ca.bonus + ca.mod + ca.penal;
 
   // Deslocamento
@@ -811,7 +857,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       disponivel: disponivelAtributos, gasto: gastoAtributos, restante: disponivelAtributos - gastoAtributos,
       aumentoDisponivel: disponivelAumento, aumentoGasto: gastoAumento, avisos: avisosAtributos
     },
-    cd: { valor: CD.base + (periciaPorId[CD.pericia]?.total ?? 0), base: CD.base, periciaNome: periciaPorId[CD.pericia]?.nome ?? CD.pericia },
+    cd: dtDe(d, atributos, periciaPorId),
     pericias, periciaPorId,
     pontosPericia: {
       disponivel: disponivelPericias, gasto: gastoPericias, restante: disponivelPericias - gastoPericias,
@@ -898,6 +944,11 @@ export function normalizarForma(id, fo = {}) {
       recurso: CUSTO_RECURSOS[fo.custo?.recurso] ? fo.custo.recurso : "nenhum",
       valor: Math.max(0, int(fo.custo?.valor))
     },
+    // Sustentada: gasto a cada turno enquanto estiver mantida
+    porTurno: {
+      recurso: CUSTO_RECURSOS[fo.porTurno?.recurso] ? fo.porTurno.recurso : "nenhum",
+      valor: Math.max(0, int(fo.porTurno?.valor))
+    },
     alcance: fo.alcance ?? "",
     area: fo.area ?? "",
     alvo: fo.alvo ?? "",
@@ -917,6 +968,7 @@ export function formaPadrao(ordem = 0, nome = "Padrão") {
   return {
     nome, ordem, acao: "padrao",
     custo: { recurso: "nenhum", valor: 0 },
+    porTurno: { recurso: "nenhum", valor: 0 },
     alcance: "", area: "", alvo: "", duracao: "",
     teste: { tipo: "nenhum", pericia: "", nd: "" },
     dano: { formula: "", tipo: "" },
@@ -940,6 +992,7 @@ export function lerPoder(item) {
     .sort((a, b) => num(a.data) - num(b.data));
   return {
     tipo, raridade, passiva: !!f.passiva, origem: f.origem ?? "", favorito: !!f.favorito,
+    transformacao: f.transformacao ?? "", arquetipoRef: f.arquetipoRef ?? "",
     circulo: tipo === "magia" ? limitar(int(item?.system?.level, 0), 0, 9) : null,
     formas, melhorias,
     usos: { valor: Math.max(0, int(f.usos?.valor)), max: Math.max(0, int(f.usos?.max)), recarga: RECARGAS[f.usos?.recarga] ? f.usos.recarga : "nenhuma" }
@@ -1004,6 +1057,9 @@ export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [],
     excedeEfeitos: efeitosUsados > limiteEfeitos
   };
 }
+
+/** Forma sustentada (gasta todo turno)? */
+export const eSustentada = forma => !!forma && forma.porTurno?.recurso !== "nenhum" && int(forma.porTurno?.valor) > 0;
 
 export function textoCusto(forma, extra = 0) {
   if (!forma || forma.custo.recurso === "nenhum" || (!forma.custo.valor && !extra)) return "Sem custo";

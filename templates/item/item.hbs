@@ -17,9 +17,13 @@
       <label class="epm-campo"><span>Quantidade</span><input type="number" min="0" name="system.quantity" value="{{this.quantidade}}" /></label>
       <label class="epm-campo"><span>Peso (cada)</span><input type="number" min="0" step="any" name="system.weight.value" value="{{this.peso}}" /></label>
       <label class="epm-campo"><span>Preço</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.preco.valor" value="{{preco.valor}}" /><select name="flags.epm-ficha.preco.moeda">{{#each preco.moedas}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
-      {{#if eArmadura}}<label class="epm-campo" title="Soma no campo Armadura da CA quando equipado"><span>Armadura (CA)</span><input type="number" name="flags.epm-ficha.armadura" value="{{this.armadura}}" /></label>{{/if}}
+      {{#if eArmadura}}<label class="epm-campo" title="Soma em Armaduras e escudos, na CA, quando equipado"><span>CA de armadura ou escudo</span><input type="number" name="flags.epm-ficha.armadura" value="{{this.armadura}}" /></label>{{/if}}
       {{#if eConsumivel}}<label class="epm-campo largo"><span>Rolagem ao usar</span><input type="text" name="flags.epm-ficha.formula" value="{{this.formulaUso}}" placeholder="2d4 + 2" /></label>{{/if}}
       {{#if eMochila}}<label class="epm-campo"><span>Capacidade (peso)</span><input type="number" min="0" step="any" name="system.capacity.weight.value" value="{{mochila.capacidade}}" /></label>{{/if}}
+      {{#unless eMochila}}
+      <label class="epm-campo" title="{{cargas.dica}}. 0 de máximo = sem cargas"><span>Cargas (atual / máx.)</span><span class="epm-linha-campos"><input type="number" min="0" name="flags.epm-ficha.cargas.valor" value="{{cargas.valor}}" aria-label="Cargas atuais" /><input type="number" min="0" name="flags.epm-ficha.cargas.max" value="{{cargas.max}}" aria-label="Cargas máximas" /></span></label>
+      <label class="epm-campo"><span>Cargas recarregam</span><select name="flags.epm-ficha.cargas.recarga">{{#each cargas.opcoesRecarga}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      {{/unless}}
     </div>
   </section>
 
@@ -30,9 +34,17 @@
       <label class="epm-campo"><span>Perícia de ataque</span><select name="flags.epm-ficha.periciaAtaque">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
       <label class="epm-campo"><span>Bônus de acerto</span><input type="number" name="flags.epm-ficha.bonusAcerto" value="{{ataque.bonusAcerto}}" /></label>
       <label class="epm-campo"><span>Dano</span><input type="text" name="flags.epm-ficha.dano" value="{{ataque.dano}}" placeholder="2d10 + @atr.forca" /></label>
+      <label class="epm-campo" title="Arma Favorita do Combatente vale para todas as armas deste tipo"><span>Tipo de arma</span><input type="text" name="flags.epm-ficha.tipoArma" value="{{tipoArma}}" list="epm-item-sug-tipo-arma" placeholder="Espada longa, Pistola…" /><datalist id="epm-item-sug-tipo-arma">{{#each sugestoesTipoArma}}<option value="{{this}}"></option>{{/each}}</datalist></label>
       <label class="epm-campo"><span>Tipo de dano</span><input type="text" name="flags.epm-ficha.tipoDano" value="{{ataque.tipoDano}}" list="epm-item-sug-dano" placeholder="Corte" /></label>
       <label class="epm-campo" title="Menor resultado no d20 que conta como crítico"><span>Margem de crítico</span><input type="number" min="2" max="20" name="flags.epm-ficha.critMargem" value="{{ataque.critMargem}}" /></label>
       <label class="epm-campo" title="No crítico, os dados da arma são multiplicados por este valor"><span>Multiplicador</span><input type="number" min="2" name="flags.epm-ficha.critMult" value="{{ataque.critMult}}" /></label>
+      {{#if municao.temDono}}
+      <label class="epm-campo" title="Consumível ou loot do inventário que a arma gasta a cada ataque (flechas, balas, virotes…)"><span>Munição</span><select name="flags.epm-ficha.municao">{{#each municao.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <label class="epm-campo"><span>Gasta por ataque</span><input type="number" min="1" name="flags.epm-ficha.municaoPorAtaque" value="{{municao.porAtaque}}" /></label>
+      {{/if}}
+      <label class="epm-campo" title="Armas de fogo: quantos tiros cabem no pente. 0 = sem pente (gasta direto da munição)"><span>Pente (tiros)</span><input type="number" min="0" name="flags.epm-ficha.pente.max" value="{{municao.penteMax}}" /></label>
+      {{#if municao.temPente}}<label class="epm-campo" title="Ação gasta ao recarregar esta arma"><span>Recarregar gasta</span><select name="flags.epm-ficha.recargaAcao">{{#each municao.opcoesRecarga}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
+      {{#if municao.temPente}}<div class="epm-campo"><span>No pente agora</span><div class="epm-custo"><input type="number" min="0" name="flags.epm-ficha.pente.atual" value="{{municao.penteAtual}}" />{{#if municao.temDono}}<button type="button" class="epm-botao" data-action="recarregar" title="Enche o pente com a munição ligada"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar</button>{{/if}}</div></div>{{/if}}
     </div>
     <p class="epm-dica">Fórmulas aceitam @atr.forca, @atr.destreza, @per.luta, @nivel…</p>
   </section>

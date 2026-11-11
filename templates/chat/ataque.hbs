@@ -10,9 +10,22 @@
   {{#if critico}}<p class="epm-chat-critico">Crítico! Dados da arma ×{{this.mult}}.</p>{{/if}}
   {{#if htmlDano}}<div class="epm-chat-rolagem"><span class="epm-rotulo">Dano{{#if tipoDano}} ({{this.tipoDano}}){{/if}}</span>{{{this.htmlDano}}}</div>{{/if}}
   {{#each notas}}<p class="epm-chat-requisitos">{{this}}</p>{{/each}}
+  {{#if defensores.length}}
+  <div class="epm-chat-defesas">
+    <span class="epm-rotulo">Defesa do alvo (acerto {{this.acertoTotal}})</span>
+    {{#each defensores}}
+    <div class="epm-chat-defesa-linha">
+      <span class="epm-chat-defensor">{{this.nome}}</span>
+      <button type="button" data-epm-action="defender" data-defesa="esquiva" data-defensor="{{this.uuid}}" data-acerto="{{../acertoTotal}}" data-valor="{{../danoValor}}"{{#if ../tipoDano}} data-tipo-dano="{{../tipoDano}}"{{/if}} data-rotulo="Esquiva" title="CA + Acrobacia: passou, recebe o dano; falhou, nada"><i class="fa-solid fa-person-running" aria-hidden="true"></i> Esquiva</button>
+      <button type="button" data-epm-action="defender" data-defesa="bloqueio" data-defensor="{{this.uuid}}" data-acerto="{{../acertoTotal}}" data-valor="{{../danoValor}}"{{#if ../tipoDano}} data-tipo-dano="{{../tipoDano}}"{{/if}} data-rotulo="Bloqueio" title="CA + Fortitude: atacante falhou por 1–2, 2/3 do dano; 3–4, metade; 5+, nada"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Bloqueio</button>
+      <button type="button" data-epm-action="defender" data-defesa="contra" data-defensor="{{this.uuid}}" data-acerto="{{../acertoTotal}}" data-valor="{{../danoValor}}"{{#if ../tipoDano}} data-tipo-dano="{{../tipoDano}}"{{/if}} data-rotulo="Contra-ataque" title="CA + Luta: se o atacante errar, você ataca de volta"><i class="fa-solid fa-hand-fist" aria-hidden="true"></i> Contra-ataque</button>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
   {{#if botoes.length}}
   <div class="epm-chat-botoes">
-    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}}{{#if valor}} data-valor="{{this.valor}}"{{/if}}{{#if alvos}} data-alvos="{{this.alvos}}"{{/if}}{{#if tipoDano}} data-tipo-dano="{{this.tipoDano}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
+    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}}{{#if valor}} data-valor="{{this.valor}}"{{/if}}{{#if alvos}} data-alvos="{{this.alvos}}"{{/if}}{{#if tipoDano}} data-tipo-dano="{{this.tipoDano}}"{{/if}}{{#if custo}} data-custo="{{this.custo}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
   </div>
   {{/if}}
 </div>

@@ -50,7 +50,19 @@ export function registrarAjustes() {
     hint: "Durante um combate iniciado, usar uma habilidade ou magia marca na ficha a ação que ela gasta.",
     scope: "world", config: true, type: Boolean, default: true
   });
+  reg("penalidadeAtaqueExtra", {
+    name: "Penalidade do ataque extra",
+    hint: "Ataque extra comum (gastando a Ação Bônus ou a de Movimento): quanto sai do acerto desse ataque. O Ataque Extra do Combatente (com PE) não tem penalidade.",
+    scope: "world", config: true, type: Number, default: 5, range: { min: 0, max: 20, step: 1 }
+  });
+  reg("bestiarioAutomatico", {
+    name: "Bestiário automático",
+    hint: "No fim de cada combate, cada personagem registra no Bestiário as criaturas que enfrentou (pelo nome do token) e conta encontros e derrotas.",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   reg("paineisRecolhidos", { scope: "client", config: false, type: Array, default: [] });
+  reg("escudoNotas", { scope: "world", config: false, type: String, default: "" });
+  reg("dockConfigurado", { scope: "world", config: false, type: Boolean, default: false });
   reg("migracaoVontade", { scope: "world", config: false, type: Boolean, default: false });
   reg("periciasPadrao", { scope: "world", config: false, type: Array, default: [] });
 }
@@ -73,6 +85,8 @@ export function ajustes() {
     marcarAcoes: ler("marcarAcoes", true),
     condicoesHudTodas: ler("condicoesHudTodas", false),
     afinidadeSoMestre: ler("afinidadeSoMestre", false),
+    penalidadeAtaqueExtra: ler("penalidadeAtaqueExtra", 5),
+    bestiarioAutomatico: ler("bestiarioAutomatico", true),
     relacaoMutua: ler("relacaoMutua", true),
     avisoFichaPadrao: ler("avisoFichaPadrao", true)
   };

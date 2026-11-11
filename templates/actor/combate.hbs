@@ -7,13 +7,14 @@
           <div class="epm-numero">
             <span class="epm-rotulo">CA</span>
             <span class="epm-numero-valor{{#if ficha.ca.penal}} penalizado{{/if}}" title="{{caFormula}}{{#if ficha.ca.penal}}&#10;Defesa {{epmSinal ficha.ca.penal}}: {{@root.caPenalTexto}}{{/if}}">{{ficha.ca.total}}</span>
-            <span class="epm-numero-nota epm-ca-formula">{{ficha.ca.base}} + {{ficha.ca.atributoLabel}} {{epmSinal ficha.ca.atributoValor}}{{#if ficha.ca.armadura}} + Armadura {{ficha.ca.armadura}}{{/if}}</span>
+            <span class="epm-numero-nota epm-ca-formula">{{ficha.ca.base}} + {{ficha.ca.atributoLabel}} {{epmSinal ficha.ca.atributoValor}} + Armaduras e escudos {{ficha.ca.armadura}}</span>
             {{#if edicao}}<div class="epm-numero-campos epm-ca-campos">
               <label class="epm-mini"><span>base</span><input type="number" name="flags.epm-ficha.ca.base" value="{{dados.ca.base}}" /></label>
               <label class="epm-mini epm-ca-atributo"><span>atributo</span><select name="flags.epm-ficha.ca.atributo" aria-label="Atributo somado na CA">{{#each caAtributos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.abrev}}</option>{{/each}}</select></label>
-              <label class="epm-mini"><span>armadura</span><input type="number" name="flags.epm-ficha.ca.armadura" value="{{dados.ca.armadura}}" /></label>
+              <label class="epm-mini epm-ca-fixo" title="Vem só das armaduras e escudos equipados no Inventário{{#if caArmaduraFontes}}: {{caArmaduraFontes}}{{/if}}"><span>armaduras e escudos</span><input type="number" value="{{ficha.ca.armadura}}" readonly disabled aria-readonly="true" /></label>
               <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.ca.bonus" value="{{dados.ca.bonus}}" /></label>
-            </div>{{/if}}
+            </div>
+            <span class="epm-numero-nota">Armaduras e escudos: só o que está equipado no Inventário.</span>{{/if}}
           </div>
           <div class="epm-numero{{#if ficha.deslocamento.reduzido}} reduzido{{/if}}">
             <span class="epm-rotulo">Deslocamento</span>
@@ -54,6 +55,11 @@
             <div class="epm-pips">{{#each defesasPendentes}}<span class="epm-pip{{#if ativa}} ativa{{/if}}"></span>{{/each}}</div>
             <button type="button" class="epm-botao{{#if efeitosTurno.dots}} epm-botao-forte{{else if efeitosTurno.insano}} epm-botao-forte{{/if}}" data-action="novoTurno" title="Restaura as ações, desconta as defesas usadas (Movimento, depois Bônus, depois Padrão){{#if efeitosTurno.dots}}, aplica o dano contínuo das condições{{/if}}{{#if efeitosTurno.insano}} e rola a tabela de Insano{{/if}}">Novo turno</button>
           </div>
+{{#if temSustentadas}}<div class="epm-sustentadas" aria-label="Sustentadas"><span class="epm-rotulo"><i class="fa-solid fa-hourglass-start" aria-hidden="true"></i> Sustentando</span>{{#each sustentadas}}<span class="epm-tag epm-sustentada">{{this.nome}} · {{this.custoTexto}}{{#if editavel}} <button type="button" class="epm-icone-botao" data-action="encerrarSustentada" data-sustentada="{{this.id}}" title="Encerrar (para de gastar)"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{/each}}</div>{{/if}}
+          <div class="epm-turno-extras">
+            <button type="button" class="epm-botao epm-botao-sutil" data-action="ataqueOportunidade" {{#unless editavel}}disabled{{/unless}} title="Um inimigo a até 1,5 m tenta sair do seu alcance: gasta a Reação e faz 1 ataque simples"><i class="fa-solid fa-person-running" aria-hidden="true"></i> Ataque de oportunidade</button>
+            <button type="button" class="epm-botao epm-botao-sutil" data-action="atrasarTurno" {{#unless editavel}}disabled{{/unless}} title="No início do seu turno: escolha depois de quem agir. 1 vez por combate; a nova posição fica até o fim"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Atrasar turno</button>
+          </div>
           <div class="epm-especiais">
             {{#each ficha.acoes.especiais}}
             {{#if (epmOr max @root.edicao)}}
@@ -76,6 +82,18 @@
     </div>
 
     <div class="epm-coluna">
+      {{#if combateArquetipo.length}}
+      <section class="epm-painel epm-arq-combate">
+        <header class="epm-painel-titulo"><h3>Arquétipo em combate</h3></header>
+        {{#each combateArquetipo}}
+        <div class="epm-arq-combate-bloco" style="--cor: {{this.cor}}">
+          <h4><i class="{{this.icone}}" aria-hidden="true"></i> {{this.nome}} <span class="epm-contador">Nv. {{this.nivel}}</span></h4>
+          <ul class="epm-arq-linhas">{{#each linhas}}<li>{{this}}</li>{{/each}}</ul>
+          {{#if botoes.length}}<div class="epm-chips">{{#each botoes}}<button type="button" class="epm-botao" data-action="{{this.acao}}" title="{{this.dica}}" {{#if desabilitado}}disabled{{/if}}><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}</div>{{/if}}
+        </div>
+        {{/each}}
+      </section>
+      {{/if}}
       <section class="epm-painel epm-ataques">
         <header class="epm-painel-titulo">
           <h3>Ataques</h3>
@@ -87,7 +105,7 @@
           {{#each ataques.armas}}
           <li class="epm-ataque">
             <img class="epm-ataque-img" src="{{this.img}}" alt="" />
-            <div class="epm-ataque-info"><span class="epm-ataque-nome">{{this.nome}}</span><span class="epm-ataque-sub">{{this.periciaNome}}, crítico {{this.critTexto}}</span></div>
+            <div class="epm-ataque-info"><span class="epm-ataque-nome">{{this.nome}}{{#if favoritaCombatente}} <span class="epm-tag epm-tag-ok" title="Arma Favorita do Combatente ({{this.tipoArma}})"><i class="fa-solid fa-medal" aria-hidden="true"></i> Maestria</span>{{/if}}</span><span class="epm-ataque-sub">{{this.periciaNome}}, crítico {{this.critTexto}}</span>{{#if (epmOr municaoTexto (epmOr cargasTexto penteTexto))}}<span class="epm-ataque-sub">{{#if penteTexto}}<span class="epm-item-recurso{{#if penteVazio}} acabou{{/if}}"><i class="fa-solid fa-gun" aria-hidden="true"></i> {{this.penteTexto}}</span> <button type="button" class="epm-link" data-action="recarregarArma" data-item-id="{{this.id}}" title="Enche o pente com a munição ligada e gasta a {{this.recargaTexto}}"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar ({{this.recargaTexto}})</button> {{/if}}{{#if municaoTexto}}<span class="epm-item-recurso{{#if semMunicao}} acabou{{/if}}"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{this.municaoTexto}}</span> {{/if}}{{#if cargasTexto}}<span class="epm-item-recurso"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{this.cargasTexto}}</span>{{/if}}</span>{{/if}}</div>
             <span class="epm-ataque-acerto{{#if acertoMods}} penalizado{{/if}}" title="Bônus de acerto{{#if acertoModsTexto}}&#10;{{this.acertoModsTexto}}{{/if}}">{{epmSinal acertoTotal}}</span>
             <span class="epm-ataque-dano" title="Dano{{#if danoMult}} (×{{this.danoMult}}){{/if}}">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}{{#if danoMult}} <strong>×{{this.danoMult}}</strong>{{/if}}</span>
             <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="arma" data-ref="{{this.id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano">Atacar</button>

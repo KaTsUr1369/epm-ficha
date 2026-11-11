@@ -7,7 +7,7 @@ import { FLAG, CAMINHO, TIPOS_EFEITO_ITEM } from "./config.mjs";
 import { novoId, int } from "./data.mjs";
 import { lerAtor, montarContextoItem } from "./context.mjs";
 import { enriquecer, editorHTML } from "./helpers.mjs";
-import { moverMoedasMochila } from "./mecanicas.mjs";
+import { moverMoedasMochila, recarregarArma } from "./mecanicas.mjs";
 import { listaPericias } from "./settings.mjs";
 import { escolherImagem } from "./imagens.mjs";
 import { aplicarPaleta } from "./personalizacao.mjs";
@@ -18,7 +18,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -93,6 +93,10 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     const it = this.item.actor?.items.get(alvo.dataset.itemId);
     if (it) await it.update({ "system.container": null });
     this.render();
+  }
+
+  async acaoRecarregar() {
+    if (this.item.actor) await recarregarArma(this.item.actor, this.item);
   }
 
   acaoAbrirItem(ev, alvo) {

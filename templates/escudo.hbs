@@ -1,0 +1,229 @@
+<div class="epm-escudo-corpo">
+  <header class="epm-escudo-topo">
+    <div class="epm-escudo-titulo">
+      <i class="fa-solid fa-shield" aria-hidden="true"></i>
+      <div>
+        <h1>Escudo do Mestre</h1>
+        <p>{{#if combate.existe}}{{#if combate.iniciado}}Rodada <strong>{{combate.rodada}}</strong>{{#if combate.atual}} · vez de <strong>{{combate.atual}}</strong>{{/if}}{{else}}Combate preparado, não começou{{/if}}{{else}}Sem combate na cena{{/if}}</p>
+      </div>
+    </div>
+    <div class="epm-escudo-rapido" aria-label="Ações rápidas nos alvos">
+      <div class="epm-escudo-alvos" title="Alvos: quem está marcado no escudo; sem ninguém marcado, os tokens selecionados na cena">
+        <i class="fa-solid fa-crosshairs" aria-hidden="true"></i>
+        {{#if alvos.qtd}}<span><strong>{{alvos.qtd}}</strong> alvo{{#unless (epmEq alvos.qtd 1)}}s{{/unless}}: {{epmJoin alvos.nomes ", "}}</span> <em>({{alvos.origem}})</em>{{else}}<span>Nenhum alvo: marque no escudo ou selecione tokens</span>{{/if}}
+        {{#if alvos.qtd}}<button type="button" class="epm-link" data-action="limparMarcados">limpar</button>{{/if}}
+      </div>
+      <div class="epm-escudo-aplicar">
+        <input type="number" min="0" data-rapido-valor placeholder="valor" aria-label="Valor" />
+        <select data-rapido-recurso aria-label="Recurso"><option value="pv">PV</option><option value="pm">PM</option><option value="pe">PE</option><option value="ps">PS</option></select>
+        <button type="button" class="epm-botao perigo" data-action="aplicarRapido" data-tipo="dano"><i class="fa-solid fa-burst" aria-hidden="true"></i> Dano</button>
+        <button type="button" class="epm-botao epm-botao-cura" data-action="aplicarRapido" data-tipo="cura"><i class="fa-solid fa-heart" aria-hidden="true"></i> Cura</button>
+        <button type="button" class="epm-botao" data-action="aplicarRapido" data-tipo="temp"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> Temp</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="epm-nav epm-escudo-nav" aria-label="Abas do escudo">
+    {{#each abas}}<button type="button" class="epm-nav-item {{this.cls}}" data-action="trocarAba" data-tab="{{this.id}}"><i class="{{this.icone}}" aria-hidden="true"></i><span>{{this.label}}</span></button>{{/each}}
+  </nav>
+
+  <section class="epm-escudo-conteudo">
+    {{!-- ================= COMBATE ================= --}}
+    {{#if (epmEq aba "combate")}}
+    <div class="epm-escudo-barra">
+      {{#if combate.existe}}
+        {{#if combate.iniciado}}
+        <button type="button" class="epm-botao" data-action="turnoAnterior" title="Turno anterior"><i class="fa-solid fa-backward-step"></i></button>
+        <button type="button" class="epm-botao epm-botao-forte" data-action="proximoTurno"><i class="fa-solid fa-forward-step"></i> Próximo turno</button>
+        <button type="button" class="epm-botao" data-action="novoTurnoAtual" title="Novo turno EPM de quem está na vez: ações, dano contínuo, sustentadas, transformação"><i class="fa-solid fa-hourglass-start"></i> Novo turno EPM</button>
+        <button type="button" class="epm-botao perigo" data-action="encerrarCombate"><i class="fa-solid fa-flag-checkered"></i> Encerrar</button>
+        {{else}}
+        <button type="button" class="epm-botao epm-botao-forte" data-action="comecarCombate"><i class="fa-solid fa-play"></i> Começar combate</button>
+        {{/if}}
+        <button type="button" class="epm-botao" data-action="rolarIniciativaNpcs" {{#unless combate.semIniciativa}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Iniciativa dos NPCs</button>
+        <button type="button" class="epm-link" data-action="marcarTodos" data-de="combate">marcar todos</button>
+      {{else}}
+        <p class="epm-vazio">Adicione tokens ao combate pelo Combat Tracker; eles aparecem aqui com Vida, Mana, Estamina, condições e defesas.</p>
+      {{/if}}
+    </div>
+    <ol class="epm-escudo-lista">
+      {{#each combate.linhas}}
+      <li class="epm-escudo-linha{{#if atual}} atual{{/if}}{{#if derrotado}} derrotado{{/if}}{{#if marcado}} marcado{{/if}}{{#if npc}} npc{{/if}}">
+        <input type="checkbox" data-marcar="{{this.uuid}}" {{#if marcado}}checked{{/if}} aria-label="Marcar {{this.name}} como alvo" />
+        <input type="number" class="epm-escudo-ini" data-iniciativa="{{this.combatente}}" value="{{this.iniciativa}}" placeholder="—" title="Iniciativa" aria-label="Iniciativa de {{this.name}}" />
+        <img src="{{this.img}}" alt="" data-action="focarToken" data-combatente="{{this.combatente}}" title="Selecionar e centralizar o token" />
+        <div class="epm-escudo-info">
+          <div class="epm-escudo-nome">
+            <strong>{{this.name}}</strong>
+            {{#if atual}}<span class="epm-tag epm-tag-ok">na vez</span>{{/if}}
+            {{#if oculto}}<span class="epm-tag fraca">oculto</span>{{/if}}
+            {{#if npc}}<span class="epm-tag fraca">NPC</span>{{/if}}
+            <span class="epm-escudo-ca" title="CA">CA <strong>{{this.ca}}</strong></span>
+            {{#each defesas}}<span class="epm-escudo-def" title="{{this.label}}">{{this.label}} {{this.total}}</span>{{/each}}
+            {{#if exaustao}}<span class="epm-tag epm-tag-perigo">Exaustão {{this.exaustao}}</span>{{/if}}
+          </div>
+          <div class="epm-escudo-recursos">
+            {{#each recursos}}{{#if mostrar}}
+            <div class="epm-escudo-recurso{{#if baixo}} baixo{{/if}}" style="--cor: {{this.cor}}" title="{{this.abrev}} {{this.value}}/{{this.max}}{{#if temp}} (+{{this.temp}} temp){{/if}}">
+              <span>{{this.abrev}} <strong>{{this.value}}</strong>/{{this.max}}{{#if temp}} <em>+{{this.temp}}</em>{{/if}}</span>
+              <div class="epm-barra"><span style="width: {{this.pct}}%; background: {{this.cor}}"></span></div>
+            </div>
+            {{/if}}{{/each}}
+          </div>
+          {{#if temCondicoes}}<div class="epm-escudo-conds">{{#each condicoes}}<button type="button" class="epm-escudo-cond{{#if automatica}} auto{{/if}}" data-action="removerCondicao" data-uuid="{{../uuid}}" data-id="{{this.id}}" title="{{this.label}}{{#unless automatica}} (clique para remover){{/unless}}" {{#if automatica}}disabled{{/if}}><img src="{{this.icone}}" alt="{{this.label}}" /></button>{{/each}}</div>{{/if}}
+        </div>
+        <div class="epm-escudo-acoes">
+          <button type="button" class="epm-icone-botao" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha"><i class="fa-solid fa-id-card"></i></button>
+          <button type="button" class="epm-icone-botao{{#if derrotado}} ativo{{/if}}" data-action="alternarDerrotado" data-combatente="{{this.combatente}}" title="Derrotado"><i class="fa-solid fa-skull"></i></button>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+    {{/if}}
+
+    {{!-- ================= GRUPO ================= --}}
+    {{#if (epmEq aba "grupo")}}
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Dar aos marcados</h3><button type="button" class="epm-link" data-action="marcarTodos" data-de="grupo">marcar o grupo todo</button></header>
+      <div class="epm-escudo-dar">
+        <label class="epm-mini"><span>PEv</span><input type="number" data-dar="pev" /></label>
+        <label class="epm-mini"><span>PT</span><input type="number" data-dar="pt" /></label>
+        <label class="epm-mini"><span>PH</span><input type="number" data-dar="ph" /></label>
+        <label class="epm-mini largo"><span>motivo</span><input type="text" data-dar="motivo" placeholder="Sessão 12, chefe derrotado…" /></label>
+        <button type="button" class="epm-botao epm-botao-forte" data-action="darPontos"><i class="fa-solid fa-gift"></i> Dar</button>
+      </div>
+      <div class="epm-escudo-barra">
+        <button type="button" class="epm-botao" data-action="descansoGrupo" data-tipo="curto"><i class="fa-solid fa-mug-hot"></i> Descanso curto</button>
+        <button type="button" class="epm-botao" data-action="descansoGrupo" data-tipo="longo"><i class="fa-solid fa-bed"></i> Descanso longo</button>
+        <button type="button" class="epm-botao" data-action="relacaoMultipla"><i class="fa-solid fa-people-arrows"></i> Relação múltipla</button>
+      </div>
+    </section>
+    {{#if grupoVazio}}<p class="epm-vazio">Nenhum personagem de jogador no mundo.</p>{{/if}}
+    <ol class="epm-escudo-lista">
+      {{#each grupo}}
+      <li class="epm-escudo-linha{{#if marcado}} marcado{{/if}}">
+        <input type="checkbox" data-marcar="{{this.uuid}}" {{#if marcado}}checked{{/if}} aria-label="Marcar {{this.name}}" />
+        <span></span>
+        <img src="{{this.img}}" alt="" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha" />
+        <div class="epm-escudo-info">
+          <div class="epm-escudo-nome"><strong>{{this.name}}</strong><span class="epm-tag fraca">Nv. {{this.nivel}}</span>
+            <span class="epm-escudo-ca">CA <strong>{{this.ca}}</strong></span>
+            <span class="epm-escudo-def">PEv {{this.pontos.pev}} · PT {{this.pontos.pt}} · PH {{this.pontos.ph}}</span>
+            {{#if exaustao}}<span class="epm-tag epm-tag-perigo">Exaustão {{this.exaustao}}</span>{{/if}}</div>
+          <div class="epm-escudo-recursos">
+            {{#each recursos}}{{#if mostrar}}
+            <div class="epm-escudo-recurso{{#if baixo}} baixo{{/if}}" style="--cor: {{this.cor}}"><span>{{this.abrev}} <strong>{{this.value}}</strong>/{{this.max}}{{#if temp}} <em>+{{this.temp}}</em>{{/if}}</span><div class="epm-barra"><span style="width: {{this.pct}}%; background: {{this.cor}}"></span></div></div>
+            {{/if}}{{/each}}
+          </div>
+          {{#if temCondicoes}}<div class="epm-escudo-conds">{{#each condicoes}}<button type="button" class="epm-escudo-cond{{#if automatica}} auto{{/if}}" data-action="removerCondicao" data-uuid="{{../uuid}}" data-id="{{this.id}}" title="{{this.label}}" {{#if automatica}}disabled{{/if}}><img src="{{this.icone}}" alt="{{this.label}}" /></button>{{/each}}</div>{{/if}}
+        </div>
+        <div class="epm-escudo-acoes"><button type="button" class="epm-icone-botao" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha"><i class="fa-solid fa-id-card"></i></button></div>
+      </li>
+      {{/each}}
+    </ol>
+    {{/if}}
+
+    {{!-- ================= CONDIÇÕES ================= --}}
+    {{#if (epmEq aba "condicoes")}}
+    <div class="epm-escudo-barra">
+      <input type="search" class="epm-busca" data-busca-cond value="{{this.buscaCond}}" placeholder="Buscar condição ou efeito…" aria-label="Buscar condição" />
+      <span class="epm-rotulo">Exaustão</span>
+      <button type="button" class="epm-botao" data-action="exaustao" data-delta="-1" title="Tirar 1 nível dos alvos"><i class="fa-solid fa-minus"></i></button>
+      <button type="button" class="epm-botao" data-action="exaustao" data-delta="1" title="Dar 1 nível aos alvos"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    <p class="epm-dica">Clique para ligar ou desligar nos alvos. Borda cheia: todos os alvos têm; tracejada: só alguns.</p>
+    {{#each condicoes}}
+    <section class="epm-escudo-cat">
+      <h4><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}} <span class="epm-contador">{{this.qtd}}</span></h4>
+      <div class="epm-escudo-cond-grade">
+        {{#each itens}}<button type="button" class="epm-escudo-cond-botao{{#if estado}} {{this.estado}}{{/if}}" data-action="alternarCondicao" data-id="{{this.id}}" title="{{this.label}}: {{this.efeito}}"><img src="{{this.icone}}" alt="" /><span>{{this.label}}</span></button>{{/each}}
+      </div>
+    </section>
+    {{/each}}
+    {{/if}}
+
+    {{!-- ================= ITENS ================= --}}
+    {{#if (epmEq aba "itens")}}
+    <div class="epm-escudo-barra">
+      <label class="epm-campo"><span>Dar para</span><select data-destino-item>{{#each destinos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <input type="search" class="epm-busca" data-busca-item value="{{this.buscaItem}}" placeholder="Buscar item do mundo…" aria-label="Buscar item" />
+      <select data-tipo-item aria-label="Tipo">{{#each tiposItem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+    </div>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Moedas</h3></header>
+      <div class="epm-escudo-dar">
+        {{#each moedas}}<label class="epm-mini epm-escudo-moeda"><span><img src="{{this.img}}" alt="" /> {{this.abrev}}</span><input type="number" data-moeda="{{this.id}}" placeholder="0" /></label>{{/each}}
+        <button type="button" class="epm-botao epm-botao-forte" data-action="darMoedas"><i class="fa-solid fa-coins"></i> Dar moedas</button>
+      </div>
+    </section>
+    {{#if itensVazio}}<p class="epm-vazio">Nenhum item no mundo com esse filtro. Crie itens na aba Itens do Foundry.</p>{{/if}}
+    <ul class="epm-escudo-itens">
+      {{#each itens}}
+      <li draggable="true" data-item-uuid="{{this.uuid}}" title="Arraste para uma ficha ou clique em Dar">
+        <img src="{{this.img}}" alt="" /><span class="epm-escudo-item-nome" data-action="abrirItem" data-uuid="{{this.uuid}}">{{this.name}}</span>
+        <span class="epm-tag fraca">{{this.tipoLabel}}</span>
+        <button type="button" class="epm-botao" data-action="darItem" data-uuid="{{this.uuid}}"><i class="fa-solid fa-hand-holding"></i> Dar</button>
+      </li>
+      {{/each}}
+    </ul>
+    {{#if itensMais}}<p class="epm-dica">E mais {{this.itensMais}}: refine a busca.</p>{{/if}}
+    {{/if}}
+
+    {{!-- ================= TESTES ================= --}}
+    {{#if (epmEq aba "testes")}}
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Teste em grupo</h3></header>
+      <p class="epm-dica">Rola a perícia de todos os alvos de uma vez e compara com a DT. "Oculto" manda o resultado só para o Mestre.</p>
+      <div class="epm-escudo-dar">
+        <label class="epm-campo"><span>Perícia</span><select data-pericia-teste>{{#each periciasTeste}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+        <label class="epm-mini"><span>DT</span><input type="number" data-dt-teste value="{{this.dtTeste}}" /></label>
+        <button type="button" class="epm-botao epm-botao-forte" data-action="rolarTestes"><i class="fa-solid fa-dice-d20"></i> Rolar</button>
+        <button type="button" class="epm-botao" data-action="rolarTestes" data-oculto="1"><i class="fa-solid fa-eye-slash"></i> Rolar oculto</button>
+      </div>
+      {{#if testes}}
+      <table class="epm-escudo-tabela">
+        <caption>{{testes.pericia}} contra DT {{testes.dt}}: {{testes.passaram}} de {{testes.resultados.length}} passaram{{#if testes.oculto}} (oculto){{/if}}</caption>
+        <tbody>{{#each testes.resultados}}<tr class="{{#if passou}}passou{{else}}falhou{{/if}}"><td><img src="{{this.img}}" alt="" /> {{this.nome}}</td><td>d20 {{this.natural}}</td><td><strong>{{this.total}}</strong></td><td>{{#if passou}}<i class="fa-solid fa-check"></i> passou{{else}}<i class="fa-solid fa-xmark"></i> falhou{{/if}}</td></tr>{{/each}}</tbody>
+      </table>
+      {{/if}}
+    </section>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Rolagem livre</h3></header>
+      <div class="epm-escudo-dar">
+        <input type="text" data-formula-livre placeholder="2d6 + 3, 1d100…" aria-label="Fórmula" />
+        <button type="button" class="epm-botao" data-action="rolarLivre"><i class="fa-solid fa-dice"></i> Rolar</button>
+        <button type="button" class="epm-botao" data-action="rolarLivre" data-oculto="1"><i class="fa-solid fa-eye-slash"></i> Só para mim</button>
+      </div>
+    </section>
+    {{/if}}
+
+    {{!-- ================= REGRAS ================= --}}
+    {{#if (epmEq aba "regras")}}
+    <div class="epm-escudo-regras">
+      <section class="epm-painel"><header class="epm-painel-titulo"><h3>Defesas</h3></header>
+        <ul class="epm-escudo-ref">{{#each regras.defesas}}<li><i class="{{this.icone}}"></i> <strong>{{this.label}}</strong>: {{this.texto}}</li>{{/each}}
+        <li>Cada defesa gasta 1 ação do próximo turno (máximo 3 por rodada). Acerto igual à defesa conta como acerto.</li></ul></section>
+      <section class="epm-painel"><header class="epm-painel-titulo"><h3>Exaustão</h3></header>
+        <ol class="epm-escudo-ref">{{#each regras.exaustao}}<li><strong>{{this.nivel}} {{this.nome}}</strong>: {{this.texto}}</li>{{/each}}</ol></section>
+      <section class="epm-painel"><header class="epm-painel-titulo"><h3>Ações e testes</h3></header>
+        <ul class="epm-escudo-ref"><li>Ações: {{epmJoin regras.acoes ", "}}.</li>
+        <li>DT de magias e habilidades = 10 + atributo (Núcleo) + perícia (Arcanismo). Resistir gasta a Reação.</li>
+        <li>Ataque extra comum: Ação Bônus ou de Movimento, com penalidade. Ataque de oportunidade: Reação. Atrasar turno: 1 vez por combate.</li></ul></section>
+      <section class="epm-painel"><header class="epm-painel-titulo"><h3>Progressão</h3></header>
+        <ul class="epm-escudo-ref">{{#each regras.progressao}}<li>{{this}}</li>{{/each}}</ul></section>
+      <section class="epm-painel"><header class="epm-painel-titulo"><h3>Magias do Conjurador</h3></header>
+        <div class="epm-arq-custos">{{#each regras.custosMagia}}<span class="epm-arq-custo" title="Libera no nível {{this.nivel}}"><strong>{{this.label}}</strong> {{this.pm}} PM · Nv. {{this.nivel}}</span>{{/each}}</div></section>
+      <section class="epm-painel"><header class="epm-painel-titulo"><h3>Reputação</h3></header>
+        <div class="epm-chips">{{#each regras.reputacao}}<span class="epm-tag">{{this.valor}} {{this.label}}</span>{{/each}}</div></section>
+    </div>
+    {{/if}}
+
+    {{!-- ================= NOTAS ================= --}}
+    {{#if (epmEq aba "notas")}}
+    <section class="epm-painel epm-escudo-notas">
+      <header class="epm-painel-titulo"><h3>Notas do Mestre</h3><span class="epm-dica">Só o Mestre vê. Salva ao sair do campo.</span></header>
+      <textarea data-notas rows="22" placeholder="Ganchos, nomes de NPCs, o que cada jogador quer, segredos da campanha…">{{this.notas}}</textarea>
+    </section>
+    {{/if}}
+  </section>
+</div>

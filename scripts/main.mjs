@@ -11,6 +11,12 @@ import { EPMItemSheet, abrirEditorItem } from "./item-sheet.mjs";
 import * as mecanicas from "./mecanicas.mjs";
 import { prepararPastaImagens } from "./imagens.mjs";
 import { relacaoMultipla } from "./relacoes.mjs";
+import { PainelGrupo, abrirPainelGrupo, atualizarPainelGrupo, botaoNoDiretorio } from "./grupo.mjs";
+import { EscudoMestre, abrirEscudo, atualizarEscudo, botaoEscudo } from "./escudo.mjs";
+import { integrarDock } from "./integracao-dock.mjs";
+
+integrarDock();
+import * as extras from "./extras.mjs";
 
 const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 
@@ -30,11 +36,14 @@ Hooks.once("init", () => {
     "epm-item-linha": `${CAMINHO}/partials/item-linha.hbs`,
     "epm-poder-linha": `${CAMINHO}/partials/poder-linha.hbs`,
     "epm-exaustao": `${CAMINHO}/partials/exaustao.hbs`,
-    "epm-bencao": `${CAMINHO}/partials/bencao.hbs`
+    "epm-bencao": `${CAMINHO}/partials/bencao.hbs`,
+    "epm-arquetipo-painel": `${CAMINHO}/partials/arquetipo-painel.hbs`,
+    "epm-transformacoes": `${CAMINHO}/partials/transformacoes.hbs`,
+    "epm-historico": `${CAMINHO}/partials/historico.hbs`
   });
 
   const modulo = game.modules.get(MODULE_ID);
-  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, relacaoMultipla, catalogoBencaos };
+  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo };
 });
 
 Hooks.once("setup", () => registrarCondicoes());
@@ -50,6 +59,12 @@ Hooks.once("ready", () => {
 
 /** Menu do chat: as opções de dano do D&D 5e não valem para os cartões EPM (eles têm o botão Aplicar dano). */
 Hooks.on("getChatMessageContextOptions", mecanicas.filtrarMenuChat);
+Hooks.on("renderActorDirectory", botaoNoDiretorio);
+Hooks.on("renderActorDirectory", botaoEscudo);
+Hooks.on("renderCombatTracker", botaoEscudo);
+for (const gancho of ["updateActor", "createActiveEffect", "deleteActiveEffect", "updateCombat", "createCombat", "deleteCombat",
+  "createCombatant", "updateCombatant", "deleteCombatant", "controlToken", "createItem", "deleteItem"]) Hooks.on(gancho, atualizarEscudo);
+for (const gancho of ["updateActor", "createActiveEffect", "deleteActiveEffect", "createActor", "deleteActor"]) Hooks.on(gancho, atualizarPainelGrupo);
 Hooks.on("getChatLogEntryContext", mecanicas.filtrarMenuChat);
 
 /** Fim de combate: recarrega usos "por combate" e aplica maldições de fim de combate. */

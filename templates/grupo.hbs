@@ -1,0 +1,39 @@
+<div class="epm-grupo-corpo">
+  <section class="epm-grupo-topo">
+    <div class="epm-grupo-dar">
+      <span class="epm-rotulo">Dar aos marcados (<span data-qtd-marcados>{{marcados}}</span>)</span>
+      <label class="epm-mini"><span>PEv</span><input type="number" name="pev" value="0" /></label>
+      <label class="epm-mini"><span>PT</span><input type="number" name="pt" value="0" /></label>
+      <label class="epm-mini"><span>PH</span><input type="number" name="ph" value="0" /></label>
+      <label class="epm-mini largo"><span>motivo (opcional)</span><input type="text" name="motivo" placeholder="Fim da sessão 12" /></label>
+      <button type="button" class="epm-botao epm-botao-forte" data-action="darPontos"><i class="fa-solid fa-gift" aria-hidden="true"></i> Dar</button>
+    </div>
+    <div class="epm-grupo-opcoes">
+      <button type="button" class="epm-link" data-action="marcarTodos">Marcar todos</button>
+      <button type="button" class="epm-link" data-action="desmarcarTodos">Desmarcar</button>
+      <label class="epm-check"><input type="checkbox" data-incluir-todos="1" {{#if todos}}checked{{/if}} /> Incluir personagens sem jogador</label>
+    </div>
+  </section>
+  {{#if vazio}}<p class="epm-vazio">Nenhum personagem de jogador no mundo.</p>{{/if}}
+  <ol class="epm-grupo-lista">
+    {{#each atores}}
+    <li class="epm-grupo-ator{{#if marcado}} marcado{{/if}}">
+      <input type="checkbox" data-marcar="{{this.id}}" {{#if marcado}}checked{{/if}} aria-label="Marcar {{this.name}}" />
+      <img class="epm-grupo-img" src="{{this.img}}" alt="" data-action="abrirFicha" data-id="{{this.id}}" title="Abrir a ficha" />
+      <div class="epm-grupo-info">
+        <div class="epm-grupo-nome"><strong>{{this.name}}</strong>{{#if nivel}} <span class="epm-dica">Nv. {{this.nivel}}{{#if arquetipo}} · {{this.arquetipo}}{{/if}}{{#if jogadores}} · {{this.jogadores}}{{/if}}</span>{{/if}}{{#if transformacao}} <span class="epm-tag epm-tag-ativa">{{this.transformacao}}</span>{{/if}}</div>
+        {{#if erro}}<p class="epm-aviso">Não consegui ler esta ficha.</p>{{/if}}
+        <div class="epm-grupo-recursos">
+          {{#each recursos}}<div class="epm-grupo-recurso{{#if baixo}} baixo{{/if}}" style="--cor: {{this.cor}}" title="{{this.label}}"><span><strong>{{this.abrev}}</strong> {{this.value}}/{{this.max}}{{#if temp}} <em>+{{this.temp}}</em>{{/if}}</span><div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pct}}"></span></div></div>{{/each}}
+        </div>
+        <div class="epm-grupo-extra">
+          {{#unless erro}}<span class="epm-tag">CA {{this.ca}}</span>{{#if exaustao}}<span class="epm-tag epm-tag-perigo">Exaustão {{this.exaustao}}</span>{{/if}}
+          <span class="epm-tag">{{this.pontos.pev}} PEv · {{this.pontos.pt}} PT · {{this.pontos.ph}} PH</span>{{/unless}}
+          {{#each condicoes}}<img class="epm-grupo-cond" src="{{this.icone}}" alt="{{this.label}}" title="{{this.label}}" />{{/each}}
+          {{#if maisCondicoes}}<span class="epm-dica">+{{this.maisCondicoes}}</span>{{/if}}
+        </div>
+      </div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

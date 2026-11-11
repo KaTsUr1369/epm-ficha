@@ -1,11 +1,55 @@
 <section class="tab epm-aba epm-anotacoes {{cls.anotacoes}}" data-group="primary" data-tab="anotacoes">
   <nav class="epm-subnav epm-paginas" aria-label="Páginas de anotações">
+    <button type="button" class="epm-subnav-item epm-diario-aba {{diario.cls}}" data-action="aba" data-group="notas" data-tab="diario" title="Diário de sessões"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Diário<span class="epm-subnav-qtd">{{diario.total}}</span></button>
     {{#each paginas}}
     <button type="button" class="epm-subnav-item {{this.cls}}" data-action="aba" data-group="notas" data-tab="{{this.id}}" title="{{#if eMapa}}Mapa mental{{else}}Texto{{/if}}"><i class="fa-solid {{#if eMapa}}fa-diagram-project{{else}}fa-align-left{{/if}}" aria-hidden="true"></i> {{this.nome}}</button>
     {{/each}}
     {{#if editavel}}<button type="button" class="epm-subnav-item epm-nova-pagina" data-action="novaPagina"><i class="fa-solid fa-plus" aria-hidden="true"></i> Página</button>{{/if}}
   </nav>
-  {{#if semPaginas}}
+  <section class="tab epm-pagina epm-diario {{diario.cls}}" data-group="notas" data-tab="diario">
+    <header class="epm-pagina-topo">
+      <h3>Diário de sessões</h3>
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaSessao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova sessão</button>{{/if}}
+    </header>
+    {{#if diario.vazio}}<p class="epm-vazio">Anote o que aconteceu em cada sessão e o que o personagem ganhou. Os PEv, PT e PH podem ser somados na ficha com um clique.</p>{{/if}}
+    <ol class="epm-diario-lista">
+      {{#each diario.entradas}}
+      <li class="epm-sessao" data-sessao="{{this.id}}">
+        {{#if @root.edicao}}
+        <div class="epm-sessao-campos">
+          <label class="epm-mini"><span>data</span><input type="date" name="flags.epm-ficha.diario.{{this.id}}.data" value="{{this.data}}" /></label>
+          <label class="epm-mini"><span>sessão</span><input type="number" min="0" name="flags.epm-ficha.diario.{{this.id}}.sessao" value="{{this.sessao}}" /></label>
+          <label class="epm-mini largo"><span>título</span><input type="text" name="flags.epm-ficha.diario.{{this.id}}.titulo" value="{{this.titulo}}" placeholder="O baile da Torre de Aster" /></label>
+          <button type="button" class="epm-icone-botao perigo" data-action="excluirSessao" data-sessao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <textarea name="flags.epm-ficha.diario.{{this.id}}.resumo" rows="3" placeholder="O que aconteceu, quem apareceu, pistas…" aria-label="Resumo">{{this.resumo}}</textarea>
+        <div class="epm-sessao-campos">
+          <label class="epm-mini"><span>PEv</span><input type="number" name="flags.epm-ficha.diario.{{this.id}}.pev" value="{{this.pev}}" /></label>
+          <label class="epm-mini"><span>PT</span><input type="number" name="flags.epm-ficha.diario.{{this.id}}.pt" value="{{this.pt}}" /></label>
+          <label class="epm-mini"><span>PH</span><input type="number" name="flags.epm-ficha.diario.{{this.id}}.ph" value="{{this.ph}}" /></label>
+          <label class="epm-mini largo"><span>itens e outros ganhos</span><input type="text" name="flags.epm-ficha.diario.{{this.id}}.itens" value="{{this.itens}}" placeholder="Anel do Foco Astral, 40 PO…" /></label>
+        </div>
+        {{else}}
+        <header class="epm-sessao-topo">
+          <span class="epm-sessao-data">{{this.dataTexto}}</span>
+          <h4>{{#if sessao}}Sessão {{this.sessao}}{{/if}}{{#if titulo}}{{#if sessao}}: {{/if}}{{this.titulo}}{{/if}}</h4>
+        </header>
+        {{#if resumo}}<p class="epm-texto-livre">{{this.resumo}}</p>{{/if}}
+        {{/if}}
+        {{#if temGanhos}}
+        <div class="epm-chips epm-sessao-ganhos">
+          {{#each ganhos}}<span class="epm-tag epm-tag-ok">{{epmSinal valor}} {{this.rotulo}}</span>{{/each}}
+          {{#if itens}}{{#unless @root.edicao}}<span class="epm-tag">{{this.itens}}</span>{{/unless}}{{/if}}
+          {{#if podeSomar}}<button type="button" class="epm-link" data-action="somarSessao" data-sessao="{{this.id}}" title="Soma os PEv, PT e PH desta sessão nos pontos da ficha (uma vez)"><i class="fa-solid fa-plus" aria-hidden="true"></i> Somar na ficha</button>{{/if}}
+          {{#if aplicado}}<span class="epm-dica"><i class="fa-solid fa-check" aria-hidden="true"></i> já somado</span>{{/if}}
+        </div>
+        {{else}}{{#if itens}}{{#unless @root.edicao}}<div class="epm-chips"><span class="epm-tag">{{this.itens}}</span></div>{{/unless}}{{/if}}
+        {{/if}}
+      </li>
+      {{/each}}
+    </ol>
+  </section>
+  {{#if mostrarAjudaPaginas}}
   <div class="epm-vazio-grande">
     <p>Organize suas anotações em páginas: texto livre ou um mapa mental com cartões ligados entre si.</p>
     {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaPagina">Criar a primeira página</button>{{/if}}

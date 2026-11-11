@@ -111,7 +111,7 @@
           <span title="Habilidades conhecidas e espaços. Habilidades Únicas não contam.">Habilidades <strong>{{habilidades.conhecidas}}</strong> / {{#if edicao}}<input type="number" min="0" name="flags.epm-ficha.espacos.habilidades" value="{{habilidades.espacos}}" aria-label="Espaços de habilidade" />{{else}}{{habilidades.espacos}}{{/if}}</span>
           <span title="Magias de 1º círculo ou acima">Magias <strong>{{magias.conhecidas}}</strong> / {{#if edicao}}<input type="number" min="0" name="flags.epm-ficha.espacos.magias" value="{{magias.espacosMagias}}" aria-label="Espaços de magia" />{{else}}{{magias.espacosMagias}}{{/if}}</span>
           <span>Truques <strong>{{magias.truques}}</strong> / {{#if edicao}}<input type="number" min="0" name="flags.epm-ficha.espacos.truques" value="{{magias.espacosTruques}}" aria-label="Espaços de truque" />{{else}}{{magias.espacosTruques}}{{/if}}</span>
-          <span title="CD dos testes de resistência contra suas habilidades e magias">CD <strong>{{ficha.cd.valor}}</strong></span>
+          <span title="DT dos testes de resistência contra suas habilidades e magias: {{ficha.cd.formula}}">DT <strong>{{ficha.cd.valor}}</strong></span>
         </div>
       </section>
     </div>

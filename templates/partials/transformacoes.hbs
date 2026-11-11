@@ -1,0 +1,62 @@
+<div class="epm-transformacoes">
+  <div class="epm-transf-topo">
+    <p class="epm-dica">Formas alternativas: outra imagem, modificadores que valem enquanto ela está ativa e habilidades que só funcionam transformado.{{#if @root.transformacoes.ativa}} Ativa agora: <strong>{{@root.transformacoes.ativa.nome}}</strong>.{{/if}}</p>
+    {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaTransformacao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova transformação</button>{{/if}}
+  </div>
+  {{#if @root.transformacoes.vazio}}<div class="epm-vazio-grande"><p>Nenhuma transformação ainda. Crie uma (forma bestial, modo berserker, avatar…) e ligue habilidades a ela.</p></div>{{/if}}
+  {{#each @root.transformacoes.lista}}
+  <article class="epm-transformacao{{#if ativa}} ativa{{/if}}" data-transformacao="{{this.id}}">
+    <div class="epm-transf-linha">
+      <figure class="epm-transf-img{{#unless img}} vazia{{/unless}}" {{#if @root.edicao}}data-action="imagemTransformacao" data-transformacao="{{this.id}}" title="Escolher imagem"{{else}}{{#if img}}data-action="verImagem" data-src="{{this.img}}" data-titulo="{{this.nome}}" title="Ampliar"{{/if}}{{/if}}>
+        {{#if img}}<img src="{{this.img}}" alt="" />{{else}}<i class="fa-solid fa-dragon" aria-hidden="true"></i>{{/if}}
+      </figure>
+      <div class="epm-transf-corpo">
+        {{#if @root.edicao}}
+        <input type="text" class="epm-transf-nome" name="flags.epm-ficha.transformacoes.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Nome da transformação" aria-label="Nome" />
+        <div class="epm-transf-campos">
+          <label class="epm-mini"><span>custo</span><select name="flags.epm-ficha.transformacoes.{{this.id}}.custo.recurso">{{#each opcoesCusto}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+          <label class="epm-mini"><span>valor</span><input type="number" min="0" name="flags.epm-ficha.transformacoes.{{this.id}}.custo.valor" value="{{this.custoValor}}" /></label>
+          <label class="epm-mini" title="0 = até encerrar"><span>turnos</span><input type="number" min="0" name="flags.epm-ficha.transformacoes.{{this.id}}.duracao" value="{{this.duracao}}" /></label>
+          <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.transformacoes.{{this.id}}.trocarToken" {{epmChecked trocarToken}} /> Trocar a imagem do token</label>
+        </div>
+        <textarea name="flags.epm-ficha.transformacoes.{{this.id}}.descricao" rows="2" placeholder="Como ela é, o que muda, como se ativa…" aria-label="Descrição">{{this.descricao}}</textarea>
+        <div class="epm-mods">
+          <span class="epm-rotulo">Vale enquanto ativa</span>
+          {{#each mods}}
+          <div class="epm-mod-linha">
+            <select name="flags.epm-ficha.transformacoes.{{../id}}.mods.{{this.id}}.alvo" aria-label="O que muda">
+              <option value="">Escolha o que muda…</option>
+              {{#each grupos}}<optgroup label="{{this.grupo}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</optgroup>{{/each}}
+            </select>
+            <input type="number" step="any" name="flags.epm-ficha.transformacoes.{{../id}}.mods.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
+            <button type="button" class="epm-icone-botao perigo" data-action="removerModTransf" data-transformacao="{{../id}}" data-mod="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          {{/each}}
+          <button type="button" class="epm-link" data-action="adicionarModTransf" data-transformacao="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modificador</button>
+        </div>
+        {{else}}
+        <h4 class="epm-transf-nome">{{this.nome}}{{#if ativa}} <span class="epm-tag epm-tag-ativa">ativa{{#if turnos}} · {{this.turnos}} turno(s){{/if}}</span>{{/if}}</h4>
+        <div class="epm-chips"><span class="epm-tag">{{this.custoTexto}}</span><span class="epm-tag">{{this.duracaoTexto}}</span>{{#each mods}}{{#if alvoLabel}}<span class="epm-tag epm-tag-mod">{{this.alvoLabel}} {{this.valorTexto}}</span>{{/if}}{{/each}}{{#if trocarToken}}<span class="epm-tag fraca">troca o token</span>{{/if}}</div>
+        {{#if descricao}}<p class="epm-texto-livre">{{this.descricao}}</p>{{/if}}
+        {{/if}}
+      </div>
+      <div class="epm-transf-acoes">
+        <button type="button" class="epm-botao{{#if ativa}} epm-botao-forte{{/if}}" data-action="transformar" data-transformacao="{{this.id}}" {{#unless @root.editavel}}disabled{{/unless}}>{{#if ativa}}<i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Voltar ao normal{{else}}<i class="fa-solid fa-dragon" aria-hidden="true"></i> Transformar{{/if}}</button>
+        {{#if @root.edicao}}<button type="button" class="epm-icone-botao perigo" data-action="excluirTransformacao" data-transformacao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>{{/if}}
+      </div>
+    </div>
+    <div class="epm-transf-poderes">
+      <div class="epm-transf-poderes-topo"><span class="epm-rotulo">Habilidades desta forma</span>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="novoPoder" data-tipo="habilidade" data-origem="transformacao" data-transformacao="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova habilidade</button>{{/if}}</div>
+      {{#unless temPoderes}}<p class="epm-vazio">Nenhuma. Crie aqui ou mova habilidades para esta forma (Selecionar → Mover).</p>{{/unless}}
+      <ol class="epm-poderes">{{#each poderes}}{{> "epm-poder-linha"}}{{/each}}</ol>
+    </div>
+  </article>
+  {{/each}}
+  {{#if @root.transformacoes.soltas.length}}
+  <section class="epm-secao-poder" data-secao="transformacoes-soltas">
+    <header class="epm-secao-titulo"><h3>Sem transformação ligada</h3></header>
+    <p class="epm-dica">Use Selecionar → Mover para ligá-las a uma transformação.</p>
+    <ol class="epm-poderes">{{#each @root.transformacoes.soltas}}{{> "epm-poder-linha"}}{{/each}}</ol>
+  </section>
+  {{/if}}
+</div>

@@ -9,8 +9,13 @@ import {
   AFINIDADE, ABAS, SUGESTOES, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
   CATEGORIAS_CONDICAO, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
-  CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO
+  CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO,
+  SUBABAS_ARQCLASSE, ESTILO_RELACAO, ROTULOS_REPUTACAO, TIPOS_COMPANHEIRO, MOLDURAS, FONTES, ESCALA_TEXTO, RECARGAS, TIPOS_ARMA
 } from "./config.mjs";
+import {
+  ARQUETIPOS, arquetiposDoPersonagem, nivelArquetipo, degrau, proximoDegrau, efeitoMaestria, textoMaestria, estilosPermitidos, tipoDaArma, eTipoFavorito,
+  estilosEscolhidos, projetosDoNivel, limiteLivro, bonusAutomato, reservaArcana, custoMagiaCirculo, circuloLiberado, intMin1
+} from "./arquetipos.mjs";
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
   situacaoLimite, raridadeItem, valorEmCobre, formatarMoedas, arredondar, bonusCenaAtivos, entradaPericia, lerCaminho,
@@ -220,7 +225,8 @@ const temTexto = html => !!String(html ?? "").replace(/<[^>]*>/g, "").trim();
 export function conteudoRevelacoes(dadosParceiro = {}, enriquecidos = {}) {
   const sobre = dadosParceiro?.sobre ?? {};
   const out = {};
-  const campos = CAMPOS_SOBRE.map(c => ({ label: c.label, valor: sobre[c.id] ?? "" })).filter(c => String(c.valor).trim());
+  const campos = [...CAMPOS_SOBRE.map(c => ({ label: c.label, valor: sobre[c.id] ?? "" })), { label: "Bordão", valor: sobre.bordao ?? "" }]
+    .filter(c => String(c.valor).trim());
   out.tracos = { campos, vazio: !campos.length };
   out.aparencia = { imagem: sobre.imagemAparencia ?? "", html: temTexto(sobre.aparencia) ? (enriquecidos.aparencia ?? "") : "" };
   out.aparencia.vazio = !out.aparencia.imagem && !out.aparencia.html;
@@ -235,6 +241,258 @@ export function conteudoRevelacoes(dadosParceiro = {}, enriquecidos = {}) {
 
 /* -------------------------------------------- */
 
+/* -------------------------------------------- */
+/*  Auxiliares das abas novas (0.5.4)           */
+/* -------------------------------------------- */
+
+/** Só links http(s) viram botão (nada de javascript: e afins). */
+export function linkSeguro(url) {
+  const t = String(url ?? "").trim();
+  return /^https?:\/\/\S+$/i.test(t) ? t : "";
+}
+
+/** "2026-11-11" → "11/11/2026" (texto livre fica como está). */
+export function dataBR(iso) {
+  const m = String(iso ?? "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso ?? "");
+}
+
+function formatarQuando(ms) {
+  const d = new Date(ms);
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** Histórico de afinidade ou reputação, do mais novo para o mais velho. */
+export function historicoDe(hist = {}) {
+  const itens = Object.entries(hist ?? {}).filter(([, h]) => h).map(([id, h]) => {
+    const quando = num(h.quando);
+    const de = int(h.de), para = int(h.para);
+    return {
+      id, quando, quandoTexto: quando ? formatarQuando(quando) : "", quem: h.quem ?? "", de, para,
+      deTexto: sinal(de), paraTexto: sinal(para), subiu: para > de, motivo: h.motivo ?? "", origem: h.origem ?? ""
+    };
+  }).sort((a, b) => b.quando - a.quando);
+  return { itens, total: itens.length, vazio: !itens.length };
+}
+
+/** Visual escolhido em Personalizar: moldura, letra, tamanho e imagem de fundo (classes e variáveis CSS). */
+export function visualDaFicha(pers = {}) {
+  const moldura = MOLDURAS[pers?.moldura] ? pers.moldura : "astrolabio";
+  const fonte = FONTES[pers?.fonte] ? pers.fonte : "classica";
+  const passo = ESCALA_TEXTO.passo;
+  const escala = limitar(Math.round(num(pers?.escala, ESCALA_TEXTO.padrao) / passo) * passo, ESCALA_TEXTO.min, ESCALA_TEXTO.max);
+  const fundo = String(pers?.fundo ?? "").trim();
+  const veu = limitar(int(pers?.fundoVeu, 70), 0, 95);
+  const f = FONTES[fonte];
+  const vars = {};
+  if (f.display) vars["--epm-display"] = f.display;
+  if (f.ui) vars["--epm-ui"] = f.ui;
+  if (escala !== 100) vars["--epm-escala"] = String(escala / 100);
+  if (fundo) { vars["--epm-fundo-img"] = `url("${fundo.replace(/["\\]/g, "")}")`; vars["--epm-fundo-veu"] = `${veu}%`; }
+  const classes = [`epm-moldura-${moldura}`, fundo ? "epm-com-fundo" : "", escala !== 100 ? "epm-escalada" : ""].filter(Boolean);
+  return {
+    moldura, fonte, escala, fundo, fundoVeu: veu,
+    opcoesMoldura: Object.entries(MOLDURAS).map(([id, m]) => ({ id, label: m.label, selected: id === moldura })),
+    opcoesFonte: Object.entries(FONTES).map(([id, x]) => ({ id, label: x.label, selected: id === fonte })),
+    escalaMin: ESCALA_TEXTO.min, escalaMax: ESCALA_TEXTO.max, escalaPasso: passo,
+    visualPadrao: moldura === "astrolabio" && fonte === "classica" && escala === 100 && !fundo,
+    classes, classesTexto: classes.join(" "), vars,
+    estilo: Object.entries(vars).map(([k, v]) => `${k}: ${v}`).join("; ")
+  };
+}
+
+/** Painéis dos arquétipos modelo (Combatente, Conjurador, Artífice) na sub-aba Arquétipo. */
+function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editavel }) {
+  const intel = ficha.atributos?.inteligencia?.total ?? 0;
+  const naFicha = new Set(poderes.map(p => p.arquetipoRef).filter(Boolean));
+  const opcoes = dados.arquetipoOpcoes ?? {};
+  return arquetiposDoPersonagem(dados).map(({ id, nivel, posicao }) => {
+    const a = ARQUETIPOS[id];
+    const marcos = new Set(a.habilidades.map(h => h.nivel));
+    const niveis = Array.from({ length: 50 }, (_, i) => {
+      const n = i + 1;
+      return { n, texto: a.progressao[n] ?? "", alcancado: n <= nivel, atual: n === nivel, marco: marcos.has(n) };
+    });
+    const habilidades = a.habilidades.map(h => {
+      const ref = `${id}:${h.nivel}`;
+      return { ...h, ref, liberada: nivel >= h.nivel, naFicha: naFicha.has(ref), podeAdicionar: editavel && nivel >= h.nivel && !naFicha.has(ref) };
+    });
+    const liberadas = habilidades.filter(h => h.liberada);
+    const painel = {
+      id, nome: a.nome, icone: a.icone, cor: a.cor, nivel, posicao, funcao: a.funcao, recursos: a.recursos, niveis,
+      liberadas, proximas: habilidades.filter(h => !h.liberada).slice(0, 4), proximo: habilidades.find(h => !h.liberada) ?? null,
+      faltamAdicionar: liberadas.filter(h => !h.naFicha).length, podeAdicionarTodas: editavel && liberadas.some(h => !h.naFicha),
+      eCombatente: id === "combatente", eConjurador: id === "conjurador", eArtifice: id === "artifice"
+    };
+    if (id === "combatente") {
+      const cfg = ARQUETIPOS.combatente;
+      const opc = opcoes.combatente ?? {};
+      const armas = itens.filter(i => tipoDe(i) === "weapon");
+      const doTipo = armas.filter(i => eTipoFavorito(i, dados));
+      const tiposInventario = [...new Set(armas.map(tipoDaArma).filter(Boolean))];
+      const mId = cfg.maestrias[opc.maestria] ? opc.maestria : "";
+      const ef = mId ? efeitoMaestria(mId, nivel) : null;
+      const ae = degrau(cfg.ataqueExtra, nivel);
+      const prox = proximoDegrau(cfg.ataqueExtra, nivel);
+      const permitidos = estilosPermitidos(nivel);
+      const escolhidos = estilosEscolhidos(dados, nivel);
+      painel.combatente = {
+        tipoFavorito: String(opc.tipoFavorito ?? ""),
+        sugestoesTipo: [...new Set([...tiposInventario, ...TIPOS_ARMA])],
+        armasDoTipo: doTipo.map(i => ({ nome: i.name, img: i.img, equipada: !!i.system?.equipped })),
+        semTipoNasArmas: armas.length > 0 && !tiposInventario.length,
+        opcoesMaestria: [{ id: "", label: "Escolha a Maestria…", selected: !mId },
+          ...Object.entries(cfg.maestrias).map(([mid, m]) => ({ id: mid, label: m.nome, selected: mid === mId, texto: m.texto }))],
+        maestria: ef ? { ...ef, resumo: textoMaestria(ef) } : null,
+        maestrias: Object.entries(cfg.maestrias).map(([mid, m]) => ({ id: mid, nome: m.nome, texto: m.texto, escolhida: mid === mId })),
+        ataqueExtra: ae ? `${ae.custo} PE: +${ae.ataques} ataque${ae.ataques > 1 ? "s" : ""}, uma vez por turno` : "",
+        proximoAtaqueExtra: prox ? `Nv. ${prox.nivel}: ${prox.custo} PE por +${prox.ataques}` : "",
+        estilosPermitidos: permitidos,
+        estilos: Object.entries(cfg.estilos).map(([eid, e]) => ({
+          id: eid, nome: e.nome, texto: e.texto, escolhido: escolhidos.includes(eid),
+          podeMarcar: editavel && permitidos > 0 && (escolhidos.includes(eid) || escolhidos.length < permitidos)
+        })),
+        estilosTexto: escolhidos.map(e => cfg.estilos[e].nome).join(", "),
+        cacador: nivel >= cfg.cacador.nivel ? { presa: dados.usos?.presa ?? "", custo: cfg.cacador.custo } : null
+      };
+    }
+    if (id === "conjurador") {
+      const cfg = ARQUETIPOS.conjurador;
+      const rec = degrau(cfg.recuperarMana, nivel);
+      const usado = !!dados.usos?.recuperarMana;
+      const proxRes = proximoDegrau(cfg.reservaArcana, nivel);
+      painel.conjurador = {
+        custos: cfg.custosMagia.map((pm, circ) => ({
+          circulo: circ, label: circ === 0 ? "Truque" : `${circ}º`, pm, liberado: circuloLiberado(circ, nivel), liberaEm: cfg.circulos[circ]
+        })),
+        reserva: reservaArcana(nivel), proximaReserva: proxRes ? `Nv. ${proxRes.nivel}: +${proxRes.pm} PM` : "",
+        recuperar: rec ? { pe: rec.pe, pm: rec.pm, usado, pode: editavel && !usado && ficha.recursos.pe.value >= rec.pe } : null,
+        manipulacao: nivel >= cfg.manipulacao.nivel ? {
+          custo: nivel >= cfg.manipulacao.nivelDupla ? "5 PE (uma) ou 10 PE (duas)" : "5 PE",
+          exclui: nivel >= cfg.manipulacao.nivelPrecisa ? 4 : 2
+        } : null,
+        sobrecarga: nivel >= cfg.sobrecarga.nivel,
+        dominio: nivel >= 38 ? Object.entries(cfg.dominios).map(([did, label]) => ({ id: did, label, selected: did === opcoes.conjurador?.dominio })) : null,
+        dominioTexto: cfg.dominios[opcoes.conjurador?.dominio] ?? ""
+      };
+    }
+    if (id === "artifice") {
+      const cfg = ARQUETIPOS.artifice;
+      const proj = projetosDoNivel(nivel, intel);
+      const enc = degrau(cfg.encantados, nivel);
+      const i = intMin1(intel);
+      const escolhidas = (Array.isArray(opcoes.artifice?.utensilios) ? opcoes.artifice.utensilios : []).filter(p => !cfg.utensilios.exceto.includes(p)).slice(0, cfg.utensilios.qtd);
+      painel.artifice = {
+        intel: i, projetos: proj, porDia: cfg.projetosPorDia, livro: limiteLivro(nivel, intel),
+        encantados: enc ? {
+          dano: `${enc.dano}${enc.danoInt ? ` + ${i}` : ""}`, cura: `+${enc.cura + (enc.curaInt ? i : 0)}`, auxilio: `+${enc.auxilio + (enc.auxilioInt ? i : 0)}`
+        } : null,
+        utensilios: nivel >= cfg.utensilios.nivel ? {
+          qtd: cfg.utensilios.qtd, bonus: cfg.utensilios.bonus, faltam: cfg.utensilios.qtd - escolhidas.length,
+          escolhidasTexto: escolhidas.map(p => ficha.periciaPorId?.[p]?.nome ?? p).join(", "),
+          opcoes: ficha.pericias.filter(p => !cfg.utensilios.exceto.includes(p.id)).map(p => ({
+            id: p.id, nome: p.nome, escolhida: escolhidas.includes(p.id), podeMarcar: editavel && (escolhidas.includes(p.id) || escolhidas.length < cfg.utensilios.qtd)
+          }))
+        } : null,
+        automato: nivel >= cfg.automato.nivel ? { bonus: bonusAutomato(nivel), podeCriar: editavel } : null,
+        subclasses: cfg.subclasses.join(", ")
+      };
+    }
+    return painel;
+  });
+}
+
+/** Resumo dos arquétipos para o painel da aba Combate (botões rápidos). */
+function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
+  const lista = [];
+  const comb = nivelArquetipo(dados, "combatente");
+  if (comb) {
+    const cfg = ARQUETIPOS.combatente;
+    const opc = dados.arquetipoOpcoes?.combatente ?? {};
+    const ae = degrau(cfg.ataqueExtra, comb);
+    const ef = efeitoMaestria(opc.maestria, comb);
+    const tipoFav = String(opc.tipoFavorito ?? "").trim();
+    const estilos = estilosEscolhidos(dados, comb).map(e => cfg.estilos[e].nome);
+    const linhas = [];
+    if (ae) linhas.push(`Ataque Extra: ${ae.custo} PE por +${ae.ataques} (uma vez por turno)${dados.usos?.ataqueExtraTurno ? ". Já usado neste turno" : ""}.`);
+    linhas.push(ef && tipoFav ? `${ef.nome} (${tipoFav}): ${textoMaestria(ef)}` : "Arma Favorita: escolha o tipo de arma e a Maestria em Habilidades → Arquétipo.");
+    if (estilos.length) linhas.push(`Estilo: ${estilos.join(", ")}.`);
+    const botoes = [];
+    if (comb >= cfg.cacador.nivel) {
+      const presa = dados.usos?.presa ?? "";
+      botoes.push({ acao: "cacadorNatural", icone: "fa-solid fa-crosshairs", label: presa ? `Presa: ${presa}` : `Caçador Natural (${cfg.cacador.custo} PE)`,
+        dica: presa ? "Clique para trocar a Presa (8 PE) ou encerrar" : "Escolha uma Presa até o fim do combate", desabilitado: !editavel });
+    }
+    lista.push({ id: "combatente", nome: "Combatente", nivel: comb, icone: cfg.icone, cor: cfg.cor, linhas, botoes });
+  }
+  const conj = nivelArquetipo(dados, "conjurador");
+  if (conj) {
+    const cfg = ARQUETIPOS.conjurador;
+    const rec = degrau(cfg.recuperarMana, conj);
+    const res = reservaArcana(conj);
+    const linhas = [];
+    if (res) linhas.push(`Reserva Arcana: +${res} PM máximo (já somado).`);
+    linhas.push(`Custo das magias: ${cfg.custosMagia.map((pm, c) => `${c === 0 ? "Truque" : `${c}º`} ${pm}`).join(" · ")} PM.`);
+    if (conj >= cfg.manipulacao.nivel) linhas.push("Manipulação Mágica e outras opções aparecem no cartão da magia, no chat.");
+    const botoes = [];
+    if (rec) {
+      const usado = !!dados.usos?.recuperarMana;
+      botoes.push({ acao: "recuperarMana", icone: "fa-solid fa-droplet", label: `Recuperar Mana (${rec.pe} PE → ${rec.pm} PM)`,
+        dica: usado ? "Já usado nesta cena (volta no fim do combate ou no descanso)" : "Uma vez por cena, gasta uma ação", desabilitado: !editavel || usado || ficha.recursos.pe.value < rec.pe });
+    }
+    lista.push({ id: "conjurador", nome: "Conjurador", nivel: conj, icone: cfg.icone, cor: cfg.cor, linhas, botoes });
+  }
+  const art = nivelArquetipo(dados, "artifice");
+  if (art) {
+    const cfg = ARQUETIPOS.artifice;
+    const proj = projetosDoNivel(art, ficha.atributos?.inteligencia?.total ?? 0);
+    const linhas = [];
+    if (proj) linhas.push(`Projetos (${cfg.projetosPorDia} por dia): dano ${proj.dano}, cura ${proj.cura}, soma +${proj.soma}, proteção +${proj.protecao}.`);
+    const livro = limiteLivro(art, ficha.atributos?.inteligencia?.total ?? 0);
+    if (livro) linhas.push(`Livro de Projetos: guarda até ${livro}.`);
+    lista.push({ id: "artifice", nome: "Artífice", nivel: art, icone: cfg.icone, cor: cfg.cor, linhas, botoes: [] });
+  }
+  return lista;
+}
+
+/** Companheiros (pets, montarias, invocações, autômatos) com os bônus do Pequeno Autômato. */
+function montarCompanheiros({ dados, edicao, editavel }) {
+  const art = nivelArquetipo(dados, "artifice");
+  const bonus = bonusAutomato(art);
+  const lista = Object.entries(dados.companheiros ?? {}).filter(([, c]) => c).map(([id, c]) => {
+    const auto = !!c.automato;
+    const bA = auto ? bonus.atributos : 0;
+    const bR = auto ? bonus.recursos : 0;
+    const recurso = k => {
+      const r = c[k] ?? {};
+      const max = Math.max(0, int(r.max) + (int(r.max) > 0 || k === "pv" ? bR : 0));
+      const value = int(r.value);
+      return { value, max, maxBase: int(r.max), pct: max > 0 ? limitar(value / max, 0, 1) : 0, mostrar: edicao || max > 0 };
+    };
+    const atributos = Object.entries(ATRIBUTOS).map(([aid, a]) => ({ id: aid, abrev: a.abrev, label: a.label, base: int(c.atributos?.[aid]), total: int(c.atributos?.[aid]) + bA }));
+    const ataques = Object.entries(c.ataques ?? {}).filter(([, x]) => x).map(([aid, x]) => ({
+      id: aid, nome: x.nome || "Ataque", acerto: int(x.acerto), acertoTexto: sinal(int(x.acerto)), dano: x.dano ?? "", tipoDano: x.tipoDano ?? "", criado: num(x.criado)
+    })).sort((a, b) => a.criado - b.criado);
+    const tipo = TIPOS_COMPANHEIRO[c.tipo] ? c.tipo : "outro";
+    return {
+      id, nome: c.nome || "Companheiro sem nome", nomeBruto: c.nome ?? "", tipo, tipoLabel: TIPOS_COMPANHEIRO[tipo],
+      opcoesTipo: Object.entries(TIPOS_COMPANHEIRO).map(([tid, label]) => ({ id: tid, label, selected: tid === tipo })),
+      img: c.img || "icons/svg/mystery-man.svg", uuid: c.uuid ?? "", ligado: !!c.uuid,
+      pv: recurso("pv"), pm: recurso("pm"), pe: recurso("pe"), ca: int(c.ca, 10), deslocamento: num(c.deslocamento, 9),
+      atributos, atributosVisiveis: atributos.filter(a => a.total), temAtributos: atributos.some(a => a.total),
+      ataques, temAtaques: ataques.length > 0, habilidades: c.habilidades ?? "", notas: c.notas ?? "",
+      automato: auto, bonusAutomato: auto && (bA || bR) ? `Pequeno Autômato ${art >= 41 ? "3.0" : "2.0"}: +${bA} em todos os atributos, +${bR} PV, PM e PE` : "",
+      base: `flags.${FLAG}.companheiros.${id}`, editavel, criado: num(c.criado)
+    };
+  }).sort((a, b) => a.criado - b.criado);
+  return {
+    lista, vazio: !lista.length,
+    podeAutomato: editavel && art >= ARQUETIPOS.artifice.automato.nivel,
+    nivelAutomato: ARQUETIPOS.artifice.automato.nivel
+  };
+}
+
 export function montarContexto({
   actor, itens = [], ui = {}, ajustes = {}, usuario = {}, enriquecidos = {}, editores = {}, editavel = false,
   idiomas = { catalogo: [], polyglot: false }, atores = {}
@@ -245,13 +503,19 @@ export function montarContexto({
   const isGM = !!usuario.isGM;
   const ordemAbas = ordenarPorLista(ABAS.map(a => a.id), dados.ui?.ordemAbas);
   const abasExtras = dados.personalizacao?.abasExtras ?? {};
+  const abasOcultas = dados.personalizacao?.abasOcultas ?? {};
+  const temConteudo = chave => Object.values(dados[chave] ?? {}).some(Boolean);
+  const podeOcultar = a => a.id !== "principal" && !a.soEdicao && !a.opcional;
+  const abaLigada = a => (a.opcional ? !!abasExtras[a.id] : !(podeOcultar(a) && abasOcultas[a.id]));
   const abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id))
-    .filter(a => a && (!a.soEdicao || edicao) && (!a.opcional || abasExtras[a.id]));
+    .filter(a => a && (!a.soEdicao || edicao) && abaLigada(a) && (!a.seConteudo || edicao || temConteudo(a.seConteudo)))
+    .map(a => ({ ...a, soEdicao: a.soEdicao || (!!a.seConteudo && !temConteudo(a.seConteudo)) }));
   let abaAtual = ui.limitado ? "sobre" : (ui.abas?.primary ?? "principal");
   if (!abasVisiveis.some(a => a.id === abaAtual)) abaAtual = ui.limitado ? "sobre" : "principal";
   const cls = Object.fromEntries(ABAS.map(a => [a.id, a.id === abaAtual ? "active" : ""]));
   const expandidos = ui.expandidos ?? new Set();
   const filtro = ui.filtroRaridades ?? new Set();
+  const selecao = { aba: ui.selecao?.aba ?? null, ids: ui.selecao?.ids ?? new Set() };
   const cena = bonusCenaAtivos(dados);
   const falhas = [];
   const tipoDe = i => { try { return i?.type; } catch { return undefined; } };
@@ -277,10 +541,13 @@ export function montarContexto({
     abas: ordemAbas.map((id, i, lista) => {
       const a = ABAS.find(x => x.id === id);
       return { id, label: a.titulo && a.opcional ? a.titulo : a.label, icone: a.icone, primeira: i === 0, ultima: i === lista.length - 1,
-        opcional: !!a.opcional, ligada: !a.opcional || !!abasExtras[a.id] };
+        opcional: !!a.opcional, ligada: abaLigada(a), alternavel: !!a.opcional || podeOcultar(a),
+        dicaMostrar: a.opcional ? "Aba opcional: mostrar ou esconder" : a.seConteudo ? "Esconder esta aba (fora do modo edição ela já só aparece quando tem algo)" : "Mostrar ou esconder esta aba" };
     }),
-    ordemPadrao: !(dados.ui?.ordemAbas ?? []).length
+    ordemPadrao: !(dados.ui?.ordemAbas ?? []).length,
+    ...visualDaFicha(dados.personalizacao)
   };
+  ctx.estiloExtra = ctx.personalizacao.estilo;
 
   /* ---------- Cabeçalho ---------- */
   const raios = { pv: 66, pm: 60, pe: 54, ps: 48 };
@@ -301,6 +568,13 @@ export function montarContexto({
       motivosTexto: [...r.motivos, ...r.fontes.map(f => `${f.fonte}: ${f.valor > 0 ? "+" : ""}${f.valor}`), ...avisos].join("\n")
     };
   });
+  const tAtivaId = dados.transformacao?.ativa && dados.transformacoes?.[dados.transformacao.ativa] ? dados.transformacao.ativa : "";
+  const tAtiva = tAtivaId ? dados.transformacoes[tAtivaId] : null;
+  ctx.retrato = tAtiva?.img || actor.img;
+  ctx.transformacaoAtiva = tAtiva ? { id: tAtivaId, nome: tAtiva.nome || "Transformação", turnos: int(dados.transformacao?.turnos) } : null;
+  ctx.bordao = String(dados.sobre?.bordao ?? "").trim();
+  ctx.musica = linkSeguro(dados.sobre?.musica);
+  ctx.musicaNome = String(dados.sobre?.musicaNome ?? "").trim();
   ctx.aneis = ctx.recursosLista.map(r => {
     const raio = raios[r.id];
     const circ = 2 * Math.PI * raio;
@@ -429,7 +703,25 @@ export function montarContexto({
   const custom = cadaSeguro(Object.entries(dados.ataques ?? {}).filter(([, a]) => a && typeof a === "object"), ([id, a]) => ataqueCustom(id, a), falhas)
     .sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.ataques = {
-    armas: cadaSeguro(armas.filter(a => a.equipado), a => resumoAtaque(a, ficha, cena), falhas),
+    armas: cadaSeguro(armas.filter(a => a.equipado), a => {
+      const r = resumoAtaque(a, ficha, cena);
+      // Munição e cargas da arma (descontadas no ataque)
+      const it = itens.find(i => i.id === a.id);
+      const fi = it?.flags?.[FLAG] ?? {};
+      const mun = fi.municao ? itens.find(i => i.id === fi.municao) : null;
+      const cMax = Math.max(0, int(fi.cargas?.max));
+      r.favoritaCombatente = !!it && nivelArquetipo(dados, "combatente") > 0 && eTipoFavorito(it, dados);
+      r.tipoArma = tipoDaArma(it);
+      r.municaoTexto = fi.municao ? (mun ? `${mun.name} ×${num(mun.system?.quantity, 0)}` : "munição não encontrada") : "";
+      r.semMunicao = !!fi.municao && (!mun || num(mun.system?.quantity, 0) <= 0);
+      const pMax = Math.max(0, int(fi.pente?.max));
+      r.penteTexto = pMax ? `Pente ${Math.max(0, int(fi.pente?.atual))}/${pMax}` : "";
+      r.penteVazio = pMax > 0 && int(fi.pente?.atual) <= 0;
+      r.temPente = pMax > 0;
+      r.recargaTexto = ACOES[fi.recargaAcao]?.curto ?? "Padrão";
+      r.cargasTexto = cMax ? `${limitar(int(fi.cargas?.valor), 0, cMax)}/${cMax} cargas` : "";
+      return r;
+    }, falhas),
     armasGuardadas: armas.filter(a => !a.equipado).length,
     custom: cadaSeguro(custom, a => ({ ...resumoAtaque(a, ficha, cena), opcoesPericia: opcoesPericia(a.periciaId) }), falhas),
     bloqueados: ficha.ataquesGerais.bloqueados.join(", ")
@@ -442,7 +734,8 @@ export function montarContexto({
   const caF = ficha.ca;
   ctx.caAtributos = [...Object.entries(ATRIBUTOS).map(([id, a]) => ({ id, abrev: a.abrev, label: a.label })), { id: "nenhum", abrev: "—", label: "Nenhum" }]
     .map(o => ({ ...o, selected: o.id === caF.atributo }));
-  ctx.caFormula = [`Base ${caF.base}`, `${caF.atributoLabel} ${sinal(caF.atributoValor)}`, `Armadura ${caF.armadura}${caF.armaduraFontes.length ? ` (${caF.armaduraFontes.join(", ")})` : ""}`, `Outros ${sinal(caF.bonus)}`,
+  ctx.caArmaduraFontes = caF.armaduraFontes.join(", ");
+  ctx.caFormula = [`Base ${caF.base}`, `${caF.atributoLabel} ${sinal(caF.atributoValor)}`, `Armaduras e escudos ${caF.armadura}${caF.armaduraFontes.length ? ` (${caF.armaduraFontes.join(", ")})` : " (nada equipado)"}`, `Outros ${sinal(caF.bonus)}`,
     ...(caF.mod ? [`Efeitos ${sinal(caF.mod)}`] : [])].join(" + ") + ` = ${caF.total - caF.penal}`;
 
   ctx.cena = cena;
@@ -465,18 +758,24 @@ export function montarContexto({
     const alertas = [];
     if (formas.some(f => f.excedeDano)) alertas.push(`Dano acima do teto da raridade ${r.label} (${r.danoMax})`);
     if (formas.some(f => f.excedeEfeitos)) alertas.push(`Mais efeitos adicionais do que a raridade ${r.label} permite (${r.efeitos})`);
+    const tVinculo = p.origem === "transformacao" && p.transformacao && dados.transformacoes?.[p.transformacao] ? p.transformacao : "";
+    const tNome = tVinculo ? (dados.transformacoes[tVinculo].nome || "Transformação") : "";
+    const presaTransf = !!tVinculo && tAtivaId !== tVinculo;
     return {
       id: item.id, uuid: item.uuid, name: item.name, img: item.img, tipo: p.tipo,
       raridade: p.raridade, raridadeLabel: r.label, raridadeCor: r.cor,
-      passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: ORIGENS_HABILIDADE[p.origem] ?? "", circulo: p.circulo,
+      passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: tNome ? `Transformação: ${tNome}` : (ORIGENS_HABILIDADE[p.origem] ?? ""), circulo: p.circulo,
+      transformacao: tVinculo, arquetipoRef: p.arquetipoRef,
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
-      bloqueada: formas.length > 0 && formas.every(f => f.bloqueada),
-      motivosTexto: [...new Set(formas.filter(f => f.bloqueada).flatMap(f => f.motivosTexto.split(", ")))].filter(Boolean).join(", "),
+      bloqueada: presaTransf || (formas.length > 0 && formas.every(f => f.bloqueada)),
+      motivosTexto: [...new Set([...(presaTransf ? [`só transformado em ${tNome}`] : []), ...formas.filter(f => f.bloqueada).flatMap(f => f.motivosTexto.split(", "))])].filter(Boolean).join(", "),
+      selecionado: selecao.ids.has(item.id),
       alertas, alertasTexto: alertas.join("\n"),
       expandido: expandidos.has(item.id), descricao: enriquecidos.itens?.[item.id] ?? ""
     };
   }, falhas);
   const ordenarPoderes = (a, b) => (b.favorito - a.favorito) || a.name.localeCompare(b.name, "pt-BR");
+  for (const p of poderes) p.selecionando = selecao.aba === (p.tipo === "magia" ? "magias" : "habilidades");
   const contagem = contarRaridades(poderes);
   const modo = ajustes.modoLimites ?? "separados";
 
@@ -486,18 +785,22 @@ export function montarContexto({
   const passivas = lista => ({ id: "passivas", label: "Passivas", cor: "#93A9A3", limite: null, itens: lista.filter(h => h.passiva).sort(ordenarPoderes) });
   const secoesDe = sub => {
     const lista = daSubaba(sub);
+    const porRaridade = id => ({
+      id, label: RARIDADES_PODER[id].label, cor: RARIDADES_PODER[id].cor, ...situacaoLimite(contagem, "habilidade", id, modo),
+      itens: lista.filter(h => !h.passiva && h.raridade === id).sort(ordenarPoderes)
+    });
+    // Geral: a Habilidade Única vem primeiro, em destaque (não conta nos espaços); depois Passivas e as raridades
     const secoes = sub.origem
       ? [passivas(lista), { id: "comum", label: "Comum", cor: RARIDADES_PODER.comum.cor, limite: null, itens: lista.filter(h => !h.passiva).sort(ordenarPoderes) }]
-      : [passivas(lista), ...Object.entries(RARIDADES_PODER).map(([id, r]) => ({
-        id, label: r.label, cor: r.cor, ...situacaoLimite(contagem, "habilidade", id, modo),
-        itens: lista.filter(h => !h.passiva && h.raridade === id).sort(ordenarPoderes)
-      }))];
+      : [{ ...porRaridade("unica"), label: "Habilidade Única", destaque: true, dica: "Não conta nos espaços de habilidades conhecidas." },
+        passivas(lista), ...["comum", "rara", "epica", "lendaria"].map(porRaridade)];
     for (const s of secoes) s.vazia = !s.itens.length;
     return { secoes, total: lista.length };
   };
   const subAtual = SUBABAS_HABILIDADE.some(s => s.id === ui.abas?.habilidades) ? ui.abas.habilidades : "geral";
   const subabas = SUBABAS_HABILIDADE.map(sub => ({
-    ...sub, ...secoesDe(sub), ativa: sub.id === subAtual, cls: sub.id === subAtual ? "active" : ""
+    ...sub, ...secoesDe(sub), ativa: sub.id === subAtual, cls: sub.id === subAtual ? "active" : "",
+    eTransformacoes: sub.id === "transformacoes", eArquetipo: sub.id === "arquetipo"
   }));
   const geral = daSubaba(SUBABAS_HABILIDADE[0]);
   ctx.habilidades = {
@@ -507,27 +810,76 @@ export function montarContexto({
   };
   // Aba opcional Arquétipo e Classe: anotações próprias + as mesmas habilidades das sub-abas
   ctx.arqclasse = {
-    subabas: SUBABAS_HABILIDADE.filter(s => s.origem).map(sub => {
+    subabas: SUBABAS_HABILIDADE.filter(s => SUBABAS_ARQCLASSE.includes(s.id)).map(sub => {
       const atual = (ui.abas?.arqclasse ?? "arquetipo") === sub.id;
       const nomes = sub.id === "arquetipo" ? [dados.arquetipo, dados.arquetipo2] : [dados.classe];
       const notas = dados.arqclasse?.[sub.id]?.notas ?? "";
       return {
-        ...sub, ...secoesDe(sub), ativa: atual, cls: atual ? "active" : "",
+        ...sub, ...secoesDe(sub), ativa: atual, cls: atual ? "active" : "", eArquetipo: sub.id === "arquetipo",
         nome: nomes.map(n => String(n ?? "").trim()).filter(Boolean).join(" / "),
         editor: editores.arqclasse?.[sub.id] ?? "", texto: temTexto(notas) ? (enriquecidos.arqclasse?.[sub.id] ?? "") : ""
       };
     })
   };
 
+  ctx.sustentadas = Object.entries(dados.sustentadas ?? {}).filter(([, s]) => s).map(([id, s]) => ({
+    id, nome: s.nome || "Sustentada", custoTexto: `${int(s.valor)} ${CUSTO_RECURSOS[s.recurso]?.sigla ?? ""}/turno`.trim(), editavel
+  }));
+  ctx.temSustentadas = ctx.sustentadas.length > 0;
+  ctx.selecao = { ativo: !!selecao.aba, aba: selecao.aba ?? "", qtd: [...selecao.ids].filter(id => poderes.some(p => p.id === id)).length };
+  ctx.selecao.habilidades = selecao.aba === "habilidades";
+  ctx.selecao.magias = selecao.aba === "magias";
+  ctx.opcoesOrigem = [{ id: "", label: "Geral" }, { id: "arquetipo", label: "Arquétipo" }, { id: "classe", label: "Classe" }, { id: "transformacao", label: "Transformação" }];
+
+  /* ---------- Transformações ---------- */
+  {
+    const alvosM = alvosModificador(ficha.pericias.map(p => ({ id: p.id, nome: p.nome })));
+    const gruposM = [...new Set(alvosM.map(a => a.grupo))];
+    const rotuloM = Object.fromEntries(alvosM.map(a => [a.id, a.label]));
+    const daTransf = habilidades.filter(h => h.origem === "transformacao");
+    const lista = Object.entries(dados.transformacoes ?? {}).filter(([, t]) => t).map(([id, t]) => {
+      const custoRec = CUSTO_RECURSOS[t.custo?.recurso] ? t.custo.recurso : "nenhum";
+      const custoValor = Math.max(0, int(t.custo?.valor));
+      const ativa = id === tAtivaId;
+      const mods = Object.entries(t.mods ?? {}).filter(([, m]) => m).map(([mid, m]) => ({
+        id: mid, alvo: m.alvo ?? "", valor: num(m.valor), alvoLabel: rotuloM[m.alvo] ?? "", valorTexto: sinal(num(m.valor)),
+        grupos: gruposM.map(g => ({ grupo: g, opcoes: alvosM.filter(a => a.grupo === g).map(a => ({ ...a, selected: a.id === m.alvo })) }))
+      }));
+      const poderesT = daTransf.filter(h => h.transformacao === id).sort(ordenarPoderes);
+      return {
+        id, nome: t.nome || "Transformação sem nome", nomeBruto: t.nome ?? "", img: t.img || "", descricao: t.descricao ?? "",
+        custoRecurso: custoRec, custoValor, custoTexto: custoRec === "nenhum" || !custoValor ? "Sem custo" : `${custoValor} ${CUSTO_RECURSOS[custoRec].sigla}`,
+        opcoesCusto: Object.entries(CUSTO_RECURSOS).map(([cid, cr]) => ({ id: cid, label: cr.label, selected: cid === custoRec })),
+        duracao: Math.max(0, int(t.duracao)), duracaoTexto: int(t.duracao) > 0 ? `${int(t.duracao)} turno${int(t.duracao) > 1 ? "s" : ""}` : "até encerrar",
+        trocarToken: !!t.trocarToken, ativa, turnos: ativa ? int(dados.transformacao?.turnos) : 0,
+        mods, temMods: mods.some(m => m.alvoLabel), poderes: poderesT, temPoderes: poderesT.length > 0, criado: num(t.criado)
+      };
+    }).sort((a, b) => a.criado - b.criado);
+    ctx.transformacoes = {
+      lista, vazio: !lista.length, ativa: ctx.transformacaoAtiva,
+      soltas: daTransf.filter(h => !h.transformacao).sort(ordenarPoderes)
+    };
+  }
+
+  /* ---------- Arquétipos modelo (progressão e automações) ---------- */
+  ctx.arquetiposPainel = painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editavel });
+  ctx.temArquetipoModelo = ctx.arquetiposPainel.length > 0;
+  ctx.combateArquetipo = combateArquetipo({ dados, ficha, itens, tipoDe, editavel });
+
   const magias = poderes.filter(p => p.tipo === "magia");
   const circuloAtual = String(ui.abas?.magias ?? "0");
   const circulos = CIRCULOS.map(c => ({ ...c, chave: String(c.nivel) }));
   if (magias.some(m => m.circulo > 6)) circulos.push({ nivel: 7, label: "7º ou acima", curto: "7+", chave: "7" });
+  const nivelConj = nivelArquetipo(dados, "conjurador");
   ctx.magias = {
     circulos: circulos.map(c => {
       const lista = magias.filter(m => (c.nivel === 7 ? m.circulo >= 7 : m.circulo === c.nivel)).sort(ordenarPoderes);
-      return { ...c, itens: lista, total: lista.length, vazia: !lista.length, ativa: c.chave === circuloAtual, cls: c.chave === circuloAtual ? "active" : "" };
+      const conj = nivelConj && c.nivel <= 6 ? {
+        custo: custoMagiaCirculo(c.nivel), liberado: circuloLiberado(c.nivel, nivelConj), liberaEm: ARQUETIPOS.conjurador.circulos[c.nivel]
+      } : null;
+      return { ...c, itens: lista, total: lista.length, vazia: !lista.length, ativa: c.chave === circuloAtual, cls: c.chave === circuloAtual ? "active" : "", conj, trancado: !!conj && !conj.liberado };
     }),
+    conjurador: nivelConj,
     limites: Object.entries(RARIDADES_PODER).filter(([, r]) => r.limite !== null).map(([id, r]) => ({
       id, label: r.label, cor: r.cor, ...situacaoLimite(contagem, "magia", id, modo)
     })),
@@ -543,6 +895,10 @@ export function montarContexto({
     ctx.magias.circulos[0].cls = "active";
   }
   ctx.modoLimites = modo;
+  ctx.dtOpcoes = {
+    atributos: Object.entries(ATRIBUTOS).map(([id, a]) => ({ id, label: a.label, selected: id === ficha.cd.atributo })),
+    pericias: ficha.pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ficha.cd.pericia }))
+  };
 
   /* ---------- Treinamentos ---------- */
   {
@@ -611,8 +967,14 @@ export function montarContexto({
     const ataque = eArma ? resumoAtaque(ataqueDeArma(item), ficha, cena) : null;
     const efeitos = lerEfeitosItem(item);
     const ativo = itemAtivo(item);
+    const municaoItem = eArma && f.municao ? itens.find(i => i.id === f.municao) : null;
+    const cargasMax = Math.max(0, int(f.cargas?.max));
     return {
       id: item.id, uuid: item.uuid, name: item.name, img: item.img, type: item.type,
+      municao: eArma && f.municao ? { nome: municaoItem?.name ?? "munição não encontrada", qtd: municaoItem ? num(municaoItem.system?.quantity, 0) : 0,
+        acabou: !municaoItem || num(municaoItem.system?.quantity, 0) <= 0 } : null,
+      pente: eArma && int(f.pente?.max) > 0 ? { atual: Math.max(0, int(f.pente.atual)), max: int(f.pente.max), vazio: int(f.pente.atual) <= 0 } : null,
+      cargas: cargasMax ? { valor: limitar(int(f.cargas?.valor), 0, cargasMax), max: cargasMax, recarga: f.cargas?.recarga && f.cargas.recarga !== "nenhuma" ? RECARGAS[f.cargas.recarga] ?? "" : "" } : null,
       quantidade: qtd, peso: arredondar(peso, 2), pesoLinha: arredondar(peso * qtd, 2),
       raridade, raridadeLabel: r.label, raridadeCor: r.cor, raridadeOrdem: r.ordem,
       favorito: !!f.favorito,
@@ -627,7 +989,7 @@ export function montarContexto({
       opcoesRaridade: Object.entries(RARIDADES_ITEM).map(([id, rr]) => ({ id, label: rr.label, selected: id === raridade })),
       opcoesPericia: eArma ? opcoesPericia(ataque.periciaId) : [],
       efeitosAtivos: ativo || item.type === "consumable",
-      resumoEfeitos: [...(item.type === "equipment" && int(f.armadura) ? [`Armadura ${int(f.armadura)}`] : []),
+      resumoEfeitos: [...(item.type === "equipment" && int(f.armadura) ? [`CA +${int(f.armadura)}`] : []),
         ...efeitos.map(e => resumoEfeitoItem(e, { alvos: rotuloAlvo, em: rotuloEm })).filter(Boolean)],
       efeitos: efeitos.map(e => ({
         ...e,
@@ -699,6 +1061,13 @@ export function montarContexto({
 
   /* ---------- Sobre ---------- */
   ctx.camposSobre = CAMPOS_SOBRE.map(c => ({ ...c, valor: dados.sobre?.[c.id] ?? "" }));
+  ctx.voz = { bordao: dados.sobre?.bordao ?? "", musica: dados.sobre?.musica ?? "", musicaNome: dados.sobre?.musicaNome ?? "", link: ctx.musica };
+  ctx.voz.vazia = !ctx.bordao && !ctx.musica;
+  ctx.podeVerSegredos = isGM || !!usuario.dono;
+  ctx.segredos = {
+    editor: editores.sobre?.segredos ?? "",
+    texto: temTexto(dados.sobre?.segredos) ? (enriquecidos.sobre?.segredos ?? "") : ""
+  };
   ctx.marca = { aparencia: dados.sobre?.marcaAparencia ?? "", local: dados.sobre?.marcaLocal ?? "", imagem: dados.sobre?.imagemMarca ?? "" };
   ctx.imagemAparencia = dados.sobre?.imagemAparencia ?? "";
   ctx.textosSobre = TEXTOS_SOBRE.filter(t => t.id !== "aparencia")
@@ -721,13 +1090,24 @@ export function montarContexto({
     .filter(([, p]) => p)
     .map(([id, p]) => ({ id, nome: p.nome || "Sem título", tipo: p.tipo === "mapa" ? "mapa" : "texto", ordem: num(p.ordem) }))
     .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR"));
-  const paginaAtiva = paginas.find(p => p.id === ui.abas?.notas)?.id ?? paginas[0]?.id ?? null;
+  const entradasDiario = Object.entries(dados.diario ?? {}).filter(([, e]) => e).map(([id, e]) => {
+    const ganhos = [["pev", "PEv"], ["pt", "PT"], ["ph", "PH"]].map(([k, rot]) => ({ id: k, rotulo: rot, valor: int(e[k]) })).filter(g => g.valor);
+    return {
+      id, data: e.data ?? "", dataTexto: dataBR(e.data), sessao: int(e.sessao), titulo: e.titulo ?? "", resumo: e.resumo ?? "", itens: e.itens ?? "",
+      pev: int(e.pev), pt: int(e.pt), ph: int(e.ph), ganhos, temGanhos: ganhos.length > 0, aplicado: !!e.aplicado,
+      podeSomar: editavel && ganhos.length > 0 && !e.aplicado, criado: num(e.criado)
+    };
+  }).sort((a, b) => String(b.data).localeCompare(String(a.data)) || b.sessao - a.sessao || b.criado - a.criado);
+  const diarioAtivo = ui.abas?.notas === "diario" || (!paginas.some(p => p.id === ui.abas?.notas) && !paginas.length);
+  ctx.diario = { entradas: entradasDiario, total: entradasDiario.length, vazio: !entradasDiario.length, ativo: diarioAtivo, cls: diarioAtivo ? "active" : "" };
+  const paginaAtiva = diarioAtivo ? null : (paginas.find(p => p.id === ui.abas?.notas)?.id ?? paginas[0]?.id ?? null);
   ctx.paginas = paginas.map((p, i) => ({
     ...p, ativa: p.id === paginaAtiva, cls: p.id === paginaAtiva ? "active" : "",
     eMapa: p.tipo === "mapa", primeira: i === 0, ultima: i === paginas.length - 1,
     editor: p.tipo === "texto" ? (editores.notas?.[p.id] ?? "") : ""
   }));
   ctx.semPaginas = !paginas.length;
+  ctx.mostrarAjudaPaginas = !paginas.length && !diarioAtivo;
 
   /* ---------- Condições ---------- */
   const uiCond = ui.condicoes ?? {};
@@ -835,6 +1215,8 @@ export function montarContexto({
     return {
       id, nome, img, uuid: r.uuid ?? "", ligado: !!ator, perdido: !!r.uuid && !ator,
       tipo: r.tipo ?? "outro", tipoLabel: TIPOS_RELACAO[r.tipo ?? "outro"] ?? "Outro",
+      tipoIcone: (ESTILO_RELACAO[r.tipo] ?? ESTILO_RELACAO.outro).icone, tipoCor: (ESTILO_RELACAO[r.tipo] ?? ESTILO_RELACAO.outro).cor,
+      notaPrivada: r.notaPrivada ?? "", historico: historicoDe(r.historico, edicao), base: `flags.${FLAG}.relacoes.${id}`,
       afinidade: af, afinidadeLabel: rotuloAfinidade(af), podeAfinidade: podeAjustar(ator?.jogador),
       soMestreAqui: edicao && !isGM && soMestre,
       afinidadePct: Math.round(((af - AFINIDADE.min) / (AFINIDADE.max - AFINIDADE.min)) * 100),
@@ -845,6 +1227,33 @@ export function montarContexto({
   }).sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.afinidade = AFINIDADE;
   ctx.podeAfinidade = ctx.relacoes.some(r => r.podeAfinidade);
+  ctx.podeVerPrivado = isGM || !!usuario.dono;
+  ctx.faccoes = Object.entries(dados.faccoes ?? {}).filter(([, f]) => f).map(([id, f]) => {
+    const rep = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, int(f.reputacao)));
+    return {
+      id, nome: f.nome || "Facção sem nome", nomeBruto: f.nome ?? "", img: f.img || "", notas: f.notas ?? "",
+      reputacao: rep, reputacaoLabel: ROTULOS_REPUTACAO[String(rep)] ?? "", podeAjustar: podeAjustar(),
+      reputacaoPct: Math.round(((rep - AFINIDADE.min) / (AFINIDADE.max - AFINIDADE.min)) * 100),
+      historico: historicoDe(f.historico, edicao), base: `flags.${FLAG}.faccoes.${id}`, criado: num(f.criado)
+    };
+  }).sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
+
+  /* ---------- Companheiros ---------- */
+  ctx.companheiros = montarCompanheiros({ dados, ficha, edicao, editavel });
+
+  /* ---------- Bestiário ---------- */
+  ctx.bestiario = Object.entries(dados.bestiario ?? {}).filter(([, b]) => b).map(([id, b]) => {
+    const tags = campo => (Array.isArray(b[campo]) ? b[campo] : []).filter(Boolean);
+    const busca = normalizarTexto([b.nome, b.tipo, b.local, ...tags("fraquezas"), ...tags("resistencias"), ...tags("imunidades"), b.notas].join(" "));
+    return {
+      id, nome: b.nome || "Criatura sem nome", nomeBruto: b.nome ?? "", img: b.img || "icons/svg/mystery-man.svg", uuid: b.uuid ?? "",
+      tipo: b.tipo ?? "", local: b.local ?? "", notas: b.notas ?? "", encontros: Math.max(0, int(b.encontros)), derrotados: Math.max(0, int(b.derrotados)),
+      fraquezas: tags("fraquezas"), resistencias: tags("resistencias"), imunidades: tags("imunidades"),
+      campoFraquezas: `bestiario.${id}.fraquezas`, campoResistencias: `bestiario.${id}.resistencias`, campoImunidades: `bestiario.${id}.imunidades`,
+      busca, criado: num(b.criado)
+    };
+  }).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  ctx.bestiarioVazio = !ctx.bestiario.length;
   ctx.itensComErro = falhas;
 
   return ctx;
@@ -923,6 +1332,8 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     resistencia: fo.teste.tipo === "resistencia",
     opcoesAcao: Object.entries(ACOES).map(([id, a]) => ({ id, label: a.label, selected: id === fo.acao })),
     opcoesCusto: Object.entries(CUSTO_RECURSOS).map(([id, c]) => ({ id, label: c.label, selected: id === fo.custo.recurso })),
+    opcoesPorTurno: Object.entries(CUSTO_RECURSOS).map(([id, c]) => ({ id, label: c.label, selected: id === (fo.porTurno?.recurso ?? "nenhum") })),
+    porTurnoValor: fo.porTurno?.valor ?? 0,
     opcoesTeste: Object.entries(TIPOS_TESTE).map(([id, label]) => ({ id, label, selected: id === fo.teste.tipo })),
     opcoesPericia: pericias.map(x => ({ ...x, selected: x.id === fo.teste.pericia })),
     requisitosLista: Object.entries(REQUISITOS).map(([id, q]) => ({ id, label: q.label, dica: q.dica, checked: fo.requisitos[id] })),
@@ -933,7 +1344,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     editavel, eMagia: p.tipo === "magia", dados: p,
     raridadeCor: r.cor, raridadeLabel: r.label,
     limite: { danoMax: r.danoMax, efeitos: r.efeitos, limite: r.limite },
-    cd: ficha ? ficha.cd : null, cdFormula: `${CD.base} + Arcanismo`,
+    cd: ficha ? ficha.cd : null, cdFormula: ficha?.cd?.formula ?? `${CD.base} + Núcleo + Arcanismo`,
     opcoesRaridade: Object.entries(RARIDADES_PODER).map(([id, x]) => ({ id, label: x.label, selected: id === p.raridade })),
     opcoesOrigem: Object.entries(ORIGENS_HABILIDADE).map(([id, label]) => ({ id, label, selected: id === p.origem })),
     opcoesCirculo: Array.from({ length: maxCirculo + 1 }, (_, n) => ({
@@ -954,7 +1365,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
 /*  Editor de item EPM (janela própria)         */
 /* -------------------------------------------- */
 
-const TIPOS_ITEM_LABEL = { weapon: "Arma", equipment: "Armadura / equipamento", consumable: "Consumível", tool: "Ferramenta", loot: "Loot", container: "Mochila", backpack: "Mochila" };
+const TIPOS_ITEM_LABEL = { weapon: "Arma", equipment: "Armadura, escudo ou equipamento", consumable: "Consumível", tool: "Ferramenta", loot: "Loot", container: "Mochila", backpack: "Mochila" };
 
 /** Moedas guardadas numa mochila (só as que têm quantidade). */
 export function moedasDaMochila(item) {
@@ -1005,6 +1416,26 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     dicaAtivo: ["weapon", "equipment"].includes(tipo) ? "Os bônus valem com o item equipado"
       : tipo === "consumable" ? "Curas e recuperações acontecem ao usar" : "Os bônus valem enquanto o item estiver no inventário",
     descricao: editores.descricao ?? ""
+  };
+  // Munição (armas) e cargas (qualquer item): descontadas sozinhas no ataque ou ao usar
+  const doDono = item.actor ? (item.actor.items?.contents ?? [...(item.actor.items ?? [])]) : [];
+  if (eArma) {
+    ctx.tipoArma = String(f.tipoArma ?? "");
+    ctx.sugestoesTipoArma = TIPOS_ARMA;
+    const candidatos = doDono.filter(i => ["consumable", "loot"].includes(i.type) && i.id !== item.id);
+    ctx.municao = {
+      porAtaque: Math.max(1, int(f.municaoPorAtaque, 1)), temDono: !!item.actor,
+      opcoesRecarga: ["padrao", "bonus", "movimento", "reacao", "livre"].map(id => ({ id, label: ACOES[id].label, selected: id === (ACOES[f.recargaAcao] ? f.recargaAcao : "padrao") })),
+      penteMax: Math.max(0, int(f.pente?.max)), penteAtual: Math.max(0, int(f.pente?.atual)), temPente: int(f.pente?.max) > 0,
+      opcoes: [{ id: "", label: "Não usa munição", selected: !f.municao },
+        ...candidatos.map(i => ({ id: i.id, label: `${i.name} (×${num(i.system?.quantity, 0)})`, selected: i.id === f.municao }))]
+    };
+  }
+  const recarga = RECARGAS[f.cargas?.recarga] ? f.cargas.recarga : "nenhuma";
+  ctx.cargas = {
+    valor: Math.max(0, int(f.cargas?.valor)), max: Math.max(0, int(f.cargas?.max)),
+    opcoesRecarga: Object.entries(RECARGAS).map(([id, label]) => ({ id, label: id === "nenhuma" ? "Não recarrega sozinha" : label, selected: id === recarga })),
+    dica: eArma ? "Cada ataque gasta 1 carga" : tipo === "consumable" ? "Usar gasta 1 carga em vez de 1 unidade" : "Usar gasta 1 carga"
   };
   if (eMochila) {
     const actor = item.actor;

@@ -7,6 +7,7 @@ import { int, novoId, normalizarDados } from "./data.mjs";
 import { conteudoRevelacoes } from "./context.mjs";
 import { fvtt, enriquecer, escapar } from "./helpers.mjs";
 import { ajustes } from "./settings.mjs";
+import { entradaHistorico } from "./extras.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -169,9 +170,15 @@ export async function mudarAfinidade(ator, com, delta, tipo = "aliado") {
   const existente = Object.entries(relacoes).find(([, x]) => x?.uuid === com.uuid);
   const limitarAf = v => Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, v));
   if (existente) {
-    return ator.update({ [`${P}.relacoes.${existente[0]}.afinidade`]: limitarAf(int(existente[1].afinidade) + delta) });
+    const [rid, rel] = existente;
+    const de = limitarAf(int(rel.afinidade));
+    const para = limitarAf(de + delta);
+    if (para === de) return null;
+    return ator.update({ [`${P}.relacoes.${rid}.afinidade`]: para, ...entradaHistorico(rel, `relacoes.${rid}`, de, para, { origem: "Relação múltipla" }) });
   }
-  return ator.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(com, TIPOS_RELACAO[tipo] ? tipo : "aliado", limitarAf(delta)) });
+  const rid = novoId();
+  const entrada = novaEntrada(com, TIPOS_RELACAO[tipo] ? tipo : "aliado", limitarAf(delta));
+  return ator.update({ [`${P}.relacoes.${rid}`]: entrada, ...entradaHistorico(entrada, `relacoes.${rid}`, 0, limitarAf(delta), { origem: "Relação múltipla" }) });
 }
 
 /** Personagem de jogador? (afinidade entre jogadores é decidida por eles; com NPCs, só pelo Mestre) */

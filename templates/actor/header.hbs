@@ -12,7 +12,8 @@
       <circle class="epm-anel" cx="75" cy="75" r="{{this.r}}" style="stroke: {{this.cor}}" stroke-dasharray="{{this.dash}} {{this.resto}}" transform="rotate(-90 75 75)" />
       {{/each}}
     </svg>
-    <img class="epm-retrato" src="{{actor.img}}" alt="Retrato de {{actor.name}}" {{#if edicao}}data-action="editarImagem" title="Trocar retrato (do computador ou dos arquivos)"{{else}}data-action="verImagem" data-src="{{actor.img}}" data-titulo="{{actor.name}}" title="Ver retrato"{{/if}} />
+    <img class="epm-retrato" src="{{retrato}}" alt="Retrato de {{actor.name}}" {{#if edicao}}data-action="editarImagem" title="Trocar retrato (do computador ou dos arquivos)"{{else}}data-action="verImagem" data-src="{{retrato}}" data-titulo="{{actor.name}}" title="Ver retrato"{{/if}} />
+    {{#if transformacaoAtiva}}<span class="epm-selo-transformacao" title="Transformado{{#if transformacaoAtiva.turnos}}: faltam {{transformacaoAtiva.turnos}} turno(s){{/if}}"><i class="fa-solid fa-dragon" aria-hidden="true"></i> {{transformacaoAtiva.nome}}{{#if transformacaoAtiva.turnos}} · {{transformacaoAtiva.turnos}}{{/if}}</span>{{/if}}
   </div>
 
   <div class="epm-identidade">
@@ -26,7 +27,8 @@
       <datalist id="epm-arquetipos-{{actor.id}}">{{#each arquetiposSugeridos}}<option value="{{this}}"></option>{{/each}}</datalist>
     </div>
     {{else}}
-    <h1 class="epm-nome-texto">{{actor.name}}</h1>
+    <h1 class="epm-nome-texto">{{actor.name}}{{#if musica}} <button type="button" class="epm-musica" data-action="tocarMusica" data-url="{{musica}}" title="Música tema{{#if musicaNome}}: {{musicaNome}}{{/if}} (abre em outra aba)"><i class="fa-solid fa-music" aria-hidden="true"></i></button>{{/if}}</h1>
+    {{#if bordao}}<p class="epm-bordao" title="Bordão">“{{bordao}}”</p>{{/if}}
     <dl class="epm-identidade-texto">
       <div><dt>Raça</dt><dd>{{#if dados.raca}}{{dados.raca}}{{else}}—{{/if}}</dd></div>
       <div><dt>Arquétipo</dt><dd>{{#if dados.arquetipo}}{{dados.arquetipo}}{{else}}—{{/if}}{{#if ficha.progressao.temSegundo}} e {{dados.arquetipo2}}{{/if}}</dd></div>

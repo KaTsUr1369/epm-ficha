@@ -139,7 +139,8 @@ export const ORIGENS_HABILIDADE = {
   raca: "Raça",
   arma: "Arma",
   geral: "Geral",
-  customizada: "Customizada"
+  customizada: "Customizada",
+  transformacao: "Transformação"
 };
 
 export const CIRCULOS = [
@@ -187,7 +188,7 @@ export const REQUISITOS = {
 export const TIPOS_TESTE = {
   nenhum:      "Sem teste",
   ataque:      "Ataque (perícia do usuário)",
-  resistencia: "Resistência do alvo (CD 8 + Arcanismo)",
+  resistencia: "Resistência do alvo (DT 10 + atributo + perícia)",
   pericia:     "Teste de perícia do usuário"
 };
 
@@ -198,8 +199,12 @@ export const CUSTO_RECURSOS = {
   pe: { label: "Estamina (PE)", sigla: "PE" }
 };
 
-/** CD dos testes de resistência contra habilidades e magias: 8 + perícia (com atributo). */
-export const CD = { base: 8, pericia: "arcanismo" };
+/**
+ * DT dos testes de resistência contra habilidades e magias: 10 + atributo + perícia.
+ * Padrão: Núcleo + Arcanismo (cada personagem pode trocar os dois na aba Magias, no modo edição).
+ * A perícia entra sem o próprio atributo (pontos + outros + bônus), para o atributo não contar duas vezes.
+ */
+export const CD = { base: 10, atributo: "nucleo", pericia: "arcanismo" };
 
 export const CRITICO_PADRAO = { margem: 20, mult: 2 };
 export const COR_VIDA_TEMP = "#E8C547";
@@ -313,7 +318,7 @@ export function alvosModificador(pericias = []) {
 export const CATEGORIAS_ITEM = [
   { id: "armas",       label: "Armas",       tipos: ["weapon"],               criar: "weapon",     novo: "Nova arma",        icone: "fa-solid fa-khanda" },
   { id: "consumiveis", label: "Consumíveis", tipos: ["consumable"],           criar: "consumable", novo: "Novo consumível",  icone: "fa-solid fa-flask" },
-  { id: "armaduras",   label: "Armaduras",   tipos: ["equipment"],            criar: "equipment",  novo: "Nova armadura",    icone: "fa-solid fa-shield-halved" },
+  { id: "armaduras",   label: "Armaduras e escudos",   tipos: ["equipment"],            criar: "equipment",  novo: "Nova armadura ou escudo",    icone: "fa-solid fa-shield-halved" },
   { id: "ferramentas", label: "Ferramentas", tipos: ["tool"],                 criar: "tool",       novo: "Nova ferramenta",  icone: "fa-solid fa-screwdriver-wrench" },
   { id: "loot",        label: "Loot",        tipos: ["loot"],                 criar: "loot",       novo: "Novo loot",        icone: "fa-solid fa-gem" }
 ];
@@ -384,6 +389,32 @@ export const TIPOS_RELACAO = {
   aliado: "Aliado", amigo: "Amigo", familia: "Família", mentor: "Mentor",
   amor: "Interesse amoroso", contato: "Contato", rival: "Rival", inimigo: "Inimigo", outro: "Outro"
 };
+/** Ícone e cor de cada tipo de vínculo (selo na relação). */
+export const ESTILO_RELACAO = {
+  aliado:  { icone: "fa-solid fa-handshake",        cor: "#6FAE8C" },
+  amigo:   { icone: "fa-solid fa-face-smile",       cor: "#7FB7D9" },
+  familia: { icone: "fa-solid fa-house-chimney",    cor: "#D9A25A" },
+  mentor:  { icone: "fa-solid fa-graduation-cap",   cor: "#B49BE0" },
+  amor:    { icone: "fa-solid fa-heart",            cor: "#E07A9B" },
+  contato: { icone: "fa-solid fa-address-book",     cor: "#A3A9AE" },
+  rival:   { icone: "fa-solid fa-bolt",             cor: "#E3A13A" },
+  inimigo: { icone: "fa-solid fa-skull",            cor: "#D2544A" },
+  outro:   { icone: "fa-solid fa-circle-question",  cor: "#93A9A3" }
+};
+
+/** Nomes da reputação com facções (−5 a +5). */
+export const ROTULOS_REPUTACAO = {
+  "-5": "Caçado", "-4": "Odiado", "-3": "Hostil", "-2": "Desconfiado", "-1": "Malvisto", "0": "Neutro",
+  "1": "Conhecido", "2": "Respeitado", "3": "Honrado", "4": "Aliado", "5": "Herói"
+};
+
+/** Histórico de afinidade e reputação: quantas mudanças ficam guardadas por relação ou facção. */
+export const HISTORICO_MAX = 25;
+
+/** Tipos de companheiro (aba Companheiros). */
+export const TIPOS_COMPANHEIRO = {
+  pet: "Pet", montaria: "Montaria", invocacao: "Invocação", automato: "Autômato", aliado: "Aliado", outro: "Outro"
+};
 
 export const AFINIDADE = { min: -5, max: 5 };
 
@@ -421,6 +452,8 @@ export const ABAS = [
   { id: "condicoes",   label: "Condições",   icone: "fa-solid fa-heart-pulse" },
   { id: "bencaos",     label: "Bênçãos",     icone: "fa-solid fa-yin-yang" },
   { id: "relacoes",    label: "Relações",    icone: "fa-solid fa-people-arrows" },
+  { id: "companheiros", label: "Companheiros", icone: "fa-solid fa-paw", seConteudo: "companheiros" },
+  { id: "bestiario",   label: "Bestiário",   icone: "fa-solid fa-dragon" },
   { id: "personalizacao", label: "Personalizar", titulo: "Personalização da ficha", icone: "fa-solid fa-palette", soEdicao: true }
 ];
 
@@ -475,8 +508,11 @@ export const PT_POR_ACERTOS = [0, 0, 1, 1, 2, 2];
 export const SUBABAS_HABILIDADE = [
   { id: "geral",     label: "Geral" },
   { id: "arquetipo", label: "Arquétipo", origem: "arquetipo" },
-  { id: "classe",    label: "Classe",    origem: "classe" }
+  { id: "classe",    label: "Classe",    origem: "classe" },
+  { id: "transformacoes", label: "Transformações", origem: "transformacao" }
 ];
+/** Sub-abas que também aparecem na aba opcional Arquétipo e Classe. */
+export const SUBABAS_ARQCLASSE = ["arquetipo", "classe"];
 
 export const CORES_PRONTAS = [
   { id: "verdete",  label: "Verdete",  cor: "#5D9F98" },
@@ -488,6 +524,23 @@ export const CORES_PRONTAS = [
   { id: "grafite",  label: "Grafite",  cor: "#7C838A" }
 ];
 export const COR_PADRAO = CORES_PRONTAS[0].cor;
+
+/** Personalização: moldura do retrato, estilo de letra e tamanho do texto. */
+export const MOLDURAS = {
+  astrolabio: { label: "Astrolábio (padrão)" },
+  simples:    { label: "Simples" },
+  dourada:    { label: "Dourada" },
+  runica:     { label: "Rúnica" },
+  nenhuma:    { label: "Sem moldura" }
+};
+export const FONTES = {
+  classica:   { label: "Clássica (padrão)", display: "", ui: "" },
+  limpa:      { label: "Limpa",      display: '"Signika", "Segoe UI", system-ui, sans-serif', ui: "" },
+  condensada: { label: "Condensada", display: '"Modesto Condensed", "Arial Narrow", sans-serif', ui: '"Signika", "Arial Narrow", sans-serif' },
+  antiga:     { label: "Antiga",     display: '"Amiri", "Book Antiqua", Georgia, serif', ui: '"Amiri", Georgia, "Times New Roman", serif' },
+  futurista:  { label: "Futurista",  display: '"Bruno Ace", "Orbitron", "Eurostile", sans-serif', ui: "" }
+};
+export const ESCALA_TEXTO = { min: 85, max: 125, passo: 5, padrao: 100 };
 export const BRILHO_PADRAO = 50;
 
 export const CORES_NO = ["#2B4440", "#3A3355", "#4A2F33", "#4A4128", "#26404F", "#3B4A2B"];
@@ -496,3 +549,10 @@ export const CORES_NO = ["#2B4440", "#3A3355", "#4A2F33", "#4A4128", "#26404F", 
 export const SUGESTOES = {
   dano: ["Corte", "Perfuração", "Impacto", "Fogo", "Gelo", "Elétrico", "Ácido", "Veneno", "Psíquico", "Necrótico", "Radiante", "Trovão", "Força", "Mágico", "Espiritual", "Sanidade", "Caos", "Luz", "Trevas", "Sangue"]
 };
+
+/** Tipos de arma sugeridos (Arma Favorita do Combatente vale para um tipo). Dá para escrever outro. */
+export const TIPOS_ARMA = [
+  "Adaga", "Espada curta", "Espada longa", "Espada grande", "Katana", "Rapieira", "Machado", "Machado grande", "Maça", "Martelo",
+  "Martelo de guerra", "Lança", "Alabarda", "Foice", "Cajado", "Chicote", "Manopla", "Desarmado", "Arco curto", "Arco longo",
+  "Besta", "Arma de arremesso", "Funda", "Pistola", "Revólver", "Rifle", "Espingarda", "Submetralhadora", "Escudo"
+];

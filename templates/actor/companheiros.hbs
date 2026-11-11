@@ -1,0 +1,102 @@
+<section class="tab epm-aba epm-companheiros {{cls.companheiros}}" data-group="primary" data-tab="companheiros">
+  <header class="epm-aba-topo">
+    <p class="epm-dica">Pets, montarias, invocações e autômatos, cada um com uma mini-ficha. Arraste um personagem da barra lateral para cá para ligar a ficha dele.{{#if edicao}} Fora do modo edição esta aba só aparece quando houver algum companheiro.{{/if}}</p>
+    <div class="epm-aba-acoes">
+      {{#if companheiros.podeAutomato}}<button type="button" class="epm-botao" data-action="criarAutomato" title="Artífice nível {{companheiros.nivelAutomato}}+"><i class="fa-solid fa-robot" aria-hidden="true"></i> Pequeno Autômato</button>{{/if}}
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoCompanheiro"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo companheiro</button>{{/if}}
+    </div>
+  </header>
+  {{#if companheiros.vazio}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhum companheiro ainda.</p></div>{{/if}}
+  <div class="epm-companheiros-grade">
+    {{#each companheiros.lista}}
+    <article class="epm-companheiro" data-companheiro="{{this.id}}">
+      <div class="epm-comp-topo">
+        <img class="epm-comp-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemCompanheiro" data-companheiro="{{this.id}}" title="Trocar imagem"{{else}}data-action="verImagem" data-src="{{this.img}}" data-titulo="{{this.nome}}" title="Ampliar"{{/if}} />
+        <div class="epm-comp-titulo">
+          {{#if @root.edicao}}
+          <input type="text" class="epm-comp-nome" name="{{this.base}}.nome" value="{{this.nomeBruto}}" placeholder="Nome" aria-label="Nome" />
+          <select name="{{this.base}}.tipo" aria-label="Tipo">{{#each opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+          {{else}}
+          <h4 class="epm-comp-nome">{{this.nome}}</h4>
+          <span class="epm-tag">{{this.tipoLabel}}</span>
+          {{/if}}
+          {{#if ligado}}<button type="button" class="epm-icone-botao" data-action="abrirLigado" data-uuid="{{this.uuid}}" title="Abrir a ficha ligada"><i class="fa-solid fa-up-right-from-square"></i></button>{{/if}}
+          {{#if @root.edicao}}<button type="button" class="epm-icone-botao perigo" data-action="excluirCompanheiro" data-companheiro="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>{{/if}}
+        </div>
+      </div>
+      {{#if bonusAutomato}}<p class="epm-dica epm-comp-bonus"><i class="fa-solid fa-gears" aria-hidden="true"></i> {{this.bonusAutomato}} (já somado).</p>{{/if}}
+      <div class="epm-comp-recursos">
+        {{#if pv.mostrar}}
+        <div class="epm-comp-recurso" style="--cor: #D2544A">
+          <span class="epm-rotulo">PV</span>
+          <button type="button" class="epm-seta" data-action="ajustarCompanheiro" data-companheiro="{{this.id}}" data-recurso="pv" data-delta="-1" aria-label="Diminuir PV" {{#unless editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-left"></i></button>
+          <span class="epm-comp-valor">{{pv.value}}{{#if @root.edicao}} / <input type="number" min="0" name="{{this.base}}.pv.max" value="{{pv.maxBase}}" aria-label="PV máximo (sem bônus)" />{{else}} / {{pv.max}}{{/if}}</span>
+          <button type="button" class="epm-seta" data-action="ajustarCompanheiro" data-companheiro="{{this.id}}" data-recurso="pv" data-delta="1" aria-label="Aumentar PV" {{#unless editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-right"></i></button>
+          <div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pv.pct}}"></span></div>
+        </div>
+        {{/if}}
+        {{#if pm.mostrar}}
+        <div class="epm-comp-recurso" style="--cor: #4C8EE0">
+          <span class="epm-rotulo">PM</span>
+          <button type="button" class="epm-seta" data-action="ajustarCompanheiro" data-companheiro="{{this.id}}" data-recurso="pm" data-delta="-1" aria-label="Diminuir PM" {{#unless editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-left"></i></button>
+          <span class="epm-comp-valor">{{pm.value}}{{#if @root.edicao}} / <input type="number" min="0" name="{{this.base}}.pm.max" value="{{pm.maxBase}}" aria-label="PM máximo (sem bônus)" />{{else}} / {{pm.max}}{{/if}}</span>
+          <button type="button" class="epm-seta" data-action="ajustarCompanheiro" data-companheiro="{{this.id}}" data-recurso="pm" data-delta="1" aria-label="Aumentar PM" {{#unless editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-right"></i></button>
+          <div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pm.pct}}"></span></div>
+        </div>
+        {{/if}}
+        {{#if pe.mostrar}}
+        <div class="epm-comp-recurso" style="--cor: #E3A13A">
+          <span class="epm-rotulo">PE</span>
+          <button type="button" class="epm-seta" data-action="ajustarCompanheiro" data-companheiro="{{this.id}}" data-recurso="pe" data-delta="-1" aria-label="Diminuir PE" {{#unless editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-left"></i></button>
+          <span class="epm-comp-valor">{{pe.value}}{{#if @root.edicao}} / <input type="number" min="0" name="{{this.base}}.pe.max" value="{{pe.maxBase}}" aria-label="PE máximo (sem bônus)" />{{else}} / {{pe.max}}{{/if}}</span>
+          <button type="button" class="epm-seta" data-action="ajustarCompanheiro" data-companheiro="{{this.id}}" data-recurso="pe" data-delta="1" aria-label="Aumentar PE" {{#unless editavel}}disabled{{/unless}}><i class="fa-solid fa-angle-right"></i></button>
+          <div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pe.pct}}"></span></div>
+        </div>
+        {{/if}}
+      </div>
+      <div class="epm-comp-numeros">
+        {{#if @root.edicao}}
+        <label class="epm-mini"><span>CA</span><input type="number" name="{{this.base}}.ca" value="{{this.ca}}" /></label>
+        <label class="epm-mini"><span>desloc. (m)</span><input type="number" step="0.5" name="{{this.base}}.deslocamento" value="{{this.deslocamento}}" /></label>
+        {{else}}
+        <span class="epm-comp-num"><strong>{{this.ca}}</strong> CA</span>
+        <span class="epm-comp-num"><strong>{{epmNumero deslocamento}}</strong> m</span>
+        {{/if}}
+      </div>
+      {{#if @root.edicao}}
+      <div class="epm-comp-atributos">{{#each atributos}}<label class="epm-mini" title="{{this.label}}{{#if (epmNe total base)}} (total {{this.total}} com o bônus){{/if}}"><span>{{this.abrev}}</span><input type="number" name="{{../base}}.atributos.{{this.id}}" value="{{this.base}}" /></label>{{/each}}</div>
+      {{else}}
+      {{#if temAtributos}}<div class="epm-chips">{{#each atributosVisiveis}}<span class="epm-tag" title="{{this.label}}">{{this.abrev}} {{this.total}}</span>{{/each}}</div>{{/if}}
+      {{/if}}
+      <div class="epm-comp-ataques">
+        <span class="epm-rotulo">Ataques</span>
+        {{#unless temAtaques}}{{#unless @root.edicao}}<p class="epm-vazio">Nenhum ataque.</p>{{/unless}}{{/unless}}
+        {{#each ataques}}
+        <div class="epm-comp-ataque">
+          {{#if @root.edicao}}
+          <input type="text" name="{{../base}}.ataques.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome do ataque" />
+          <label class="epm-mini"><span>acerto</span><input type="number" name="{{../base}}.ataques.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
+          <label class="epm-mini"><span>dano</span><input type="text" name="{{../base}}.ataques.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d6 + 2" /></label>
+          <label class="epm-mini"><span>tipo</span><input type="text" name="{{../base}}.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" placeholder="Perfuração" /></label>
+          <button type="button" class="epm-icone-botao perigo" data-action="excluirAtaqueCompanheiro" data-companheiro="{{../id}}" data-ataque="{{this.id}}" title="Excluir ataque"><i class="fa-solid fa-xmark"></i></button>
+          {{else}}
+          <span class="epm-comp-ataque-nome">{{this.nome}}</span>
+          <span class="epm-tag">{{this.acertoTexto}}</span>
+          {{#if dano}}<span class="epm-tag epm-tag-dano">{{this.dano}}{{#if tipoDano}} {{this.tipoDano}}{{/if}}</span>{{/if}}
+          <button type="button" class="epm-botao epm-botao-forte" data-action="rolarAtaqueCompanheiro" data-companheiro="{{../id}}" data-ataque="{{this.id}}" {{#unless @root.editavel}}disabled{{/unless}}>Atacar</button>
+          {{/if}}
+        </div>
+        {{/each}}
+        {{#if @root.edicao}}<button type="button" class="epm-link" data-action="novoAtaqueCompanheiro" data-companheiro="{{this.id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ataque</button>{{/if}}
+      </div>
+      {{#if @root.edicao}}
+      <label class="epm-campo"><span>Habilidades</span><textarea rows="2" name="{{this.base}}.habilidades" placeholder="Faro aguçado, carrega até 100 kg…">{{this.habilidades}}</textarea></label>
+      <label class="epm-campo"><span>Notas</span><textarea rows="2" name="{{this.base}}.notas">{{this.notas}}</textarea></label>
+      {{else}}
+      {{#if habilidades}}<p class="epm-texto-livre"><strong>Habilidades.</strong> {{this.habilidades}}</p>{{/if}}
+      {{#if notas}}<p class="epm-texto-livre epm-dica">{{this.notas}}</p>{{/if}}
+      {{/if}}
+    </article>
+    {{/each}}
+  </div>
+</section>

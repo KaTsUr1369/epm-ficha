@@ -24,10 +24,10 @@
             <span class="epm-relacao-nome">{{#if nome}}{{this.nome}}{{else}}Sem nome{{/if}}</span>
             {{/if}}
             {{#if @root.edicao}}
-            <select name="flags.epm-ficha.relacoes.{{this.id}}.tipo" aria-label="Tipo de relação">{{#each opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+            <i class="{{this.tipoIcone}} epm-vinculo-icone" style="color: {{this.tipoCor}}" aria-hidden="true"></i><select name="flags.epm-ficha.relacoes.{{this.id}}.tipo" aria-label="Tipo de vínculo">{{#each opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
             <button type="button" class="epm-icone-botao perigo" data-action="excluirRelacao" data-relacao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
             {{else}}
-            <span class="epm-tag">{{this.tipoLabel}}</span>
+            <span class="epm-vinculo" style="--cor-vinculo: {{this.tipoCor}}"><i class="{{this.tipoIcone}}" aria-hidden="true"></i> {{this.tipoLabel}}</span>
             {{/if}}
           </div>
           {{#if perdido}}<p class="epm-aviso">A ficha ligada não foi encontrada (pode ter sido apagada).</p>{{/if}}
@@ -43,10 +43,13 @@
             <div class="epm-medidor" {{#if soMestreAqui}}title="Neste mundo a afinidade é definida pelo Mestre"{{/if}}><span style="width: {{this.afinidadePct}}%"></span></div>
             {{/if}}
           </div>
+          {{> "epm-historico"}}
           {{#if @root.edicao}}
           <textarea name="flags.epm-ficha.relacoes.{{this.id}}.notas" rows="2" placeholder="Como se conheceram, o que um deve ao outro…" aria-label="Notas">{{this.notas}}</textarea>
+          {{#if @root.podeVerPrivado}}<label class="epm-nota-privada"><span><i class="fa-solid fa-lock" aria-hidden="true"></i> Nota privada (só você e o Mestre)</span><textarea name="flags.epm-ficha.relacoes.{{this.id}}.notaPrivada" rows="2" placeholder="O que você pensa de verdade, segredos, planos…">{{this.notaPrivada}}</textarea></label>{{/if}}
           {{else}}
           {{#if notas}}<p class="epm-texto-livre">{{this.notas}}</p>{{/if}}
+          {{#if @root.podeVerPrivado}}{{#if notaPrivada}}<p class="epm-texto-livre epm-nota-privada-texto" title="Só você e o Mestre veem"><i class="fa-solid fa-lock" aria-hidden="true"></i> {{this.notaPrivada}}</p>{{/if}}{{/if}}
           {{/if}}
         </div>
       </div>
@@ -78,4 +81,45 @@
     </article>
     {{/each}}
   </div>
+
+  <section class="epm-painel epm-faccoes">
+    <header class="epm-painel-titulo">
+      <h3>Facções e reputação</h3>
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaFaccao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova facção</button>{{/if}}
+    </header>
+    {{#unless faccoes.length}}<p class="epm-vazio">Reinos, guildas, ordens, deuses… a reputação vai de −5 (Caçado) a +5 (Herói).</p>{{/unless}}
+    <div class="epm-faccoes-grade">
+      {{#each faccoes}}
+      <article class="epm-faccao" data-faccao="{{this.id}}">
+        <figure class="epm-faccao-img{{#unless img}} vazia{{/unless}}" {{#if @root.edicao}}data-action="imagemFaccao" data-faccao="{{this.id}}" title="Escolher brasão"{{/if}}>{{#if img}}<img src="{{this.img}}" alt="" />{{else}}<i class="fa-solid fa-flag" aria-hidden="true"></i>{{/if}}</figure>
+        <div class="epm-faccao-corpo">
+          <div class="epm-relacao-topo-texto">
+            {{#if @root.edicao}}
+            <input type="text" class="epm-relacao-nome" name="flags.epm-ficha.faccoes.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Nome da facção" aria-label="Nome" />
+            <button type="button" class="epm-icone-botao perigo" data-action="excluirFaccao" data-faccao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+            {{else}}
+            <span class="epm-relacao-nome">{{this.nome}}</span>
+            {{/if}}
+          </div>
+          <div class="epm-afinidade" title="Reputação {{epmSinal reputacao}}">
+            <span>Reputação <strong>{{this.reputacaoLabel}}</strong> ({{epmSinal reputacao}})</span>
+            {{#if (epmAnd podeAjustar @root.edicao)}}
+            <div class="epm-afinidade-controle">
+              <button type="button" class="epm-seta" data-action="ajustarReputacao" data-faccao="{{this.id}}" data-delta="-1" aria-label="Diminuir reputação"><i class="fa-solid fa-minus"></i></button>
+              <div class="epm-medidor"><span style="width: {{this.reputacaoPct}}%"></span></div>
+              <button type="button" class="epm-seta" data-action="ajustarReputacao" data-faccao="{{this.id}}" data-delta="1" aria-label="Aumentar reputação"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            {{else}}
+            <div class="epm-medidor"><span style="width: {{this.reputacaoPct}}%"></span></div>
+            {{/if}}
+          </div>
+          {{> "epm-historico"}}
+          {{#if @root.edicao}}
+          <textarea name="flags.epm-ficha.faccoes.{{this.id}}.notas" rows="2" placeholder="O que fez por eles (ou contra eles), contatos, favores…" aria-label="Notas">{{this.notas}}</textarea>
+          {{else}}{{#if notas}}<p class="epm-texto-livre">{{this.notas}}</p>{{/if}}{{/if}}
+        </div>
+      </article>
+      {{/each}}
+    </div>
+  </section>
 </section>

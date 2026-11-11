@@ -4,14 +4,15 @@
  */
 import {
   FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS, ABAS, CATEGORIAS_ITEM,
-  CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, AFINIDADE, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM,
+  CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM,
   MODULE_ID, SUBABAS_HABILIDADE, EXEMPLOS_TREINAMENTO
 } from "./config.mjs";
 import {
   num, int, slug, novoId, normalizarTexto, periciasParaLista, periciasParaObjeto, migrarPericias, atributosDaPericia,
   entradaPericia, migrarDados, VERSAO_DADOS, ordenarPorLista, moverNaLista
 } from "./data.mjs";
-import { montarContexto, lerAtor } from "./context.mjs";
+import { montarContexto, lerAtor, visualDaFicha } from "./context.mjs";
+import * as X from "./extras.mjs";
 import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar } from "./helpers.mjs";
 import { ajustes, listaPericias, salvarListaPericias } from "./settings.mjs";
 import * as M from "./mecanicas.mjs";
@@ -48,7 +49,18 @@ const ACOES_FICHA = [
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
   "favoritarPericia", "favoritasNoTopo", "recolherPainel",
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
-  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila"
+  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila",
+  // 0.5.4
+  "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao",
+  "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
+  "adicionarHabilidadeArq", "alternarEstilo", "alternarUtensilio", "recuperarMana", "cacadorNatural",
+  "novoCompanheiro", "excluirCompanheiro", "imagemCompanheiro", "ajustarCompanheiro", "novoAtaqueCompanheiro", "excluirAtaqueCompanheiro",
+  "rolarAtaqueCompanheiro", "abrirLigado", "criarAutomato",
+  "novaCriatura", "excluirCriatura", "imagemCriatura", "contarCriatura",
+  "novaSessao", "excluirSessao", "somarSessao",
+  "novaFaccao", "excluirFaccao", "imagemFaccao", "ajustarReputacao",
+  "ataqueOportunidade", "atrasarTurno", "ressonancia", "pularHoras",
+  "imagemFundo", "removerFundo", "visualPadrao", "tocarMusica", "recarregarArma", "encerrarSustentada"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -80,6 +92,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this._relacoesAbertas = new Set();
     this._mochilasFechadas = new Set();
     this._arrasto = null;
+    this._selecao = { aba: null, ids: new Set() };
+    this._barrasAntes = null;
   }
 
   static DEFAULT_OPTIONS = {
@@ -106,6 +120,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     condicoes: { template: `${CAMINHO}/actor/condicoes.hbs`, scrollable: [""] },
     bencaos: { template: `${CAMINHO}/actor/bencaos.hbs`, scrollable: [""] },
     relacoes: { template: `${CAMINHO}/actor/relacoes.hbs`, scrollable: [""] },
+    companheiros: { template: `${CAMINHO}/actor/companheiros.hbs`, scrollable: [""] },
+    bestiario: { template: `${CAMINHO}/actor/bestiario.hbs`, scrollable: [""] },
     personalizacao: { template: `${CAMINHO}/actor/personalizacao.hbs`, scrollable: [""] }
   };
 
@@ -166,6 +182,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         enriquecidos.sobre[t.id] = await enriquecer(valor, { relativeTo: actor, secrets: segredos });
         editores.sobre[t.id] = editorHTML({ name: `${P}.sobre.${t.id}`, value: valor, documentUUID: actor.uuid, enriched: enriquecidos.sobre[t.id] });
       }
+      if (segredos || game.user.isGM) {
+        const valor = bruto.sobre?.segredos ?? "";
+        enriquecidos.sobre.segredos = await enriquecer(valor, { relativeTo: actor, secrets: true });
+        editores.sobre.segredos = editorHTML({ name: `${P}.sobre.segredos`, value: valor, documentUUID: actor.uuid, enriched: enriquecidos.sobre.segredos });
+      }
       for (const [pid, pagina] of Object.entries(bruto.notas?.paginas ?? {})) {
         if (!pagina || pagina.tipo === "mapa") continue;
         editores.notas[pid] = editorHTML({
@@ -187,10 +208,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
           abas: this._abas, expandidos: this._expandidos, filtroRaridades: this._filtroRaridades,
           edicao: this._modoEdicao, tempAberto: this._tempAberto, limitado: this._visaoLimitada(),
           condicoes: this._condicoesUi, bencaos: this._bencaosUi, relacoesAbertas: this._relacoesAbertas,
-          mochilasFechadas: this._mochilasFechadas
+          mochilasFechadas: this._mochilasFechadas, selecao: this._selecao
         },
         ajustes: { modoLimites: cfg.modoLimites, listaPericias: listaPericias(), afinidadeSoMestre: cfg.afinidadeSoMestre },
-        usuario: { isGM: game.user.isGM },
+        usuario: { isGM: game.user.isGM, dono: actor.isOwner },
         enriquecidos, editores,
         editavel: this.isEditable,
         idiomas: { catalogo: catalogoIdiomas(), polyglot: polyglotAtivo() },
@@ -236,6 +257,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this.element.classList.toggle("epm-limitado", this._visaoLimitada());
     const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
     aplicarPaleta(this.element, pers.cor ?? COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
+    try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
+    if (options.isFirstRender || options.parts?.includes("header")) {
+      try { this._animarBarras(); } catch (err) { console.error("EPM | Falha ao animar as barras", err); }
+    }
+    if (options.isFirstRender || options.parts?.includes("bestiario")) this._filtrarBestiario();
     if (options.isFirstRender || options.parts?.includes("anotacoes")) {
       try { this._montarMapas(); } catch (err) { console.error("EPM | Falha ao montar o mapa mental", err); }
     }
@@ -256,6 +282,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async _onClose(options) {
     for (const m of this._mapas) m.destruir();
     this._mapas = [];
+    this._barrasAntes = null;
+    this._selecao = { aba: null, ids: new Set() };
     return super._onClose(options);
   }
 
@@ -331,7 +359,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (alvo.dataset?.itemCampo) { ev.stopPropagation(); return this._mudarCampoItem(alvo); }
     if (alvo.dataset?.tagCampo) { ev.stopPropagation(); return this._adicionarTag(alvo); }
     if (alvo.dataset?.idiomaInput) { ev.stopPropagation(); return this._adicionarIdioma(alvo); }
-    if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo || alvo.dataset?.novoEfeito) { ev.stopPropagation(); return; }
+    if (alvo.dataset?.selecionarPoder) { ev.stopPropagation(); return this._marcarPoder(alvo.dataset.selecionarPoder, alvo.checked); }
+    if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo || alvo.dataset?.novoEfeito || alvo.dataset?.buscaBestiario) { ev.stopPropagation(); return; }
     // Brilho e hex da Personalização: os próprios campos tratam (e param o evento) — não parar aqui.
   }
 
@@ -354,7 +383,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (alvo.dataset?.tagCampo) { ev.preventDefault(); ev.stopPropagation(); return this._adicionarTag(alvo); }
     if (alvo.dataset?.idiomaInput) { ev.preventDefault(); ev.stopPropagation(); return this._adicionarIdioma(alvo); }
     if (alvo.dataset?.hexCor !== undefined) { ev.preventDefault(); alvo.blur(); return; }
-    if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo) { ev.preventDefault(); ev.stopPropagation(); return; }
+    if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo || alvo.dataset?.buscaBestiario !== undefined) { ev.preventDefault(); ev.stopPropagation(); return; }
     if (alvo.dataset?.recursoValor) { ev.preventDefault(); ev.stopPropagation(); return this._mudarRecurso(alvo); }
   }
 
@@ -369,6 +398,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       ev.stopPropagation();
       this._bencaosUi.busca = alvo.value;
       this._filtrarCatalogo();
+    } else if (alvo.dataset?.buscaBestiario !== undefined) {
+      ev.stopPropagation();
+      this._buscaBestiario = alvo.value;
+      this._filtrarBestiario();
     }
   }
 
@@ -478,7 +511,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const valor = input.value.trim();
     input.value = "";
     if (!valor) return;
-    const atual = Array.isArray(this.actor.flags?.[FLAG]?.[campo]) ? [...this.actor.flags[FLAG][campo]] : [];
+    const salvo = foundry.utils.getProperty(this.actor.flags?.[FLAG] ?? {}, campo);
+    const atual = Array.isArray(salvo) ? [...salvo] : [];
     if (atual.some(v => normalizarTexto(v) === normalizarTexto(valor))) return;
     atual.push(valor);
     await this.actor.update({ [`${P}.${campo}`]: atual });
@@ -624,11 +658,25 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   async _soltarAtor(dados) {
-    if (this._abas.primary !== "relacoes") {
-      return ui.notifications.info("Para criar uma relação, solte o personagem na aba Relações.");
+    const aba = this._abas.primary;
+    if (!["relacoes", "companheiros", "bestiario"].includes(aba)) {
+      return ui.notifications.info("Solte o personagem na aba Relações (relação), Companheiros ou Bestiário.");
     }
     const ator = await Actor.implementation.fromDropData(dados);
     if (!ator || ator.uuid === this.actor.uuid) return;
+    if (aba === "companheiros") {
+      const hp = ator.system?.attributes?.hp ?? {};
+      return this.actor.update({ [`${P}.companheiros.${novoId()}`]: X.novoCompanheiro({
+        nome: ator.name, img: ator.img, uuid: ator.uuid, pv: { value: int(hp.value, 10), max: int(hp.max, 10) },
+        ca: int(ator.system?.attributes?.ac?.value, 10)
+      }) });
+    }
+    if (aba === "bestiario") {
+      return this.actor.update({ [`${P}.bestiario.${novoId()}`]: {
+        nome: ator.prototypeToken?.name || ator.name, img: ator.img, uuid: ator.uuid, tipo: "", local: "",
+        fraquezas: [], resistencias: [], imunidades: [], notas: "", encontros: 1, derrotados: 0, criado: Date.now()
+      } });
+    }
     return conectar(this.actor, ator);
   }
 
@@ -705,7 +753,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const input = this.element.querySelector(`[data-recurso-valor="${id}"]`);
     if (input) input.value = novo;
     const barra = input?.closest(".epm-recurso")?.querySelector(".epm-barra:not(.epm-barra-temp) span");
-    if (barra && r.max > 0 && !id.startsWith("temp")) barra.style.width = `${Math.round(Math.min(1, novo / r.max) * 100)}%`;
+    if (barra && r.max > 0 && !id.startsWith("temp")) {
+      barra.style.width = `${Math.round(Math.min(1, novo / r.max) * 100)}%`;
+      if (this._barrasAntes?.[id]) this._barrasAntes[id].p = Math.round(Math.min(1, novo / r.max) * 100);
+    }
     if (pendente) clearTimeout(pendente.timer);
     const timer = setTimeout(async () => {
       delete this._ajustesRecurso[id];
@@ -984,6 +1035,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const sub = SUBABAS_HABILIDADE.find(s => s.id === this._abas.habilidades);
     const origem = alvo.dataset.origem ?? (tipo === "habilidade" ? sub?.origem ?? "" : "");
     const item = await M.dialogoNovoPoder(this.actor, tipo, circulo, { origem });
+    if (item && alvo.dataset.transformacao) await item.update({ [`flags.${FLAG}.origem`]: "transformacao", [`flags.${FLAG}.transformacao`]: alvo.dataset.transformacao });
     if (item) abrirEditorPoder(item);
   }
 
@@ -1100,7 +1152,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoRemoverTag(ev, alvo) {
     const campo = alvo.dataset.campo;
-    const lista = (this.actor.flags?.[FLAG]?.[campo] ?? []).filter(v => v !== alvo.dataset.valor);
+    const salvo = foundry.utils.getProperty(this.actor.flags?.[FLAG] ?? {}, campo);
+    const lista = (Array.isArray(salvo) ? salvo : []).filter(v => v !== alvo.dataset.valor);
     await this.actor.update({ [`${P}.${campo}`]: lista });
   }
 
@@ -1192,9 +1245,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (!this.isEditable || !this._modoEdicao) return;
     const id = alvo.dataset.relacao;
     if (!game.user.isGM && ajustes().afinidadeSoMestre) return ui.notifications.info("Neste mundo a afinidade é definida pelo Mestre.");
-    const atual = int(this.actor.flags?.[FLAG]?.relacoes?.[id]?.afinidade);
-    const novo = Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, atual + int(alvo.dataset.delta)));
-    if (novo !== atual) await this.actor.update({ [`${P}.relacoes.${id}.afinidade`]: novo });
+    await X.ajustarAfinidade(this.actor, id, int(alvo.dataset.delta));
   }
 
   acaoAbrirBackground(ev, alvo) {
@@ -1202,6 +1253,351 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (this._relacoesAbertas.has(id)) this._relacoesAbertas.delete(id);
     else this._relacoesAbertas.add(id);
     this.render({ parts: ["relacoes"] });
+  }
+
+  /* ---------- 0.5.4: visual, barras e bestiário ---------- */
+
+  /** Moldura, letra, tamanho e imagem de fundo escolhidos em Personalizar. */
+  _aplicarVisual(pers = {}) {
+    const el = this.element;
+    if (!el) return;
+    const v = visualDaFicha(pers);
+    for (const c of [...el.classList]) if (/^epm-moldura-|^epm-com-fundo$|^epm-escalada$/.test(c)) el.classList.remove(c);
+    el.classList.add(...v.classes);
+    for (const nome of ["--epm-display", "--epm-ui", "--epm-escala", "--epm-fundo-img", "--epm-fundo-veu"]) {
+      if (v.vars[nome]) el.style.setProperty(nome, v.vars[nome]);
+      else el.style.removeProperty(nome);
+    }
+  }
+
+  /** Barras e anéis dos recursos deslizam do valor antigo para o novo; o temporário desce até sumir. */
+  _animarBarras() {
+    const raiz = this.element;
+    if (!raiz) return;
+    const reduzir = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const antes = this._barrasAntes;
+    const agora = {};
+    const largura = el => (el ? parseFloat(el.style.width) || 0 : 0);
+    const curva = { duration: 650, easing: "cubic-bezier(.2,.75,.25,1)" };
+    const animar = (el, de, para) => {
+      if (!el?.animate || Math.abs(de - para) < 0.1) return;
+      el.animate([{ width: `${de}%` }, { width: `${para}%` }], curva);
+    };
+    for (const rec of raiz.querySelectorAll(".epm-recurso[data-recurso]")) {
+      const id = rec.dataset.recurso;
+      const principal = rec.querySelector(".epm-barra:not(.epm-barra-temp) > span");
+      const tempEl = rec.querySelector(".epm-barra-temp:not(.epm-barra-fantasma) > span");
+      agora[id] = { p: largura(principal), t: largura(tempEl), cor: tempEl?.style.background || "" };
+      const ant = antes?.[id];
+      if (!ant || reduzir) continue;
+      if (!agora[id].cor) agora[id].cor = ant.cor;
+      if (principal && agora[id].p < ant.p - 0.1 && principal.parentElement) {
+        // Rastro claro do que foi perdido: fica um instante e desce junto
+        const rastro = document.createElement("span");
+        rastro.className = "epm-barra-rastro";
+        rastro.style.left = `${agora[id].p}%`;
+        rastro.style.width = `${ant.p - agora[id].p}%`;
+        principal.parentElement.append(rastro);
+        const w = `${ant.p - agora[id].p}%`;
+        rastro.animate([{ width: w, opacity: 0.9 }, { width: w, opacity: 0.9, offset: 0.3 }, { width: "0%", opacity: 0.3 }], { duration: 950, easing: "ease-in" })
+          .finished.then(() => rastro.remove(), () => rastro.remove());
+      }
+      animar(principal, ant.p, agora[id].p);
+      if (tempEl) animar(tempEl, ant.t, agora[id].t);
+      else if (ant.t > 0 && principal?.parentElement) {
+        const barra = document.createElement("div");
+        barra.className = "epm-barra epm-barra-temp epm-barra-fantasma";
+        barra.setAttribute("aria-hidden", "true");
+        const span = document.createElement("span");
+        span.style.width = "0%";
+        if (ant.cor) span.style.background = ant.cor;
+        barra.append(span);
+        principal.parentElement.after(barra);
+        span.animate([{ width: `${ant.t}%` }, { width: "0%" }], curva).finished
+          .then(() => barra.animate([{ opacity: 1, height: "4px" }, { opacity: 0, height: "0px" }], { duration: 220 }).finished)
+          .then(() => barra.remove(), () => barra.remove());
+      }
+    }
+    raiz.querySelectorAll(".epm-anel").forEach((anel, i) => {
+      const dash = anel.getAttribute("stroke-dasharray") ?? "";
+      agora[`anel${i}`] = dash;
+      const ant = antes?.[`anel${i}`];
+      if (!ant || reduzir || ant === dash || !anel.animate) return;
+      anel.animate([{ strokeDasharray: ant }, { strokeDasharray: dash }], curva);
+    });
+    this._barrasAntes = agora;
+  }
+
+  _filtrarBestiario() {
+    const aba = this.element?.querySelector(".epm-bestiario");
+    if (!aba) return;
+    const termo = normalizarTexto(this._buscaBestiario ?? "");
+    let visiveis = 0;
+    for (const c of aba.querySelectorAll(".epm-criatura")) {
+      const ok = !termo || (c.dataset.busca ?? "").includes(termo);
+      c.hidden = !ok;
+      if (ok) visiveis++;
+    }
+    const vazio = aba.querySelector(".epm-busca-vazia");
+    if (vazio) vazio.hidden = visiveis > 0 || !aba.querySelector(".epm-criatura");
+  }
+
+  /* ---------- Seleção de várias habilidades ou magias ---------- */
+
+  /** Marca ou desmarca uma linha sem redesenhar a aba (contador e botões mudam na hora). */
+  _marcarPoder(id, marcado) {
+    if (marcado) this._selecao.ids.add(id);
+    else this._selecao.ids.delete(id);
+    const raiz = this.element;
+    for (const li of raiz.querySelectorAll(`.epm-poder[data-item-id="${id}"]`)) li.classList.toggle("selecionado", marcado);
+    for (const cx of raiz.querySelectorAll(`[data-selecionar-poder="${id}"]`)) cx.checked = marcado;
+    const qtd = [...this._selecao.ids].filter(x => this.actor.items.get(x)).length;
+    for (const barra of raiz.querySelectorAll(".epm-selecao-barra")) {
+      const rotulo = barra.querySelector(".epm-selecao-qtd");
+      if (rotulo) rotulo.innerHTML = `<strong>${qtd}</strong> selecionada${qtd === 1 ? "" : "s"}`;
+      for (const b of barra.querySelectorAll('[data-action="selecaoAcao"], [data-action="selecaoLimpar"]')) b.disabled = !qtd;
+    }
+  }
+
+  acaoSelecionarPoderes(ev, alvo) {
+    const aba = alvo.dataset.aba === "magias" ? "magias" : "habilidades";
+    if (this._selecao.aba === aba) this._selecao = { aba: null, ids: new Set() };
+    else this._selecao = { aba, ids: new Set() };
+    this.render({ parts: ["habilidades", "magias", "arqclasse"] });
+  }
+
+  acaoSelecaoTudo(ev, alvo) {
+    const aba = this._selecao.aba;
+    if (!aba) return;
+    const secao = this.element.querySelector(`.epm-${aba} .tab.active[data-group="${aba}"]`) ?? this.element.querySelector(`.epm-${aba}`);
+    for (const li of secao?.querySelectorAll("[data-item-id].epm-poder") ?? []) this._selecao.ids.add(li.dataset.itemId);
+    this.render({ parts: [aba] });
+  }
+
+  acaoSelecaoLimpar() {
+    this._selecao.ids.clear();
+    this.render({ parts: [this._selecao.aba ?? "habilidades"] });
+  }
+
+  async acaoSelecaoAcao(ev, alvo) {
+    const ids = [...this._selecao.ids].filter(id => this.actor.items.get(id));
+    const op = alvo.dataset.op;
+    await X.acaoEmMassa(this.actor, ids, op);
+    if (op === "apagar") this._selecao.ids.clear();
+    this.render({ parts: [this._selecao.aba ?? "habilidades"] });
+  }
+
+  /* ---------- Transformações ---------- */
+
+  async acaoNovaTransformacao() {
+    await this.actor.update({ [`${P}.transformacoes.${novoId()}`]: {
+      nome: "", img: "", descricao: "", custo: { recurso: "nenhum", valor: 0 }, duracao: 0, mods: {}, trocarToken: false, criado: Date.now()
+    } });
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+
+  async acaoExcluirTransformacao(ev, alvo) {
+    const id = alvo.dataset.transformacao;
+    const t = this.actor.flags?.[FLAG]?.transformacoes?.[id];
+    if (!(await M.confirmar("Excluir transformação", `<p>Excluir <strong>${escapar(t?.nome || "esta transformação")}</strong>? As habilidades dela ficam na sub-aba, sem vínculo.</p>`))) return;
+    if (this.actor.flags?.[FLAG]?.transformacao?.ativa === id) await X.destransformar(this.actor, { silencioso: true });
+    await this.actor.update({ [`${P}.transformacoes.-=${id}`]: null });
+  }
+
+  acaoTransformar(ev, alvo) { return X.transformar(this.actor, alvo.dataset.transformacao); }
+
+  async acaoImagemTransformacao(ev, alvo) {
+    const id = alvo.dataset.transformacao;
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.transformacoes?.[id]?.img ?? "", titulo: "Imagem da transformação" });
+    if (caminho) await this.actor.update({ [`${P}.transformacoes.${id}.img`]: caminho });
+  }
+
+  async acaoAdicionarModTransf(ev, alvo) {
+    await this.actor.update({ [`${P}.transformacoes.${alvo.dataset.transformacao}.mods.${novoId()}`]: { alvo: "", valor: 1 } });
+  }
+
+  async acaoRemoverModTransf(ev, alvo) {
+    await this.actor.update({ [`${P}.transformacoes.${alvo.dataset.transformacao}.mods.-=${alvo.dataset.mod}`]: null });
+  }
+
+  /* ---------- Arquétipos modelo ---------- */
+
+  acaoAdicionarHabilidadeArq(ev, alvo) { return X.adicionarHabilidadesArquetipo(this.actor, alvo.dataset.ref); }
+
+  async acaoAlternarEstilo(ev, alvo) {
+    const atual = this.actor.flags?.[FLAG]?.arquetipoOpcoes?.combatente?.estilos;
+    const lista = Array.isArray(atual) ? [...atual] : [];
+    const id = alvo.dataset.estilo;
+    const i = lista.indexOf(id);
+    if (i >= 0) lista.splice(i, 1); else lista.push(id);
+    await this.actor.update({ [`${P}.arquetipoOpcoes.combatente.estilos`]: lista });
+  }
+
+  async acaoAlternarUtensilio(ev, alvo) {
+    const atual = this.actor.flags?.[FLAG]?.arquetipoOpcoes?.artifice?.utensilios;
+    const lista = Array.isArray(atual) ? [...atual] : [];
+    const id = alvo.dataset.pericia;
+    const i = lista.indexOf(id);
+    if (i >= 0) lista.splice(i, 1); else if (lista.length < 3) lista.push(id);
+    await this.actor.update({ [`${P}.arquetipoOpcoes.artifice.utensilios`]: lista });
+  }
+
+  acaoRecuperarMana() { return X.recuperarMana(this.actor); }
+  acaoCacadorNatural() { return X.cacadorNatural(this.actor); }
+
+  /* ---------- Companheiros ---------- */
+
+  async acaoNovoCompanheiro() {
+    await this.actor.update({ [`${P}.companheiros.${novoId()}`]: X.novoCompanheiro() });
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+
+  acaoCriarAutomato() { return X.criarAutomato(this.actor); }
+
+  async acaoExcluirCompanheiro(ev, alvo) {
+    const id = alvo.dataset.companheiro;
+    const c = this.actor.flags?.[FLAG]?.companheiros?.[id];
+    if (!(await M.confirmar("Excluir companheiro", `<p>Excluir <strong>${escapar(c?.nome || "este companheiro")}</strong>?</p>`))) return;
+    await this.actor.update({ [`${P}.companheiros.-=${id}`]: null });
+  }
+
+  async acaoImagemCompanheiro(ev, alvo) {
+    const id = alvo.dataset.companheiro;
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.companheiros?.[id]?.img ?? "", titulo: "Imagem do companheiro" });
+    if (caminho) await this.actor.update({ [`${P}.companheiros.${id}.img`]: caminho });
+  }
+
+  async acaoAjustarCompanheiro(ev, alvo) {
+    if (!this.isEditable) return;
+    const { companheiro: id, recurso } = alvo.dataset;
+    const dados = this.actor.flags?.[FLAG] ?? {};
+    const c = dados.companheiros?.[id];
+    if (!c) return;
+    const max = X.maxCompanheiro(dados, c, recurso);
+    const novo = Math.max(0, int(c[recurso]?.value) + int(alvo.dataset.delta) * (ev.shiftKey ? 5 : 1));
+    await this.actor.update({ [`${P}.companheiros.${id}.${recurso}.value`]: max > 0 ? Math.min(novo, max) : novo });
+  }
+
+  async acaoNovoAtaqueCompanheiro(ev, alvo) {
+    await this.actor.update({ [`${P}.companheiros.${alvo.dataset.companheiro}.ataques.${novoId()}`]: { nome: "Ataque", acerto: 0, dano: "1d6", tipoDano: "", criado: Date.now() } });
+  }
+
+  async acaoExcluirAtaqueCompanheiro(ev, alvo) {
+    await this.actor.update({ [`${P}.companheiros.${alvo.dataset.companheiro}.ataques.-=${alvo.dataset.ataque}`]: null });
+  }
+
+  acaoRolarAtaqueCompanheiro(ev, alvo) { return X.rolarAtaqueCompanheiro(this.actor, alvo.dataset.companheiro, alvo.dataset.ataque); }
+
+  async acaoAbrirLigado(ev, alvo) {
+    const doc = alvo.dataset.uuid ? await fromUuid(alvo.dataset.uuid) : null;
+    if (doc?.sheet && doc.testUserPermission?.(game.user, "OBSERVER")) doc.sheet.render(true);
+    else ui.notifications.warn("Não encontrei a ficha ligada (ou você não tem permissão para vê-la).");
+  }
+
+  /* ---------- Bestiário ---------- */
+
+  async acaoNovaCriatura() {
+    await this.actor.update({ [`${P}.bestiario.${novoId()}`]: {
+      nome: "", img: "", uuid: "", tipo: "", local: "", fraquezas: [], resistencias: [], imunidades: [], notas: "", encontros: 1, derrotados: 0, criado: Date.now()
+    } });
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+
+  async acaoExcluirCriatura(ev, alvo) {
+    const id = alvo.dataset.criatura;
+    const b = this.actor.flags?.[FLAG]?.bestiario?.[id];
+    if (!(await M.confirmar("Tirar do bestiário", `<p>Tirar <strong>${escapar(b?.nome || "esta criatura")}</strong> do bestiário?</p>`))) return;
+    await this.actor.update({ [`${P}.bestiario.-=${id}`]: null });
+  }
+
+  async acaoImagemCriatura(ev, alvo) {
+    const id = alvo.dataset.criatura;
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.bestiario?.[id]?.img ?? "", titulo: "Imagem da criatura" });
+    if (caminho) await this.actor.update({ [`${P}.bestiario.${id}.img`]: caminho });
+  }
+
+  async acaoContarCriatura(ev, alvo) {
+    const { criatura: id, campo } = alvo.dataset;
+    if (!["encontros", "derrotados"].includes(campo)) return;
+    const atual = int(this.actor.flags?.[FLAG]?.bestiario?.[id]?.[campo]);
+    await this.actor.update({ [`${P}.bestiario.${id}.${campo}`]: Math.max(0, atual + int(alvo.dataset.delta)) });
+  }
+
+  /* ---------- Diário de sessões ---------- */
+
+  async acaoNovaSessao() {
+    await X.novaSessao(this.actor);
+    this._abas.notas = "diario";
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+
+  async acaoExcluirSessao(ev, alvo) {
+    const id = alvo.dataset.sessao;
+    if (!(await M.confirmar("Excluir sessão", "<p>Excluir esta entrada do diário?</p>"))) return;
+    await this.actor.update({ [`${P}.diario.-=${id}`]: null });
+  }
+
+  acaoSomarSessao(ev, alvo) { return X.somarSessao(this.actor, alvo.dataset.sessao); }
+
+  /* ---------- Facções ---------- */
+
+  async acaoNovaFaccao() {
+    await this.actor.update({ [`${P}.faccoes.${novoId()}`]: { nome: "", img: "", reputacao: 0, notas: "", criado: Date.now() } });
+    if (!this._modoEdicao) { this._modoEdicao = true; this.render(); }
+  }
+
+  async acaoExcluirFaccao(ev, alvo) {
+    const id = alvo.dataset.faccao;
+    const f = this.actor.flags?.[FLAG]?.faccoes?.[id];
+    if (!(await M.confirmar("Excluir facção", `<p>Excluir <strong>${escapar(f?.nome || "esta facção")}</strong>?</p>`))) return;
+    await this.actor.update({ [`${P}.faccoes.-=${id}`]: null });
+  }
+
+  async acaoImagemFaccao(ev, alvo) {
+    const id = alvo.dataset.faccao;
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.faccoes?.[id]?.img ?? "", titulo: "Brasão da facção" });
+    if (caminho) await this.actor.update({ [`${P}.faccoes.${id}.img`]: caminho });
+  }
+
+  async acaoAjustarReputacao(ev, alvo) {
+    if (!this.isEditable || !this._modoEdicao) return;
+    if (!game.user.isGM && ajustes().afinidadeSoMestre) return ui.notifications.info("Neste mundo a reputação é definida pelo Mestre.");
+    await X.ajustarReputacao(this.actor, alvo.dataset.faccao, int(alvo.dataset.delta));
+  }
+
+  /* ---------- Combate, treino, Ressonância e música ---------- */
+
+  acaoAtaqueOportunidade() { return X.ataqueDeOportunidade(this.actor); }
+  acaoAtrasarTurno() { return X.atrasarTurno(this.actor); }
+  acaoRecarregarArma(ev, alvo) {
+    const item = this.actor.items.get(alvo.dataset.itemId ?? alvo.closest("[data-item-id]")?.dataset.itemId);
+    if (item) return M.recarregarArma(this.actor, item);
+  }
+  acaoEncerrarSustentada(ev, alvo) { return M.encerrarSustentada(this.actor, alvo.dataset.sustentada); }
+  acaoRessonancia() { return X.ressonanciaDeAlma(this.actor); }
+  acaoPularHoras() { return X.pularHoras(this.actor); }
+
+  acaoTocarMusica(ev, alvo) {
+    const url = alvo.dataset.url;
+    if (url && /^https?:\/\//i.test(url)) window.open(url, "_blank", "noopener");
+  }
+
+  /* ---------- Personalização: fundo e visual ---------- */
+
+  async acaoImagemFundo() {
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.personalizacao?.fundo ?? "", titulo: "Imagem de fundo da ficha" });
+    if (caminho) await this.actor.update({ [`${P}.personalizacao.fundo`]: caminho });
+  }
+
+  async acaoRemoverFundo() {
+    await this.actor.update({ [`${P}.personalizacao.fundo`]: "" });
+  }
+
+  async acaoVisualPadrao() {
+    await this.actor.update({
+      [`${P}.personalizacao.fundo`]: "", [`${P}.personalizacao.fundoVeu`]: 70, [`${P}.personalizacao.moldura`]: "astrolabio",
+      [`${P}.personalizacao.fonte`]: "classica", [`${P}.personalizacao.escala`]: 100
+    });
   }
 
   /* ---------- Personalização ---------- */
@@ -1229,9 +1625,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoAlternarAbaOpcional(ev, alvo) {
     const id = alvo.dataset.aba;
-    if (!ABAS.find(a => a.id === id)?.opcional) return;
-    const ligada = !!this.actor.flags?.[FLAG]?.personalizacao?.abasExtras?.[id];
-    await this.actor.update({ [`${P}.personalizacao.abasExtras.${id}`]: !ligada });
+    const aba = ABAS.find(a => a.id === id);
+    if (!aba || aba.id === "principal" || aba.soEdicao) return;
+    const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
+    if (aba.opcional) return this.actor.update({ [`${P}.personalizacao.abasExtras.${id}`]: !pers.abasExtras?.[id] });
+    return this.actor.update({ [`${P}.personalizacao.abasOcultas.${id}`]: !pers.abasOcultas?.[id] });
   }
 
   async acaoFavoritarPericia(ev, alvo) {

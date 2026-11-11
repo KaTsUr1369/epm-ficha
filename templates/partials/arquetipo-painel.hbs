@@ -1,0 +1,90 @@
+<section class="epm-painel epm-arq-painel" style="--cor: {{this.cor}}" data-arquetipo="{{this.id}}">
+  <header class="epm-painel-titulo">
+    <h3><i class="{{this.icone}}" aria-hidden="true"></i> {{this.nome}} <span class="epm-contador">Nv. {{this.nivel}}</span></h3>
+    {{#if podeAdicionarTodas}}<button type="button" class="epm-botao epm-botao-sutil" data-action="adicionarHabilidadeArq" data-ref="{{this.id}}" title="Cria na ficha as habilidades de {{this.nome}} já liberadas que ainda faltam">Adicionar as liberadas ({{this.faltamAdicionar}})</button>{{/if}}
+  </header>
+  <p class="epm-dica">{{this.funcao}} <em>Arquétipo modelo 0.5.</em></p>
+  <ol class="epm-arq-trilha" aria-label="Progressão do nível 1 ao 50">
+    {{#each niveis}}<li class="{{#if alcancado}}alcancado{{/if}}{{#if atual}} atual{{/if}}{{#if marco}} marco{{/if}}" title="Nv. {{this.n}}: {{this.texto}}">{{this.n}}</li>{{/each}}
+  </ol>
+  {{#if proximo}}<p class="epm-arq-proximo"><i class="fa-solid fa-flag" aria-hidden="true"></i> Próximo: <strong>Nv. {{proximo.nivel}} · {{proximo.nome}}</strong>. {{proximo.resumo}}</p>{{/if}}
+
+  {{#if combatente}}
+  <div class="epm-arq-bloco">
+    <h4>Arma Favorita e Maestria{{#if combatente.maestria}} <span class="epm-contador">etapa {{combatente.maestria.etapa}} de 5</span>{{/if}}</h4>
+    {{#if @root.edicao}}
+    <div class="epm-dialogo-linha">
+      <label class="epm-campo" title="A Maestria vale para todas as armas deste tipo (o tipo é escrito no editor de cada arma)"><span>Tipo de arma</span><input type="text" name="flags.epm-ficha.arquetipoOpcoes.combatente.tipoFavorito" value="{{combatente.tipoFavorito}}" list="epm-sug-tipo-fav" placeholder="Espada longa, Pistola…" /><datalist id="epm-sug-tipo-fav">{{#each combatente.sugestoesTipo}}<option value="{{this}}"></option>{{/each}}</datalist></label>
+      <label class="epm-campo"><span>Maestria</span><select name="flags.epm-ficha.arquetipoOpcoes.combatente.maestria">{{#each combatente.opcoesMaestria}}<option value="{{this.id}}" {{#if selected}}selected{{/if}} {{#if texto}}title="{{this.texto}}"{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+    </div>
+    {{/if}}
+    {{#if combatente.maestria}}
+    <p class="epm-arq-destaque"><strong>{{combatente.maestria.nome}}</strong>{{#if combatente.tipoFavorito}} com {{combatente.tipoFavorito}}{{/if}}: {{combatente.maestria.resumo}}</p>
+    {{#if combatente.tipoFavorito}}<p class="epm-dica">{{#if combatente.armasDoTipo.length}}Valem: {{#each combatente.armasDoTipo}}{{this.nome}}{{#unless equipada}} (não equipada){{/unless}}{{#unless @last}}, {{/unless}}{{/each}}.{{else}}Nenhuma arma do inventário é do tipo "{{combatente.tipoFavorito}}". Escreva o tipo no editor da arma.{{/if}}</p>{{/if}}
+    {{else}}
+    <p class="epm-vazio">Escolha o tipo de arma e a Maestria{{#unless @root.edicao}} no modo edição{{/unless}}. Elas entram no diálogo de ataque e na CA.</p>
+    {{/if}}
+    <h4>Ataque Extra</h4>
+    <p>{{#if combatente.ataqueExtra}}{{combatente.ataqueExtra}}. Aparece no diálogo de ataque.{{else}}Libera no nível 4.{{/if}}{{#if combatente.proximoAtaqueExtra}} <span class="epm-dica">Próximo: {{combatente.proximoAtaqueExtra}}.</span>{{/if}}</p>
+    {{#if combatente.estilosPermitidos}}
+    <h4>Estilo de Combate <span class="epm-contador">{{combatente.estilosPermitidos}} no seu nível</span></h4>
+    <div class="epm-chips">{{#each combatente.estilos}}<button type="button" class="epm-chip-botao{{#if escolhido}} ativo{{/if}}" data-action="alternarEstilo" data-estilo="{{this.id}}" title="{{this.texto}}" {{#unless podeMarcar}}disabled{{/unless}} aria-pressed="{{#if escolhido}}true{{else}}false{{/if}}">{{this.nome}}</button>{{/each}}</div>
+    {{#if combatente.estilosTexto}}<p class="epm-dica">Duelista, Atirador e Arma Dupla já valem no diálogo de ataque (Arma Dupla soma +1 de CA com duas armas equipadas).</p>{{/if}}
+    {{/if}}
+    {{#if combatente.cacador}}<h4>Caçador Natural</h4><p>{{#if combatente.cacador.presa}}Presa: <strong>{{combatente.cacador.presa}}</strong> (até o fim do combate).{{else}}{{combatente.cacador.custo}} PE para marcar uma Presa. Botão na aba Combate.{{/if}}</p>{{/if}}
+  </div>
+  {{/if}}
+
+  {{#if conjurador}}
+  <div class="epm-arq-bloco">
+    <h4>Custo das magias e círculos</h4>
+    <div class="epm-arq-custos">{{#each conjurador.custos}}<span class="epm-arq-custo{{#unless liberado}} trancado{{/unless}}" title="{{#if liberado}}Liberado{{else}}Libera no nível {{this.liberaEm}}{{/if}}">{{#unless liberado}}<i class="fa-solid fa-lock" aria-hidden="true"></i> {{/unless}}<strong>{{this.label}}</strong> {{this.pm}} PM</span>{{/each}}</div>
+    <p class="epm-dica">Magias novas já vêm com o custo do círculo. Círculos ainda trancados aparecem com cadeado na aba Magias.</p>
+    {{#if conjurador.reserva}}<p><strong>Reserva Arcana:</strong> +{{conjurador.reserva}} PM máximo (já somado).{{#if conjurador.proximaReserva}} <span class="epm-dica">Próximo: {{conjurador.proximaReserva}}.</span>{{/if}}</p>{{/if}}
+    {{#if conjurador.recuperar}}<p><button type="button" class="epm-botao" data-action="recuperarMana" {{#unless conjurador.recuperar.pode}}disabled{{/unless}}><i class="fa-solid fa-droplet" aria-hidden="true"></i> Recuperar Mana: {{conjurador.recuperar.pe}} PE → {{conjurador.recuperar.pm}} PM</button>{{#if conjurador.recuperar.usado}} <span class="epm-dica">Já usado nesta cena.</span>{{/if}}</p>{{/if}}
+    {{#if conjurador.manipulacao}}<p><strong>Manipulação Mágica:</strong> {{conjurador.manipulacao.custo}}; exclui até {{conjurador.manipulacao.exclui}} criaturas da área. O botão aparece no cartão da magia, no chat.</p>{{/if}}
+    {{#if conjurador.sobrecarga}}<p><strong>Sobrecarga Mágica:</strong> 12, 20 ou 30 PE por +1, +2 ou +3 dados. Botão no cartão da magia.</p>{{/if}}
+    {{#if conjurador.dominio}}
+    <label class="epm-campo"><span>Domínio de Conjuração</span>{{#if @root.edicao}}<select name="flags.epm-ficha.arquetipoOpcoes.conjurador.dominio"><option value="">Escolha…</option>{{#each conjurador.dominio}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{else}}<span>{{#if conjurador.dominioTexto}}{{conjurador.dominioTexto}}{{else}}—{{/if}}</span>{{/if}}</label>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#if artifice}}
+  <div class="epm-arq-bloco">
+    {{#if artifice.projetos}}
+    <h4>Criar Projetos <span class="epm-contador">etapa {{artifice.projetos.etapa}}</span> <span class="epm-contador">{{artifice.porDia}} por dia</span></h4>
+    <div class="epm-arq-projetos">
+      <span><strong>Dano</strong> {{artifice.projetos.dano}}</span><span><strong>Cura</strong> {{artifice.projetos.cura}}</span>
+      <span><strong>Soma</strong> +{{artifice.projetos.soma}}</span><span><strong>Proteção</strong> +{{artifice.projetos.protecao}}</span>
+    </div>
+    <p class="epm-dica">Inteligência {{artifice.intel}} já somada (mínimo 1). Fica pronto em 1 minuto, ativo por 1 hora e some no fim do dia.{{#if artifice.projetos.proximo}} Próxima etapa no nível {{artifice.projetos.proximo}}.{{/if}}</p>
+    {{/if}}
+    {{#if artifice.livro}}<p><strong>Livro de Projetos:</strong> guarda até {{artifice.livro}} projetos.</p>{{/if}}
+    {{#if artifice.encantados}}<p><strong>Itens Encantados:</strong> dano {{artifice.encantados.dano}}, cura {{artifice.encantados.cura}}, auxílio {{artifice.encantados.auxilio}}.</p>{{/if}}
+    {{#if artifice.utensilios}}
+    <h4>Utensílios <span class="epm-contador">+{{artifice.utensilios.bonus}} em {{artifice.utensilios.qtd}} perícias</span></h4>
+    {{#if @root.edicao}}
+    <div class="epm-chips">{{#each artifice.utensilios.opcoes}}<button type="button" class="epm-chip-botao{{#if escolhida}} ativo{{/if}}" data-action="alternarUtensilio" data-pericia="{{this.id}}" {{#unless podeMarcar}}disabled{{/unless}} aria-pressed="{{#if escolhida}}true{{else}}false{{/if}}">{{this.nome}}</button>{{/each}}</div>
+    {{else}}
+    <p>{{#if artifice.utensilios.escolhidasTexto}}{{artifice.utensilios.escolhidasTexto}} (+2, já somado nas perícias){{else}}<span class="epm-vazio">Escolha as perícias no modo edição.</span>{{/if}}</p>
+    {{/if}}
+    {{/if}}
+    {{#if artifice.automato}}<p><button type="button" class="epm-botao" data-action="criarAutomato" {{#unless artifice.automato.podeCriar}}disabled{{/unless}}><i class="fa-solid fa-robot" aria-hidden="true"></i> Criar Pequeno Autômato</button> <span class="epm-dica">Vai para a aba Companheiros{{#if artifice.automato.bonus.atributos}}, com +{{artifice.automato.bonus.atributos}} nos atributos e +{{artifice.automato.bonus.recursos}} PV, PM e PE{{/if}}.</span></p>{{/if}}
+    <p class="epm-dica">Subclasses: {{artifice.subclasses}}.</p>
+  </div>
+  {{/if}}
+
+  <details class="epm-arq-habilidades">
+    <summary>Habilidades do arquétipo: {{liberadas.length}} liberada{{#unless (epmEq liberadas.length 1)}}s{{/unless}}</summary>
+    <ul class="epm-arq-lista">
+      {{#each liberadas}}
+      <li class="liberada"><span class="epm-arq-nivel">{{this.nivel}}</span><div><strong>{{this.nome}}</strong><p>{{this.resumo}}</p></div>
+        {{#if naFicha}}<span class="epm-tag epm-tag-ok" title="Já está na ficha"><i class="fa-solid fa-check" aria-hidden="true"></i> na ficha</span>{{else if podeAdicionar}}<button type="button" class="epm-link" data-action="adicionarHabilidadeArq" data-ref="{{this.ref}}">Adicionar</button>{{/if}}</li>
+      {{/each}}
+      {{#each proximas}}
+      <li class="trancada"><span class="epm-arq-nivel">{{this.nivel}}</span><div><strong>{{this.nome}}</strong><p>{{this.resumo}}</p></div><i class="fa-solid fa-lock" aria-hidden="true" title="Libera no nível {{this.nivel}}"></i></li>
+      {{/each}}
+    </ul>
+  </details>
+</section>

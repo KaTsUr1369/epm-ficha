@@ -12,6 +12,7 @@ import {
   ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, bonusAutomato
 } from "./arquetipos.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
+import { ataquesDaArma } from "./context.mjs";
 import { curaDoCartao } from "./projetos.mjs";
 import {
   estadoAtor, confirmar, calcularPerda, calcularRecuperacao, rolarFormula, horasDoTreino, usarPoder, cartaoItem, dialogoAtaque, rolarTeste
@@ -408,17 +409,19 @@ export async function escolherAtaque(actor, titulo, dica) {
   const lista = equipadas.length ? equipadas : armas;
   const custom = Object.entries(dados.ataques ?? {}).filter(([, a]) => a);
   if (!lista.length && !custom.length) { ui.notifications.warn("Nenhuma arma ou ataque para usar."); return null; }
+  // Cada modo da arma (ex.: lança perfurante / contundente) é uma opção
+  const opcoesArma = lista.flatMap(i => ataquesDaArma(i).map(a => ({ ref: a.ref, nome: a.nome })));
   let tipo = "arma";
-  let ref = lista[0]?.id;
-  if (lista.length + custom.length > 1) {
+  let ref = opcoesArma[0]?.ref;
+  if (opcoesArma.length + custom.length > 1) {
     const r = await dialogo({
       titulo, ok: "Escolher", icone: "fa-solid fa-hand-fist",
       content: `<p class="epm-dica">${escapar(dica)}</p>
-        <label class="epm-campo"><span>Com</span><select name="ref">${lista.map(i => `<option value="arma:${i.id}">${escapar(i.name)}</option>`).join("")}${custom.map(([id, a]) => `<option value="custom:${id}">${escapar(a.nome || "Ataque")}</option>`).join("")}</select></label>`,
+        <label class="epm-campo"><span>Com</span><select name="ref">${opcoesArma.map(a => `<option value="arma|${a.ref}">${escapar(a.nome)}</option>`).join("")}${custom.map(([id, a]) => `<option value="custom|${id}">${escapar(a.nome || "Ataque")}</option>`).join("")}</select></label>`,
       callback: f => ({ ref: f.ref?.value })
     });
     if (!r?.ref) return null;
-    [tipo, ref] = r.ref.split(":");
+    [tipo, ref] = r.ref.split("|");
   } else if (!lista.length) {
     tipo = "custom";
     ref = custom[0][0];

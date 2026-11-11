@@ -93,18 +93,57 @@ export function periciaAtaquePadrao(item) {
 /*  Ataques                                     */
 /* -------------------------------------------- */
 
-export function ataqueDeArma(item) {
+/** Modos de ataque extras da arma (ex.: lança: ponta perfurante, cabo contundente). */
+export function modosDaArma(item) {
+  const f = item?.flags?.[FLAG] ?? {};
+  return Object.entries(f.modos ?? {}).filter(([, m]) => m && typeof m === "object")
+    .map(([id, m]) => ({
+      id, nome: String(m.nome ?? "").trim(), dano: String(m.dano ?? "").trim(), tipoDano: String(m.tipoDano ?? "").trim(),
+      pericia: m.pericia ?? "", bonusAcerto: m.bonusAcerto === "" || m.bonusAcerto === undefined || m.bonusAcerto === null ? null : int(m.bonusAcerto),
+      critMargem: m.critMargem ? int(m.critMargem) : null, critMult: m.critMult ? int(m.critMult) : null, criado: num(m.criado)
+    }))
+    .sort((a, b) => a.criado - b.criado);
+}
+
+/**
+ * Ataque de uma arma. Sem `modoId`, é o modo principal (os campos da arma); com ele, o modo extra
+ * substitui dano e tipo (e, se preenchidos, perícia, bônus de acerto e crítico).
+ */
+export function ataqueDeArma(item, modoId = "") {
   const f = item?.flags?.[FLAG] ?? {};
   const margemNativa = int(item?.system?.critical?.threshold, CRITICO_PADRAO.margem) || CRITICO_PADRAO.margem;
   const efeitos = lerEfeitosItem(item);
-  return {
-    tipo: "arma", id: item.id, nome: item.name, img: item.img,
+  const modos = modosDaArma(item);
+  const base = {
+    tipo: "arma", id: item.id, ref: item.id, nome: item.name, img: item.img,
     periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: danoArma(item), tipoDano: f.tipoDano ?? "",
     critMargem: limitar(int(f.critMargem, margemNativa), 2, 20), critMult: Math.max(2, int(f.critMult, CRITICO_PADRAO.mult)),
     equipado: !!item?.system?.equipped,
     danoExtra: efeitos.filter(e => e.tipo === "danoExtra" && e.formula).map(e => ({ formula: e.formula, tipo: e.tipoDano })),
-    curas: efeitos.filter(e => e.tipo === "cura" && e.quando === "acerto" && e.formula).map(e => ({ formula: e.formula, recurso: e.recurso }))
+    curas: efeitos.filter(e => e.tipo === "cura" && e.quando === "acerto" && e.formula).map(e => ({ formula: e.formula, recurso: e.recurso })),
+    modoNome: String(f.modoNome ?? "").trim(), temModos: modos.length > 0
   };
+  base.nomeItem = item.name;
+  if (base.temModos) {
+    base.modoLabel = base.modoNome || base.tipoDano || "principal";
+    base.nome = `${item.name} · ${base.modoLabel}`;
+  }
+  const m = modoId ? modos.find(x => x.id === modoId) : null;
+  if (!m) return base;
+  return {
+    ...base, ref: `${item.id}:${m.id}`, modo: m.id,
+    nome: `${item.name} · ${m.nome || m.tipoDano || "modo"}`, modoLabel: m.nome || m.tipoDano || "modo",
+    dano: m.dano || base.dano, tipoDano: m.tipoDano,
+    periciaId: m.pericia || base.periciaId,
+    bonusAcerto: m.bonusAcerto ?? base.bonusAcerto,
+    critMargem: m.critMargem ? limitar(m.critMargem, 2, 20) : base.critMargem,
+    critMult: m.critMult ? Math.max(2, m.critMult) : base.critMult
+  };
+}
+
+/** Todos os ataques de uma arma: o principal e um por modo extra. */
+export function ataquesDaArma(item) {
+  return [ataqueDeArma(item), ...modosDaArma(item).map(m => ataqueDeArma(item, m.id))];
 }
 
 export function ataqueCustom(id, a = {}) {
@@ -713,7 +752,7 @@ export function montarContexto({
   ctx.caPenalTexto = [...new Set(ficha.penalidades.defesa.fontes.map(f => f.fonte))].join(", ");
   ctx.defesasPendentes = Array.from({ length: 3 }, (_, i) => ({ ativa: i < ficha.acoes.defesas }));
   const opcoesPericia = selecionada => ficha.pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === selecionada }));
-  const armas = cadaSeguro(itens.filter(i => tipoDe(i) === "weapon"), ataqueDeArma, falhas);
+  const armas = cadaSeguro(itens.filter(i => tipoDe(i) === "weapon"), ataquesDaArma, falhas).flat();
   const custom = cadaSeguro(Object.entries(dados.ataques ?? {}).filter(([, a]) => a && typeof a === "object"), ([id, a]) => ataqueCustom(id, a), falhas)
     .sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
   ctx.ataques = {
@@ -736,7 +775,7 @@ export function montarContexto({
       r.cargasTexto = cMax ? `${limitar(int(fi.cargas?.valor), 0, cMax)}/${cMax} cargas` : "";
       return r;
     }, falhas),
-    armasGuardadas: armas.filter(a => !a.equipado).length,
+    armasGuardadas: new Set(armas.filter(a => !a.equipado).map(a => a.id)).size,
     custom: cadaSeguro(custom, a => ({ ...resumoAtaque(a, ficha, cena), opcoesPericia: opcoesPericia(a.periciaId) }), falhas),
     bloqueados: ficha.ataquesGerais.bloqueados.join(", ")
   };
@@ -1437,6 +1476,10 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     equipavel: ["weapon", "equipment"].includes(tipo), equipado: !!item.system?.equipped,
     preco: { valor: num(preco.valor), moedas: MOEDAS.map(m => ({ id: m.id, label: m.label, selected: m.id === (preco.moeda ?? "po") })) },
     eArma, ataque, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
+    modosArma: eArma ? modosDaArma(item).map(m => ({
+      ...m, bonusTexto: m.bonusAcerto === null ? "" : m.bonusAcerto,
+      opcoesPericia: [{ id: "", nome: "Igual à arma", selected: !m.pericia }, ...pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === m.pericia }))]
+    })) : [],
     eArmadura: tipo === "equipment", armadura: int(f.armadura),
     eConsumivel: tipo === "consumable", formulaUso: f.formula ?? "",
     eMochila, efeitos, temEfeitos: efeitos.length > 0,

@@ -2713,3 +2713,15 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-defesas-dano .epm-tags { display: flex; flex-direction: column; gap: 4px; }
 .epm-defesas-dano .epm-tags .epm-dica { margin: 0; }
 .epm-defesas-dano .epm-chips { margin-bottom: 4px; }
+
+/* 0.5.11 · Modos de ataque da arma */
+.epm-modos-arma { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--epm-linha); display: flex; flex-direction: column; gap: 6px; }
+.epm-modos-topo h4 { margin: 0 0 2px; }
+.epm-modos-topo .epm-dica { margin: 0; }
+.epm-modo-principal { max-width: 320px; }
+.epm-modo-linha { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; padding: 6px; border: 1px solid var(--epm-linha); border-radius: 6px; background: var(--epm-entrada); }
+.epm-modo-linha .epm-mini { flex: 1 1 110px; }
+.epm-modo-linha .epm-mini.curto { flex: 0 0 64px; }
+.epm-modo-linha .epm-mini input, .epm-modo-linha .epm-mini select { width: 100%; }
+.epm-modos-arma > .epm-botao { align-self: flex-start; }
+.epm-tag-modo { color: var(--epm-destaque, #D3A85E); border-color: currentColor; }

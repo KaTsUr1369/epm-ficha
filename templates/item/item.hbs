@@ -46,6 +46,26 @@
       {{#if municao.temPente}}<label class="epm-campo" title="Ação gasta ao recarregar esta arma"><span>Recarregar gasta</span><select name="flags.epm-ficha.recargaAcao">{{#each municao.opcoesRecarga}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
       {{#if municao.temPente}}<div class="epm-campo"><span>No pente agora</span><div class="epm-custo"><input type="number" min="0" name="flags.epm-ficha.pente.atual" value="{{municao.penteAtual}}" />{{#if municao.temDono}}<button type="button" class="epm-botao" data-action="recarregar" title="Enche o pente com a munição ligada"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar</button>{{/if}}</div></div>{{/if}}
     </div>
+    <div class="epm-modos-arma">
+      <div class="epm-modos-topo">
+        <h4>Modos de ataque</h4>
+        <span class="epm-dica">Para armas com mais de um jeito de atacar (ex.: lança: ponta perfurante, cabo contundente). Cada modo vira uma linha em Combate → Ataques. Perícia, acerto e crítico vazios = iguais aos da arma.</span>
+      </div>
+      {{#if modosArma.length}}
+      <label class="epm-campo epm-modo-principal"><span>Nome do modo principal (acima)</span><input type="text" name="flags.epm-ficha.modoNome" value="{{ataque.modoNome}}" placeholder="{{#if ataque.tipoDano}}{{ataque.tipoDano}}{{else}}Ponta{{/if}}" /></label>
+      {{/if}}
+      {{#each modosArma}}
+      <div class="epm-modo-linha">
+        <label class="epm-mini"><span>nome</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Cabo" /></label>
+        <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d4 + @atr.forca" /></label>
+        <label class="epm-mini"><span>tipo de dano</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-item-sug-dano" placeholder="Contundente" /></label>
+        <label class="epm-mini"><span>perícia</span><select name="flags.epm-ficha.modos.{{this.id}}.pericia">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+        <label class="epm-mini curto"><span>acerto</span><input type="number" name="flags.epm-ficha.modos.{{this.id}}.bonusAcerto" value="{{this.bonusTexto}}" placeholder="—" /></label>
+        <button type="button" class="epm-icone-botao perigo" data-action="removerModo" data-modo="{{this.id}}" title="Remover modo"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      {{/each}}
+      <button type="button" class="epm-botao epm-botao-sutil" data-action="novoModo"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modo de ataque</button>
+    </div>
     <p class="epm-dica">Fórmulas aceitam @atr.forca, @atr.destreza, @per.luta, @nivel…</p>
   </section>
   {{/if}}

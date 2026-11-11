@@ -41,7 +41,8 @@
       <label class="epm-mini"><span>perícia de ataque</span><select data-item-campo="flags.epm-ficha.periciaAtaque" data-item-id="{{this.id}}">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
       <label class="epm-mini curto"><span>acerto</span><input type="number" value="{{ataque.bonusAcerto}}" data-item-campo="flags.epm-ficha.bonusAcerto" data-item-id="{{this.id}}" /></label>
       <label class="epm-mini"><span>dano</span><input type="text" value="{{ataque.dano}}" data-item-campo="flags.epm-ficha.dano" data-item-id="{{this.id}}" placeholder="2d10 + @atr.forca" /></label>
-      <label class="epm-mini"><span>tipo de dano</span><input type="text" value="{{ataque.tipoDano}}" data-item-campo="flags.epm-ficha.tipoDano" data-item-id="{{this.id}}" placeholder="Cortante" /></label>
+      <label class="epm-mini"><span>tipo de dano</span><input type="text" value="{{ataque.tipoDano}}" data-item-campo="flags.epm-ficha.tipoDano" data-item-id="{{this.id}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="Cortante" /></label>
+      {{#if ataque.temModos}}<span class="epm-dica" title="Os outros modos (ex.: cabo contundente) são editados nos detalhes do item">+ outros modos de ataque (detalhes do item)</span>{{/if}}
       <label class="epm-mini curto" title="Menor resultado no d20 que conta como crítico"><span>margem</span><input type="number" min="2" max="20" value="{{ataque.critMargem}}" data-item-campo="flags.epm-ficha.critMargem" data-item-id="{{this.id}}" /></label>
       <label class="epm-mini curto" title="No crítico, os dados da arma são multiplicados por este valor"><span>×crítico</span><input type="number" min="2" value="{{ataque.critMult}}" data-item-campo="flags.epm-ficha.critMult" data-item-id="{{this.id}}" /></label>
       {{/if}}

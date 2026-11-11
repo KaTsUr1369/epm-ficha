@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.11
+
+- **Armas com mais de um modo de ataque**: no editor da arma, "Modos de ataque" adiciona outros jeitos de atacar com a mesma arma (ex.: lança: ponta 1d6 Perfurante, cabo 1d4 Contundente). Cada modo tem nome, dano, tipo de dano e, se quiser, perícia e bônus de acerto próprios (vazio = igual à arma). Cada modo vira uma linha em Combate → Ataques, com munição, cargas, Maestria e defesas funcionando igual. O contra-ataque também deixa escolher o modo.
+
 ## Novidades da 0.5.10
 
 - **Resistências, imunidades e vulnerabilidades** agora ficam só na aba **Combate** (painel "Defesas contra dano", embaixo da RD): fora do modo edição mostra tudo (inclusive o que vem de itens, bênçãos e condições, com a origem ao passar o mouse); no modo edição, os três campos para adicionar e remover.

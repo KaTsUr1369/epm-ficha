@@ -1100,8 +1100,9 @@ export { TIPOS_TESTE };
 
 export function fonteAtaque(actor, tipo, ref) {
   if (tipo === "arma") {
-    const item = actor.items.get(ref);
-    return item ? ataqueDeArma(item) : null;
+    const [itemId, modo = ""] = String(ref).split(":");
+    const item = actor.items.get(itemId);
+    return item ? ataqueDeArma(item, modo) : null;
   }
   const dados = actor.flags?.[FLAG]?.ataques?.[ref];
   return dados ? ataqueCustom(ref, dados) : null;
@@ -1134,7 +1135,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (ficha.desvantagens.dano.length) notas.push(`Dano com desvantagem (${ficha.desvantagens.dano.join(", ")})`);
 
   // Arquétipos, munição e cargas
-  const item = tipo === "arma" ? actor.items.get(ref) : null;
+  const item = tipo === "arma" ? actor.items.get(String(ref).split(":")[0]) : null;
   const fi = item?.flags?.[FLAG] ?? {};
   const comb = nivelArquetipo(dados, "combatente");
   const opc = dados.arquetipoOpcoes?.combatente ?? {};

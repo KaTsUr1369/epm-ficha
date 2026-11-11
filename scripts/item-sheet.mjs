@@ -18,7 +18,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -80,6 +80,14 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         tipoDano: "", em: "", recurso: "pv", formula: "", quando: item.type === "weapon" ? "acerto" : "uso", criado: Date.now()
       }
     });
+  }
+
+  async acaoNovoModo() {
+    await this.item.update({ [`${P}.modos.${novoId()}`]: { nome: "", dano: "", tipoDano: "", pericia: "", bonusAcerto: "", criado: Date.now() } });
+  }
+
+  async acaoRemoverModo(ev, alvo) {
+    await this.item.update({ [`${P}.modos.-=${alvo.dataset.modo}`]: null });
   }
 
   async acaoRemoverEfeito(ev, alvo) {

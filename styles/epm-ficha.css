@@ -2053,3 +2053,67 @@
   .epm-revelacoes-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .epm-parte .epm-campos-texto { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---------- Versão 0.5.0 ---------- */
+
+/* Lista de personagens nos diálogos Conectar personagem / Relação múltipla */
+.epm-dialogo-atores .epm-busca-ator { width: 100%; }
+.epm-dialogo-atores .epm-lista-atores {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: min(48vh, 380px); overflow-y: auto; padding-right: 4px;
+}
+.epm-dialogo-atores .epm-escolha-ator {
+  display: grid; grid-template-columns: auto 36px minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 4px 8px; border: 1px solid rgba(127, 127, 127, 0.25); border-radius: 6px; cursor: pointer;
+}
+.epm-dialogo-atores .epm-escolha-ator:hover { background: rgba(127, 127, 127, 0.12); }
+.epm-dialogo-atores .epm-escolha-ator:has(input:checked) { border-color: #D3A85E; background: rgba(211, 168, 94, 0.12); }
+.epm-dialogo-atores .epm-escolha-ator[hidden] { display: none; }
+.epm-dialogo-atores .epm-escolha-ator img {
+  width: 36px; height: 36px; max-width: 36px; max-height: 36px; object-fit: cover; object-position: top;
+  border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.25);
+}
+.epm-dialogo-atores .epm-escolha-ator span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.epm-dialogo-atores .epm-escolha-ator em { font-size: 11px; opacity: 0.7; white-space: nowrap; }
+.epm-dialogo-atores .epm-escolha-ator input { margin: 0; }
+
+/* Painéis recolhíveis */
+.application.epm .epm-recolher {
+  flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin-left: 4px; padding: 0;
+  border: 0; border-radius: 4px; background: none; color: var(--epm-fraco); font-size: 11px; cursor: pointer;
+}
+.application.epm .epm-recolher:hover { background: rgba(255, 255, 255, 0.05); color: var(--epm-texto); }
+.epm-recolher i { transition: transform 0.15s ease; pointer-events: none; }
+.recolhido > header > .epm-recolher i { transform: rotate(180deg); }
+.application.epm .epm-secao-titulo > .epm-recolher, .application.epm .epm-categoria-titulo > .epm-recolher { margin-left: auto; }
+.application.epm .epm-secao-titulo > :not(h3) ~ .epm-recolher, .application.epm .epm-categoria-titulo > :not(h3, .epm-alca, i, .epm-contador) ~ .epm-recolher { margin-left: 4px; }
+.epm-recolhivel.recolhido > :not(header) { display: none !important; }
+.epm-painel.recolhido > .epm-painel-titulo { margin-bottom: 0; }
+.epm-recolhivel.recolhido { align-self: start; }
+.epm-pericias-opcoes { display: flex; justify-content: flex-end; margin: -4px 0 6px; }
+.epm-pericias-opcoes:empty { display: none; }
+
+/* Botão em forma de caixa de seleção */
+.application.epm .epm-check-botao {
+  display: inline-flex; align-items: center; gap: 5px; width: auto; height: 22px; padding: 0 7px;
+  border: 1px solid var(--epm-linha); border-radius: 11px; background: none; color: var(--epm-suave); font-size: 11.5px; cursor: pointer;
+}
+.application.epm .epm-check-botao.ativo { border-color: var(--epm-latao-escuro); color: var(--epm-texto); }
+.application.epm .epm-check-botao.ativo i { color: var(--epm-latao); }
+
+/* Perícias favoritas */
+.application.epm .epm-pericia-fav {
+  flex: none; width: 18px; height: 18px; padding: 0; border: 0; background: none; color: var(--epm-fraco);
+  font-size: 11px; opacity: 0.45; cursor: pointer;
+}
+.epm-pericia:hover .epm-pericia-fav, .application.epm .epm-pericia-fav.ativa { opacity: 1; }
+.application.epm .epm-pericia-fav.ativa { color: var(--epm-latao); }
+i.epm-pericia-fav { display: inline-grid; place-items: center; }
+
+/* Sub-abas de Habilidades e aba Arquétipo e Classe */
+.epm-subaba-habilidades > .epm-dica, .epm-subaba-arqclasse .epm-dica { margin: 0 0 8px; }
+.epm-subaba-arqclasse { display: flex; flex-direction: column; gap: 12px; }
+.epm-subaba-arqclasse:not(.active), .epm-subaba-habilidades:not(.active) { display: none; }
+.epm-subaba-arqclasse .epm-secao-poder { margin-top: 6px; }
+.epm-ordem-lista li > span.desligada { opacity: 0.5; }
+.epm-ordem-lista li > span { flex: 1 1 auto; }

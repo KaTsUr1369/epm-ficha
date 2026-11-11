@@ -1,0 +1,31 @@
+<section class="tab epm-aba epm-arqclasse {{cls.arqclasse}}" data-group="primary" data-tab="arqclasse">
+  <nav class="epm-subnav" aria-label="Arquétipo e Classe">
+    {{#each arqclasse.subabas}}
+    <button type="button" class="epm-subnav-item {{this.cls}}" data-action="aba" data-group="arqclasse" data-tab="{{this.id}}">{{this.label}}<span class="epm-subnav-qtd">{{this.total}}</span></button>
+    {{/each}}
+  </nav>
+  {{#each arqclasse.subabas}}
+  <div class="tab epm-subaba-arqclasse {{this.cls}}" data-group="arqclasse" data-tab="{{this.id}}">
+    <section class="epm-painel">
+      <header class="epm-painel-titulo">
+        <h3>{{this.label}}{{#if nome}}: {{this.nome}}{{/if}}</h3>
+      </header>
+      {{#if @root.edicao}}{{{this.editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{this.texto}}}</div>{{else}}<p class="epm-vazio">Sem anotações. Escreva no modo edição: características, progressão por nível, lembretes…</p>{{/if}}{{/if}}
+    </section>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo">
+        <h3>Habilidades de {{this.label}}</h3>
+        {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="novoPoder" data-tipo="habilidade" data-origem="{{this.origem}}"><i class="fa-solid fa-plus"></i> Nova</button>{{/if}}
+      </header>
+      <p class="epm-dica">São as mesmas da aba Habilidades, sub-aba {{this.label}}: o que for criado ou anotado aqui aparece lá, e o contrário também.</p>
+      {{#each secoes}}
+      <section class="epm-secao-poder" style="--cor: {{this.cor}}" data-secao="ac-{{../id}}-{{this.id}}">
+        <header class="epm-secao-titulo"><h3>{{this.label}}</h3></header>
+        {{#if vazia}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}
+        <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>
+      </section>
+      {{/each}}
+    </section>
+  </div>
+  {{/each}}
+</section>

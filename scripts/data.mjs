@@ -166,8 +166,9 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     relacoes: {},
     ataques: {},
     bonusCena: {},
-    personalizacao: { cor: COR_PADRAO, brilho: BRILHO_PADRAO },
-    ui: { ordemAbas: [], ordemCategorias: [] }
+    personalizacao: { cor: COR_PADRAO, brilho: BRILHO_PADRAO, abasExtras: {} },
+    arqclasse: { arquetipo: { notas: "" }, classe: { notas: "" } },
+    ui: { ordemAbas: [], ordemCategorias: [], periciasFavoritasTopo: false }
   };
 }
 

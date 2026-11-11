@@ -427,7 +427,7 @@ export async function criarPoder(actor, { tipo, nome = "", raridade = "comum", e
   return criado;
 }
 
-export async function dialogoNovoPoder(actor, tipo, circulo = 0) {
+export async function dialogoNovoPoder(actor, tipo, circulo = 0, { origem = "" } = {}) {
   const { ficha } = estadoAtor(actor);
   const cfg = ajustes();
   const eMagia = tipo === "magia";
@@ -438,7 +438,7 @@ export async function dialogoNovoPoder(actor, tipo, circulo = 0) {
   }).join("");
   const opcoesExtra = eMagia
     ? CIRCULOS.map(c => `<option value="${c.nivel}" ${c.nivel === circulo ? "selected" : ""}>${c.label}</option>`).join("")
-    : `<option value="">Sem origem</option>${Object.entries(ORIGENS_HABILIDADE).map(([id, l]) => `<option value="${id}">${l}</option>`).join("")}`;
+    : `<option value="">Sem origem</option>${Object.entries(ORIGENS_HABILIDADE).map(([id, l]) => `<option value="${id}" ${id === origem ? "selected" : ""}>${l}</option>`).join("")}`;
   const c = RARIDADES_PODER.comum;
   const content = `
     <label class="epm-campo"><span>Nome</span><input type="text" name="nome" value="${eMagia ? "Nova magia" : "Nova habilidade"}" autofocus></label>

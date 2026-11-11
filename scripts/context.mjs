@@ -9,7 +9,7 @@ import {
   AFINIDADE, ABAS, SUGESTOES, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CD,
   CATEGORIAS_CONDICAO, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
-  CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO
+  CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE
 } from "./config.mjs";
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
@@ -244,7 +244,9 @@ export function montarContexto({
   const edicao = !!ui.edicao && editavel;
   const isGM = !!usuario.isGM;
   const ordemAbas = ordenarPorLista(ABAS.map(a => a.id), dados.ui?.ordemAbas);
-  const abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id)).filter(a => a && (!a.soEdicao || edicao));
+  const abasExtras = dados.personalizacao?.abasExtras ?? {};
+  const abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id))
+    .filter(a => a && (!a.soEdicao || edicao) && (!a.opcional || abasExtras[a.id]));
   let abaAtual = ui.limitado ? "sobre" : (ui.abas?.primary ?? "principal");
   if (!abasVisiveis.some(a => a.id === abaAtual)) abaAtual = ui.limitado ? "sobre" : "principal";
   const cls = Object.fromEntries(ABAS.map(a => [a.id, a.id === abaAtual ? "active" : ""]));
@@ -274,7 +276,8 @@ export function montarContexto({
     prontas: CORES_PRONTAS.map(c => ({ ...c, ativa: normalizarHex(c.cor) === cor })),
     abas: ordemAbas.map((id, i, lista) => {
       const a = ABAS.find(x => x.id === id);
-      return { id, label: a.label, icone: a.icone, primeira: i === 0, ultima: i === lista.length - 1 };
+      return { id, label: a.titulo && a.opcional ? a.titulo : a.label, icone: a.icone, primeira: i === 0, ultima: i === lista.length - 1,
+        opcional: !!a.opcional, ligada: !a.opcional || !!abasExtras[a.id] };
     }),
     ordemPadrao: !(dados.ui?.ordemAbas ?? []).length
   };
@@ -319,8 +322,11 @@ export function montarContexto({
   ctx.gruposAtributo = ficha.gruposAtributo.map(g => ({
     ...g, atributos: g.atributos.map(a => ({ ...a, fontesTexto: fontesTexto(a.fontes), teste: badge(a.testeMod, a.testeFontes) }))
   }));
+  const favoritasTopo = !!dados.ui?.periciasFavoritasTopo;
+  ctx.periciasFavoritasTopo = favoritasTopo;
   ctx.pericias = ficha.pericias.map(p => ({
     ...p,
+    favorita: !!dados.pericias?.[p.id]?.favorita,
     fontesTexto: fontesTexto(p.fontes),
     teste: badge(p.testeMod, p.testeFontes),
     desvantagemTexto: p.desvantagem.join(", "), vantagemTexto: p.vantagem.join(", "), bloqueadaTexto: p.bloqueada.join(", "),
@@ -328,6 +334,8 @@ export function montarContexto({
       id, abrev: a.abrev, label: a.label, ativo: p.atributos.includes(id), sugerido: p.sugestoes.includes(id)
     }))
   }));
+  if (favoritasTopo) ctx.pericias = [...ctx.pericias.filter(p => p.favorita), ...ctx.pericias.filter(p => !p.favorita)];
+  ctx.periciasTemFavoritas = ctx.pericias.some(p => p.favorita);
   ctx.pontosLista = [
     { id: "pev", sigla: "PEv", nome: "Evolução", valor: ficha.pontos.pev, dica: "Pontos de Evolução: combates (5 × ND), encontros e recompensas" },
     { id: "pt", sigla: "PT", nome: "Treinamento", valor: ficha.pontos.pt, dica: "Pontos de Treinamento: 6 horas de treino ou estudo dão 5 PT" },
@@ -450,7 +458,7 @@ export function montarContexto({
     return {
       id: item.id, uuid: item.uuid, name: item.name, img: item.img, tipo: p.tipo,
       raridade: p.raridade, raridadeLabel: r.label, raridadeCor: r.cor,
-      passiva: p.passiva, favorito: p.favorito, origemLabel: ORIGENS_HABILIDADE[p.origem] ?? "", circulo: p.circulo,
+      passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: ORIGENS_HABILIDADE[p.origem] ?? "", circulo: p.circulo,
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
       bloqueada: formas.length > 0 && formas.every(f => f.bloqueada),
       motivosTexto: [...new Set(formas.filter(f => f.bloqueada).flatMap(f => f.motivosTexto.split(", ")))].filter(Boolean).join(", "),
@@ -463,18 +471,42 @@ export function montarContexto({
   const modo = ajustes.modoLimites ?? "separados";
 
   const habilidades = poderes.filter(p => p.tipo === "habilidade");
-  const secoesHab = [...Object.entries(RARIDADES_PODER).map(([id, r]) => ({
-    id, label: r.label, cor: r.cor, ...situacaoLimite(contagem, "habilidade", id, modo),
-    itens: habilidades.filter(h => !h.passiva && h.raridade === id).sort(ordenarPoderes)
-  })), {
-    id: "passivas", label: "Passivas", cor: "#93A9A3", limite: null,
-    itens: habilidades.filter(h => h.passiva).sort(ordenarPoderes)
-  }];
-  for (const s of secoesHab) s.vazia = !s.itens.length;
+  const origensEspeciais = SUBABAS_HABILIDADE.filter(s => s.origem).map(s => s.origem);
+  const daSubaba = sub => habilidades.filter(h => (sub.origem ? h.origem === sub.origem : !origensEspeciais.includes(h.origem)));
+  const passivas = lista => ({ id: "passivas", label: "Passivas", cor: "#93A9A3", limite: null, itens: lista.filter(h => h.passiva).sort(ordenarPoderes) });
+  const secoesDe = sub => {
+    const lista = daSubaba(sub);
+    const secoes = sub.origem
+      ? [passivas(lista), { id: "comum", label: "Comum", cor: RARIDADES_PODER.comum.cor, limite: null, itens: lista.filter(h => !h.passiva).sort(ordenarPoderes) }]
+      : [passivas(lista), ...Object.entries(RARIDADES_PODER).map(([id, r]) => ({
+        id, label: r.label, cor: r.cor, ...situacaoLimite(contagem, "habilidade", id, modo),
+        itens: lista.filter(h => !h.passiva && h.raridade === id).sort(ordenarPoderes)
+      }))];
+    for (const s of secoes) s.vazia = !s.itens.length;
+    return { secoes, total: lista.length };
+  };
+  const subAtual = SUBABAS_HABILIDADE.some(s => s.id === ui.abas?.habilidades) ? ui.abas.habilidades : "geral";
+  const subabas = SUBABAS_HABILIDADE.map(sub => ({
+    ...sub, ...secoesDe(sub), ativa: sub.id === subAtual, cls: sub.id === subAtual ? "active" : ""
+  }));
+  const geral = daSubaba(SUBABAS_HABILIDADE[0]);
   ctx.habilidades = {
-    secoes: secoesHab, total: habilidades.length,
-    conhecidas: habilidades.filter(h => h.raridade !== "unica").length,
+    subabas, total: habilidades.length,
+    conhecidas: geral.filter(h => h.raridade !== "unica").length,
     espacos: int(dados.espacos?.habilidades, 2)
+  };
+  // Aba opcional Arquétipo e Classe: anotações próprias + as mesmas habilidades das sub-abas
+  ctx.arqclasse = {
+    subabas: SUBABAS_HABILIDADE.filter(s => s.origem).map(sub => {
+      const atual = (ui.abas?.arqclasse ?? "arquetipo") === sub.id;
+      const nomes = sub.id === "arquetipo" ? [dados.arquetipo, dados.arquetipo2] : [dados.classe];
+      const notas = dados.arqclasse?.[sub.id]?.notas ?? "";
+      return {
+        ...sub, ...secoesDe(sub), ativa: atual, cls: atual ? "active" : "",
+        nome: nomes.map(n => String(n ?? "").trim()).filter(Boolean).join(" / "),
+        editor: editores.arqclasse?.[sub.id] ?? "", texto: temTexto(notas) ? (enriquecidos.arqclasse?.[sub.id] ?? "") : ""
+      };
+    })
   };
 
   const magias = poderes.filter(p => p.tipo === "magia");

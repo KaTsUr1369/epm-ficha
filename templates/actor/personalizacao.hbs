@@ -33,11 +33,12 @@
         <h3>Ordem das abas</h3>
         {{#unless personalizacao.ordemPadrao}}<button type="button" class="epm-link" data-action="restaurarOrdemAbas">Restaurar ordem</button>{{/unless}}
       </header>
-      <p class="epm-dica">Arraste as abas na barra lateral ou use as setas.</p>
+      <p class="epm-dica">Arraste as abas na barra lateral ou use as setas. Abas opcionais aparecem quando "mostrar" está marcado.</p>
       <ol class="epm-ordem-lista">
         {{#each personalizacao.abas}}
         <li>
-          <i class="{{this.icone}}" aria-hidden="true"></i><span>{{this.label}}</span>
+          <i class="{{this.icone}}" aria-hidden="true"></i><span{{#unless ligada}} class="desligada"{{/unless}}>{{this.label}}</span>
+          {{#if opcional}}<button type="button" class="epm-check-botao{{#if ligada}} ativo{{/if}}" data-action="alternarAbaOpcional" data-aba="{{this.id}}" aria-pressed="{{#if ligada}}true{{else}}false{{/if}}" title="Aba opcional: mostrar ou esconder"><i class="{{#if ligada}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> mostrar</button>{{/if}}
           <button type="button" class="epm-icone-botao" data-action="moverAba" data-aba="{{this.id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
           <button type="button" class="epm-icone-botao" data-action="moverAba" data-aba="{{this.id}}" data-dir="1" {{#if ultima}}disabled{{/if}} title="Descer"><i class="fa-solid fa-arrow-down"></i></button>
         </li>

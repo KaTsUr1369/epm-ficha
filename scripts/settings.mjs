@@ -50,6 +50,7 @@ export function registrarAjustes() {
     hint: "Durante um combate iniciado, usar uma habilidade ou magia marca na ficha a ação que ela gasta.",
     scope: "world", config: true, type: Boolean, default: true
   });
+  reg("paineisRecolhidos", { scope: "client", config: false, type: Array, default: [] });
   reg("periciasPadrao", { scope: "world", config: false, type: Array, default: [] });
 }
 

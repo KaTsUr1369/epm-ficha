@@ -4,7 +4,8 @@
  */
 import {
   FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS, ABAS, CATEGORIAS_ITEM,
-  CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, AFINIDADE, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM
+  CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, AFINIDADE, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM,
+  MODULE_ID, SUBABAS_HABILIDADE
 } from "./config.mjs";
 import {
   num, int, slug, novoId, normalizarTexto, periciasParaLista, periciasParaObjeto, migrarPericias, atributosDaPericia,
@@ -42,7 +43,8 @@ const ACOES_FICHA = [
   "novaBencao", "excluirBencao", "adicionarMod", "removerMod", "abrirCatalogo", "tipoCatalogo", "adicionarDoCatalogo",
   "usarBencao", "encerrarBencao", "recarregarBencao", "chatBencao",
   "novaRelacao", "excluirRelacao", "abrirRelacao", "conectarRelacao", "relacaoMultipla", "ajustarAfinidade", "abrirBackground",
-  "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas"
+  "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
+  "favoritarPericia", "favoritasNoTopo", "recolherPainel"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -58,7 +60,7 @@ function soAnotacoes(dados) {
 export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   constructor(options = {}) {
     super(options);
-    this._abas = { primary: "principal", magias: "0", notas: null };
+    this._abas = { primary: "principal", magias: "0", habilidades: "geral", arqclasse: "arquetipo", notas: null };
     this._expandidos = new Set();
     this._filtroRaridades = new Set();
     this._modoEdicao = null;
@@ -92,6 +94,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     combate: { template: `${CAMINHO}/actor/combate.hbs`, scrollable: [""] },
     inventario: { template: `${CAMINHO}/actor/inventario.hbs`, scrollable: [""] },
     habilidades: { template: `${CAMINHO}/actor/habilidades.hbs`, scrollable: [""] },
+    arqclasse: { template: `${CAMINHO}/actor/arqclasse.hbs`, scrollable: [""] },
     magias: { template: `${CAMINHO}/actor/magias.hbs`, scrollable: [""] },
     sobre: { template: `${CAMINHO}/actor/sobre.hbs`, scrollable: [""] },
     anotacoes: { template: `${CAMINHO}/actor/anotacoes.hbs`, scrollable: [""] },
@@ -146,7 +149,13 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         if (!item) { this._expandidos.delete(id); continue; }
         enriquecidos.itens[id] = await enriquecer(item.system?.description?.value ?? "", { relativeTo: item, secrets: item.isOwner });
       }
-      const editores = { sobre: {}, notas: {} };
+      const editores = { sobre: {}, notas: {}, arqclasse: {} };
+      enriquecidos.arqclasse = {};
+      for (const id of ["arquetipo", "classe"]) {
+        const valor = bruto.arqclasse?.[id]?.notas ?? "";
+        enriquecidos.arqclasse[id] = await enriquecer(valor, { relativeTo: actor, secrets: segredos });
+        editores.arqclasse[id] = editorHTML({ name: `${P}.arqclasse.${id}.notas`, value: valor, documentUUID: actor.uuid, enriched: enriquecidos.arqclasse[id] });
+      }
       for (const t of TEXTOS_SOBRE) {
         const valor = bruto.sobre?.[t.id] ?? "";
         enriquecidos.sobre[t.id] = await enriquecer(valor, { relativeTo: actor, secrets: segredos });
@@ -230,6 +239,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
     if (options.isFirstRender || options.parts?.includes("condicoes")) this._filtrarCondicoes();
     if (options.isFirstRender || options.parts?.includes("bencaos")) this._filtrarCatalogo();
+    try { this._ligarRecolher(); } catch (err) { console.error("EPM | Falha ao preparar os painéis recolhíveis", err); }
     if (this._focarTemp) {
       this._focarTemp = false;
       const campo = this.element.querySelector('[data-recurso-valor="temp"]');
@@ -946,7 +956,9 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async acaoNovoPoder(ev, alvo) {
     const tipo = alvo.dataset.tipo === "magia" ? "magia" : "habilidade";
     const circulo = tipo === "magia" ? Math.min(6, Math.max(0, int(this._abas.magias, 0))) : 0;
-    const item = await M.dialogoNovoPoder(this.actor, tipo, circulo);
+    const sub = SUBABAS_HABILIDADE.find(s => s.id === this._abas.habilidades);
+    const origem = alvo.dataset.origem ?? (tipo === "habilidade" ? sub?.origem ?? "" : "");
+    const item = await M.dialogoNovoPoder(this.actor, tipo, circulo, { origem });
     if (item) abrirEditorPoder(item);
   }
 
@@ -1187,6 +1199,88 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoRestaurarOrdemAbas() {
     await this.actor.update({ [`${P}.ui.ordemAbas`]: [] });
+  }
+
+  async acaoAlternarAbaOpcional(ev, alvo) {
+    const id = alvo.dataset.aba;
+    if (!ABAS.find(a => a.id === id)?.opcional) return;
+    const ligada = !!this.actor.flags?.[FLAG]?.personalizacao?.abasExtras?.[id];
+    await this.actor.update({ [`${P}.personalizacao.abasExtras.${id}`]: !ligada });
+  }
+
+  async acaoFavoritarPericia(ev, alvo) {
+    const id = alvo.dataset.pericia;
+    if (!id || !this.isEditable) return;
+    const atual = !!this.actor.flags?.[FLAG]?.pericias?.[id]?.favorita;
+    await this.actor.update({ [`${P}.pericias.${id}.favorita`]: !atual });
+  }
+
+  async acaoFavoritasNoTopo() {
+    if (!this.isEditable) return;
+    const atual = !!this.actor.flags?.[FLAG]?.ui?.periciasFavoritasTopo;
+    await this.actor.update({ [`${P}.ui.periciasFavoritasTopo`]: !atual });
+  }
+
+  /* -------------------------------------------- */
+  /*  Painéis recolhíveis (seta no título)        */
+  /* -------------------------------------------- */
+
+  /** Lista de painéis recolhidos deste usuário (vale para todas as fichas). */
+  _lerRecolhidos() {
+    if (!this._recolhidos) {
+      let salvo = [];
+      try { salvo = game.settings.get(MODULE_ID, "paineisRecolhidos") ?? []; } catch { salvo = []; }
+      this._recolhidos = new Set(Array.isArray(salvo) ? salvo : []);
+    }
+    return this._recolhidos;
+  }
+
+  /** Chave estável de um painel: aba + identificação do bloco + título. */
+  _chavePainel(cabeca) {
+    const bloco = cabeca.parentElement;
+    const aba = cabeca.closest(".epm-aba")?.dataset.tab ?? "";
+    const id = bloco.dataset.secao ?? bloco.dataset.categoria ?? cabeca.dataset.categoriaId ?? "";
+    const titulo = cabeca.querySelector("h3, h4")?.textContent.trim().replace(/\s+/g, " ") ?? "";
+    return `${aba}|${id}|${titulo}`;
+  }
+
+  _ligarRecolher() {
+    const recolhidos = this._lerRecolhidos();
+    const seletor = ".epm-painel > header.epm-painel-titulo, .epm-secao-poder > header.epm-secao-titulo, section > header.epm-categoria-titulo";
+    for (const cabeca of this.element.querySelectorAll(seletor)) {
+      if (cabeca.closest(".epm-circulo")) continue;
+      const bloco = cabeca.parentElement;
+      const chave = this._chavePainel(cabeca);
+      const fechado = recolhidos.has(chave);
+      bloco.classList.add("epm-recolhivel");
+      bloco.classList.toggle("recolhido", fechado);
+      let botao = cabeca.querySelector(":scope > .epm-recolher");
+      if (!botao) {
+        botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "epm-recolher";
+        botao.dataset.action = "recolherPainel";
+        botao.innerHTML = '<i class="fa-solid fa-chevron-up" aria-hidden="true"></i>';
+        cabeca.append(botao);
+      }
+      botao.dataset.chave = chave;
+      botao.title = fechado ? "Abrir" : "Recolher";
+      botao.setAttribute("aria-expanded", String(!fechado));
+    }
+  }
+
+  async acaoRecolherPainel(ev, alvo) {
+    ev?.stopPropagation?.();
+    const chave = alvo.dataset.chave;
+    if (!chave) return;
+    const recolhidos = this._lerRecolhidos();
+    const fechar = !recolhidos.has(chave);
+    if (fechar) recolhidos.add(chave); else recolhidos.delete(chave);
+    const bloco = alvo.closest(".epm-recolhivel");
+    bloco?.classList.toggle("recolhido", fechar);
+    alvo.title = fechar ? "Abrir" : "Recolher";
+    alvo.setAttribute("aria-expanded", String(!fechar));
+    try { await game.settings.set(MODULE_ID, "paineisRecolhidos", [...recolhidos]); } catch (err) { console.warn("EPM |", err); }
   }
 }
 

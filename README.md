@@ -14,7 +14,16 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
-## Novidades da 0.4.0
+## Novidades da 0.5.0
+
+- **Conectar personagem e Relação múltipla:** a lista de personagens tem imagens pequenas e rola, dá para marcar vários sem a janela quebrar.
+- **Painéis recolhíveis:** todo painel grande (Perícias, Atributos, Condições, categorias do inventário, seções de habilidades…) tem uma seta no título para fechar e abrir. Fica salvo para o seu usuário, em todas as fichas.
+- **Perícias favoritas:** estrela em cada perícia e a opção "Favoritas no topo", que coloca as marcadas acima das outras.
+- **Habilidades em sub-abas:** Geral (como antes), Arquétipo e Classe. As duas últimas só usam Passiva e Comum. Passivas agora vêm primeiro. "Nova habilidade" cria na sub-aba aberta.
+- **Aba Arquétipo e Classe (opcional):** liga em Personalizar → Ordem das abas → "mostrar". Tem as sub-abas Arquétipo e Classe, cada uma com anotações próprias e as mesmas habilidades das sub-abas de Habilidades (o que se cria em um lugar aparece no outro).
+- **Moedas** com a arte nova.
+- **Artífice** entre os arquétipos sugeridos.
+
 
 Esta versão junta o que tinha sido feito entre a 0.2.5 e a 0.3.0 (refeito a partir da 0.2.4) com o patch note novo.
 
@@ -135,4 +144,4 @@ Para o Mestre, numa macro de script: `game.modules.get("epm-ficha").api.relacaoM
 
 - Fonte Cormorant Garamond (SIL Open Font License, ver `fonts/OFL.txt`).
 - Ícones de condição do [game-icons.net](https://game-icons.net). Icons made by Lorc, Delapouite, Sbed, Skoll, PriorBlue, Carl Olsen and Cathelineau under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/), and by Zeromancer under CC0. A lista de qual ícone é de quem está em `assets/condicoes/CREDITOS.md`.
-- Imagens das moedas desenhadas para este módulo.
+- Imagens das moedas: arte da autora do sistema.

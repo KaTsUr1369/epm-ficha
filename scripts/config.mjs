@@ -102,7 +102,7 @@ export const REGRAS = {
 /** Custo em PEv para subir o Arquétipo para `novoNivel`: 2 × (novo nível − 1). */
 export const custoNivel = (novoNivel) => 2 * (novoNivel - 1);
 
-export const ARQUETIPOS_SUGERIDOS = ["Combatente", "Conjurador"];
+export const ARQUETIPOS_SUGERIDOS = ["Combatente", "Conjurador", "Artífice"];
 
 /* -------------------------------------------- */
 /*  Raridades                                   */
@@ -341,9 +341,9 @@ export const TIPOS_IGNORADOS = ["class", "subclass", "background", "race", "faci
 export const MOEDAS = [
   { id: "pc", label: "Cobre",   abrev: "PC", valor: 1,       cor: "#C27A4A", img: `${ASSETS}/moedas/cobre.webp`,   dica: "A menor moeda" },
   { id: "pp", label: "Prata",   abrev: "PP", valor: 10,      cor: "#B4BCC2", img: `${ASSETS}/moedas/prata.webp`,   dica: "1 Prata = 10 Cobres" },
-  { id: "po", label: "Ouro",    abrev: "PO", valor: 100,     cor: "#E3B341", img: `${ASSETS}/moedas/ouro.webp`,    dica: "1 Ouro = 10 Pratas" },
-  { id: "pl", label: "Platina", abrev: "PL", valor: 1000,    cor: "#AFC8E2", img: `${ASSETS}/moedas/platina.webp`, dica: "1 Platina = 10 Ouros" },
-  { id: "dr", label: "Dracmas", abrev: "DR", valor: 1000000, cor: "#3ED1B9", img: `${ASSETS}/moedas/dracma.webp`,  dica: "1 Dracma = 1.000 Platinas" }
+  { id: "po", label: "Ouro",    abrev: "PO", valor: 100,     cor: "#D9A25A", img: `${ASSETS}/moedas/ouro.webp`,    dica: "1 Ouro = 10 Pratas" },
+  { id: "pl", label: "Platina", abrev: "PL", valor: 1000,    cor: "#8D8992", img: `${ASSETS}/moedas/platina.webp`, dica: "1 Platina = 10 Ouros" },
+  { id: "dr", label: "Dracmas", abrev: "DR", valor: 1000000, cor: "#B0479A", img: `${ASSETS}/moedas/dracma.webp`,  dica: "1 Dracma = 1.000 Platinas" }
 ];
 /** As mesmas moedas da maior para a menor (para troco e consolidação). */
 export const MOEDAS_DESC = [...MOEDAS].sort((a, b) => b.valor - a.valor);
@@ -408,6 +408,7 @@ export const ABAS = [
   { id: "combate",     label: "Combate",     icone: "fa-solid fa-crosshairs" },
   { id: "inventario",  label: "Inventário",  icone: "fa-solid fa-sack-dollar" },
   { id: "habilidades", label: "Habilidades", icone: "fa-solid fa-hand-sparkles" },
+  { id: "arqclasse",   label: "Arquétipo",   titulo: "Arquétipo e Classe", icone: "fa-solid fa-chess-knight", opcional: true },
   { id: "magias",      label: "Magias",      icone: "fa-solid fa-wand-sparkles" },
   { id: "sobre",       label: "Sobre",       icone: "fa-solid fa-feather-pointed" },
   { id: "anotacoes",   label: "Anotações",   icone: "fa-solid fa-diagram-project" },
@@ -418,6 +419,13 @@ export const ABAS = [
 ];
 
 /** Cores prontas da Personalização (a primeira é a padrão: verdete). */
+/** Sub-abas da aba Habilidades (origem da habilidade). Arquétipo e Classe só usam Passiva e Comum. */
+export const SUBABAS_HABILIDADE = [
+  { id: "geral",     label: "Geral" },
+  { id: "arquetipo", label: "Arquétipo", origem: "arquetipo" },
+  { id: "classe",    label: "Classe",    origem: "classe" }
+];
+
 export const CORES_PRONTAS = [
   { id: "verdete",  label: "Verdete",  cor: "#5D9F98" },
   { id: "noite",    label: "Noite",    cor: "#5A7FB0" },

@@ -122,11 +122,12 @@
         <span class="epm-contador {{this.estadoPericias}}" title="45 pontos, +15 a cada 5 níveis">{{ficha.pontosPericia.gasto}} de {{ficha.pontosPericia.disponivel}}</span>
         <span class="epm-contador" title="Máximo de pontos numa perícia (sobe +5 nos níveis 15 e 35)">limite {{ficha.pontosPericia.limite}}</span>
       </header>
+      <div class="epm-pericias-opcoes">{{#if editavel}}<button type="button" class="epm-check-botao{{#if periciasFavoritasTopo}} ativo{{/if}}" data-action="favoritasNoTopo" aria-pressed="{{#if periciasFavoritasTopo}}true{{else}}false{{/if}}" title="Mostra as perícias marcadas com estrela antes das outras"><i class="{{#if periciasFavoritasTopo}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> Favoritas no topo</button>{{/if}}</div>
       {{#if ficha.desvantagens.testes.length}}<p class="epm-aviso">Testes com desvantagem: {{epmJoin ficha.desvantagens.testes}}</p>{{/if}}
       {{#if ficha.penalidades.testes.total}}<p class="epm-dica">Os números em vermelho ao lado das perícias e atributos entram nas rolagens.</p>{{/if}}
       <ol class="epm-lista-pericias">
         {{#each pericias}}
-        <li class="epm-pericia{{#if acimaLimite}} acima{{/if}}">
+        <li class="epm-pericia{{#if acimaLimite}} acima{{/if}}{{#if favorita}} favorita{{/if}}">
           {{#if @root.edicao}}
           <button type="button" class="epm-icone-botao perigo" data-action="removerPericia" data-pericia="{{this.id}}" title="Remover {{this.nome}}"><i class="fa-solid fa-xmark"></i></button>
           <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da perícia" />
@@ -139,6 +140,7 @@
           </div>
           {{else}}
           <button type="button" class="epm-pericia-rolar" data-action="rolarPericia" data-pericia="{{this.id}}" title="Rolar {{this.nome}} (Shift: vantagem, Ctrl: desvantagem)"><i class="fa-solid fa-dice-d20"></i></button>
+          {{#if @root.editavel}}<button type="button" class="epm-pericia-fav{{#if favorita}} ativa{{/if}}" data-action="favoritarPericia" data-pericia="{{this.id}}" title="{{#if favorita}}Tirar dos favoritos{{else}}Favoritar{{/if}}" aria-pressed="{{#if favorita}}true{{else}}false{{/if}}"><i class="{{#if favorita}}fa-solid{{else}}fa-regular{{/if}} fa-star" aria-hidden="true"></i></button>{{else}}{{#if favorita}}<i class="fa-solid fa-star epm-pericia-fav ativa" aria-hidden="true"></i>{{/if}}{{/if}}
           <span class="epm-pericia-nome">{{this.nome}}</span>
           <span class="epm-pericia-atributo" title="Atributo somado">{{this.atributoAbrev}}</span>
           {{#if bloqueadaTexto}}<i class="fa-solid fa-ban epm-marca-pericia bloqueio" title="Bloqueada: {{this.bloqueadaTexto}}"></i>{{/if}}

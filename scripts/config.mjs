@@ -573,7 +573,7 @@ export const TIPOS_DANO = [
   { id: "sombra", label: "Sombra", grupo: "misticos", aliases: ["trevas", "escuridao"], desc: "Trevas, escuridão sobrenatural e energias sombrias." },
   { id: "espiritual", label: "Espiritual", grupo: "misticos", aliases: ["alma"], desc: "Afeta diretamente a alma e a essência espiritual de um ser." },
   { id: "temporal", label: "Temporal", grupo: "misticos", aliases: ["tempo"], desc: "Manipulação do tempo, envelhecimento acelerado e distorções temporais." },
-  { id: "corrupcao", label: "Corrupção", grupo: "misticos", aliases: [], desc: "Corrupção." },
+  { id: "corrupcao", label: "Corrupção", grupo: "misticos", aliases: [], desc: "Corrupção. Não tem níveis." },
   { id: "psiquico", label: "Psíquico", grupo: "mentais", aliases: ["mental"], desc: "Ataques mentais, manipulação da mente e destruição cognitiva." },
   { id: "venenoso", label: "Venenoso", grupo: "biologicos", aliases: ["veneno"], desc: "Toxinas e venenos que prejudicam o organismo." }
 ];
@@ -601,13 +601,12 @@ export const TIPOS_BONUS_SITUACIONAL = {
 };
 export const GATILHOS_BONUS = { uso: "Ao usar", dano: "Ao sofrer dano (automático, se tiver o custo)" };
 
-/** Sugestões dos campos de tipo de dano: os tipos, os grupos e cada tipo com o nível entre parênteses. */
+/** Tipos de dano sem níveis (vale contra qualquer proteção do tipo, em qualquer nível). */
+export const TIPOS_SEM_NIVEL = ["corrupcao"];
+
+/** Sugestões dos campos de tipo de dano: os tipos e os grupos (o nível é escolhido nos botões do seletor). */
 export const SUGESTOES = {
-  dano: [
-    ...TIPOS_DANO.map(t => t.label),
-    ...Object.values(GRUPOS_DANO),
-    ...TIPOS_DANO.flatMap(t => NIVEIS_DANO.slice(1).map(n => `${t.label} (${n.label})`))
-  ]
+  dano: [...TIPOS_DANO.map(t => t.label), ...Object.values(GRUPOS_DANO)]
 };
 
 /** Tipos de arma sugeridos (Arma Favorita do Combatente vale para um tipo). Dá para escrever outro. */

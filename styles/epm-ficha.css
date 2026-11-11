@@ -2690,3 +2690,19 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-receita .epm-ing > input[type="number"], .epm-receita .epm-receita-resultado > input[type="number"] { flex: 0 0 60px; width: 60px; }
 .epm-receita .epm-receita-resultado > button { flex: none; }
 .epm-receita .epm-ing > button { flex: none; }
+
+/* 0.5.9 · Seletor de tipo de dano (substitui a lista nativa) */
+.epm-seletor-dano {
+  position: fixed; z-index: 100000; display: flex; flex-direction: column; overflow: hidden;
+  background: #121b1a; color: #E6E0D2; border: 1px solid #3B5450; border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.6); font-family: "Signika", sans-serif; font-size: 13px;
+}
+.epm-sd-niveis { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border-bottom: 1px solid #2E4845; flex: none; background: #0f1716; }
+.epm-sd-nivel { flex: 1 1 auto; padding: 2px 6px; min-height: 0; height: auto; line-height: 1.5; font-size: 12px; border: 1px solid #3B5450; border-radius: 12px; background: transparent; color: #C9D4D1; cursor: pointer; }
+.epm-sd-nivel.ativo { background: #D3A85E; border-color: #D3A85E; color: #1b1406; font-weight: 600; }
+.epm-sd-lista { overflow-y: auto; overscroll-behavior: contain; padding: 4px 6px 8px; min-height: 0; flex: 1; }
+.epm-sd-grupo { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.epm-sd-grupo > span { flex-basis: 100%; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #D3A85E; }
+.epm-sd-op { padding: 2px 8px; min-height: 0; height: auto; line-height: 1.5; font-size: 12.5px; border: 1px solid #2E4845; border-radius: 5px; background: #1a2625; color: #E6E0D2; cursor: pointer; width: auto; flex: none; }
+.epm-sd-op:hover { border-color: #D3A85E; background: #24332f; }
+.epm-sd-vazio { margin: 6px 2px; color: #9fb0ac; font-size: 12px; }

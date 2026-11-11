@@ -15,9 +15,11 @@ import { PainelGrupo, abrirPainelGrupo, atualizarPainelGrupo, botaoNoDiretorio }
 import { EscudoMestre, abrirEscudo, atualizarEscudo, botaoEscudo } from "./escudo.mjs";
 import { integrarDock } from "./integracao-dock.mjs";
 import { registrarRelogioProjetos } from "./projetos.mjs";
+import { registrarSeletorDano } from "./seletor-dano.mjs";
 
 integrarDock();
 registrarRelogioProjetos();
+registrarSeletorDano();
 import * as extras from "./extras.mjs";
 
 const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;

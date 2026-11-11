@@ -14,6 +14,11 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.5.9
+
+- **Seletor de tipo de dano** novo: a lista do navegador não cabia na tela e não rolava. Agora, ao clicar num campo de tipo de dano (ataques, armas, habilidades, resistências, imunidades, vulnerabilidades, RD, Escudo), abre uma lista própria com rolagem, separada por grupo (Físicos, Elementais…), com os grupos inteiros e os outros itens (condições, "Todos os danos") no fim. O nível (Natural, Mágico, Verdadeiro, Límbico, Arcaico) é escolhido nos botões do topo. Digitar filtra a lista.
+- **Corrupção não tem níveis**: não ganha "(Mágico)" etc. e qualquer proteção contra Corrupção vale.
+
 ## Novidades da 0.5.8
 
 - **Tipos de dano do RPG**: Contundente, Cortante, Perfurante (Físicos); Fogo, Água, Ar, Terra, Gelo, Raio, Ácido, Sonoro (Elementais); Força, Radiante (Sagrado), Luz, Necrótico, Sombra, Espiritual, Temporal e Corrupção (Energéticos e místicos); Psíquico (Mentais); Venenoso (Biológicos). Nomes antigos continuam valendo (Corte = Cortante, Trevas = Sombra, Elétrico = Raio…), e dá para proteger um grupo inteiro ("Elementais").

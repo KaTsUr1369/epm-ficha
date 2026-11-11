@@ -7,7 +7,7 @@ import {
   FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
   MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
-  TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO,
+  TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO, TIPOS_SEM_NIVEL,
   TIPOS_BONUS_SITUACIONAL, GATILHOS_BONUS
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
@@ -1357,7 +1357,9 @@ export function rotuloTipoDano(texto) {
 export function tipoCobre(protecao, tipoDano, { ignorarNivel = false } = {}) {
   const p = lerTipoDano(protecao);
   const d = lerTipoDano(tipoDano);
-  if (!ignorarNivel && d.nivel > p.nivel) return false;
+  // Corrupção não tem níveis: o nível não conta nem no dano nem na proteção
+  const semNivel = d.tipos.size > 0 && [...d.tipos].every(id => TIPOS_SEM_NIVEL.includes(id));
+  if (!ignorarNivel && !semNivel && d.nivel > p.nivel) return false;
   if (p.todos) return true;
   for (const id of d.tipos) {
     if (p.tipos.has(id)) return true;

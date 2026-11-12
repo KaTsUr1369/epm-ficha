@@ -9,11 +9,11 @@ import { int, num, novoId, formaPadrao } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import { estadoAtor, confirmar, rolarTeste, calcularPerda, calcularRecuperacao } from "./mecanicas.mjs";
 import { custoRecurso } from "./extras.mjs";
-import { RACAS, racaPorId, qtdUnicas } from "./racas.mjs";
+import { RACAS, racaPorId, qtdUnicas, opcoesAmalgama, habilidadePorRef } from "./racas.mjs";
 import { insanidadeTemporaria, insanidadePermanente, estadoSanidade, RECUPERACAO_SANIDADE } from "./insanidades.mjs";
 import { TREINAMENTOS_NOTION, KITS_INICIAIS, ARMAS_REGIAO, ARMADURAS_REGIAO, REGIOES, PROPRIEDADES_ARMA, TIPOS_ARMADURA } from "./catalogos.mjs";
 import {
-  RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo
+  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo
 } from "./regras-extras.mjs";
 import { niveisArquetipos } from "./ficha-extras.mjs";
 import * as mundo from "./mundo.mjs";
@@ -90,6 +90,19 @@ export async function escolherRaca(actor) {
     if (unicas.length > max) { ui.notifications.warn(`${raca.nome}: só ${max} Habilidade(s) Única(s). Fiquei com as primeiras.`); unicas = unicas.slice(0, max); }
   }
 
+  // Amálgama: escolhe uma passiva ou habilidade de outra raça
+  let amalgama = "";
+  if (raca.unicas.some(u => u.auto?.amalgama && unicas.includes(u.id))) {
+    const lista = opcoesAmalgama(raca.id);
+    const atual = dados.racaEscolha?.amalgama ?? "";
+    const ra = await formulario("Amálgama: habilidade de outra raça", `
+      <p class="epm-dica">Escolha uma passiva ou habilidade de outra raça. Ela entra na sub-aba Raça e os efeitos automáticos dela valem.</p>
+      <div class="epm-lista-escolha">${lista.map((o, i) => `<label class="epm-check epm-check-bloco"><input type="radio" name="ref" value="${escapar(o.ref)}" ${o.ref === atual || (!atual && i === 0) ? "checked" : ""}>
+        <span><strong>${escapar(o.label)}</strong> ${escapar(o.texto)}</span></label>`).join("")}</div>`, { botao: "Continuar", largura: 620 });
+    if (!ra) return;
+    amalgama = ra.ref ?? "";
+  }
+
   // Atributos (aumento da raça; Variante troca; Conhecimento Extra soma)
   const escolhidas = raca.unicas.filter(u => unicas.includes(u.id));
   const troca = escolhidas.find(u => u.auto?.trocaAumento)?.auto?.trocaAumento;
@@ -122,7 +135,7 @@ export async function escolherRaca(actor) {
 
   const upd = {
     [`${P}.raca`]: mestico ? `Mestiço (${racaPorId(mestico.a).nome} + ${racaPorId(mestico.b).nome})` : raca.nome,
-    [`${P}.racaEscolha`]: { id: raca.id, unicas, mestico, aumento: valores },
+    [`${P}.racaEscolha`]: { id: raca.id, unicas, mestico, amalgama, aumento: valores },
     [`${P}.deslocamento.base`]: num(r4.desl, raca.deslocamento),
     [`${P}.tamanho`]: raca.tamanho
   };
@@ -148,6 +161,8 @@ export async function escolherRaca(actor) {
   const lista = mestico
     ? [...mestico.habilidades, ...mestico.unicas].map(ref => { const [rid, hid] = ref.split(":"); const rr = racaPorId(rid); const h = [...rr.habilidades, ...rr.unicas].find(x => x.id === hid); return h ? { ...h, origemRaca: rr.nome, unica: rr.unicas.includes(h) } : null; }).filter(Boolean)
     : [...raca.habilidades.filter(h => !escolhidas.some(u => u.auto?.perdeHabilidade === h.id)).map(h => ({ ...h, origemRaca: raca.nome })), ...escolhidas.map(u => ({ ...u, origemRaca: raca.nome, unica: true }))];
+  const amal = habilidadePorRef(amalgama);
+  if (amal) lista.push({ ...amal.habilidade, origemRaca: `Amálgama (${amal.raca.nome})` });
   await actor.createEmbeddedDocuments("Item", lista.map(h => dadosHabilidadeRaca(h)));
   ui.notifications.info(`${raca.nome} aplicada${ganhos.length ? ` (${ganhos.join(", ")})` : ""}. As habilidades estão em Habilidades → Raça.`);
 }
@@ -541,7 +556,7 @@ export const NOMES_ACOES_060 = [
   "restaurarPacto", "nomearCriatura", "furia", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
-  "trilhaRelacao", "rolarComRelacao", "testeTraicao"
+  "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus"
 ];
 
 export const METODOS_060 = {
@@ -647,8 +662,32 @@ export const METODOS_060 = {
     return this.actor.update({ [`${P}.relacoes.${relacao}.${trilha}`]: atual === valor ? valor - 1 : valor });
   },
   acaoRolarComRelacao(ev, alvo) { return rolarComRelacao(this.actor, alvo.dataset.relacao, ev); },
-  acaoTesteTraicao(ev, alvo) { return testeTraicao(this.actor, alvo.dataset.relacao); }
+  acaoTesteTraicao(ev, alvo) { return testeTraicao(this.actor, alvo.dataset.relacao); },
+  acaoNovaTrocaBonus() { return novaTrocaBonus(this.actor); },
+  async acaoExcluirTrocaBonus(ev, alvo) {
+    if (!(await confirmar("Desfazer troca", "<p>Desfazer esta troca de bônus? Cada atributo volta a dar o próprio bônus.</p>"))) return;
+    return this.actor.update({ [`${P}.trocasBonus.-=${alvo.dataset.id}`]: null });
+  }
 };
+
+/** Troca de bônus de atributo acima de 4: via de mão dupla, ligada a um voto que o Mestre aprova. */
+export async function novaTrocaBonus(actor) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  const atrs = Object.keys(ATRIBUTOS_ACIMA_4);
+  const ocupados = new Set(Object.values(dados.trocasBonus ?? {}).flatMap(t => t ? [t.a, t.b] : []));
+  const livres = atrs.filter(a => !ocupados.has(a)).map(a => [a, ATRIBUTOS[a].label]);
+  if (livres.length < 2) return ui.notifications.warn("Não há dois atributos livres para trocar (cada atributo entra em uma troca só).");
+  const votos = Object.entries(dados.votos ?? {}).filter(([, v]) => v).map(([id, v]) => [id, `${v.nome || "Voto sem nome"}${v.aprovado ? " (aprovado)" : " (falta aprovar)"}`]);
+  if (!votos.length) return ui.notifications.warn("A troca precisa de um voto. Crie o voto em Bênçãos → Votos e peça ao Mestre para aprovar.");
+  const r = await formulario("Trocar bônus de atributo", `
+    <p class="epm-dica">Os dois atributos trocam de bônus entre si (ex.: Força passa a dar RD e Constituição passa a dar dano extra). Só vale depois que o Mestre aprovar o voto.</p>
+    <label class="epm-campo"><span>Atributo</span><select name="a">${opcoes(livres)}</select></label>
+    <label class="epm-campo"><span>Troca com</span><select name="b">${opcoes(livres, livres[1][0])}</select></label>
+    <label class="epm-campo"><span>Voto</span><select name="voto">${opcoes(votos)}</select></label>`, { botao: "Trocar" });
+  if (!r) return;
+  if (r.a === r.b) return ui.notifications.warn("Escolha dois atributos diferentes.");
+  return actor.update({ [`${P}.trocasBonus.${novoId()}`]: { a: r.a, b: r.b, voto: r.voto, criado: Date.now() } });
+}
 
 /* -------------------------------------------- */
 /*  Ação Completa (modelo da 0.6.0)             */

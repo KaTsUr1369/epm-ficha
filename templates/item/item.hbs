@@ -39,6 +39,8 @@
       <label class="epm-campo" title="Menor resultado no d20 que conta como crítico"><span>Margem de crítico</span><input type="number" min="2" max="20" name="flags.epm-ficha.critMargem" value="{{ataque.critMargem}}" /></label>
       <label class="epm-campo" title="No crítico, os dados da arma são multiplicados por este valor"><span>Multiplicador</span><input type="number" min="2" name="flags.epm-ficha.critMult" value="{{ataque.critMult}}" /></label>
     </div>
+    <label class="epm-check" title="Treino Sintonização com Arma (Notion): o que exige ataque desarmado pode ser usado com esta arma. Ela recebe os bônus de ataque desarmado (Porrada Franca, Força acima de 4 desarmado…) no lugar dos de arma."><input type="checkbox" name="flags.epm-ficha.contaDesarmado" {{epmChecked contaDesarmado}} /> Conta como ataque desarmado (Sintonização com Arma)</label>
+    {{#if contaDesarmado}}<label class="epm-campo" title="Bônus de arma: dano da Força acima de 4 para armas corpo a corpo. Bônus de desarmado: Porrada Franca, dado desarmado da Força, Posições…"><span>Bônus que a arma recebe</span><select name="flags.epm-ficha.desarmadoBonus">{{#each opcoesDesarmado}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
     <fieldset class="epm-municao-arma">
       <legend><label class="epm-check"><input type="checkbox" name="flags.epm-ficha.usaMunicao" {{epmChecked municao.usa}} /> Gasta munição</label></legend>
       {{#if municao.usa}}

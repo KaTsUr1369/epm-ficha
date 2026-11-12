@@ -14,6 +14,21 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.1
+
+- **Corrupção com máximo ajustável:** o Mestre define quanto cada personagem resiste. O padrão é 100. Os marcos ficam em 25%, 50%, 75% e 100% do máximo.
+- **Troca de bônus de atributo acima de 4:**
+  - dois atributos trocam de bônus entre si (Força ⇄ Constituição, por exemplo), e cada atributo entra em uma troca só;
+  - a troca só vale com um voto aprovado pelo Mestre;
+  - o Mestre marca "aprovado" em Bênçãos → Votos.
+- **Arma que conta como ataque desarmado** (Sintonização com Arma), com a opção de receber só os bônus de desarmado ou os dois.
+- **Amálgama** (Entretenimento Divino): escolhe uma passiva ou habilidade de outra raça.
+- **Vida/Mana/Estamina automáticas:** as opções (média ou rolar o dado, atributo de cada recurso) aparecem no modo edição mesmo com o cálculo desligado.
+- **Correções:**
+  - o campo Efeito das habilidades voltou a ser editável;
+  - o tipo de arma da Arma Favorita não se repete mais ("Katana,Katana…"), e as fichas afetadas se corrigem sozinhas;
+  - a imagem de fundo da ficha aparece, e os painéis ficam translúcidos sobre ela.
+
 ## Novidades da 0.6.0
 
 Conteúdo do Notion e as ideias novas. Precisa recarregar o mundo (o módulo passa a usar socket).

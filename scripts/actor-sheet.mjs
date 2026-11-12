@@ -84,6 +84,27 @@ function soAnotacoes(dados) {
 }
 
 export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
+
+  /**
+   * O mesmo campo pode aparecer em dois lugares da ficha (ex.: painel do arquétipo em Habilidades e na aba Arquétipo).
+   * Sem isso, o formulário junta os dois valores numa lista ("Katana,Katana"). Fica o valor de quem mudou.
+   */
+  _processFormData(event, form, formData) {
+    const obj = formData?.object;
+    if (obj && form) {
+      const alvo = event?.target;
+      for (const [k, v] of Object.entries(obj)) {
+        if (!Array.isArray(v)) continue;
+        const els = [...form.querySelectorAll(`[name="${CSS.escape(k)}"]`)];
+        if (els.length < 2 || els.some(e => e.multiple)) continue;
+        const ref = alvo?.name === k ? alvo : els[0];
+        obj[k] = ref.type === "checkbox" ? ref.checked : ref.type === "number" ? Number(ref.value) : ref.value;
+      }
+    }
+    // Só o Mestre aprova votos
+    if (obj && !game.user?.isGM) for (const k of Object.keys(obj)) if (/^flags\.epm-ficha\.votos\.[^.]+\.aprovado$/.test(k)) delete obj[k];
+    return super._processFormData(event, form, formData);
+  }
   constructor(options = {}) {
     super(options);
     this._abas = { primary: "principal", magias: "0", habilidades: "geral", arqclasse: "arquetipo", condicoes: "oficiais", notas: null };

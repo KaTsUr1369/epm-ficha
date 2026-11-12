@@ -26,27 +26,50 @@ export const ATRIBUTOS_ACIMA_4 = {
   nucleo:       { label: "Magias (rascunho do Notion)", tabela: [[5, 4], [7, 6], [9, 8], [11, 11], [13, 14], [15, 18]] }
 };
 
+/** Rótulo de cada bônus (para a troca: "Força dá o bônus de Constituição" = RD). */
+export const ROTULOS_BONUS_ALTO = {
+  destreza: "Deslocamento (Destreza)", forca: "Dano extra (Força)", constituicao: "RD (Constituição)", carisma: "Idiomas extras (Carisma)",
+  inteligencia: "PT e horas de treino (Inteligência)", autocontrole: "RD de Sanidade (Autocontrole)", nucleo: "Magias (Núcleo)", nenhum: "Nenhum"
+};
+
 /**
  * Bônus de atributos acima de 4 (Notion). `totais` = { forca: 6, ... } (valor final do atributo).
+ * `trocas` = { atributo: bônus }: o atributo passa a dar o bônus de outro (com o valor dele). Sem troca, cada um dá o próprio.
+ * Se dois atributos derem o mesmo bônus, vale o maior (não soma).
  * Aparência 6+ soma o valor dela nas perícias que usam Carisma (Lábia e as outras).
  */
-export function bonusAtributosAltos(totais = {}) {
+export function bonusAtributosAltos(totais = {}, trocas = {}) {
   const v = id => Math.floor(Number(totais[id]) || 0);
-  const pega = id => degrau(ATRIBUTOS_ACIMA_4[id].tabela, v(id))?.[1] ?? 0;
-  const forca = pega("forca");
-  const intel = v("inteligencia");
+  const fontes = {};
+  const pega = bonus => {
+    let melhor = null;
+    for (const atr of Object.keys(ATRIBUTOS_ACIMA_4)) {
+      const destino = ATRIBUTOS_ACIMA_4[trocas?.[atr]] || trocas?.[atr] === "nenhum" ? trocas[atr] : atr;
+      if (destino !== bonus) continue;
+      const d = degrau(ATRIBUTOS_ACIMA_4[bonus].tabela, v(atr));
+      if (!d) continue;
+      const peso = Array.isArray(d[1]) ? d[1][1] : d[1];
+      if (!melhor || peso > melhor.peso) melhor = { valor: d[1], peso, atr, nivel: v(atr) };
+    }
+    if (melhor) fontes[bonus] = melhor.atr;
+    return melhor;
+  };
+  const forca = pega("forca")?.valor;
+  const pt = pega("inteligencia");
+  const intel = pt?.nivel ?? 0;
   return {
-    deslocamento: pega("destreza"),
+    deslocamento: pega("destreza")?.valor ?? 0,
     danoDesarmado: forca ? forca[0] : "",
     danoArmado: forca ? forca[1] : 0,
-    rd: pega("constituicao"),
-    idiomasExtras: pega("carisma"),
-    ptTreino: pega("inteligencia"),
+    rd: pega("constituicao")?.valor ?? 0,
+    idiomasExtras: pega("carisma")?.valor ?? 0,
+    ptTreino: pt?.valor ?? 0,
     horasTreino: intel >= 15 ? 3 : intel >= 10 ? 5 : 6,
     phExtra: intel >= 15 ? 2 : 0,
-    rdSanidade: pega("autocontrole"),
-    magiasNucleo: pega("nucleo"),
-    aparenciaCarisma: v("aparencia") >= 6 ? v("aparencia") : 0
+    rdSanidade: pega("autocontrole")?.valor ?? 0,
+    magiasNucleo: pega("nucleo")?.valor ?? 0,
+    aparenciaCarisma: v("aparencia") >= 6 ? v("aparencia") : 0,
+    fontes
   };
 }
 

@@ -220,7 +220,7 @@ export const RACAS = [
         auto: { poder: { acao: "livre" } } }
     ],
     unicas: [
-      { id: "amalgama", nome: "Amálgama", texto: "Escolha uma passiva ou habilidade de outra raça." }
+      { id: "amalgama", nome: "Amálgama", texto: "Escolha uma passiva ou habilidade de outra raça.", auto: { amalgama: true } }
     ],
     caminhos: [
       { id: "hercules", nome: "Caminho de Hércules", meta: 12, texto: "Derrote 12 criaturas enviadas por Deuses, mais fortes que você: recebe uma bênção divina (escolha do Mestre)." },
@@ -256,6 +256,19 @@ export const TAMANHOS = {
 
 export const racaPorId = id => RACAS.find(r => r.id === id) ?? null;
 
+/** Habilidade de qualquer raça pela referência "raca:id". */
+export function habilidadePorRef(ref) {
+  const [rid, hid] = String(ref ?? "").split(":");
+  const raca = racaPorId(rid);
+  const habilidade = [...(raca?.habilidades ?? []), ...(raca?.unicas ?? [])].find(h => h.id === hid);
+  return raca && habilidade ? { raca, habilidade } : null;
+}
+
+/** Opções do Amálgama: passivas e habilidades das outras raças (sem Mestiço e sem as da própria raça). */
+export function opcoesAmalgama(racaId = "entretenimento") {
+  return RACAS.filter(r => r.id !== racaId && !r.mestico).flatMap(r => r.habilidades.map(h => ({ ref: `${r.id}:${h.id}`, label: `${r.nome}: ${h.nome}`, texto: h.texto })));
+}
+
 /** Habilidades Únicas que a raça deixa escolher (1, ou 1 + extras de Compatibilidade à Fera). */
 export function qtdUnicas(raca, escolhidas = []) {
   if (!raca) return 0;
@@ -285,6 +298,9 @@ export function efeitosDaRaca(escolha) {
     const perde = new Set(raca.unicas.filter(u => unicas.includes(u.id)).map(u => u.auto?.perdeHabilidade).filter(Boolean));
     for (const h of raca.habilidades) if (!perde.has(h.id)) lista.push({ ...h, origem: raca.nome });
     for (const u of raca.unicas) if (unicas.includes(u.id)) lista.push({ ...u, origem: raca.nome, unica: true });
+    // Amálgama (Entretenimento Divino): uma passiva ou habilidade de outra raça
+    const amal = habilidadePorRef(escolha?.amalgama);
+    if (amal && unicas.includes("amalgama")) lista.push({ ...amal.habilidade, origem: `Amálgama (${amal.raca.nome})` });
   }
   for (const h of lista) {
     const a = h.auto ?? {};

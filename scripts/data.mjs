@@ -212,7 +212,19 @@ export function normalizarDados(bruto = {}, listaPericias = PERICIAS_PADRAO) {
   dados.exaustao = limitar(int(dados.exaustao), 0, EXAUSTAO_MAX);
   if (!Array.isArray(dados.ui?.ordemAbas)) dados.ui.ordemAbas = [];
   if (!Array.isArray(dados.ui?.ordemCategorias)) dados.ui.ordemCategorias = [];
+  // Campos que apareciam duas vezes na ficha (Habilidades → Arquétipo e aba Arquétipo) e viravam "Katana,Katana,…"
+  const opc = dados.arquetipoOpcoes ?? {};
+  if (opc.combatente) for (const k of ["tipoFavorito", "maestria"]) opc.combatente[k] = valorUnico(opc.combatente[k]);
+  if (opc.conjurador) opc.conjurador.dominio = valorUnico(opc.conjurador.dominio);
   return dados;
+}
+
+/** Um valor de texto a partir de algo que pode ter virado lista ou "a,a,,a" por campos repetidos no formulário. */
+export function valorUnico(v) {
+  if (Array.isArray(v)) return valorUnico(v.flat(Infinity).find(x => String(x ?? "").replace(/[,.\s]/g, "")) ?? "");
+  const t = String(v ?? "");
+  if (!t.includes(",")) return t.trim();
+  return t.split(",").map(x => x.trim()).find(x => x && x !== ".") ?? "";
 }
 
 /** Chaves de primeiro nível que faltam numa ficha (para inicializar atores antigos). */

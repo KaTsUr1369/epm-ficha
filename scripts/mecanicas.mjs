@@ -1086,12 +1086,13 @@ export async function somarCorrupcao(alvo, dano, tipoDano) {
   if (![...(lerTipoDano(tipoDano ?? "").tipos ?? [])].includes("corrupcao")) return;
   const pontos = Math.floor(Math.max(0, int(dano)) / 10);
   if (!pontos) return;
+  const max = Math.max(1, Math.min(1000, int(alvo.flags[FLAG].corrupcaoMax) || 100));
   const antes = int(alvo.flags[FLAG].corrupcao);
-  const depois = Math.min(100, antes + pontos);
+  const depois = Math.min(max, antes + pontos);
   await alvo.update({ [`${P}.corrupcao`]: depois });
   const { MARCOS_CORRUPCAO } = await import("./regras-extras.mjs");
-  const marcos = MARCOS_CORRUPCAO.filter(m => antes < m.valor && depois >= m.valor);
-  await ChatMessage.create({ speaker: falar(alvo), content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:#6B3FA0"><p><strong>Corrupção</strong>: ${antes} → ${depois}.</p>${marcos.map(m => `<p><strong>${m.valor}: ${escapar(m.label)}</strong>. ${escapar(m.texto)}</p>`).join("")}</div>` });
+  const marcos = MARCOS_CORRUPCAO.map(m => ({ ...m, limite: Math.max(1, Math.round((m.valor / 100) * max)) })).filter(m => antes < m.limite && depois >= m.limite);
+  await ChatMessage.create({ speaker: falar(alvo), content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:#6B3FA0"><p><strong>Corrupção</strong>: ${antes} → ${depois} de ${max}.</p>${marcos.map(m => `<p><strong>${m.limite}: ${escapar(m.label)}</strong>. ${escapar(m.texto)}</p>`).join("")}</div>` });
 }
 
 /** Tira do menu do chat as opções de dano do D&D 5e nos cartões EPM (elas somavam acerto + dano e usavam o token selecionado). */

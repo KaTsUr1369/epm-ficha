@@ -7,10 +7,11 @@ import { ATRIBUTOS, RECURSOS, FLAG, CONDICOES } from "./config.mjs";
 import { int, num, normalizarTexto } from "./data.mjs";
 import { racaPorId, TAMANHOS } from "./racas.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
+import { trocasBonus } from "./ficha-extras.mjs";
 import { CATEGORIAS_TREINO, TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import {
   RECURSOS_ARQUETIPO, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, TIPOS_VOTO, TIPOS_PACTO, PATENTES, REGRAS_HIERARQUIA,
-  FAIXAS_NOMEACAO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE
+  FAIXAS_NOMEACAO, ROTULOS_BONUS_ALTO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE
 } from "./regras-extras.mjs";
 
 export const TIPOS_INSANIDADE = { fobia: "Fobia", compulsao: "Compulsão", paranoia: "Paranoia", alucinacao: "Alucinação", mania: "Mania", outro: "Outro" };
@@ -53,18 +54,29 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
 
   /* Atributos acima de 4 e teto */
   const altos = ex.altos ?? {};
+  const fonte = bonus => ATRIBUTOS[altos.fontes?.[bonus]]?.label ?? "";
   const linhas = [];
-  if (altos.deslocamento) linhas.push(`Destreza: +${altos.deslocamento} m de deslocamento`);
-  if (altos.danoArmado) linhas.push(`Força: +${altos.danoArmado} de dano com armas corpo a corpo`);
-  if (altos.danoDesarmado) linhas.push(`Força: +${altos.danoDesarmado} de dano desarmado`);
-  if (altos.rd) linhas.push(`Constituição: RD ${altos.rd}`);
-  if (altos.idiomasExtras) linhas.push(`Inteligência: +${altos.idiomasExtras} idioma(s)`);
-  if (altos.ptTreino) linhas.push(`Inteligência: +${altos.ptTreino} PT por ação de treino`);
-  if (altos.phExtra) linhas.push(`Inteligência: +${altos.phExtra} PH por ação de treino`);
-  if (altos.rdSanidade) linhas.push(`Autocontrole: RD de Sanidade ${altos.rdSanidade}`);
-  if (altos.magiasNucleo) linhas.push(`Núcleo: +${altos.magiasNucleo} magia(s) conhecida(s)`);
+  if (altos.deslocamento) linhas.push(`${fonte("destreza")}: +${altos.deslocamento} m de deslocamento`);
+  if (altos.danoArmado) linhas.push(`${fonte("forca")}: +${altos.danoArmado} de dano com armas corpo a corpo`);
+  if (altos.danoDesarmado) linhas.push(`${fonte("forca")}: +${altos.danoDesarmado} de dano desarmado`);
+  if (altos.rd) linhas.push(`${fonte("constituicao")}: RD ${altos.rd}`);
+  if (altos.idiomasExtras) linhas.push(`${fonte("carisma")}: +${altos.idiomasExtras} idioma(s)`);
+  if (altos.ptTreino) linhas.push(`${fonte("inteligencia")}: +${altos.ptTreino} PT por ação de treino`);
+  if (altos.phExtra) linhas.push(`${fonte("inteligencia")}: +${altos.phExtra} PH por ação de treino`);
+  if (altos.rdSanidade) linhas.push(`${fonte("autocontrole")}: RD de Sanidade ${altos.rdSanidade}`);
+  if (altos.magiasNucleo) linhas.push(`${fonte("nucleo")}: +${altos.magiasNucleo} magia(s) conhecida(s)`);
   if (altos.aparenciaCarisma) linhas.push(`Aparência: +${altos.aparenciaCarisma} nas perícias de Carisma`);
-  v.altos = { linhas, tem: linhas.length > 0, teto: ex.teto ?? 8 };
+  const tb = trocasBonus(dados);
+  const nomeBonus = id => ROTULOS_BONUS_ALTO[id] ?? id;
+  v.altos = {
+    linhas, tem: linhas.length > 0, teto: ex.teto ?? 8,
+    trocas: tb.lista.map(t => ({
+      ...t, aLabel: ATRIBUTOS[t.a]?.label ?? t.a, bLabel: ATRIBUTOS[t.b]?.label ?? t.b,
+      texto: `${ATRIBUTOS[t.a]?.label ?? t.a} dá ${nomeBonus(t.b)}; ${ATRIBUTOS[t.b]?.label ?? t.b} dá ${nomeBonus(t.a)}`,
+      estado: t.ativa ? "ativa" : t.conflito ? "atributo já trocado em outra troca" : t.voto ? "esperando o Mestre aprovar o voto" : "sem voto ligado"
+    }))
+  };
+  v.altos.temTroca = v.altos.trocas.length > 0;
 
   /* Máximos automáticos */
   const auto = dados.recursosAuto ?? {};
@@ -136,7 +148,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   v.votos = {
     limite: ex.votos?.limite ?? 3, usados: ex.votos?.usados ?? 0,
     lista: Object.entries(dados.votos ?? {}).filter(([, x]) => x).map(([id, x]) => ({
-      id, nome: x.nome ?? "", tipo: x.tipo ?? "ativavel", tipoLabel: TIPOS_VOTO[x.tipo]?.label ?? "Ativável", custo: x.custo ?? "", efeito: x.efeito ?? "", usado: !!x.usado,
+      id, nome: x.nome ?? "", tipo: x.tipo ?? "ativavel", tipoLabel: TIPOS_VOTO[x.tipo]?.label ?? "Ativável", custo: x.custo ?? "", efeito: x.efeito ?? "", usado: !!x.usado, aprovado: !!x.aprovado,
       tipos: sel(Object.entries(TIPOS_VOTO).map(([k, t]) => [k, t.label]), x.tipo ?? "ativavel"), criado: num(x.criado)
     })).sort((a, b) => a.criado - b.criado)
   };

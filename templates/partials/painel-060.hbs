@@ -90,24 +90,31 @@
       <h3>Vida, Mana e Estamina automáticas</h3>
       {{#if @root.edicao}}<label class="epm-check"><input type="checkbox" name="flags.epm-ficha.recursosAuto.ativo" {{epmChecked v.recursosAuto.ativo}} /> Calcular</label>{{/if}}
     </header>
-    {{#if v.recursosAuto.ativo}}
     {{#if @root.edicao}}
     <div class="epm-060-recursos-cfg">
-      <label class="epm-mini"><span>por nível</span><select name="flags.epm-ficha.recursosAuto.modo"><option value="media" {{epmSelected v.recursosAuto.modo "media"}}>Média</option><option value="rolagem" {{epmSelected v.recursosAuto.modo "rolagem"}}>Rolar o dado</option></select></label>
+      <label class="epm-mini" title="Média: soma o valor fixo da tabela a cada nível. Rolar o dado: rola o dado de cada nível uma vez e guarda."><span>por nível</span><select name="flags.epm-ficha.recursosAuto.modo"><option value="media" {{epmSelected v.recursosAuto.modo "media"}}>Média</option><option value="rolagem" {{epmSelected v.recursosAuto.modo "rolagem"}}>Rolar o dado</option></select></label>
       {{#each v.recursosAuto.linhas}}<label class="epm-mini"><span>atributo da {{this.label}}</span><select name="flags.epm-ficha.recursosAuto.atributos.{{this.id}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/each}}
-      {{#if (epmEq v.recursosAuto.modo "rolagem")}}<button type="button" class="epm-botao epm-botao-mini" data-action="rolarNiveisRecursos"><i class="fa-solid fa-dice"></i> Rolar níveis que faltam</button>{{/if}}
+      {{#if v.recursosAuto.ativo}}{{#if (epmEq v.recursosAuto.modo "rolagem")}}<button type="button" class="epm-botao epm-botao-mini" data-action="rolarNiveisRecursos"><i class="fa-solid fa-dice"></i> Rolar níveis que faltam</button>{{/if}}{{/if}}
     </div>
     {{/if}}
+    {{#if v.recursosAuto.ativo}}
     <ul class="epm-060-lista">{{#each v.recursosAuto.linhas}}<li><strong>{{this.label}} máxima: {{#if total}}{{this.total}}{{else}}—{{/if}}</strong> <span class="epm-dica">{{this.partes}}</span></li>{{/each}}</ul>
     <p class="epm-dica">Inicial = Raça + Arquétipo + atributo. Cada nível acima: dado (ou média) + o mesmo atributo. Os máximos da ficha acompanham sozinhos.</p>
-    {{else}}<p class="epm-dica">Desligado: os máximos são digitados à mão.</p>{{/if}}
+    {{else}}<p class="epm-dica">Desligado: os máximos são digitados à mão. Marque "Calcular" para a ficha fazer a conta (as opções acima já valem quando ligar).</p>{{/if}}
   </section>
   {{/if}}
 
-  {{#if v.altos.tem}}
+  {{#if (epmOr v.altos.tem @root.edicao v.altos.temTroca)}}
   <section class="epm-painel epm-060-altos">
     <header class="epm-painel-titulo"><h3>Atributos acima de 4</h3><span class="epm-contador" title="Teto de atributo pelo nível">teto {{v.altos.teto}}</span></header>
-    <ul class="epm-060-lista">{{#each v.altos.linhas}}<li>{{this}}</li>{{/each}}</ul>
+    {{#if v.altos.tem}}<ul class="epm-060-lista">{{#each v.altos.linhas}}<li>{{this}}</li>{{/each}}</ul>{{else}}<p class="epm-dica">Nenhum atributo acima de 4 ainda.</p>{{/if}}
+    <p class="epm-rotulo">Trocas de bônus {{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="novaTrocaBonus" title="Trocar o bônus de dois atributos (precisa de um voto aprovado pelo Mestre)"><i class="fa-solid fa-plus"></i></button>{{/if}}</p>
+    {{#each v.altos.trocas}}
+    <div class="epm-060-item{{#unless ativa}} usado{{/unless}}">
+      <span><strong>{{this.aLabel}} ⇄ {{this.bLabel}}</strong>{{#if votoNome}} <span class="epm-tag">voto: {{this.votoNome}}</span>{{/if}}<br><span class="epm-dica">{{this.texto}} · {{#if ativa}}ativa{{else}}{{this.estado}}{{/if}}</span></span>
+      {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="excluirTrocaBonus" data-id="{{this.id}}" title="Desfazer a troca"><i class="fa-solid fa-trash"></i></button>{{/if}}
+    </div>
+    {{else}}<p class="epm-dica">Nenhuma troca. Trocar é uma via de mão dupla (um atributo fica com o bônus do outro) e só vale com um voto aprovado pelo Mestre.</p>{{/each}}
   </section>
   {{/if}}
 </div>
@@ -197,11 +204,16 @@
 </section>
 {{#if v.corrupcao.tem}}
 <section class="epm-painel epm-060-corrupcao">
-  <header class="epm-painel-titulo"><h3>Corrupção acumulada</h3><span class="epm-contador">{{v.corrupcao.valor}} / 100</span></header>
-  <div class="epm-barra epm-barra-corrupcao"><span style="width: {{v.corrupcao.valor}}%"></span></div>
-  <div class="epm-060-marcos">{{#each v.corrupcao.marcos}}<span class="epm-060-marco{{#if atingido}} atingido{{/if}}" title="{{this.texto}}">{{this.valor}}: {{this.label}}</span>{{/each}}</div>
-  <p class="epm-dica">Cada 10 de dano de Corrupção sofrido soma 1 ponto. Limpa com ritual Radiante, Pureza Divina ou na história.</p>
-  {{#if @root.isGM}}<label class="epm-mini"><span>ajustar (Mestre)</span><input type="number" min="0" max="100" name="flags.epm-ficha.corrupcao" value="{{v.corrupcao.valor}}" /></label>{{/if}}
+  <header class="epm-painel-titulo"><h3>Corrupção acumulada</h3><span class="epm-contador" title="Máximo = quanto este personagem resiste (o Mestre ajusta)">{{v.corrupcao.valor}} / {{v.corrupcao.max}}</span></header>
+  <div class="epm-barra epm-barra-corrupcao"><span style="width: {{v.corrupcao.pct}}%"></span></div>
+  <div class="epm-060-marcos">{{#each v.corrupcao.marcos}}<span class="epm-060-marco{{#if atingido}} atingido{{/if}}" title="{{this.texto}}">{{this.limite}}: {{this.label}}</span>{{/each}}</div>
+  <p class="epm-dica">Cada 10 de dano de Corrupção sofrido soma 1 ponto. Os marcos ficam em 25%, 50%, 75% e 100% do máximo. Limpa com ritual Radiante, Pureza Divina ou na história.</p>
+  {{#if @root.isGM}}
+  <div class="epm-060-corpo">
+    <label class="epm-mini" title="Corrupção atual"><span>atual (Mestre)</span><input type="number" min="0" name="flags.epm-ficha.corrupcao" value="{{v.corrupcao.valor}}" /></label>
+    <label class="epm-mini" title="Quanto o personagem resiste antes de ser perdido. Padrão 100."><span>máximo (Mestre)</span><input type="number" min="1" max="1000" name="flags.epm-ficha.corrupcaoMax" value="{{v.corrupcao.max}}" /></label>
+  </div>
+  {{/if}}
 </section>
 {{/if}}
 {{/if}}
@@ -218,10 +230,12 @@
       <select name="flags.epm-ficha.votos.{{this.id}}.tipo">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
       <input type="text" name="flags.epm-ficha.votos.{{this.id}}.custo" value="{{this.custo}}" placeholder="Custo (o que você abre mão)" />
       <input type="text" name="flags.epm-ficha.votos.{{this.id}}.efeito" value="{{this.efeito}}" placeholder="Efeito" />
+      {{#if @root.isGM}}<label class="epm-check" title="Só o Mestre aprova"><input type="checkbox" name="flags.epm-ficha.votos.{{this.id}}.aprovado" {{epmChecked aprovado}} /> aprovado</label>{{else}}{{#if aprovado}}<span class="epm-tag">aprovado</span>{{/if}}{{/if}}
       <button type="button" class="epm-icone-botao perigo" data-action="excluirVoto" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
       {{else}}
-      <span><strong>{{this.nome}}</strong> <span class="epm-tag">{{this.tipoLabel}}</span>{{#if usado}} <span class="epm-tag">usado</span>{{/if}}<br><span class="epm-dica">Custo: {{this.custo}} · Efeito: {{this.efeito}}</span></span>
+      <span><strong>{{this.nome}}</strong> <span class="epm-tag">{{this.tipoLabel}}</span>{{#if usado}} <span class="epm-tag">usado</span>{{/if}}{{#if aprovado}} <span class="epm-tag"><i class="fa-solid fa-check"></i> aprovado</span>{{/if}}<br><span class="epm-dica">Custo: {{this.custo}} · Efeito: {{this.efeito}}</span></span>
       {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="usarVoto" data-id="{{this.id}}">Usar</button>{{/if}}
+      {{#if @root.isGM}}<label class="epm-check" title="Só o Mestre aprova (libera, por exemplo, a troca de bônus de atributo)"><input type="checkbox" name="flags.epm-ficha.votos.{{this.id}}.aprovado" {{epmChecked aprovado}} /> aprovado</label>{{/if}}
       {{/if}}
     </div>
     {{/each}}

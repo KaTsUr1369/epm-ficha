@@ -135,7 +135,7 @@ export function ataqueDeArma(item, modoId = "") {
   const modos = modosDaArma(item);
   const base = {
     tipo: "arma", id: item.id, ref: item.id, nome: item.name, img: item.img,
-    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: danoArma(item), tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""),
+    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: danoArma(item), tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""), desarmado: !!f.contaDesarmado, desarmadoAmbos: !!f.contaDesarmado && f.desarmadoBonus === "ambos",
     critMargem: limitar(int(f.critMargem, margemNativa), 2, 20), critMult: Math.max(2, int(f.critMult, CRITICO_PADRAO.mult)),
     equipado: !!item?.system?.equipped,
     danoExtra: efeitos.filter(e => e.tipo === "danoExtra" && e.formula).map(e => ({ formula: e.formula, tipo: e.tipoDano })),
@@ -204,7 +204,9 @@ export function modsDoAtaque(at, ficha) {
   const ex = ficha.extrasAtaque ?? {};
   const desarmado = ataqueDesarmado(at);
   const cac = !ataqueADistancia(at);
-  const extras = [...(cac && !desarmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(ex.todos ?? [])];
+  // Arma que conta como desarmada: só os bônus de desarmado, ou os dois (opção no editor da arma)
+  const usaArmado = cac && (!desarmado || !!at?.desarmadoAmbos);
+  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(ex.todos ?? [])];
   return {
     acerto: g.penal + distancia,
     acertoFontes: [...g.fontes, ...(ataqueADistancia(at) ? g.fontesDistancia : [])],
@@ -369,7 +371,9 @@ export function visualDaFicha(pers = {}) {
   if (f.display) vars["--epm-display"] = f.display;
   if (f.ui) vars["--epm-ui"] = f.ui;
   if (escala !== 100) vars["--epm-escala"] = String(escala / 100);
-  if (fundo) { vars["--epm-fundo-img"] = `url("${fundo.replace(/["\\]/g, "")}")`; vars["--epm-fundo-veu"] = `${veu}%`; }
+  // O caminho vira endereço completo: dentro de uma variável CSS, o Chrome resolve o caminho a partir da pasta do .css do módulo
+  const urlFundo = fundo && typeof document !== "undefined" && !/^(data:|blob:)/.test(fundo) ? (() => { try { return new URL(fundo, document.baseURI).href; } catch { return fundo; } })() : fundo;
+  if (fundo) { vars["--epm-fundo-img"] = `url('${urlFundo.replace(/['"\\]/g, "")}')`; vars["--epm-fundo-veu"] = `${veu}%`; }
   const classes = [`epm-moldura-${moldura}`, fundo ? "epm-com-fundo" : "", escala !== 100 ? "epm-escalada" : ""].filter(Boolean);
   return {
     moldura, fonte, escala, fundo, fundoVeu: veu,
@@ -1576,6 +1580,8 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
   const doDono = item.actor ? (item.actor.items?.contents ?? [...(item.actor.items ?? [])]) : [];
   if (eArma) {
     ctx.tipoArma = String(f.tipoArma ?? "");
+    ctx.contaDesarmado = !!f.contaDesarmado;
+    ctx.opcoesDesarmado = [["so", "Só os bônus de ataque desarmado"], ["ambos", "Os dois: bônus de desarmado e de arma"]].map(([id, label]) => ({ id, label, selected: id === (f.desarmadoBonus === "ambos" ? "ambos" : "so") }));
     ctx.sugestoesTipoArma = TIPOS_ARMA;
     const candidatos = doDono.filter(i => ["consumable", "loot"].includes(i.type) && i.id !== item.id);
     const md = municaoDaArma(f);

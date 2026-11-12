@@ -146,9 +146,12 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
   out.recuperarManaMult = dens === "alta" ? 1.5 : dens === "baixa" ? 0.5 : 1;
 
   // Corrupção acumulada (0–100)
-  const corr = Math.max(0, Math.min(100, Math.floor(n(d.corrupcao))));
-  out.corrupcao = { valor: corr, marcos: MARCOS_CORRUPCAO.map(m => ({ ...m, atingido: corr >= m.valor })) };
-  if (corr >= 25) out.implica.push({ id: "epm-mana-instavel", motivo: `Corrupção ${corr}` });
+  // O máximo (quanto a pessoa resiste) é ajustável pelo Mestre; os marcos acompanham a proporção (25%, 50%, 75%, 100%)
+  const corrMax = Math.max(1, Math.min(1000, Math.floor(n(d.corrupcaoMax)) || 100));
+  const corr = Math.max(0, Math.min(corrMax, Math.floor(n(d.corrupcao))));
+  const marcos = MARCOS_CORRUPCAO.map(m => { const limite = Math.max(1, Math.round((m.valor / 100) * corrMax)); return { ...m, limite, atingido: corr >= limite }; });
+  out.corrupcao = { valor: corr, max: corrMax, pct: Math.round((corr / corrMax) * 100), marcos };
+  if (marcos[0].atingido) out.implica.push({ id: "epm-mana-instavel", motivo: `Corrupção ${corr}/${corrMax}` });
 
   // Treinos concluídos com efeito especial
   const concluidos = Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido");
@@ -185,17 +188,18 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
  */
 export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   const totais = Object.fromEntries(Object.entries(atributos).map(([id, a]) => [id, a.total]));
-  const altos = bonusAtributosAltos(totais);
+  const altos = bonusAtributosAltos(totais, trocasAtivas(d));
+  const de = bonus => `${({ destreza: "Destreza", forca: "Força", constituicao: "Constituição", carisma: "Carisma", inteligencia: "Inteligência", autocontrole: "Autocontrole", nucleo: "Núcleo", aparencia: "Aparência" })[altos.fontes?.[bonus]] ?? "Atributo"} acima de 4`;
   const mods = [];
   const rd = [];
-  if (altos.deslocamento) mods.push({ alvo: "deslocamento", valor: altos.deslocamento, fonte: "Destreza acima de 4" });
-  if (altos.rd) rd.push({ valor: altos.rd, tipos: "todos os danos", fonte: "Constituição acima de 4" });
+  if (altos.deslocamento) mods.push({ alvo: "deslocamento", valor: altos.deslocamento, fonte: de("destreza") });
+  if (altos.rd) rd.push({ valor: altos.rd, tipos: "todos os danos", fonte: de("constituicao") });
   if (altos.aparenciaCarisma) {
     for (const p of pericias) if ((p.atributos ?? []).includes("carisma")) mods.push({ alvo: `pericia.${p.id}`, valor: altos.aparenciaCarisma, fonte: "Aparência 6+" });
   }
   const extrasAtaque = { armado: [], desarmado: [] };
-  if (altos.danoArmado) extrasAtaque.armado.push({ formula: String(altos.danoArmado), fonte: "Força acima de 4" });
-  if (altos.danoDesarmado) extrasAtaque.desarmado.push({ formula: altos.danoDesarmado, fonte: "Força acima de 4" });
+  if (altos.danoArmado) extrasAtaque.armado.push({ formula: String(altos.danoArmado), fonte: de("forca") });
+  if (altos.danoDesarmado) extrasAtaque.desarmado.push({ formula: altos.danoDesarmado, fonte: de("forca") });
 
   // Proteções do Bárbaro que somam atributo na CA, Defesa (Bloqueio) e Esquiva
   if (idClasse(d.classe) === "barbaro") {
@@ -227,6 +231,27 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   const avisos = acima.length ? [`Acima do teto de ${teto} para o nível ${maiorNivel}: ${acima.join(", ")}.`] : [];
   return { altos, mods, rd, extrasAtaque, teto, acima, avisos, grau };
 }
+
+/**
+ * Trocas de bônus de atributo acima de 4: A dá o bônus de B e B dá o de A (é troca, nunca repete).
+ * Só valem com um voto aprovado pelo Mestre. Devolve { atributo: bônus } e a lista com o estado de cada troca.
+ */
+export function trocasBonus(d) {
+  const lista = [];
+  const usados = new Set();
+  const mapa = {};
+  for (const [id, t] of Object.entries(d.trocasBonus ?? {})) {
+    if (!t?.a || !t?.b || t.a === t.b) continue;
+    const voto = d.votos?.[t.voto];
+    const aprovado = !!voto?.aprovado;
+    const conflito = usados.has(t.a) || usados.has(t.b);
+    const ativa = aprovado && !conflito;
+    if (ativa) { mapa[t.a] = t.b; mapa[t.b] = t.a; usados.add(t.a); usados.add(t.b); }
+    lista.push({ id, a: t.a, b: t.b, voto: t.voto ?? "", votoNome: voto?.nome ?? "", aprovado, conflito, ativa });
+  }
+  return { mapa, lista };
+}
+const trocasAtivas = d => trocasBonus(d).mapa;
 
 /** Vida, Mana e Estamina máximas automáticas (quando ligadas na ficha). */
 export function maximosAutomaticos(d, atributos, raca) {

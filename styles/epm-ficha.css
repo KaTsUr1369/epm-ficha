@@ -2857,3 +2857,23 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-escudo-mundo .epm-060-corpo .epm-mini { display: inline-flex; flex-direction: column; width: 110px; }
 .epm-escudo-mundo .epm-060-corpo .epm-mini input { width: 100%; }
 .epm-escudo-mundo details > summary { cursor: pointer; padding: 2px 0; }
+
+/* Editor de texto (efeito das formas, descrição): a área de escrita não pode sumir atrás da barra de ferramentas */
+.epm prose-mirror { height: auto; }
+.epm prose-mirror.active { display: flex; flex-direction: column; }
+.epm prose-mirror .editor-container { flex: 1; min-height: 90px; overflow: visible; }
+.epm prose-mirror .editor-content,
+.epm prose-mirror .ProseMirror { min-height: 80px; height: auto; outline: none; cursor: text; }
+.epm prose-mirror menu { flex: none; }
+.epm-forma-efeito prose-mirror { min-height: 120px; }
+
+/* Fundo da ficha: os painéis ficam translúcidos para a imagem aparecer (o véu escurece a imagem por baixo) */
+.application.epm-ficha.epm-com-fundo .epm-painel,
+.application.epm-ficha.epm-com-fundo .epm-secao-poder,
+.application.epm-ficha.epm-com-fundo .epm-condicao,
+.application.epm-ficha.epm-com-fundo .epm-item-linha,
+.application.epm-ficha.epm-com-fundo .epm-poder-linha {
+  background: color-mix(in srgb, var(--epm-painel) 62%, transparent);
+  backdrop-filter: blur(3px);
+}
+.application.epm-ficha.epm-com-fundo .epm-cabecalho { background: color-mix(in srgb, var(--epm-fundo) 45%, transparent); }

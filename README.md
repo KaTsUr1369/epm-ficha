@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.4
+
+- **Marcador de turno EPM:** anel roxo em volta do token de quem está na vez. Vale quando o marcador de turno do combate está sem imagem própria. Dá para desligar em Configurações → "Marcador de turno EPM".
+
 ## Novidades da 0.6.3
 
 - **Codex do Vazio:** botão na aba Magias para importar magias de pf2srd.com.br/magias, pelo nome, pelo endereço ou colando o texto da página.

@@ -28,6 +28,8 @@ const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 
 Hooks.once("init", () => {
   registrarAjustes();
+  // Marcador de turno EPM em volta do token de quem está na vez (quando a configuração do combate não define outra imagem)
+  if (CONFIG.Combat && ajustes().marcadorTurnoEpm !== false) CONFIG.Combat.fallbackTurnMarker = `modules/${MODULE_ID}/assets/marcador-turno.webp`;
   registrarHelpers(Handlebars);
 
   const DSC = fvtt.DocumentSheetConfig;

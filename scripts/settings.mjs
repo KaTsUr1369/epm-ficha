@@ -55,6 +55,11 @@ export function registrarAjustes() {
     hint: "Ataque extra comum (gastando a Ação Bônus ou a de Movimento): quanto sai do acerto desse ataque. O Ataque Extra do Combatente (com PE) não tem penalidade.",
     scope: "world", config: true, type: Number, default: 5, range: { min: 0, max: 20, step: 1 }
   });
+  reg("marcadorTurnoEpm", {
+    name: "Marcador de turno EPM",
+    hint: "Usa o anel roxo do EPM em volta do token de quem está na vez. Só vale se em Combate → Configurar o marcador de turno estiver sem imagem própria.",
+    scope: "world", config: true, type: Boolean, default: true, requiresReload: true
+  });
   reg("conteudoNotion", {
     name: "Conteúdo extra do Notion", hint: "Ligado no Escudo do Mestre → Ajustes.",
     scope: "world", config: false, type: Object, default: { condicoes: false, danos: false, bencaos: false, idade: false, grauNucleo: false, calculadora: false }
@@ -100,6 +105,7 @@ export function conteudoNotion(chave) {
 
 export function ajustes() {
   return {
+    marcadorTurnoEpm: ler("marcadorTurnoEpm", true),
     condicoesHud: ler("condicoesHud", "substituir"),
     modoLimites: ler("modoLimites", "separados"),
     bloquearLimites: ler("bloquearLimites", true),

@@ -41,10 +41,10 @@ export const RACAS = [
       { id: "floresta", nome: "Dádiva da Floresta", texto: "Não precisa dormir em área de vegetação fechada. Em floresta, vantagem em testes de resistência contra encantamento." }
     ],
     unicas: [
-      { id: "negro", nome: "Elfos Negros", texto: "Vantagem em todos os testes no escuro; desvantagem em claridade plena." },
+      { id: "negro", nome: "Elfos Negros", texto: "Vantagem em todos os testes no escuro; desvantagem em claridade plena.", auto: { ativavel: [{ chave: "escuro", label: "No escuro", vantagemTestes: true }, { chave: "claridade", label: "Em claridade plena", desvantagemTestes: true }] } },
       { id: "floresta2", nome: "Elfos da Floresta", texto: "Move +3 metros.", auto: { desl: 3 } },
       { id: "puro", nome: "Elfos Sangue Puro", texto: "+10 PM.", auto: { pm: 10 } },
-      { id: "orelhas", nome: "Orelhas Sensíveis", texto: "Vantagem em testes de Percepção ligados à audição." }
+      { id: "orelhas", nome: "Orelhas Sensíveis", texto: "Vantagem em testes de Percepção ligados à audição.", auto: { ativavel: [{ chave: "ouvir", label: "Percepção pela audição", vantagemPericias: ["percepcao"] }] } }
     ]
   },
   {
@@ -55,13 +55,13 @@ export const RACAS = [
       texto: "+2 em Constituição, +1 em um atributo Físico (menos Constituição) e +1 em um Místico" },
     habilidades: [
       { id: "resistencia", nome: "Resistência Anã", texto: "Resistência a todo dano físico não mágico (queda, cortante, contusão e perfurante).", auto: { resistencias: ["Físicos (Natural)", "Queda"] } },
-      { id: "temperamento", nome: "Temperamento Explosivo", texto: "Fica irritado e causa +2 de dano em todo ataque corpo a corpo." }
+      { id: "temperamento", nome: "Temperamento Explosivo", texto: "Fica irritado e causa +2 de dano em todo ataque corpo a corpo.", auto: { ativavel: [{ chave: "irritado", label: "Irritado", danoCorpo: "2" }] } }
     ],
     unicas: [
       { id: "pes", nome: "Pés Rápidos", texto: "+3 de deslocamento.", auto: { desl: 3 } },
       { id: "pelos", nome: "Pelos Resistentes", texto: "Resistência a dano de Frio e de Fogo.", auto: { resistencias: ["Gelo", "Fogo"] } },
       { id: "pele", nome: "Pele Rígida", texto: "Todo ataque contra você causa −2 de dano.", auto: { rd: 2 } },
-      { id: "forca", nome: "Força Anã", texto: "Vantagem em testes de resistência de Constituição." }
+      { id: "forca", nome: "Força Anã", texto: "Vantagem em testes de resistência de Constituição.", auto: { vantagemPericias: ["fortitude"] } }
     ]
   },
   {
@@ -78,13 +78,13 @@ export const RACAS = [
     unicas: [
       { id: "elementais", nome: "Escamas Elementais", texto: "Imunidade ao tipo de dano do seu Bafo de Dragão." },
       { id: "metalicas", nome: "Escamas Metálicas", texto: "Imunidade a dano Cortante.", auto: { imunidades: ["Cortante"] } },
-      { id: "protetoras", nome: "Escamas Protetoras", texto: "+2 em Fortitude ao se defender e +1 na CA contra ataques à distância." },
-      { id: "armas", nome: "Armas Naturais", texto: "Garras e presas: 1d8 + Destreza ou Força de dano ao acertar." },
+      { id: "protetoras", nome: "Escamas Protetoras", texto: "+2 em Fortitude ao se defender e +1 na CA contra ataques à distância.", auto: { mods: [{ alvo: "defesa.bloqueio", valor: 2 }] } },
+      { id: "armas", nome: "Armas Naturais", texto: "Garras e presas: 1d8 + Destreza ou Força de dano ao acertar.", auto: { danoDesarmado: "1d8" } },
       { id: "aquatico", nome: "Dragão Aquático", texto: "Nada com o mesmo deslocamento da terra.", auto: { nado: "igual" } },
       { id: "aereo", nome: "Dragão Aéreo", texto: "Voa com o mesmo deslocamento da terra e não sofre dano de queda.", auto: { voo: "igual", imunidades: ["Queda"] } },
       { id: "terrestre", nome: "Dragão Terrestre", texto: "+3 de deslocamento.", auto: { desl: 3 } },
       { id: "escavador", nome: "Escavador", texto: "Escava com o mesmo deslocamento comum.", auto: { escavacao: "igual" } },
-      { id: "cobra", nome: "Dragão Cobra", texto: "Passa por onde seres pequenos passam e causa +1d4 de Veneno no ataque desarmado corpo a corpo." }
+      { id: "cobra", nome: "Dragão Cobra", texto: "Passa por onde seres pequenos passam e causa +1d4 de Veneno no ataque desarmado corpo a corpo.", auto: { danoDesarmado: "1d4[Venenoso]" } }
     ]
   },
   {
@@ -100,7 +100,7 @@ export const RACAS = [
       { id: "pes", nome: "Pés Ágeis", texto: "+3 de deslocamento.", auto: { desl: 3 } },
       { id: "malandro", nome: "Pequeno Malandro", texto: "Vantagem em testes de Crime.", auto: { vantagemPericias: ["crime"] } },
       { id: "miniatura", nome: "Miniatura", texto: "Esconde-se até em arbustos pequenos: pode testar Furtividade em qualquer lugar que não seja completamente aberto." },
-      { id: "ouvidos", nome: "Ouvidos Curiosos", texto: "Vantagem em testes de Percepção ligados à audição." },
+      { id: "ouvidos", nome: "Ouvidos Curiosos", texto: "Vantagem em testes de Percepção ligados à audição.", auto: { ativavel: [{ chave: "ouvir", label: "Percepção pela audição", vantagemPericias: ["percepcao"] }] } },
       { id: "magricelo", nome: "Magricelo", texto: "Passa por onde seres minúsculos passam e tem +1 na CA.", auto: { ca: 1 } }
     ]
   },
@@ -112,7 +112,7 @@ export const RACAS = [
       texto: "+2 em Aura (Núcleo), +1 em um atributo Físico e +1 em um Social ou Mental" },
     habilidades: [
       { id: "pele", nome: "Pele Demoníaca", texto: "Resistência a dano de Fogo.", auto: { resistencias: ["Fogo"] } },
-      { id: "chamas", nome: "Pele em Chamas", texto: "+1d4 de dano de Fogo ao fazer um ataque corpo a corpo." }
+      { id: "chamas", nome: "Pele em Chamas", texto: "+1d4 de dano de Fogo ao fazer um ataque corpo a corpo.", auto: { danoCorpo: "1d4[Fogo]" } }
     ],
     unicas: [
       { id: "variante", nome: "Variante", texto: "Em vez do aumento da raça: +2 num atributo Social, +2 num Físico ou Místico e +1 em Aura (Núcleo). Também recebe +2 PH.",
@@ -120,7 +120,7 @@ export const RACAS = [
       { id: "sabedoria", nome: "Sabedoria Antiga", texto: "Uma vez por descanso, lembra um conhecimento escondido da sua raça.", auto: { poder: { acao: "livre", recarga: "descanso" } } },
       { id: "brasa", nome: "Brasa Infernal", texto: "Ação Padrão e 2 PM: ataque à distância de 1d10 + Núcleo de dano de Fogo.", auto: { poder: { acao: "padrao", custo: { recurso: "pm", valor: 2 }, dano: "1d10 + @atr.nucleo", tipoDano: "Fogo" } } },
       { id: "lava", nome: "Pele de Lava", texto: "Resistência a dano Cortante, Contundente e Perfurante.", auto: { resistencias: ["Cortante", "Contundente", "Perfurante"] } },
-      { id: "armas", nome: "Armas Naturais", texto: "+1d6 de dano Cortante, Contundente ou Perfurante no ataque desarmado corpo a corpo." }
+      { id: "armas", nome: "Armas Naturais", texto: "+1d6 de dano Cortante, Contundente ou Perfurante no ataque desarmado corpo a corpo.", auto: { danoDesarmado: "1d6" } }
     ]
   },
   {
@@ -151,11 +151,11 @@ export const RACAS = [
       { id: "carregado", nome: "Carregado", texto: "Não precisa dormir nem desligar enquanto tiver energia." }
     ],
     unicas: [
-      { id: "membros", nome: "Membros Metálicos", texto: "+2 em Fortitude ao se defender e +1 na CA.", auto: { ca: 1 } },
+      { id: "membros", nome: "Membros Metálicos", texto: "+2 em Fortitude ao se defender e +1 na CA.", auto: { ca: 1, mods: [{ alvo: "defesa.bloqueio", valor: 2 }] } },
       { id: "bateria", nome: "Bateria Recarregável", texto: "Ao sofrer ataque de Raio, recebe Energia ou Vida em vez de dano." },
       { id: "espioes", nome: "Membros Espiões", texto: "Solta um membro e o controla, ouvindo ou vendo por ele." },
       { id: "consertos", nome: "Pequenos Consertos", texto: "Não recupera PV normalmente; com a Ação Bônus, cura 1d10 (no máximo a Vida toda por descanso longo).", auto: { poder: { acao: "bonus", cura: "1d10" } } },
-      { id: "infra", nome: "Visão Infravermelha", texto: "Vê qualquer ser, mesmo invisível; vantagem em Percepção ou Investigação para achar quem está escondido." }
+      { id: "infra", nome: "Visão Infravermelha", texto: "Vê qualquer ser, mesmo invisível; vantagem em Percepção ou Investigação para achar quem está escondido.", auto: { ativavel: [{ chave: "procurar", label: "Procurando alguém escondido", vantagemPericias: ["percepcao", "investigacao"] }] } }
     ]
   },
   {
@@ -165,12 +165,12 @@ export const RACAS = [
     aumento: { fixos: { forca: 2, constituicao: 1 }, escolhas: [{ valor: 1, grupos: ["mistico"] }], texto: "+2 em Força, +1 em Constituição e +1 em um Místico" },
     habilidades: [
       { id: "resistencia", nome: "Resistência de Gigante", texto: "Resistência a todo dano físico não mágico (queda, cortante, contusão e perfurante).", auto: { resistencias: ["Físicos (Natural)", "Queda"] } },
-      { id: "corpo", nome: "Corpo Destruidor", texto: "+1d4 de dano em todo ataque corpo a corpo." }
+      { id: "corpo", nome: "Corpo Destruidor", texto: "+1d4 de dano em todo ataque corpo a corpo.", auto: { danoCorpo: "1d4" } }
     ],
     unicas: [
       { id: "vida", nome: "Vida de Gigante", texto: "+10 de Vida e +1 por nível.", auto: { pv: 10, pvPorNivel: 1 } },
       { id: "passos", nome: "Passos Grandes", texto: "+3 m de deslocamento.", auto: { desl: 3 } },
-      { id: "braco", nome: "Braço de Aço", texto: "O ataque desarmado causa +1d6 de dano." },
+      { id: "braco", nome: "Braço de Aço", texto: "O ataque desarmado causa +1d6 de dano.", auto: { danoDesarmado: "1d6" } },
       { id: "vento", nome: "Cabeça de Vento", texto: "Imune a dano Psíquico.", auto: { imunidades: ["Psíquico"] } },
       { id: "maior", nome: "Braço Maior", texto: "Vantagem para agarrar e consegue agarrar seres maiores (Gigante, Enorme ou Colossal)." }
     ]
@@ -182,11 +182,11 @@ export const RACAS = [
     aumento: { escolhas: [{ valor: 2, grupos: ["fisicos"] }, { valor: 1, grupos: ["fisicos", "sociais"], diferente: true }, { valor: 1, grupos: ["mentais"] }],
       texto: "+2 em um Físico, +1 em um Físico ou Social (outro) e +1 em um Mental" },
     habilidades: [
-      { id: "animal", nome: "Transformar em Animal", texto: "Forma meio animal: arma natural que causa +1d6 no ataque desarmado corpo a corpo." },
+      { id: "animal", nome: "Transformar em Animal", texto: "Forma meio animal: arma natural que causa +1d6 no ataque desarmado corpo a corpo.", auto: { ativavel: [{ chave: "animal", label: "Forma animal", danoDesarmado: "1d6" }] } },
       { id: "pele", nome: "Pele Animal", texto: "Imunidade a dano Cortante e Perfurante não mágicos.", auto: { imunidades: ["Cortante (Natural)", "Perfurante (Natural)"] } }
     ],
     unicas: [
-      { id: "agil", nome: "Ágil", texto: "Vantagem em testes de Reflexo." },
+      { id: "agil", nome: "Ágil", texto: "Vantagem em testes de Reflexo.", auto: { vantagemPericias: ["reflexos"] } },
       { id: "veloz", nome: "Veloz", texto: "+3 de deslocamento.", auto: { desl: 3 } },
       { id: "corpulento", nome: "Corpulento", texto: "+10 de Vida e +1 por nível.", auto: { pv: 10, pvPorNivel: 1 } },
       { id: "salto", nome: "Salto", texto: "Salta 12 metros normalmente." },
@@ -215,7 +215,7 @@ export const RACAS = [
     recursos: { pv: 14, pm: 14, pe: 14 },
     aumento: { escolhas: [{ valor: 2 }, { valor: 1, qtd: 2, categoriasDiferentes: true }], texto: "+2 em um atributo e +1 em dois atributos de categorias diferentes" },
     habilidades: [
-      { id: "show", nome: "Show Divino (passiva)", texto: "Observado por uma Divindade (o Mestre decide quando), recebe vantagem em todos os testes." },
+      { id: "show", nome: "Show Divino (passiva)", texto: "Observado por uma Divindade (o Mestre decide quando), recebe vantagem em todos os testes.", auto: { ativavel: [{ chave: "show", label: "Show Divino: observado", vantagemTestes: true }] } },
       { id: "besta", nome: "Transformação Bestial", texto: "Após um gatilho, Autocontrole DT 25: se falhar, vira uma besta descontrolada que ataca qualquer alvo próximo. Pode se transformar por vontade (DT 20): passando, controla a besta.",
         auto: { poder: { acao: "livre" } } }
     ],
@@ -281,9 +281,9 @@ export function qtdUnicas(raca, escolhidas = []) {
  * Efeitos automáticos da raça escolhida (habilidades + únicas marcadas), somados.
  * `escolha` = dados.racaEscolha { id, unicas: [ids], mestico: { a, b, habilidades: [ "raca:id" ], unicas: ["raca:id"] } }
  */
-export function efeitosDaRaca(escolha) {
+export function efeitosDaRaca(escolha, ativas = []) {
   const raca = racaPorId(escolha?.id);
-  const out = { raca, desl: 0, voo: null, nado: null, escalada: null, escavacao: null, visao: 0, resistencias: [], imunidades: [], pm: 0, pv: 0, pvPorNivel: 0, ca: 0, rd: 0, vantagemPericias: [], habilidades: [] };
+  const out = { raca, mods: [], danoDesarmado: [], danoCorpo: [], ativaveis: [], vantagemTestes: [], desvantagemTestes: [], desl: 0, voo: null, nado: null, escalada: null, escavacao: null, visao: 0, resistencias: [], imunidades: [], pm: 0, pv: 0, pvPorNivel: 0, ca: 0, rd: 0, vantagemPericias: [], habilidades: [] };
   if (!raca) return out;
   const lista = [];
   if (raca.mestico) {
@@ -312,6 +312,21 @@ export function efeitosDaRaca(escolha) {
     out.imunidades.push(...(a.imunidades ?? []).map(t => ({ tipo: t, fonte: h.nome })));
     out.vantagemPericias.push(...(a.vantagemPericias ?? []).map(p => ({ pericia: p, fonte: h.nome })));
     for (const k of ["pm", "pv", "pvPorNivel", "ca", "rd"]) out[k] += Number(a[k]) || 0;
+    const aplicar = (e, fonte) => {
+      out.vantagemPericias.push(...(e.vantagemPericias ?? []).map(p => ({ pericia: p, fonte })));
+      out.mods.push(...(e.mods ?? []).map(m => ({ ...m, fonte })));
+      if (e.danoDesarmado) out.danoDesarmado.push({ formula: e.danoDesarmado, fonte });
+      if (e.danoCorpo) out.danoCorpo.push({ formula: e.danoCorpo, fonte });
+      if (e.vantagemTestes) out.vantagemTestes.push(fonte);
+      if (e.desvantagemTestes) out.desvantagemTestes.push(fonte);
+    };
+    aplicar({ mods: a.mods, danoDesarmado: a.danoDesarmado, danoCorpo: a.danoCorpo }, h.nome);
+    for (const x of a.ativavel ?? []) {
+      const id = `${h.id}.${x.chave}`;
+      const ativa = ativas.includes(id);
+      out.ativaveis.push({ id, label: x.label, habilidade: h.nome, ativa });
+      if (ativa) aplicar(x, x.label.includes(":") ? x.label : `${h.nome} (${x.label})`);
+    }
   }
   return out;
 }

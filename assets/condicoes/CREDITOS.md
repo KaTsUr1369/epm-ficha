@@ -137,3 +137,5 @@ Icons made by Lorc, Delapouite, Sbed, Skoll, PriorBlue, Carl Olsen, Cathelineau 
 | Eletrizado | eletrizado.svg | electric | Sbed |
 | Enregelado | enregelado.svg | thermometer-cold | Delapouite |
 | Molhado | molhado.svg | water-drop | Sbed |
+| Lesionado | lesionado.svg | desenho próprio (curativo) | Ficha EPM |
+| Recuperado | recuperado.svg | desenho próprio (escudo com marca) | Ficha EPM |

@@ -3,7 +3,7 @@
  */
 import { MODULE_ID, CAMINHO, FLAG } from "./config.mjs";
 import { registrarHelpers, fvtt, escapar } from "./helpers.mjs";
-import { registrarAjustes, ajustes, migrarListaPericiasMundo, migrarReflexosMundo } from "./settings.mjs";
+import { registrarAjustes, ajustes, migrarListaPericiasMundo, migrarReflexosMundo, migrarVontadeAutocontrole } from "./settings.mjs";
 import { registrarCondicoes } from "./conditions.mjs";
 import { EPMActorSheet, catalogoBencaos } from "./actor-sheet.mjs";
 import { EPMPoderSheet, abrirEditorPoder } from "./poder-sheet.mjs";
@@ -22,7 +22,11 @@ registrarRelogioProjetos();
 registrarSeletorDano();
 import * as extras from "./extras.mjs";
 import * as mundo from "./mundo.mjs";
-import { sincronizarMaximos } from "./ficha-060.mjs";
+import { sincronizarMaximos, sincronizarVisao, ajustarAtualPorBonus } from "./ficha-060.mjs";
+import { agendarTokenEstado, botaoHudToken } from "./token-estados.mjs";
+import { ligarGanchosNovas, prepararNovas } from "./novas.mjs";
+
+ligarGanchosNovas();
 
 const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 
@@ -46,6 +50,8 @@ Hooks.once("init", () => {
     "epm-exaustao": `${CAMINHO}/partials/exaustao.hbs`,
     "epm-bencao": `${CAMINHO}/partials/bencao.hbs`,
     "epm-arquetipo-painel": `${CAMINHO}/partials/arquetipo-painel.hbs`,
+    "epm-classe-painel": `${CAMINHO}/partials/classe-painel.hbs`,
+    "epm-novas": `${CAMINHO}/partials/novas.hbs`,
     "epm-transformacoes": `${CAMINHO}/partials/transformacoes.hbs`,
     "epm-historico": `${CAMINHO}/partials/historico.hbs`,
     "epm-painel-060": `${CAMINHO}/partials/painel-060.hbs`
@@ -60,15 +66,56 @@ Hooks.once("setup", () => registrarCondicoes());
 Hooks.once("ready", () => {
   mecanicas.registrarChat();
   mundo.registrarSocket();
+  prepararNovas();
   mecanicas.integrarIniciativa(EPMActorSheet);
   prepararPastaImagens();
   verificarFichaPadrao();
-  migrarListaPericiasMundo().then(() => migrarReflexosMundo()).catch(err => console.warn("EPM | Migração da lista de perícias", err));
+  migrarListaPericiasMundo().then(() => migrarReflexosMundo()).then(() => migrarVontadeAutocontrole()).catch(err => console.warn("EPM | Migração da lista de perícias", err));
   console.log(`${MODULE_ID} | Ficha Escolhidos pelo Multiverso pronta`);
 });
 
 /** Menu do chat: as opções de dano do D&D 5e não valem para os cartões EPM (eles têm o botão Aplicar dano). */
 Hooks.on("getChatMessageContextOptions", mecanicas.filtrarMenuChat);
+// Imagem do token por estado (Normal, Insano, Machucado, Morrendo, Morto, Transformado)
+Hooks.on("updateActor", ator => agendarTokenEstado(ator));
+for (const h of ["createActiveEffect", "deleteActiveEffect", "updateActiveEffect"]) Hooks.on(h, ef => { if (ef.parent?.documentName === "Actor") { agendarTokenEstado(ef.parent); agendarBonusRecursos(ef.parent); } });
+// Bônus em atributo muda a Vida/Mana/Estamina atual junto com a máxima
+const bonusPendentes = new Map();
+function agendarBonusRecursos(ator) {
+  if (!ator?.flags?.[FLAG] || !game.users?.filter) return;
+  const resp = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"))[0] ?? game.users.activeGM;
+  if (!resp?.isSelf) return;
+  clearTimeout(bonusPendentes.get(ator.id));
+  bonusPendentes.set(ator.id, setTimeout(() => { bonusPendentes.delete(ator.id); ajustarAtualPorBonus(ator).catch(err => console.warn("EPM | bônus de atributo nos recursos", err)); }, 200));
+}
+Hooks.on("updateActor", (ator, mudancas, opcoes) => { if (!opcoes?.epmSincronizar) agendarBonusRecursos(ator); });
+// Classe pronta: as habilidades entram sozinhas na ficha quando o nível do arquétipo chega
+const classesPendentes = new Map();
+function agendarClasse(ator) {
+  if (!ator?.flags?.[FLAG]?.classe || !game.users?.filter) return;
+  const resp = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"))[0] ?? game.users.activeGM;
+  if (!resp?.isSelf) return;
+  clearTimeout(classesPendentes.get(ator.id));
+  classesPendentes.set(ator.id, setTimeout(() => {
+    classesPendentes.delete(ator.id);
+    extras.adicionarHabilidadesClasse(ator, "", { automatico: true }).catch(err => console.warn("EPM | habilidades de classe", err));
+  }, 300));
+}
+Hooks.on("updateActor", (ator, mudancas) => {
+  const fl = mudancas?.flags?.[FLAG];
+  if (fl && ["nivel", "nivel2", "arquetipo", "arquetipo2"].some(k => k in fl)) agendarClasse(ator);
+});
+// Habilidade de classe apagada à mão não volta sozinha (o botão "Adicionar" do painel traz de volta)
+Hooks.on("deleteItem", (item, opcoes, userId) => {
+  const ref = item.flags?.[FLAG]?.classeRef;
+  const ator = item.parent;
+  if (!ref || ator?.documentName !== "Actor" || opcoes?.epmTrocaClasse || userId !== game.user.id) return;
+  const lista = Array.isArray(ator.flags?.[FLAG]?.classeDispensadas) ? ator.flags[FLAG].classeDispensadas : [];
+  if (!lista.includes(ref)) ator.update({ [`flags.${FLAG}.classeDispensadas`]: [...lista, ref] }).catch(() => null);
+});
+for (const h of ["createItem", "updateItem", "deleteItem"]) Hooks.on(h, it => { if (it.parent?.documentName === "Actor") agendarBonusRecursos(it.parent); });
+Hooks.on("createToken", tok => { if (tok.actor) agendarTokenEstado(tok.actor); });
+Hooks.on("renderTokenHUD", botaoHudToken);
 Hooks.on("renderActorDirectory", botaoNoDiretorio);
 Hooks.on("renderActorDirectory", botaoEscudo);
 Hooks.on("renderCombatTracker", botaoEscudo);
@@ -165,6 +212,11 @@ Hooks.on("updateActor", (ator, mudancas, opcoes) => {
     const donos = game.users.filter(u => u.active && ator.testUserPermission(u, "OWNER"));
     const resp = donos.find(u => !u.isGM) ?? game.users.activeGM;
     if (resp?.isSelf) sincronizarMaximos(ator).catch(err => console.warn("EPM | máximos automáticos", err));
+  }
+  const fl = mudancas?.flags?.[FLAG];
+  if (!opcoes?.epmSincronizar && fl && (fl.racaEscolha || fl.sentidos || fl.racaAtivas) && ator.isOwner) {
+    const resp = game.users.filter(u => u.active && ator.testUserPermission(u, "OWNER")).find(u => !u.isGM) ?? game.users.activeGM;
+    if (resp?.isSelf) sincronizarVisao(ator).catch(err => console.warn("EPM | visão no escuro", err));
   }
 });
 

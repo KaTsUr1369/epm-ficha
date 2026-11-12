@@ -17,6 +17,8 @@
           <label class="epm-mini"><span>custo</span><select name="flags.epm-ficha.transformacoes.{{this.id}}.custo.recurso">{{#each opcoesCusto}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
           <label class="epm-mini"><span>valor</span><input type="number" min="0" name="flags.epm-ficha.transformacoes.{{this.id}}.custo.valor" value="{{this.custoValor}}" /></label>
           <label class="epm-mini" title="0 = até encerrar"><span>turnos</span><input type="number" min="0" name="flags.epm-ficha.transformacoes.{{this.id}}.duracao" value="{{this.duracao}}" /></label>
+          <label class="epm-check" title="Cobra ao ativar e de novo no começo de cada turno seu; sem o recurso, a transformação acaba"><input type="checkbox" name="flags.epm-ficha.transformacoes.{{this.id}}.custoPorTurno" {{epmChecked custoPorTurno}} /> Custo por turno</label>
+          <label class="epm-check" title="Dano extra pela Vida perdida: +5 (até 100%), +10 (até 75%), +15 (até 50%), +20 (até 25%)"><input type="checkbox" name="flags.epm-ficha.transformacoes.{{this.id}}.frenesi" {{epmChecked frenesi}} /> Frenesi</label>
           <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.transformacoes.{{this.id}}.trocarToken" {{epmChecked trocarToken}} /> Trocar a imagem do token</label>
         </div>
         <textarea name="flags.epm-ficha.transformacoes.{{this.id}}.descricao" rows="2" placeholder="Como ela é, o que muda, como se ativa…" aria-label="Descrição">{{this.descricao}}</textarea>
@@ -36,7 +38,7 @@
         </div>
         {{else}}
         <h4 class="epm-transf-nome">{{this.nome}}{{#if ativa}} <span class="epm-tag epm-tag-ativa">ativa{{#if turnos}} · {{this.turnos}} turno(s){{/if}}</span>{{/if}}</h4>
-        <div class="epm-chips"><span class="epm-tag">{{this.custoTexto}}</span><span class="epm-tag">{{this.duracaoTexto}}</span>{{#each mods}}{{#if alvoLabel}}<span class="epm-tag epm-tag-mod">{{this.alvoLabel}} {{this.valorTexto}}</span>{{/if}}{{/each}}{{#if trocarToken}}<span class="epm-tag fraca">troca o token</span>{{/if}}</div>
+        <div class="epm-chips"><span class="epm-tag">{{this.custoTexto}}</span><span class="epm-tag">{{this.duracaoTexto}}</span>{{#each mods}}{{#if alvoLabel}}<span class="epm-tag epm-tag-mod">{{this.alvoLabel}} {{this.valorTexto}}</span>{{/if}}{{/each}}{{#if frenesi}}<span class="epm-tag epm-tag-mod" title="+5 até 100% de Vida, +10 até 75%, +15 até 50%, +20 até 25%">Frenesi</span>{{/if}}{{#if trocarToken}}<span class="epm-tag fraca">troca o token</span>{{/if}}</div>
         {{#if descricao}}<p class="epm-texto-livre">{{this.descricao}}</p>{{/if}}
         {{/if}}
       </div>

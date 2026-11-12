@@ -9,9 +9,12 @@ import {
 } from "./config.mjs";
 import { num, int, novoId, formaPadrao } from "./data.mjs";
 import {
-  ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, bonusAutomato
+  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, degrau, efeitoMaestria, bonusAutomato
 } from "./arquetipos.mjs";
+import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas } from "./regras-extras.mjs";
+import { idClasse } from "./ficha-extras.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
+import { dataDoMundo } from "./calendario.mjs";
 import { ataquesDaArma } from "./context.mjs";
 import { curaDoCartao } from "./projetos.mjs";
 import {
@@ -72,20 +75,23 @@ async function gastar(actor, recurso, valor, motivo) {
 export function entradaHistorico(registro, caminho, de, para, { origem = "", motivo = "" } = {}) {
   const updates = {};
   updates[`${P}.${caminho}.historico.${novoId()}`] = {
-    quando: Date.now(), quem: game.user?.name ?? "", de, para, origem, motivo
+    quando: Date.now(), data: dataDoMundo(), quem: game.user?.name ?? "", de, para, origem, motivo
   };
   const antigos = Object.entries(registro?.historico ?? {}).filter(([, h]) => h).sort((a, b) => num(b[1].quando) - num(a[1].quando));
   for (const [hid] of antigos.slice(HISTORICO_MAX - 1)) updates[`${P}.${caminho}.historico.-=${hid}`] = null;
   return updates;
 }
 
-export async function ajustarAfinidade(actor, id, delta, { origem = "" } = {}) {
+export async function ajustarAfinidade(actor, id, delta, { origem = "", motivo = "" } = {}) {
   const rel = actor.flags?.[FLAG]?.relacoes?.[id];
-  if (!rel) return;
+  if (!rel) return null;
   const atual = limitarAf(rel.afinidade);
   const novo = limitarAf(atual + int(delta));
-  if (novo === atual) return;
-  await actor.update({ [`${P}.relacoes.${id}.afinidade`]: novo, ...entradaHistorico(rel, `relacoes.${id}`, atual, novo, { origem }) });
+  if (novo === atual) return null;
+  const upd = entradaHistorico(rel, `relacoes.${id}`, atual, novo, { origem, motivo });
+  await actor.update({ [`${P}.relacoes.${id}.afinidade`]: novo, ...upd });
+  // id da entrada nova (para o campo de motivo que aparece logo abaixo)
+  return Object.keys(upd).find(k => !k.includes(".-="))?.split(".historico.")[1] ?? null;
 }
 
 export async function ajustarReputacao(actor, id, delta) {
@@ -102,22 +108,10 @@ export async function ajustarReputacao(actor, id, delta) {
 /* -------------------------------------------- */
 
 /** Troca (ou devolve) a imagem dos tokens do personagem na cena. */
-async function imagemDosTokens(actor, img) {
-  const tokens = actor.getActiveTokens?.(false, true) ?? [];
-  for (const t of tokens) {
-    const doc = t.document ?? t;
-    try {
-      if (img) {
-        const original = doc.getFlag?.(FLAG, "imgAntesTransformar") ?? doc.texture?.src;
-        await doc.update({ "texture.src": img, [`flags.${FLAG}.imgAntesTransformar`]: original });
-      } else {
-        const original = doc.getFlag?.(FLAG, "imgAntesTransformar");
-        if (original) await doc.update({ "texture.src": original, [`flags.${FLAG}.-=imgAntesTransformar`]: null });
-      }
-    } catch (err) {
-      console.warn("EPM | Não consegui trocar a imagem do token", err);
-    }
-  }
+async function imagemDosTokens(actor, _img) {
+  // 0.6.7: a imagem passa pelo sistema de estados do token (token-estados.mjs)
+  const { aplicarTokenEstado } = await import("./token-estados.mjs");
+  return aplicarTokenEstado(actor);
 }
 
 export async function transformar(actor, id) {
@@ -185,6 +179,109 @@ function dadosHabilidadeArquetipo(arqId, h) {
       formas: { [novoId()]: forma }, usos: { valor: 0, max: 0, recarga: "nenhuma" }
     } }
   };
+}
+
+/* -------------------------------------------- */
+/*  Classes prontas                             */
+/* -------------------------------------------- */
+
+/** Classe pronta da ficha, o nível dela (o do arquétipo da classe) e os caminhos escolhidos. */
+export function classeDaFicha(dados = {}) {
+  const id = idClasse(dados.classe);
+  const def = id ? CLASSES_NOTION[id] : null;
+  if (!def) return null;
+  const nivel = arquetiposDoPersonagem(dados).find(a => a.id === (def.arquetipo ?? "combatente"))?.nivel ?? 0;
+  const caminhos = Array.isArray(dados.classeEpm?.caminhos) ? dados.classeEpm.caminhos : [];
+  return { id, def, nivel, caminhos };
+}
+
+function dadosHabilidadeClasse(classeId, h) {
+  const c = CLASSES_NOTION[classeId];
+  const forma = formaPadrao(0, "Passiva");
+  forma.acao = "passiva";
+  const caminho = h.caminho ? ` · ${c.caminhos?.[h.caminho] ?? h.caminho}` : "";
+  return {
+    name: h.nome, type: "feat", img: "icons/svg/book.svg",
+    system: { description: { value: `<p>${escapar(h.texto)}</p><p class="epm-dica">${escapar(c.nome)}, nível ${h.nivel}${escapar(caminho)}.</p>` } },
+    flags: { [FLAG]: {
+      raridade: "comum", origem: "classe", passiva: true, classeRef: h.ref,
+      formas: { [novoId()]: forma }, usos: { valor: 0, max: 0, recarga: "nenhuma" }
+    } }
+  };
+}
+
+/**
+ * Cria na ficha (sub-aba Classe) as habilidades liberadas da classe que faltam.
+ * `ref` = uma habilidade ("barbaro:furia") ou vazio (todas as liberadas). `automatico`: pula as que o jogador apagou.
+ */
+export async function adicionarHabilidadesClasse(actor, ref = "", { automatico = false } = {}) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  const cl = classeDaFicha(dados);
+  if (!cl) return;
+  const jaTem = new Set(actor.items.map(i => i.flags?.[FLAG]?.classeRef).filter(Boolean));
+  const dispensadas = new Set(Array.isArray(dados.classeDispensadas) ? dados.classeDispensadas : []);
+  const liberadas = habilidadesLiberadas(cl.id, cl.nivel, cl.caminhos);
+  const alvo = ref ? liberadas.filter(h => h.ref === ref) : liberadas.filter(h => !(automatico && dispensadas.has(h.ref)));
+  const novas = alvo.filter(h => !jaTem.has(h.ref));
+  if (!novas.length) {
+    if (!automatico) ui.notifications.info("Nada novo para adicionar.");
+    return;
+  }
+  // Quem pede à mão volta a querer a habilidade: sai da lista de apagadas
+  const voltam = novas.filter(h => dispensadas.has(h.ref)).map(h => h.ref);
+  if (voltam.length) await actor.update({ [`${P}.classeDispensadas`]: [...dispensadas].filter(r => !voltam.includes(r)) });
+  await actor.createEmbeddedDocuments("Item", novas.map(h => dadosHabilidadeClasse(cl.id, h)));
+  ui.notifications.info(automatico
+    ? `${actor.name}: ${novas.map(h => h.nome).join(", ")} (${cl.def.nome}) entrou na sub-aba Classe.`
+    : `${novas.length} habilidade(s) de ${cl.def.nome} adicionada(s) na sub-aba Classe.`);
+}
+
+/** Pergunta se tira da ficha as habilidades de classe que não são da classe nova. */
+async function tirarHabilidadesDeOutraClasse(actor, novaId = "") {
+  const outras = actor.items.filter(i => {
+    const r = i.flags?.[FLAG]?.classeRef;
+    return r && r.split(":")[0] !== novaId;
+  });
+  if (!outras.length) return;
+  const nomes = outras.map(i => escapar(i.name)).join(", ");
+  const ok = await confirmar("Habilidades da classe anterior", `<p>Tirar da ficha as habilidades da classe anterior?</p><p class="epm-dica">${nomes}</p>`);
+  if (ok) await actor.deleteEmbeddedDocuments("Item", outras.map(i => i.id), { epmTrocaClasse: true });
+}
+
+/** Escolhe uma classe pronta (só as do arquétipo do personagem) e já cria as habilidades liberadas. */
+export async function escolherClasse(actor, id) {
+  const def = CLASSES_NOTION[id];
+  if (!def || !actor?.isOwner) return;
+  const dados = actor.flags?.[FLAG] ?? {};
+  const arqs = arquetiposDoPersonagem(dados).map(a => a.id);
+  if (!arqs.includes(def.arquetipo ?? "combatente")) return ui.notifications.warn(`${def.nome} é uma classe de ${ARQUETIPOS[def.arquetipo]?.nome ?? def.arquetipo}: escolha esse arquétipo primeiro.`);
+  if (idClasse(dados.classe) === id) return adicionarHabilidadesClasse(actor);
+  await tirarHabilidadesDeOutraClasse(actor, id);
+  await actor.update({ [`${P}.classe`]: def.nome, [`${P}.classeLivre`]: false, [`${P}.classeDispensadas`]: [], [`${P}.classeEpm.caminhos`]: [] });
+  await adicionarHabilidadesClasse(actor, "", { automatico: true });
+}
+
+/** Volta para a escolha de classe (ou para uma classe escrita à mão, com `livre`). */
+export async function trocarClasse(actor, { livre = false } = {}) {
+  if (!actor?.isOwner) return;
+  await tirarHabilidadesDeOutraClasse(actor, "");
+  await actor.update({ [`${P}.classe`]: "", [`${P}.classeLivre`]: livre, [`${P}.classeDispensadas`]: [] });
+}
+
+/** Liga ou desliga um caminho da classe (Caminho do Escudo, Punho de Aço…). */
+export async function alternarCaminhoClasse(actor, caminho) {
+  const cl = classeDaFicha(actor.flags?.[FLAG] ?? {});
+  if (!cl?.def.caminhos?.[caminho]) return;
+  const liga = !cl.caminhos.includes(caminho);
+  await actor.update({ [`${P}.classeEpm.caminhos`]: liga ? [...cl.caminhos, caminho] : cl.caminhos.filter(c => c !== caminho) });
+  if (liga) await adicionarHabilidadesClasse(actor, "", { automatico: true });
+  else {
+    const doCaminho = new Set(habilidadesDaClasse(cl.id).filter(h => h.caminho === caminho).map(h => h.ref));
+    const itens = actor.items.filter(i => doCaminho.has(i.flags?.[FLAG]?.classeRef));
+    if (itens.length && await confirmar(cl.def.caminhos[caminho], `<p>Tirar da ficha as habilidades do ${escapar(cl.def.caminhos[caminho])}?</p><p class="epm-dica">${itens.map(i => escapar(i.name)).join(", ")}</p>`)) {
+      await actor.deleteEmbeddedDocuments("Item", itens.map(i => i.id), { epmTrocaClasse: true });
+    }
+  }
 }
 
 /** Cria na ficha (sub-aba Arquétipo) as habilidades liberadas que ainda faltam. `ref` = "combatente:4" ou só o id do arquétipo (todas). */
@@ -663,7 +760,7 @@ async function cartaoDanoExtra(actor, { titulo, valor, alvos = "", tipoDano = ""
  * Defesa escolhida pelo alvo no cartão de ataque (regras de sempre): compara a defesa (CA + perícia)
  * com o acerto, calcula quanto do dano o alvo recebe e gasta 1 ação do próximo turno.
  */
-export async function defenderDoCartao(defensor, defesaId, { acerto, dano = 0, tipoDano = "", atacanteUuid = "" }) {
+export async function defenderDoCartao(defensor, defesaId, { acerto, dano = 0, tipoDano = "", atacanteUuid = "", critico = false, tipoArma = "" }) {
   const { ficha } = estadoAtor(defensor);
   const def = ficha.defesas.find(d => d.id === defesaId);
   if (!def) return null;
@@ -688,7 +785,7 @@ export async function defenderDoCartao(defensor, defesaId, { acerto, dano = 0, t
   const usadas = ficha.acoes.defesas + 1;
   await defensor.update({ [`${P}.acoes.defesas`]: usadas });
   const botoes = [];
-  if (dano > 0 && recebe > 0) botoes.push(`<button type="button" data-epm-action="dano" data-valor="${recebe}" data-alvos="${escapar(defensor.uuid)}"${tipoDano ? ` data-tipo-dano="${escapar(tipoDano)}"` : ""} data-rotulo="Dano após ${escapar(def.label)}"><i class="fa-solid fa-burst" aria-hidden="true"></i> Aplicar ${recebe} de dano em ${escapar(defensor.name)}</button>`);
+  if (dano > 0 && recebe > 0) botoes.push(`<button type="button" data-epm-action="dano" data-valor="${recebe}" data-alvos="${escapar(defensor.uuid)}"${tipoDano ? ` data-tipo-dano="${escapar(tipoDano)}"` : ""}${critico ? " data-critico=\"1\"" : ""}${tipoArma ? ` data-tipo-arma="${escapar(tipoArma)}"` : ""} data-rotulo="Dano após ${escapar(def.label)}"><i class="fa-solid fa-burst" aria-hidden="true"></i> Aplicar ${recebe} de dano em ${escapar(defensor.name)}</button>`);
   if (defesaId === "contra" && !passou) botoes.push(`<button type="button" data-epm-action="contraatacar" data-defensor="${escapar(defensor.uuid)}" data-rotulo="Contra-ataque"><i class="fa-solid fa-hand-fist" aria-hidden="true"></i> ${escapar(defensor.name)} contra-ataca</button>`);
   const fracTexto = fracao === 1 ? "todo o dano" : fracao === 0 ? "nenhum dano" : fracao > 0.6 ? "2/3 do dano" : "metade do dano";
   return ChatMessage.create({
@@ -723,6 +820,8 @@ export async function resistirDoCartao(defensor, { pericia, dt, rotulo = "" }) {
 
 /** Trata os botões novos do chat. Devolve true se tratou. */
 export async function cliqueChatExtra(acao, actor, botao) {
+  const { cliqueChatNovas } = await import("./novas.mjs");
+  if (await cliqueChatNovas(acao, actor, botao)) return true;
   if (["votar", "encerrarEnquete", "sanidadeCartao", "condicaoAlvo"].includes(acao)) {
     const { cliqueChat060 } = await import("./mundo.mjs");
     if (await cliqueChat060(acao, actor, botao)) return true;
@@ -739,7 +838,7 @@ export async function cliqueChatExtra(acao, actor, botao) {
     if (acao === "defender") {
       const r = await defenderDoCartao(defensor, botao.dataset.defesa, {
         acerto: int(botao.dataset.acerto), dano: int(botao.dataset.valor), tipoDano: botao.dataset.tipoDano ?? "",
-        atacanteUuid: botao.closest(".epm-chat")?.dataset.actorUuid ?? ""
+        atacanteUuid: botao.closest(".epm-chat")?.dataset.actorUuid ?? "", critico: !!botao.dataset.critico, tipoArma: botao.dataset.tipoArma ?? ""
       });
       if (r) cliqueChatExtra.usados.add(chaveDef);
       return true;

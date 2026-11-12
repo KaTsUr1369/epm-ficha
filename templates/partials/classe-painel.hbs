@@ -1,0 +1,58 @@
+{{#with @root.classePainel as |cp|}}
+<section class="epm-painel epm-classe-painel"{{#if cp.cor}} style="--cor: {{cp.cor}}"{{/if}}>
+  {{#if cp.escolhida}}
+  <header class="epm-painel-titulo">
+    <h3><i class="fa-solid fa-book" aria-hidden="true"></i> {{cp.nome}} <span class="epm-contador">{{cp.arquetipo}} Nv. {{cp.nivel}}</span></h3>
+    {{#if cp.podeAdicionarTodas}}<button type="button" class="epm-botao epm-botao-sutil" data-action="adicionarHabilidadeClasse" title="Cria na ficha as habilidades de {{cp.nome}} já liberadas que ainda faltam">Adicionar as liberadas ({{cp.faltamAdicionar}})</button>{{/if}}
+  </header>
+  {{#if cp.descricao}}<p class="epm-dica">{{cp.descricao}} As habilidades entram sozinhas na ficha quando o nível chega.</p>{{/if}}
+  {{#if cp.foraDoArquetipo}}<p class="epm-aviso"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{cp.nome}} é uma classe de {{cp.arquetipo}}, que não é o arquétipo desta ficha.</p>{{/if}}
+  {{#if cp.caminhos.length}}
+  <p class="epm-rotulo">Caminho</p>
+  <div class="epm-060-opcoes">{{#each cp.caminhos}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="caminhoClasse" data-caminho="{{this.id}}" aria-pressed="{{#if ativo}}true{{else}}false{{/if}}" {{#unless cp.editavel}}disabled{{/unless}}>{{#if ativo}}<i class="fa-solid fa-toggle-on" aria-hidden="true"></i>{{else}}<i class="fa-solid fa-toggle-off" aria-hidden="true"></i>{{/if}} {{this.label}}</button>{{/each}}</div>
+  {{/if}}
+  {{#if cp.proxima}}<p class="epm-arq-proximo"><i class="fa-solid fa-flag" aria-hidden="true"></i> Próxima: <strong>Nv. {{cp.proxima.nivel}} · {{cp.proxima.nome}}</strong></p>{{/if}}
+  <details class="epm-arq-habilidades" open data-detalhe="classe-habilidades">
+    <summary>Habilidades da classe ({{cp.habilidades.length}})</summary>
+    <ol class="epm-classe-lista">
+      {{#each cp.habilidades}}
+      <li class="{{#if liberada}}liberada{{else}}bloqueada{{/if}}">
+        <span class="epm-classe-nivel">Nv. {{this.nivel}}</span>
+        <div><strong>{{this.nome}}</strong>{{#if caminhoNome}} <span class="epm-tag fraca">{{this.caminhoNome}}</span>{{/if}}<p>{{this.texto}}</p></div>
+        <span class="epm-classe-estado">{{#if naFicha}}<span class="epm-tag epm-tag-ok" title="Já está na ficha"><i class="fa-solid fa-check" aria-hidden="true"></i> na ficha</span>{{else if podeAdicionar}}<button type="button" class="epm-link" data-action="adicionarHabilidadeClasse" data-ref="{{this.ref}}">Adicionar</button>{{else if liberada}}—{{else}}<i class="fa-solid fa-lock" aria-hidden="true" title="Libera no nível {{this.nivel}}"></i>{{/if}}</span>
+      </li>
+      {{/each}}
+    </ol>
+  </details>
+  {{#if cp.editavel}}<p class="epm-classe-trocar"><button type="button" class="epm-link" data-action="trocarClasse"><i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i> Trocar de classe</button></p>{{/if}}
+
+  {{else if cp.livre}}
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-book" aria-hidden="true"></i> {{#if cp.nomeLivre}}{{cp.nomeLivre}}{{else}}Classe escrita à mão{{/if}}</h3></header>
+  <p class="epm-dica">Classe que não está pronta na ficha: escreva o nome no cabeçalho (modo edição) e crie as habilidades à mão abaixo.</p>
+  {{#if cp.editavel}}{{#if cp.opcoes.length}}<p><button type="button" class="epm-botao epm-botao-sutil" data-action="trocarClasse"><i class="fa-solid fa-list" aria-hidden="true"></i> Escolher uma classe pronta</button></p>{{/if}}{{/if}}
+
+  {{else if cp.temArquetipo}}
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-book" aria-hidden="true"></i> Escolha a classe</h3></header>
+  {{#if cp.semOpcoes}}
+  <p class="epm-vazio">Ainda não há classes prontas para o arquétipo desta ficha.</p>
+  {{else}}
+  <p class="epm-dica">Só aparecem as classes do arquétipo do personagem. Ao escolher, as habilidades já liberadas entram na ficha, e as próximas entram sozinhas quando o nível chegar.</p>
+  <div class="epm-classe-cartoes">
+    {{#each cp.opcoes}}
+    <article class="epm-classe-cartao" style="--cor: {{this.cor}}">
+      <h4>{{this.nome}}</h4>
+      <p class="epm-dica">{{this.arquetipo}} · {{this.qtd}} habilidades</p>
+      <p>{{this.descricao}}</p>
+      {{#if cp.editavel}}<button type="button" class="epm-botao" data-action="escolherClasse" data-id="{{this.id}}"><i class="fa-solid fa-check" aria-hidden="true"></i> Escolher</button>{{/if}}
+    </article>
+    {{/each}}
+  </div>
+  {{/if}}
+  {{#if cp.editavel}}<p><button type="button" class="epm-link" data-action="classeLivre">Minha classe não está na lista (escrever à mão)</button></p>{{/if}}
+
+  {{else}}
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-book" aria-hidden="true"></i> Classe</h3></header>
+  <p class="epm-vazio">Escolha o arquétipo primeiro (no cabeçalho, no modo edição). Depois, as classes dele aparecem aqui.</p>
+  {{/if}}
+</section>
+{{/with}}

@@ -44,6 +44,8 @@
         {{/if}}
         <button type="button" class="epm-botao" data-action="rolarIniciativaNpcs" {{#unless combate.semIniciativa}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Iniciativa dos NPCs</button>
         <button type="button" class="epm-link" data-action="marcarTodos" data-de="combate">marcar todos</button>
+        {{#if novasMestre.regras.descanso}}<button type="button" class="epm-botao" data-action="novasMestre" data-op="emboscada" title="Surpreendido no grupo, menos se alguém vigiou no último descanso longo"><i class="fa-solid fa-triangle-exclamation"></i> Emboscada</button>{{/if}}
+                {{#if novasMestre.regras.auraHorror}}<button type="button" class="epm-botao" data-action="novasMestre" data-op="aura" title="Selecione o token da criatura; quem está marcado (ou o grupo) faz Vontade"><i class="fa-solid fa-ghost"></i> Aura de Horror</button>{{/if}}
       {{else}}
         <p class="epm-vazio">Adicione tokens ao combate pelo Combat Tracker; eles aparecem aqui com Vida, Mana, Estamina, condições e defesas.</p>
       {{/if}}
@@ -98,6 +100,8 @@
         <button type="button" class="epm-botao" data-action="descansoGrupo" data-tipo="curto"><i class="fa-solid fa-mug-hot"></i> Descanso curto</button>
         <button type="button" class="epm-botao" data-action="descansoGrupo" data-tipo="longo"><i class="fa-solid fa-bed"></i> Descanso longo</button>
         <button type="button" class="epm-botao" data-action="relacaoMultipla"><i class="fa-solid fa-people-arrows"></i> Relação múltipla</button>
+        <button type="button" class="epm-botao" data-action="novasMestre" data-op="inspiracao" title="+1 Inspiração de Tema para cada marcado (máximo 3)"><i class="fa-solid fa-feather-pointed"></i> Dar Inspiração</button>
+        {{#if novasMestre.regras.feitos}}<span class="epm-linha-campos"><select data-feito-escolha aria-label="Feito">{{#each novasMestre.feitos}}<option value="{{this.id}}">{{this.nome}}{{#if pev}} (+{{this.pev}} PEv){{/if}}</option>{{/each}}</select><button type="button" class="epm-botao" data-action="novasMestre" data-op="feito"><i class="fa-solid fa-trophy"></i> Dar feito</button></span>{{/if}}
       </div>
     </section>
     <div class="epm-escudo-barra epm-escudo-soltar" data-soltar-grupo>
@@ -163,6 +167,10 @@
         {{#each moedas}}<label class="epm-mini epm-escudo-moeda"><span><img src="{{this.img}}" alt="" /> {{this.abrev}}</span><input type="number" data-moeda="{{this.id}}" placeholder="0" /></label>{{/each}}
         <button type="button" class="epm-botao epm-botao-forte" data-action="darMoedas"><i class="fa-solid fa-coins"></i> Dar moedas</button>
       </div>
+    </section>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Transformações prontas</h3></header>
+      <ul class="epm-escudo-itens">{{#each transformacoesProntas}}<li title="{{this.descricao}}"><span class="epm-escudo-item-nome">{{this.nome}}</span><button type="button" class="epm-botao" data-action="darTransformacao" data-id="{{this.id}}"><i class="fa-solid fa-paw"></i> Dar</button></li>{{/each}}</ul>
     </section>
     {{#if itensVazio}}<p class="epm-vazio">Nenhum item no mundo com esse filtro. Crie itens na aba Itens do Foundry.</p>{{/if}}
     <ul class="epm-escudo-itens">
@@ -304,6 +312,25 @@
 
     {{!-- ================= AJUSTES ================= --}}
     {{#if (epmEq aba "ajustes")}}
+    <section class="epm-painel epm-escudo-ajustes">
+      <header class="epm-painel-titulo"><h3>Regras opcionais</h3><span class="epm-dica">Começam desligadas. Desligada, nada dela aparece nas fichas.</span></header>
+      <div class="epm-ajustes-lista">
+        {{#each novasMestre.lista}}
+        <label class="epm-ajuste {{#if this.ligado}}ligado{{/if}}">
+          <input type="checkbox" data-action="novasMestre" data-op="regra" data-chave="{{this.id}}" {{#if this.ligado}}checked{{/if}} />
+          <span><strong>{{this.label}}</strong><small>{{this.dica}}</small></span>
+        </label>
+        {{/each}}
+      </div>
+    </section>
+    <section class="epm-painel epm-escudo-ajustes">
+      <header class="epm-painel-titulo"><h3>Listas do Mestre</h3><span class="epm-dica">Uma linha por item, partes separadas por "|". Linha vazia some. Apagar tudo volta ao padrão.</span></header>
+      <label class="epm-campo"><span>Eventos rápidos de afinidade (nome | valor)</span><textarea rows="4" data-lista="eventos">{{novasMestre.textos.eventos}}</textarea></label>
+      {{#if novasMestre.regras.traumas}}<label class="epm-campo"><span>Tabela de traumas (nome | efeito) — os 6 do padrão têm automação</span><textarea rows="5" data-lista="traumas">{{novasMestre.textos.traumas}}</textarea></label>{{/if}}
+      {{#if novasMestre.regras.feitos}}<label class="epm-campo"><span>Feitos (nome | descrição | PEv | título | automático: umPv, chefe ou maestria50)</span><textarea rows="5" data-lista="feitos">{{novasMestre.textos.feitos}}</textarea></label>{{/if}}
+      {{#if novasMestre.regras.acumulos}}<label class="epm-campo"><span>Dano por acúmulo no Novo turno (Sangrando | Envenenado | Em Chamas)</span><input type="text" data-lista="acumulos" value="{{novasMestre.textos.acumulos}}" /></label>{{/if}}
+      <button type="button" class="epm-botao epm-botao-forte" data-action="novasMestre" data-op="salvarListas"><i class="fa-solid fa-floppy-disk"></i> Salvar listas</button>
+    </section>
     <section class="epm-painel epm-escudo-ajustes">
       <header class="epm-painel-titulo"><h3>Conteúdo extra do Notion</h3><span class="epm-dica">Configuração privada do Mestre: não é oficial e começa desligado. Vale para todas as fichas do mundo.</span></header>
       <div class="epm-ajustes-lista">

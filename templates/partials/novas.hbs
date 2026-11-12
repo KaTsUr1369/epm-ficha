@@ -1,0 +1,209 @@
+{{!-- Novas mecânicas. Uso: {{> "epm-novas" secao="..."}}. Tudo some quando a regra opcional está desligada. --}}
+{{#with @root.novas as |n|}}
+
+{{#if (epmEq ../secao "cabecalho")}}
+<div class="epm-inspiracao{{#if n.inspiracao.armada}} armada{{/if}}" title="Inspiração de Tema (até {{n.inspiracao.max}}). Gaste para ter vantagem num teste, rerrolar um teste (botão no cartão) ou dar +5 no teste de um aliado.">
+  <span class="epm-inspiracao-pontos" aria-label="Inspiração {{n.inspiracao.valor}} de {{n.inspiracao.max}}">{{#each n.inspiracao.pontos}}<i class="fa-{{#if this}}solid{{else}}regular{{/if}} fa-star" aria-hidden="true"></i>{{/each}}</span>
+  <span class="epm-inspiracao-rotulo">Inspiração</span>
+  {{#if n.inspiracao.isGM}}<button type="button" class="epm-icone-botao" data-action="inspiracao" data-delta="1" title="Dar 1 Inspiração"><i class="fa-solid fa-plus"></i></button>{{#if n.inspiracao.valor}}<button type="button" class="epm-icone-botao" data-action="inspiracao" data-delta="-1" title="Tirar 1 Inspiração"><i class="fa-solid fa-minus"></i></button>{{/if}}{{/if}}
+  {{#if n.inspiracao.podeArmar}}<button type="button" class="epm-link{{#if n.inspiracao.armada}} ativo{{/if}}" data-action="armarInspiracao" aria-pressed="{{#if n.inspiracao.armada}}true{{else}}false{{/if}}" title="Gasta 1 Inspiração no próximo teste ou ataque, com vantagem">{{#if n.inspiracao.armada}}Vantagem no próximo teste ✓{{else}}Usar no próximo teste{{/if}}</button>{{/if}}
+</div>
+{{/if}}
+
+{{#if (epmEq ../secao "acumulos")}}
+{{#each n.acumulaveis}}
+<span class="epm-acumulo" title="{{this.label}} ×{{this.n}}: o dano do Novo turno é multiplicado">
+  {{this.label}} <strong>×{{this.n}}</strong>
+  {{#if podeMenos}}<button type="button" class="epm-icone-botao" data-action="acumulo" data-condicao="{{this.id}}" data-delta="-1" title="Tirar um acúmulo"><i class="fa-solid fa-minus"></i></button>{{/if}}
+  {{#if podeMais}}<button type="button" class="epm-icone-botao" data-action="acumulo" data-condicao="{{this.id}}" data-delta="1" title="Somar um acúmulo"><i class="fa-solid fa-plus"></i></button>{{/if}}
+</span>
+{{/each}}
+{{/if}}
+
+{{#if (epmEq ../secao "principal")}}
+{{#if n.regras.traumas}}{{#if (epmOr n.traumas.length n.isGM)}}
+<section class="epm-painel epm-novas-traumas">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-brain" aria-hidden="true"></i> Traumas</h3>{{#if n.isGM}}<button type="button" class="epm-link" data-action="darTrauma">Dar trauma</button>{{/if}}</header>
+  {{#unless n.traumas.length}}<p class="epm-vazio">Nenhum. Sanidade a 0 dá um trauma permanente (e volta a 20).</p>{{/unless}}
+  <ul class="epm-novas-lista">
+    {{#each n.traumas}}
+    <li>
+      <strong>{{this.nome}}</strong> <span class="epm-dica">{{this.texto}}</span>
+      {{#if fobia}}
+      <span class="epm-linha-campos">
+        <input type="text" name="flags.epm-ficha.traumas.{{this.id}}.gatilho" value="{{this.gatilho}}" placeholder="gatilho da fobia" aria-label="Gatilho" {{#unless n.editavel}}disabled{{/unless}} />
+        <button type="button" class="epm-botao epm-botao-mini{{#if gatilhoPresente}} ativo{{/if}}" data-action="gatilhoTrauma" data-trauma="{{this.id}}" aria-pressed="{{#if gatilhoPresente}}true{{else}}false{{/if}}">{{#if gatilhoPresente}}Gatilho presente: desvantagem{{else}}Gatilho longe{{/if}}</button>
+      </span>
+      {{/if}}
+      {{#if n.isGM}}<button type="button" class="epm-icone-botao perigo" data-action="apagarTrauma" data-trauma="{{this.id}}" title="Tirar"><i class="fa-solid fa-xmark"></i></button>{{/if}}
+    </li>
+    {{/each}}
+  </ul>
+</section>
+{{/if}}{{/if}}
+{{#if n.regras.feitos}}{{#if n.feitos.length}}
+<section class="epm-painel epm-novas-feitos">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-trophy" aria-hidden="true"></i> Feitos</h3><span class="epm-contador">{{n.feitos.length}}</span></header>
+  <ul class="epm-novas-lista">
+    {{#each n.feitos}}<li title="{{this.descricao}}"><strong>{{this.nome}}</strong>{{#if pev}} <span class="epm-tag">+{{this.pev}} PEv</span>{{/if}}{{#if titulo}} <span class="epm-tag">título: {{this.titulo}}</span>{{/if}}{{#if data}} <span class="epm-dica">{{this.data}}</span>{{/if}}{{#if n.isGM}} <button type="button" class="epm-icone-botao perigo" data-action="apagarFeito" data-feito="{{this.id}}" title="Tirar"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}
+  </ul>
+  <p class="epm-dica">O título do feito aparece em "Título ativo".</p>
+</section>
+{{/if}}{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "relacao")}}
+{{#if (epmEq n.motivoPendente.rel ../rel.id)}}
+<label class="epm-motivo-rapido"><span>Motivo da mudança (opcional)</span>
+  <input type="text" name="flags.epm-ficha.relacoes.{{../rel.id}}.historico.{{n.motivoPendente.hist}}.motivo" placeholder="Salvou minha vida na ponte" autofocus />
+  <button type="button" class="epm-icone-botao" data-action="fecharMotivo" title="Pronto"><i class="fa-solid fa-check"></i></button>
+</label>
+{{/if}}
+{{#if n.eventos.length}}
+<details class="epm-eventos-afinidade"><summary>Eventos rápidos</summary>
+  {{#each n.eventos}}<button type="button" class="epm-botao epm-botao-mini{{#if positivo}} positivo{{else}} negativo{{/if}}" data-action="eventoAfinidade" data-relacao="{{../../rel.id}}" data-evento="{{this.i}}">{{this.texto}}</button>{{/each}}
+</details>
+{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "relacoes")}}
+<section class="epm-painel epm-novas-juramentos">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-handshake" aria-hidden="true"></i> Juramentos</h3>{{#if n.editavel}}<button type="button" class="epm-link" data-action="novoJuramento"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo</button>{{/if}}</header>
+  {{#unless n.juramentos.length}}<p class="epm-vazio">Promessas entre dois personagens aparecem aqui e na ficha do outro.</p>{{/unless}}
+  <ul class="epm-novas-lista">
+    {{#each n.juramentos}}
+    <li class="epm-juramento estado-{{this.estado}}">
+      <span class="epm-tag">{{this.estadoLabel}}</span>
+      <span class="epm-juramento-texto"><strong>{{this.quemNome}}</strong> → {{this.comNome}}: “{{this.texto}}”{{#if data}} <span class="epm-dica">{{this.data}}</span>{{/if}}</span>
+      {{#if podeCumprir}}<button type="button" class="epm-botao epm-botao-mini" data-action="juramento" data-juramento="{{this.id}}" data-estado="cumprido">Cumprido</button>{{/if}}
+      {{#if podeQuebrar}}<button type="button" class="epm-botao epm-botao-mini perigo" data-action="juramento" data-juramento="{{this.id}}" data-estado="quebrado" title="Sorteia uma Maldição Memética Boa para quem prometeu">Quebrado</button>{{/if}}
+      {{#if n.isGM}}<button type="button" class="epm-icone-botao perigo" data-action="juramento" data-juramento="{{this.id}}" data-estado="apagar" title="Apagar desta ficha"><i class="fa-solid fa-xmark"></i></button>{{/if}}
+    </li>
+    {{/each}}
+  </ul>
+</section>
+{{/if}}
+
+{{#if (epmEq ../secao "sobre")}}
+{{#if n.ancoras}}
+<section class="epm-painel epm-novas-ancoras">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-anchor" aria-hidden="true"></i> Âncoras</h3><span class="epm-contador">{{n.ancoras.lista.length}}/{{n.ancoras.max}}</span>{{#if n.ancoras.podeNova}}<button type="button" class="epm-link" data-action="novaAncora"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova</button>{{/if}}</header>
+  {{#if n.ancoras.vazio}}<p class="epm-vazio">Uma pessoa (afinidade +4), um objeto ou um juramento que segura a sua mente. Interagir recupera 1d6 de Sanidade por dia.</p>{{/if}}
+  <ul class="epm-novas-lista">
+    {{#each n.ancoras.lista}}
+    <li>
+      <span class="epm-tag">{{this.tipoLabel}}</span> <strong>{{this.nome}}</strong>
+      <button type="button" class="epm-botao epm-botao-mini" data-action="interagirAncora" data-ancora="{{this.id}}" {{#if usada}}disabled title="Já usada hoje (volta no descanso longo)"{{else}}title="+1d6 de Sanidade, uma vez por dia"{{/if}} {{#unless n.editavel}}disabled{{/unless}}>{{#if usada}}Usada hoje{{else}}Interagir{{/if}}</button>
+      {{#if n.isGM}}<button type="button" class="epm-botao epm-botao-mini perigo" data-action="perderAncora" data-ancora="{{this.id}}" title="−20 de Sanidade e libera o espaço">Perdida</button>{{/if}}
+      {{#if n.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="apagarAncora" data-ancora="{{this.id}}" title="Tirar"><i class="fa-solid fa-xmark"></i></button>{{/if}}
+    </li>
+    {{/each}}
+  </ul>
+</section>
+{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "combate")}}
+{{#if n.regras.maestria}}{{#if n.maestria.length}}
+<section class="epm-painel epm-novas-maestria">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-medal" aria-hidden="true"></i> Domínio de arma</h3><span class="epm-dica">50 +1 acerto · 200 técnica · 500 +1 nível de dano</span></header>
+  <ul class="epm-novas-lista">
+    {{#each n.maestria}}
+    <li>
+      <strong>{{this.nome}}</strong> <span class="epm-contador">{{this.acertos}} acertos</span>
+      <span class="epm-medidor" title="{{this.acertos}} de 500"><span style="width: {{this.pct}}%"></span></span>
+      {{#if proximo}}<span class="epm-dica">faltam {{proximo.falta}} para {{proximo.texto}}</span>{{else}}<span class="epm-tag epm-tag-ok">Mestre da arma</span>{{/if}}
+      {{#if podeTecnica}}<button type="button" class="epm-botao epm-botao-mini" data-action="criarTecnica" data-chave="{{this.chave}}">Criar técnica</button>{{/if}}
+      {{#if tecnica}}<span class="epm-tag">{{tecnica.nome}}{{#if tecnica.pendente}} · aguardando o Mestre{{/if}}</span>{{#if tecnica.pendente}}{{#if n.isGM}}<button type="button" class="epm-botao epm-botao-mini" data-action="aprovarTecnica" data-item-id="{{tecnica.id}}">Aprovar</button>{{/if}}{{/if}}{{/if}}
+    </li>
+    {{/each}}
+  </ul>
+</section>
+{{/if}}{{/if}}
+{{#if n.chefe}}
+<section class="epm-painel epm-novas-chefe">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-crown" aria-hidden="true"></i> Chefe</h3>
+    <label class="epm-check"><input type="checkbox" data-action="alternarChefe" {{#if n.chefe.ativo}}checked{{/if}} /> É chefe</label>
+    {{#if n.chefe.ativo}}<button type="button" class="epm-link" data-action="novaFaseChefe"><i class="fa-solid fa-plus" aria-hidden="true"></i> Fase</button>{{/if}}
+  </header>
+  {{#if n.chefe.ativo}}
+  <p class="epm-dica">Quando a Vida passa do limiar para baixo, a fase entra sozinha (uma vez por combate) e vai um cartão para o chat.</p>
+  {{#each n.chefe.fases}}
+  <fieldset class="epm-fase{{#if usada}} usada{{/if}}">
+    <legend>Fase {{this.n}}{{#if usada}} (já entrou neste combate){{/if}}</legend>
+    <div class="epm-linha-campos">
+      <label class="epm-campo curto"><span>Vida ≤ %</span><input type="number" min="1" max="99" name="flags.epm-ficha.chefe.etapas.{{this.id}}.limiar" value="{{this.limiar}}" /></label>
+      <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.chefe.etapas.{{this.id}}.tirarNegativas" {{#if tirarNegativas}}checked{{/if}} /> Tira condições negativas</label>
+      <label class="epm-campo"><span>Ações</span><span class="epm-linha-campos"><input type="number" min="0" class="curto" name="flags.epm-ficha.chefe.etapas.{{this.id}}.acaoQtd" value="{{this.acaoQtd}}" /><select name="flags.epm-ficha.chefe.etapas.{{this.id}}.acao"><option value="">—</option>{{#each n.chefe.acoes}}<option value="{{this.id}}" {{#if (epmEq this.id ../acao)}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
+      <label class="epm-campo curto"><span>Cura</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.cura" value="{{this.cura}}" placeholder="4d10" /></label>
+    </div>
+    <div class="epm-linha-campos">
+      <label class="epm-campo"><span>Condições (separadas por vírgula)</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.condicoes" value="{{this.condicoes}}" placeholder="Voando, Invisível" /></label>
+      <label class="epm-campo curto"><span>+ Acerto</span><input type="number" name="flags.epm-ficha.chefe.etapas.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
+      <label class="epm-campo curto"><span>+ Dano</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8" /></label>
+    </div>
+    <label class="epm-campo"><span>Texto da fase</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.texto" value="{{this.texto}}" placeholder="A criatura ruge e as sombras se fecham…" /></label>
+    <button type="button" class="epm-icone-botao perigo" data-action="apagarFaseChefe" data-fase="{{this.id}}" title="Apagar fase"><i class="fa-solid fa-trash"></i></button>
+  </fieldset>
+  {{/each}}
+  {{/if}}
+</section>
+{{/if}}
+{{#if n.aura}}
+<section class="epm-painel epm-novas-aura">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-ghost" aria-hidden="true"></i> Aura de Horror</h3>{{#if n.aura.vistos.length}}<button type="button" class="epm-link" data-action="zerarVistosAura" title="Esquecer quem já viu">Zerar quem viu</button>{{/if}}</header>
+  <div class="epm-linha-campos">
+    <label class="epm-campo curto"><span>Dado</span><select name="flags.epm-ficha.aura.dado"><option value="">Sem aura</option>{{#each n.aura.dados}}<option value="{{this}}" {{#if (epmEq this n.aura.dado)}}selected{{/if}}>{{this}}</option>{{/each}}</select></label>
+    <label class="epm-campo curto"><span>DT</span><input type="number" min="1" name="flags.epm-ficha.aura.dt" value="{{n.aura.dt}}" /></label>
+  </div>
+  <p class="epm-dica">Use no Escudo do Mestre → Combate. {{#if n.aura.vistos.length}}Já viram: {{epmJoin n.aura.vistos}}.{{else}}Ninguém viu ainda.{{/if}}</p>
+</section>
+{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "criacao")}}
+<section class="epm-painel epm-novas-criacao">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> Criação de itens</h3>{{#if n.editavel}}<button type="button" class="epm-link" data-action="novaCriacao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo projeto</button>{{/if}}</header>
+  <p class="epm-dica">As horas saem das mesmas 8 h por dia dos treinos. No fim, teste da perícia: sucesso cria o item e gasta os materiais; falha gasta metade dos materiais e pede metade das horas de novo.</p>
+  {{#unless n.criacoes.length}}<p class="epm-vazio">Nenhum projeto.</p>{{/unless}}
+  {{#each n.criacoes}}
+  <article class="epm-criacao estado-{{this.estado}}">
+    <header class="epm-treino-topo">
+      {{#if n.editavel}}<input type="text" class="epm-criacao-nome" name="flags.epm-ficha.criacoes.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Nome do item" aria-label="Nome" />{{else}}<strong>{{this.nome}}</strong>{{/if}}
+      {{#if concluido}}<span class="epm-tag epm-tag-ok">Concluído</span>{{/if}}
+      {{#if n.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="apagarCriacao" data-criacao="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>{{/if}}
+    </header>
+    {{#unless concluido}}
+    <div class="epm-linha-campos">
+      <label class="epm-campo"><span>Tipo</span><select name="flags.epm-ficha.criacoes.{{this.id}}.tipo">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <label class="epm-campo curto"><span>Horas</span><input type="number" min="1" name="flags.epm-ficha.criacoes.{{this.id}}.horas" value="{{this.horas}}" /></label>
+      <label class="epm-campo"><span>Perícia</span><select name="flags.epm-ficha.criacoes.{{this.id}}.pericia"><option value="">Escolha…</option>{{#each pericias}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+      <label class="epm-campo curto"><span>DT</span><input type="number" min="1" name="flags.epm-ficha.criacoes.{{this.id}}.dt" value="{{this.dt}}" /></label>
+    </div>
+<div class="epm-linha-campos">
+    <label class="epm-campo"><span>Efeitos</span><input type="text" name="flags.epm-ficha.criacoes.{{this.id}}.efeitos" value="{{this.efeitos}}" placeholder="+1 de acerto, ilumina 6 m…" /></label>
+    <label class="epm-campo"><span>Requisitos</span><input type="text" name="flags.epm-ficha.criacoes.{{this.id}}.requisitos" value="{{this.requisitos}}" placeholder="Ofício (Ferreiro) 4, Treinamento: Forja" title="A ficha confere atributos, perícias e treinamentos concluídos" /></label>
+    </div>
+    {{#if requisitosFaltam.length}}<p class="epm-requisito-falta"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Falta: {{epmJoin requisitosFaltam "; "}}</p>{{/if}}
+    <div class="epm-criacao-zonas">
+      <div class="epm-zona-soltar" data-soltar-criacao="modelo" data-criacao="{{this.id}}" title="Arraste um item como modelo (opcional)">
+        {{#if modelo}}<img src="{{modelo.img}}" alt="" /> {{modelo.nome}} <button type="button" class="epm-icone-botao" data-action="tirarModeloCriacao" data-criacao="{{this.id}}" title="Tirar o modelo"><i class="fa-solid fa-xmark"></i></button>{{else}}<i class="fa-solid fa-arrow-down" aria-hidden="true"></i> Item modelo (opcional){{/if}}
+      </div>
+      <div class="epm-zona-soltar" data-soltar-criacao="material" data-criacao="{{this.id}}" title="Arraste materiais do inventário">
+        {{#unless materiais.length}}<i class="fa-solid fa-arrow-down" aria-hidden="true"></i> Materiais (arraste do inventário){{/unless}}
+        {{#each materiais}}<span class="epm-material{{#if falta}} falta{{/if}}" title="{{#if sumiu}}Não está mais no inventário{{else}}Tem {{this.tem}}{{/if}}">{{#if img}}<img src="{{this.img}}" alt="" />{{/if}}<input type="number" min="1" class="curto" name="flags.epm-ficha.criacoes.{{../id}}.materiais.{{this.id}}.qtd" value="{{this.qtd}}" aria-label="Quantidade" /> {{this.nome}}<button type="button" class="epm-icone-botao" data-action="removerMaterial" data-criacao="{{../id}}" data-material="{{this.id}}" title="Tirar"><i class="fa-solid fa-xmark"></i></button></span>{{/each}}
+      </div>
+    </div>
+    {{/unless}}
+    <footer class="epm-treino-rodape">
+      <div class="epm-medidor epm-medidor-treino" title="{{this.feitas}} de {{this.horas}} horas"><span style="width: {{this.pct}}%"></span></div>
+      <span class="epm-treino-horas">{{this.feitas}} / {{this.horas}} h</span>
+      {{#if andamento}}{{#if n.editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="trabalharCriacao" data-criacao="{{this.id}}"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Trabalhar</button>{{/if}}{{/if}}
+      {{#if pronto}}{{#if n.editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="testarCriacao" data-criacao="{{this.id}}" {{#if faltam}}title="Faltam materiais no inventário"{{/if}}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i> Testar{{#if periciaNome}} ({{periciaNome}} DT {{this.dt}}){{/if}}</button>{{/if}}{{/if}}
+    </footer>
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{/with}}

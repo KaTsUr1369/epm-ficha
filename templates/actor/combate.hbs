@@ -41,10 +41,49 @@
         </div>
       </section>
 
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Turno</h3></header>
+        <div class="epm-turno">
+          <div class="epm-turno-linha">
+            <span class="epm-rotulo">Ações</span>
+            <div class="epm-turno-acoes">
+              {{#each acoesTurno}}<button type="button" class="epm-pip-acao{{#if usada}} usada{{/if}}{{#if bloqueada}} bloqueada{{/if}}" data-action="alternarAcao" data-acao="{{this.id}}" aria-pressed="{{#if usada}}true{{else}}false{{/if}}" title="{{#if motivo}}{{this.motivo}}{{else if usada}}Usada neste turno{{else}}Disponível{{/if}}">{{#if bloqueada}}<i class="fa-solid fa-lock" aria-hidden="true"></i> {{/if}}{{this.label}}</button>{{/each}}
+            </div>
+          </div>
+          <div class="epm-turno-linha" title="Cada defesa gasta 1 ação do seu próximo turno">
+            <span class="epm-rotulo">Defesas usadas</span>
+            <div class="epm-pips">{{#each defesasPendentes}}<span class="epm-pip{{#if ativa}} ativa{{/if}}"></span>{{/each}}</div>
+            <button type="button" class="epm-botao{{#if efeitosTurno.dots}} epm-botao-forte{{else if efeitosTurno.insano}} epm-botao-forte{{/if}}" data-action="novoTurno" title="Restaura as ações, desconta as defesas usadas (Movimento, depois Bônus, depois Padrão){{#if efeitosTurno.dots}}, aplica o dano contínuo das condições{{/if}}{{#if efeitosTurno.insano}} e rola a tabela de Insano{{/if}}">Novo turno</button>
+          </div>
+{{#if temSustentadas}}<div class="epm-sustentadas" aria-label="Sustentadas"><span class="epm-rotulo"><i class="fa-solid fa-hourglass-start" aria-hidden="true"></i> Sustentando</span>{{#each sustentadas}}<span class="epm-tag epm-sustentada">{{this.nome}} · {{this.custoTexto}}{{#if editavel}} <button type="button" class="epm-icone-botao" data-action="encerrarSustentada" data-sustentada="{{this.id}}" title="Encerrar (para de gastar)"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{/each}}</div>{{/if}}
+          <div class="epm-turno-extras">
+            <button type="button" class="epm-botao epm-botao-sutil" data-action="ataqueOportunidade" {{#unless editavel}}disabled{{/unless}} title="Um inimigo a até 1,5 m tenta sair do seu alcance: gasta a Reação e faz 1 ataque simples"><i class="fa-solid fa-person-running" aria-hidden="true"></i> Ataque de oportunidade</button>
+            <button type="button" class="epm-botao epm-botao-sutil" data-action="atrasarTurno" {{#unless editavel}}disabled{{/unless}} title="No início do seu turno: escolha depois de quem agir. 1 vez por combate; a nova posição fica até o fim"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Atrasar turno</button>
+          </div>
+          <div class="epm-especiais">
+            {{#each ficha.acoes.especiais}}
+            {{#if (epmOr max @root.edicao)}}
+            <div class="epm-especial{{#unless max}} inativa{{/unless}}" title="Só existe se alguma habilidade, magia ou item conceder">
+              <span class="epm-especial-nome">{{this.label}}</span>
+              <input type="number" min="0" name="flags.epm-ficha.acoes.{{this.id}}.value" value="{{this.value}}" aria-label="{{this.label}} disponíveis" />
+              <span aria-hidden="true">/</span>
+              {{#if @root.edicao}}<input type="number" min="0" name="flags.epm-ficha.acoes.{{this.id}}.max" value="{{this.max}}" aria-label="{{this.label}} por rodada" />{{else}}<span>{{this.max}}</span>{{/if}}
+            </div>
+            {{/if}}
+            {{/each}}
+          </div>
+        </div>
+        {{> "epm-exaustao"}}
+        <div class="epm-descansos">
+          <button type="button" class="epm-botao" data-action="descanso" data-tipo="curto"><i class="fa-solid fa-mug-hot" aria-hidden="true"></i> Descanso curto</button>
+          <button type="button" class="epm-botao" data-action="descanso" data-tipo="longo"><i class="fa-solid fa-bed" aria-hidden="true"></i> Descanso longo</button>
+        </div>
+      </section>
+
       <section class="epm-painel epm-rd">
         <header class="epm-painel-titulo"><h3>Redução de dano (RD)</h3>
           {{#if edicao}}<button type="button" class="epm-link" data-action="novaRd"><i class="fa-solid fa-plus" aria-hidden="true"></i> RD</button>{{/if}}</header>
-        <p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade e da resistência. Nível entre parênteses: "Fogo (Mágico)" segura até dano Mágico; sem nível, só Natural.</p>
+        {{#if edicao}}<p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade e da resistência. Nível entre parênteses: "Fogo (Mágico)" segura até dano Mágico; sem nível, só Natural.</p>{{/if}}
         {{#if edicao}}
         {{#each rdBox.manuais}}
         <div class="epm-rd-linha">
@@ -86,49 +125,12 @@
         {{#if defesasBox.resistencias.length}}<div class="epm-chips"><span class="epm-rotulo">Resiste</span>{{#each defesasBox.resistencias}}<span class="epm-chip" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
         {{#if defesasBox.imunidades.length}}<div class="epm-chips"><span class="epm-rotulo">Imune</span>{{#each defesasBox.imunidades}}<span class="epm-chip epm-chip-imune" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
         {{#if defesasBox.vulnerabilidades.length}}<div class="epm-chips"><span class="epm-rotulo">Vulnerável</span>{{#each defesasBox.vulnerabilidades}}<span class="epm-chip epm-chip-vulneravel{{#if anulada}} anulada{{/if}}" title="{{this.fonte}}{{#if anulada}}&#10;Anulada por {{this.anulada}}{{/if}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
-        <p class="epm-dica">Ordem do dano: imunidade → vulnerabilidade (×2 ou ×3) → resistência (nível abaixo anula, mesmo nível metade, acima passa) → RD.</p>
+        {{#if edicao}}<p class="epm-dica">Ordem do dano: imunidade → vulnerabilidade (×2 ou ×3) → resistência (nível abaixo anula, mesmo nível metade, acima passa) → RD.</p>{{/if}}
         {{/if}}
       </section>
 
       {{#if v060}}{{> "epm-painel-060" secao="combate"}}{{/if}}
-      <section class="epm-painel">
-        <header class="epm-painel-titulo"><h3>Turno</h3></header>
-        <div class="epm-turno">
-          <div class="epm-turno-linha">
-            <span class="epm-rotulo">Ações</span>
-            <div class="epm-turno-acoes">
-              {{#each acoesTurno}}<button type="button" class="epm-pip-acao{{#if usada}} usada{{/if}}{{#if bloqueada}} bloqueada{{/if}}" data-action="alternarAcao" data-acao="{{this.id}}" aria-pressed="{{#if usada}}true{{else}}false{{/if}}" title="{{#if motivo}}{{this.motivo}}{{else if usada}}Usada neste turno{{else}}Disponível{{/if}}">{{#if bloqueada}}<i class="fa-solid fa-lock" aria-hidden="true"></i> {{/if}}{{this.label}}</button>{{/each}}
-            </div>
-          </div>
-          <div class="epm-turno-linha" title="Cada defesa gasta 1 ação do seu próximo turno">
-            <span class="epm-rotulo">Defesas usadas</span>
-            <div class="epm-pips">{{#each defesasPendentes}}<span class="epm-pip{{#if ativa}} ativa{{/if}}"></span>{{/each}}</div>
-            <button type="button" class="epm-botao{{#if efeitosTurno.dots}} epm-botao-forte{{else if efeitosTurno.insano}} epm-botao-forte{{/if}}" data-action="novoTurno" title="Restaura as ações, desconta as defesas usadas (Movimento, depois Bônus, depois Padrão){{#if efeitosTurno.dots}}, aplica o dano contínuo das condições{{/if}}{{#if efeitosTurno.insano}} e rola a tabela de Insano{{/if}}">Novo turno</button>
-          </div>
-{{#if temSustentadas}}<div class="epm-sustentadas" aria-label="Sustentadas"><span class="epm-rotulo"><i class="fa-solid fa-hourglass-start" aria-hidden="true"></i> Sustentando</span>{{#each sustentadas}}<span class="epm-tag epm-sustentada">{{this.nome}} · {{this.custoTexto}}{{#if editavel}} <button type="button" class="epm-icone-botao" data-action="encerrarSustentada" data-sustentada="{{this.id}}" title="Encerrar (para de gastar)"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{/each}}</div>{{/if}}
-          <div class="epm-turno-extras">
-            <button type="button" class="epm-botao epm-botao-sutil" data-action="ataqueOportunidade" {{#unless editavel}}disabled{{/unless}} title="Um inimigo a até 1,5 m tenta sair do seu alcance: gasta a Reação e faz 1 ataque simples"><i class="fa-solid fa-person-running" aria-hidden="true"></i> Ataque de oportunidade</button>
-            <button type="button" class="epm-botao epm-botao-sutil" data-action="atrasarTurno" {{#unless editavel}}disabled{{/unless}} title="No início do seu turno: escolha depois de quem agir. 1 vez por combate; a nova posição fica até o fim"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Atrasar turno</button>
-          </div>
-          <div class="epm-especiais">
-            {{#each ficha.acoes.especiais}}
-            {{#if (epmOr max @root.edicao)}}
-            <div class="epm-especial{{#unless max}} inativa{{/unless}}" title="Só existe se alguma habilidade, magia ou item conceder">
-              <span class="epm-especial-nome">{{this.label}}</span>
-              <input type="number" min="0" name="flags.epm-ficha.acoes.{{this.id}}.value" value="{{this.value}}" aria-label="{{this.label}} disponíveis" />
-              <span aria-hidden="true">/</span>
-              {{#if @root.edicao}}<input type="number" min="0" name="flags.epm-ficha.acoes.{{this.id}}.max" value="{{this.max}}" aria-label="{{this.label}} por rodada" />{{else}}<span>{{this.max}}</span>{{/if}}
-            </div>
-            {{/if}}
-            {{/each}}
-          </div>
-        </div>
-        {{> "epm-exaustao"}}
-        <div class="epm-descansos">
-          <button type="button" class="epm-botao" data-action="descanso" data-tipo="curto"><i class="fa-solid fa-mug-hot" aria-hidden="true"></i> Descanso curto</button>
-          <button type="button" class="epm-botao" data-action="descanso" data-tipo="longo"><i class="fa-solid fa-bed" aria-hidden="true"></i> Descanso longo</button>
-        </div>
-      </section>
+      {{#if novas}}{{> "epm-novas" secao="combate"}}{{/if}}
     </div>
 
     <div class="epm-coluna">
@@ -192,7 +194,7 @@
           <h3>Bônus de cena</h3>
           {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novoBonusCena"><i class="fa-solid fa-plus"></i> Novo bônus</button>{{/if}}
         </header>
-        <p class="epm-dica">Ligados, somam em todos os ataques (acerto e dano), na CA e na RD. Ex.: uma habilidade que dá +1d8 de dano pela cena. Os criados por bônus situacionais de habilidades somem no fim do combate.</p>
+        {{#if edicao}}<p class="epm-dica">Ligados, somam em todos os ataques (acerto e dano), na CA e na RD. Ex.: uma habilidade que dá +1d8 de dano pela cena. Os criados por bônus situacionais de habilidades somem no fim do combate.</p>{{/if}}
         {{#unless bonusCena.length}}<p class="epm-vazio">Nenhum bônus preparado.{{#unless edicao}} Crie no modo edição.{{/unless}}</p>{{/unless}}
         {{#each bonusCena}}
         <div class="epm-bonus{{#if ativo}} ativo{{/if}}">

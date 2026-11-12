@@ -7,6 +7,7 @@ import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
+import { efeitosDosTraumas, dotsDeAcumulos, DANO_ACUMULO_PADRAO, ROTULOS_ACUMULAVEIS } from "./opcionais.mjs";
 import {
   bonusAtributosAltos, tetoAtributo, maximoRecurso, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel,
   faixaIdade, FAIXAS_IDADE, limiteVotos, TIPOS_PACTO, TAMANHO_EFEITOS, grauNucleo, MARCOS_CORRUPCAO, CONQUISTAS, META_CACADOR
@@ -43,15 +44,21 @@ export function idClasse(texto) {
  * Efeitos que entram antes das condições (imunidades e condições implicadas) e fontes de efeito
  * (Sanidade, idade, pacto quebrado, classe). `opcoes.idade` = regra opcional ligada no Escudo.
  */
-export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
-  const out = { imunidades: [], implica: [], fontesEfeito: [], mods: [], rd: [], resistencias: [], vantagensPericia: [], extrasAtaque: { armado: [], desarmado: [], todos: [] }, avisos: [] };
+export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = {}) {
+  const regras = opcoes.regras ?? {};
+  const out = { imunidades: [], implica: [], fontesEfeito: [], mods: [], rd: [], resistencias: [], vantagensPericia: [], extrasAtaque: { armado: [], desarmado: [], todos: [], corpo: [] }, avisos: [] };
 
   // Raça pronta (habilidades e únicas escolhidas)
-  const raca = efeitosDaRaca(d.racaEscolha);
+  const raca = efeitosDaRaca(d.racaEscolha, Array.isArray(d.racaAtivas) ? d.racaAtivas : []);
   out.raca = raca;
   out.imunidades.push(...raca.imunidades);
   out.resistencias.push(...raca.resistencias);
-  for (const v of raca.vantagensPericia ?? []) out.vantagensPericia.push(v);
+  for (const v of raca.vantagemPericias ?? []) out.vantagensPericia.push(v);
+  for (const m of raca.mods) out.mods.push(m);
+  out.extrasAtaque.desarmado.push(...raca.danoDesarmado);
+  (out.extrasAtaque.corpo ??= []).push(...raca.danoCorpo);
+  out.vantagemTestes = raca.vantagemTestes;
+  out.desvantagemTestes = raca.desvantagemTestes;
   if (raca.desl) out.mods.push({ alvo: "deslocamento", valor: raca.desl, fonte: `Raça: ${raca.raca?.nome ?? ""}` });
   if (raca.ca) out.mods.push({ alvo: "ca", valor: raca.ca, fonte: `Raça: ${raca.raca?.nome ?? ""}` });
   if (raca.rd) out.rd.push({ valor: raca.rd, tipos: "todos os danos", fonte: `Raça: ${raca.raca?.nome ?? ""}` });
@@ -199,12 +206,22 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
     titulos.push({ id: `cacador:${tipo}`, nome: `Caçador de ${tipo}`, texto: `+2 no acerto contra ${tipo} (some no bônus externo do ataque).`, requisito: `Derrotar ${META_CACADOR} criaturas do tipo ${tipo} (Bestiário).`, progresso: qtd, meta: META_CACADOR, liberado: qtd >= META_CACADOR, mods: [], contraTipo: tipo });
   }
   for (const [id, t] of Object.entries(d.titulos ?? {})) if (t) titulos.push({ id: `t:${id}`, nome: t.nome || "Título", texto: t.texto ?? "", requisito: t.origem ?? "", liberado: true, mods: [], proprio: id });
+  // Feitos (regra opcional 19): o título do feito entra na lista de títulos
+  if (regras.feitos) for (const [id, f] of Object.entries(d.feitos ?? {})) if (f?.titulo) titulos.push({ id: `f:${id}`, nome: f.titulo, texto: f.descricao ?? "", requisito: `Feito: ${f.nome ?? ""}`, liberado: true, mods: [], feito: id });
   const ativo = titulos.find(t => t.id === d.tituloAtivo && t.liberado) ?? null;
   out.titulos = { lista: titulos, ativo };
   if (ativo) for (const m of ativo.mods ?? []) out.mods.push({ alvo: m.alvo, valor: m.valor, fonte: `Título: ${ativo.nome}` });
 
+  // Novas mecânicas: traumas (17) e acúmulos de condições (21), só com a regra ligada
+  if (regras.traumas) {
+    const t = efeitosDosTraumas(d);
+    out.fontesEfeito.push(...t.fontes);
+    out.mods.push(...t.mods);
+  }
+  if (regras.acumulos) out.fontesEfeito.push(...dotsDeAcumulos(d, statuses, opcoes.danoAcumulos ?? DANO_ACUMULO_PADRAO, ROTULOS_ACUMULAVEIS));
+
   // Votos e pactos (contagem)
-  out.votos = { usados: Object.values(d.votos ?? {}).filter(Boolean).length, limite: limiteVotos(n(d.nivel) + n(d.nivel2)) };
+  out.votos = { usados: Object.values(d.votos ?? {}).filter(v => v && v.tipo !== "passivo").length, limite: limiteVotos(n(d.nivel) + n(d.nivel2)) };
   out.pactos = Object.fromEntries(Object.entries(TIPOS_PACTO).map(([id, t]) => [id, { label: t.label, limite: t.limite, usados: Object.values(d.pactos ?? {}).filter(p => p && p.tipo === id && !p.quebrado).length }]));
   return out;
 }
@@ -317,7 +334,8 @@ export function maximosAutomaticos(d, atributos, raca) {
   for (const r of ["pv", "pm", "pe"]) {
     const attr = cfg.atributos?.[r] ?? ATRIBUTO_RECURSO_PADRAO[r];
     const a = atributos[attr];
-    const atributo = attr === "nenhum" || !a ? 0 : Math.floor(n(a.base) + n(a.raca) + n(a.aumento) + n(a.outros));
+    // Total do atributo, com bônus de nível, habilidade, magia, bênção, item, transformação…
+    const atributo = attr === "nenhum" || !a ? 0 : Math.floor(n(a.total ?? (n(a.base) + n(a.raca) + n(a.aumento) + n(a.outros))));
     const extraFixo = r === "pv" ? n(raca?.pv) : r === "pm" ? n(raca?.pm) : 0;
     const extraPorNivel = r === "pv" ? n(raca?.pvPorNivel) : 0;
     out[r] = maximoRecurso(r, {

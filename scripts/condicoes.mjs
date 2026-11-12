@@ -88,7 +88,9 @@ const LISTA = [
   ["flutuando", "Flutuando", "elementos", "Erguido por correntes de ar.", "Fica no ar sem controle: deslocamento 0 até o fim do próximo turno e desvantagem em ataques corpo a corpo.", { deslocamentoMult: 0, avisos: ["Flutuando: desvantagem em ataques corpo a corpo"] }, "voando"],
   ["bebado", "Bêbado", "basicas", "Sob efeito de bebida.", "Penalidades definidas pelo Mestre. Com o Estilo de Combate Bêbado, vira +5 Acerto, +2 Esquiva e +2 CA. Depois de 2 horas fica Exausto e Desequilibrado.", { avisos: ["Bêbado: depois de 2 horas, Exausto e Desequilibrado"] }, "confuso"],
   ["assustado", "Assustado", "medo", "Sombras tomam a mente.", "Desvantagem no próximo teste ou ataque.", { avisos: ["Assustado: desvantagem no próximo teste ou ataque"] }, "medo-absoluto"],
-  ["concentrado", "Concentrado", "basicas", "Mantendo uma habilidade ou magia que exige concentração.", "Mantendo uma habilidade ou magia que exige concentração.", {}],
+  ["concentrado", "Concentrado", "basicas", "Mantendo uma habilidade ou magia que exige concentração.", "Mantendo uma habilidade ou magia que exige concentração. Cada dano sofrido (mesmo na vida temporária) pede Vontade DT 15; se falhar, a concentração acaba.", {}],
+  ["lesionado", "Lesionado", "basicas", "Machucado num treino.", "−2 nos testes de Força, Destreza e Constituição. Sai no próximo descanso longo.", { atributos: { forca: -2, destreza: -2, constituicao: -2 } }],
+  ["recuperado", "Recuperado", "basicas", "Acabou de se livrar de um efeito forte.", "Imune à condição que acabou de sair (Atordoado, Paralisado ou Dominado) até o fim do próximo turno.", {}],
 
   /* ---------------- Esforço e energia ---------------- */
   ["exaurido", "Exaurido", "esforco", "Estado de esgotamento extremo causado por esforço físico ou mental prolongado.",

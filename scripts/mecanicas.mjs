@@ -22,6 +22,12 @@ import { ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, estilosEscolhidos, 
 import { listaPropriedades as listaPropriedadesItem, ataqueDesarmado } from "./context.mjs";
 import { EFEITO_ELEMENTO, DANO_EFEITO_ELEMENTO, DT_EFEITO_ELEMENTO } from "./regras-extras.mjs";
 import { custoRecurso, turnoTransformacao, destransformar, cliqueChatExtra, registrarBestiario } from "./extras.mjs";
+import { htmlDupla, prepararDupla, prepararConjunta, inspiracaoDe, consumirVantagemArmada, gastarInspiracao } from "./cooperacao.mjs";
+import { recuperadoNoNovoTurno, encerrarRecuperado } from "./automacoes.mjs";
+import { regra, bonusMaestria, subirNivelDano } from "./opcionais.mjs";
+import { htmlAtividades, lerAtividade, fimDaReza, fazerAtividade, falhaCritica, fimDesprevenidoDaFalha } from "./opcionais-acoes.mjs";
+import { recarregarAncoras } from "./vinculos.mjs";
+import { gastarDurabilidade, armaduraEquipada, PERDA_CRITICO, quebrado } from "./oficina.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -49,7 +55,7 @@ const TABELA_INSANO = [
 /** Status que a Exaustão 5 marca no token. */
 const STATUS_COLAPSO = ["epm-incapacitado", "epm-inconsciente"];
 /** Condições que "remove todas as condições negativas" não tira. */
-const CONDICOES_NEUTRAS = ["epm-concentrado", "epm-voando", "epm-invisivel"];
+const CONDICOES_NEUTRAS = ["epm-concentrado", "epm-voando", "epm-invisivel", "epm-recuperado"];
 const sinalCurto = n => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "+0");
 const falar = actor => ChatMessage.getSpeaker({ actor });
 
@@ -125,12 +131,14 @@ function raizDialogo(evento, arg) {
 
 /** Teste d20 + bônus. Shift = vantagem, Ctrl/Cmd = desvantagem; desvantagens e vantagens da ficha entram sozinhas. */
 export async function rolarTeste(actor, { rotulo, bonus = 0, evento = null, desvantagens = [], vantagens = [], nota = "", penalidades = [] } = {}) {
+  // Inspiração de Tema: "próximo teste com vantagem" armado na ficha gasta 1 Inspiração
+  if (await consumirVantagemArmada(actor)) vantagens = [...vantagens, "Inspiração"];
   const vantagem = !!evento?.shiftKey || vantagens.length > 0;
   const desvantagem = !!(evento?.ctrlKey || evento?.metaKey) || desvantagens.length > 0;
   const roll = new Roll(`${formulaD20({ vantagem, desvantagem })} ${comSinal(int(bonus))}`, dadosRolagem(actor));
   await roll.evaluate();
   const partes = [];
-  if (vantagem && desvantagem) partes.push("vantagem e desvantagem se anulam");
+  if (vantagem && desvantagem) partes.push(`vantagem${vantagens.length ? ` (${vantagens.join(", ")})` : ""} e desvantagem se anulam`);
   else if (vantagem) partes.push(vantagens.length ? `com vantagem (${vantagens.join(", ")})` : "com vantagem");
   else if (desvantagem) partes.push(desvantagens.length ? `com desvantagem (${desvantagens.join(", ")})` : "com desvantagem");
   const pen = penalidades.filter(p => p.valor);
@@ -138,7 +146,8 @@ export async function rolarTeste(actor, { rotulo, bonus = 0, evento = null, desv
   if (nota) partes.push(nota);
   await roll.toMessage({
     speaker: falar(actor),
-    flavor: `<span class="epm-flavor"><strong>${escapar(rotulo)}</strong>${partes.length ? `<em>${escapar(partes.join("; "))}</em>` : ""}</span>`
+    flavor: `<span class="epm-flavor"><strong>${escapar(rotulo)}</strong>${partes.length ? `<em>${escapar(partes.join("; "))}</em>` : ""}</span>`,
+    flags: { [FLAG]: { tipo: "teste", rotulo, formula: roll.formula, total: roll.total, actorUuid: actor?.uuid ?? "" } }
   });
   return roll;
 }
@@ -249,6 +258,33 @@ export async function usarItem(actor, item) {
       avisos.push(`${c.formula} = ${roll.total}. ${rec.texto}`);
     }
   }
+  // 0.6.7: consumíveis do catálogo removem e aplicam condições e dão bônus pela cena
+  const fx = item.flags?.[FLAG] ?? {};
+  const nomeCond = id => CONDICOES.find(c => c.id === id)?.label ?? id;
+  const removidas = [];
+  for (const id of Array.isArray(fx.removeCondicoes) ? fx.removeCondicoes : []) {
+    if (!actor.statuses?.has(`epm-${id}`)) continue;
+    try { await actor.toggleStatusEffect(`epm-${id}`, { active: false }); removidas.push(nomeCond(id)); } catch (err) { console.warn("EPM |", err); }
+  }
+  if (removidas.length) avisos.push(`Removeu: ${removidas.join(", ")}.`);
+  const aplicadas = [];
+  for (const id of Array.isArray(fx.aplicaCondicoes) ? fx.aplicaCondicoes : []) {
+    if (actor.statuses?.has(`epm-${id}`)) continue;
+    try { await actor.toggleStatusEffect(`epm-${id}`, { active: true }); aplicadas.push(nomeCond(id)); } catch (err) { console.warn("EPM |", err); }
+  }
+  if (aplicadas.length) avisos.push(`Agora está: ${aplicadas.join(", ")}.`);
+  if (fx.bonusUso && typeof fx.bonusUso === "object") {
+    const b = fx.bonusUso;
+    const atuais = actor.flags?.[FLAG]?.bonusCena ?? {};
+    const upd = {};
+    for (const [id, x] of Object.entries(atuais)) if (x?.origem === item.id) upd[`${P}.bonusCena.-=${id}`] = null;
+    upd[`${P}.bonusCena.${novoId()}`] = {
+      nome: `${item.name}: ${b.texto || "bônus"}`, ativo: true, acerto: int(b.acerto), dano: String(b.dano ?? ""), ca: int(b.ca),
+      rd: int(b.rd), rdTipo: String(b.rdTipo ?? ""), testes: int(b.testes), deslocamento: num(b.deslocamento), origem: item.id, cena: true, criado: Date.now()
+    };
+    await actor.update(upd);
+    avisos.push(`${b.texto || "Bônus"} pela cena (aba Combate → Bônus de cena).`);
+  }
   return cartaoItem(actor, item, { avisos });
 }
 
@@ -297,9 +333,11 @@ async function marcarAcao(actor, acao, ficha) {
   return aviso;
 }
 
-export async function usarPoder(actor, item, { evento = null, automatico = false, formaId = "" } = {}) {
+export async function usarPoder(actor, item, { evento = null, automatico = false, formaId = "", conjunta = false } = {}) {
   const { ficha, dados } = estadoAtor(actor);
   const p = lerPoder(item);
+  // Técnica de Maestria: só depois que o Mestre aprovar
+  if (item.flags?.[FLAG]?.aprovacao === "pendente" && !game.user.isGM) return ui.notifications.warn(`${item.name} ainda espera a aprovação do Mestre.`);
   if (p.origem === "transformacao" && p.transformacao && dados.transformacoes?.[p.transformacao] && dados.transformacao?.ativa !== p.transformacao) {
     const nomeT = dados.transformacoes[p.transformacao].nome || "a transformação";
     if (!game.user.isGM) return ui.notifications.warn(`${item.name} só pode ser usada transformado em ${nomeT}.`);
@@ -323,8 +361,18 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     avisos.push(`Usada apesar de: ${av.motivos.join(", ")}.`);
   }
   const updates = {};
-  const custo = forma ? custoEfetivo(forma, ficha, p.tipo) : { recurso: "nenhum", valor: 0, extra: 0 };
+  let custo = forma ? custoEfetivo(forma, ficha, p.tipo) : { recurso: "nenhum", valor: 0, extra: 0 };
   let pvPerdidos = 0;
+  // Magia conjunta: o parceiro confirma e paga a parte dele da Mana; a CD vira a maior + 2
+  let conj = null;
+  if (conjunta) {
+    if (p.tipo !== "magia") { ui.notifications.warn("Magia conjunta é só para magias."); return null; }
+    conj = await prepararConjunta(actor, nome, forma, custo.recurso === "pm" ? custo.valor : 0, ficha);
+    if (!conj) return null;
+    if (custo.recurso === "pm") custo = { ...custo, valor: Math.max(0, custo.valor - conj.parteParceiro) };
+    avisos.push(conj.nota);
+  }
+  let sobrecarga = null;
   if (custo.recurso !== "nenhum" && custo.valor > 0) {
     const rec = custo.recurso;
     // Estamina, Mana e Sanidade temporárias pagam primeiro (a Vida temporária só absorve dano)
@@ -335,8 +383,15 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     if (custo.extra) avisos.push(`+${custo.extra} ${sigla} por ${ficha.especiais.custoExtraMagia.fontes.join(", ")}.`);
     if (atual < custo.valor) {
       if (automatico) return null;
-      if (!(await confirmar("Recurso insuficiente", `<p>Custa <strong>${custo.valor} ${sigla}</strong> e você tem ${atual}.</p><p>Usar mesmo assim? O recurso vai a 0.</p>`))) return null;
-      avisos.push(`${sigla} insuficiente.`);
+      if (rec === "pm") {
+        // Sobrecarga de Núcleo: a Mana que tiver vai primeiro; o resto sai em PV (dobro) ou PS
+        sobrecarga = await escolherSobrecarga(actor, ficha, custo.valor, atual, nome);
+        if (!sobrecarga) return null;
+        if (sobrecarga.via === "mestre") { avisos.push(`${sigla} insuficiente (o Mestre liberou).`); sobrecarga = null; }
+      } else {
+        if (!(await confirmar("Recurso insuficiente", `<p>Custa <strong>${custo.valor} ${sigla}</strong> e você tem ${atual}.</p><p>Usar mesmo assim? O recurso vai a 0.</p>`))) return null;
+        avisos.push(`${sigla} insuficiente.`);
+      }
     }
     updates[rec === "pv" ? "system.attributes.hp.value" : `${P}.recursos.${rec}.value`] = Math.max(0, atual - custo.valor);
     if (doTemp) {
@@ -352,6 +407,14 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     pvPerdidos += ficha.especiais.pvPorHabilidade.valor;
     avisos.push(`−${ficha.especiais.pvPorHabilidade.valor} PV por ${ficha.especiais.pvPorHabilidade.fontes.join(", ")}.`);
   }
+  if (sobrecarga?.via === "pv") {
+    pvPerdidos += sobrecarga.falta * 2;
+    avisos.push(`Sobrecarga de Núcleo: faltaram ${sobrecarga.falta} PM, pagos com ${sobrecarga.falta * 2} PV.`);
+  }
+  if (sobrecarga?.via === "ps") {
+    Object.assign(updates, calcularPerda(ficha, "ps", sobrecarga.falta).updates);
+    avisos.push(`Sobrecarga de Núcleo: faltaram ${sobrecarga.falta} PM, pagos com ${sobrecarga.falta} PS.`);
+  }
   if (pvPerdidos) {
     const base = updates["system.attributes.hp.value"] ?? ficha.recursos.pv.value;
     updates["system.attributes.hp.value"] = Math.max(0, base - pvPerdidos);
@@ -360,15 +423,46 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     updates[`${P}.sustentadas.${item.id}`] = { nome, recurso: forma.porTurno.recurso, valor: forma.porTurno.valor, forma: forma.id };
     avisos.push(`Sustentada: ${forma.porTurno.valor} ${CUSTO_RECURSOS[forma.porTurno.recurso]?.sigla ?? ""} no começo de cada turno até encerrar.`);
   }
-  if (Object.keys(updates).length) await actor.update(updates);
+  if (Object.keys(updates).length) await actor.update(updates, { epmCusto: true });
   if (forma) {
     const aviso = await marcarAcao(actor, forma.acao, ficha);
     if (aviso) avisos.push(aviso);
   }
   if (automatico) avisos.unshift("Conjurada automaticamente ao sofrer dano.");
-  const msg = await cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, custo });
+  const fichaCartao = conj ? { ...ficha, cd: { ...ficha.cd, valor: conj.cd } } : ficha;
+  const msg = await cartaoPoder(actor, item, p, forma, { avisos, ficha: fichaCartao, rolagem, custo });
   if (forma?.bonus?.opcoes?.length) await escolherBonusSituacional(actor, item, forma, { nome });
+  if (sobrecarga) await testeSobrecarga(actor);
   return msg;
+}
+
+/** Sobrecarga de Núcleo: escolhe pagar a Mana que falta com o dobro em PV ou o mesmo em PS. */
+async function escolherSobrecarga(actor, ficha, custo, tem, nome) {
+  const falta = Math.max(0, custo - tem);
+  const bloqueio = [...(ficha.bloqueios?.mana ?? []), ...(actor.statuses?.has("epm-nucleo-selado") ? ["Núcleo Selado"] : [])];
+  if (bloqueio.length) { ui.notifications.warn(`Faltam ${falta} PM e a Mana está bloqueada (${bloqueio.join(", ")}): não dá para sobrecarregar o Núcleo.`); return null; }
+  const pv = ficha.recursos.pv.value;
+  const ps = ficha.recursos.ps.value + Math.max(0, ficha.recursos.ps.temp ?? 0);
+  const r = await fvtt.DialogV2.wait({
+    window: { title: `Sobrecarga de Núcleo: ${nome}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+    content: `<p>Custa <strong>${custo} PM</strong> e você tem <strong>${tem}</strong>.</p>
+      <p><strong>Sobrecarga de Núcleo</strong>: a Mana que você tem vai primeiro e os <strong>${falta} PM</strong> que faltam saem em <strong>${falta * 2} PV</strong> (você tem ${pv}) ou <strong>${falta} PS</strong> (você tem ${ps}).</p>
+      <p class="epm-dica">Depois vem um teste de Núcleo DT 15. Se falhar, fica com Mana Instável.</p>`,
+    buttons: [
+      { action: "pv", label: `${falta * 2} PV`, icon: "fa-solid fa-heart", default: true },
+      { action: "ps", label: `${falta} PS`, icon: "fa-solid fa-brain" },
+      ...(game.user.isGM ? [{ action: "mestre", label: "Sem pagar (Mestre)", icon: "fa-solid fa-crown" }] : []),
+      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+    ]
+  });
+  if (!["pv", "ps", "mestre"].includes(r)) return null;
+  return { via: r, falta };
+}
+
+/** Teste de Núcleo DT 15 depois da Sobrecarga (cartão com botão de rolar): falhou, Mana Instável. */
+async function testeSobrecarga(actor) {
+  const { pedirTeste } = await import("./automacoes.mjs");
+  return pedirTeste(actor, { tipo: "sobrecarga", alvo: "atributo:nucleo", dt: 15, motivo: "Usou Sobrecarga de Núcleo. Se falhar, fica com Mana Instável." });
 }
 
 /* -------------------------------------------- */
@@ -732,7 +826,9 @@ export async function novoTurno(actor) {
   };
   const transf = turnoTransformacao(dados);
   Object.assign(updates, transf.updates);
-  // Sustentadas: cada uma paga o custo por turno; a que não couber é encerrada
+  // Recuperado: vale durante este turno e acaba no próximo
+  const recup = recuperadoNoNovoTurno(dados);
+  Object.assign(updates, recup.updates);
   const notasSust = [];
   {
     const sust = Object.entries(dados.sustentadas ?? {}).filter(([, s]) => s && int(s.valor) > 0 && CUSTO_RECURSOS[s.recurso] && s.recurso !== "nenhum");
@@ -742,6 +838,15 @@ export async function novoTurno(actor) {
       const c = custoRecurso(ficha, s.recurso, ja + int(s.valor));
       if (c.ok) { porRec[s.recurso] = ja + int(s.valor); notasSust.push(`${s.nome}: −${int(s.valor)} ${CUSTO_RECURSOS[s.recurso].sigla}`); }
       else { updates[`${P}.sustentadas.-=${sid}`] = null; notasSust.push(`${s.nome} terminou: faltou ${CUSTO_RECURSOS[s.recurso].sigla}`); }
+    }
+    // Transformação com custo por turno: paga de novo; sem o recurso, acaba
+    const tid = dados.transformacao?.ativa;
+    const tr = tid ? dados.transformacoes?.[tid] : null;
+    const recT = tr?.custoPorTurno && CUSTO_RECURSOS[tr.custo?.recurso] && tr.custo.recurso !== "nenhum" ? tr.custo.recurso : null;
+    if (recT && int(tr.custo.valor) > 0 && !transf.terminou) {
+      const ja = porRec[recT] ?? 0;
+      if (custoRecurso(ficha, recT, ja + int(tr.custo.valor)).ok) { porRec[recT] = ja + int(tr.custo.valor); notasSust.push(`${tr.nome}: −${int(tr.custo.valor)} ${CUSTO_RECURSOS[recT].sigla}`); }
+      else { transf.terminou = true; notasSust.push(`${tr.nome} terminou: faltou ${CUSTO_RECURSOS[recT].sigla}`); }
     }
     for (const [rec, total] of Object.entries(porRec)) Object.assign(updates, custoRecurso(ficha, rec, total).updates);
   }
@@ -760,6 +865,8 @@ export async function novoTurno(actor) {
     }
   }
   await actor.update(updates);
+  if (recup.encerrar) await encerrarRecuperado(actor);
+  await fimDesprevenidoDaFalha(actor);
   if (divida) ui.notifications.info(`Novo turno: ${divida} ação(ões) já gasta(s) com defesas.`);
   for (const id of terminadas) await terminarBencao(actor, id, { porDuracao: true });
   if (transf.terminou) await destransformar(actor, { porDuracao: true });
@@ -860,14 +967,14 @@ export async function descanso(actor, tipo) {
     ${linha("pe", rec.pe, longo)}
     ${linha("ps", rec.ps, false)}
     ${longo && n > 0 ? `<label class="epm-check"><input type="checkbox" name="exaustao" checked> Reduzir a Exaustão de ${n} para ${n - 1}</label>` : ""}
-    <label class="epm-check"><input type="checkbox" name="treino"> Treinou durante o descanso (+${REGRAS.ptPorTreino} PT)</label>
+    ${longo && regra("descanso") ? htmlAtividades(actor, REGRAS.ptPorTreino) : `<label class="epm-check"><input type="checkbox" name="treino"> Treinou durante o descanso (+${REGRAS.ptPorTreino} PT)</label>`}
     ${avisosExtras.length ? `<p class="epm-dica">Também acontece: ${escapar(avisosExtras.join("; "))}.</p>` : ""}`;
   const escolha = await fvtt.DialogV2.wait({
     window: { title: longo ? "Descanso longo" : "Descanso curto" }, classes: ["epm-dialogo"], rejectClose: false, modal: true, content,
     buttons: [
       {
         action: "ok", label: "Descansar", icon: longo ? "fa-solid fa-bed" : "fa-solid fa-mug-hot", default: true,
-        callback: (ev, b) => Object.fromEntries(["pv", "pm", "pe", "ps", "exaustao", "treino"].map(k => [k, !!b.form.elements[k]?.checked]))
+        callback: (ev, b) => ({ ...Object.fromEntries(["pv", "pm", "pe", "ps", "exaustao", "treino"].map(k => [k, !!b.form.elements[k]?.checked])), atividade: longo && regra("descanso") ? lerAtividade(b.form) : null })
       },
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
@@ -892,6 +999,16 @@ export async function descanso(actor, tipo) {
   }
   if (escolha.exaustao && n > 0) { updates[`${P}.exaustao`] = n - 1; feitos.push(`Exaustão ${n} → ${n - 1}`); }
   if (escolha.treino) { updates[`${P}.pontos.pt`] = ficha.pontos.pt + REGRAS.ptPorTreino; feitos.push(`+${REGRAS.ptPorTreino} PT de treino`); }
+  if (longo) {
+    // Novas mecânicas: a reza anterior acaba, as âncoras recarregam e a atividade do descanso acontece
+    Object.assign(updates, fimDaReza(dados), recarregarAncoras(dados));
+    if (escolha.atividade?.atividade) {
+      const psTempBase = updates[`${P}.recursos.ps.temp`] ?? Math.max(0, num(dados.recursos?.ps?.temp));
+      const at = await fazerAtividade(actor, escolha.atividade, { ptTreino: REGRAS.ptPorTreino, pontosPt: ficha.pontos.pt, psTempBase });
+      Object.assign(updates, at.updates);
+      feitos.push(...at.textos);
+    }
+  }
   if (longo) updates[`${P}.treinoDia.horas`] = 0;
   if (longo) Object.assign(updates, { [`${P}.acoes.padrao`]: false, [`${P}.acoes.bonus`]: false, [`${P}.acoes.movimento`]: false, [`${P}.acoes.reacao`]: false, [`${P}.acoes.defesas`]: 0 });
   // Bênçãos de uso diário recarregam; maldições de descanso (Decomposição, Alma Devorada)
@@ -937,6 +1054,9 @@ export async function descanso(actor, tipo) {
   if (recarregados.length) feitos.push(`cargas recarregadas: ${recarregados.join(", ")}`);
   if (Object.keys(updates).length) await actor.update(updates);
   if (escolha.exaustao && n > 0) await sincronizarStatusExaustao(actor, n - 1);
+  if (longo && actor.statuses?.has("epm-lesionado")) {
+    try { await actor.toggleStatusEffect("epm-lesionado", { active: false }); feitos.push("Lesionado saiu"); } catch (err) { console.warn("EPM |", err); }
+  }
   return ChatMessage.create({
     speaker: falar(actor),
     content: `<div class="epm-chat epm-chat-nota"><p><strong>${longo ? "Descanso longo" : "Descanso curto"}</strong>${feitos.length ? `: ${escapar(feitos.join(", "))}.` : "."}</p></div>`
@@ -1077,8 +1197,20 @@ export async function aplicarDanoDoCartao(atacante, botao) {
     await alvo.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - resto) });
     partes.push(`${alvo.name} ${calc.final}${calc.passos.length ? ` (${calc.passos.join("; ")})` : ""}`);
     await somarCorrupcao(alvo, calc.final, tipoDano);
+    // Durabilidade: sofrer um acerto crítico tira 10 da armadura equipada
+    if (botao.dataset.critico) {
+      const arm = armaduraEquipada(alvo);
+      const t = arm ? await gastarDurabilidade(arm, PERDA_CRITICO, "acerto crítico") : "";
+      if (t) partes.push(t);
+    }
   }
   ui.notifications.info(`Dano de ${valor}${tipoDano ? ` ${tipoDano}` : ""}: ${partes.join(", ")}.`);
+  // Maestria (regra opcional): o dano aplicado pelo cartão conta como acerto
+  if (botao.dataset.tipoArma && atacante) {
+    const msg = game.messages.get(botao.closest("[data-message-id]")?.dataset.messageId);
+    const { contarAcertoMaestria } = await import("./opcionais-acoes.mjs");
+    await contarAcertoMaestria(atacante, botao.dataset.tipoArma, msg);
+  }
 }
 
 /**
@@ -1201,6 +1333,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (ficha.desvantagens.dano.length) notas.push(`Dano com desvantagem (${ficha.desvantagens.dano.join(", ")})`);
   if (ficha.extras?.titulos?.ativo?.contraTipo) notas.push(`Título ${ficha.extras.titulos.ativo.nome}: +2 no acerto contra ${ficha.extras.titulos.ativo.contraTipo} (some no bônus externo)`);
   if (tecAcima) notas.push("Tecnologia desconhecida: um 1 natural trava a arma. Tecnologia DT 20 permite um uso sem penalidade");
+  if (itemTec && quebrado(itemTec)) notas.push("Arma quebrada: sem os bônus e efeitos dela até ser consertada");
 
   // Arquétipos, munição e cargas
   const item = tipo === "arma" ? actor.items.get(String(ref).split(":")[0]) : null;
@@ -1289,8 +1422,10 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
       <div class="epm-dialogo-linha epm-dialogo-tres">${radio("normal", "Normal")}${radio("vantagem", "Vantagem")}${radio("desvantagem", "Desvantagem")}</div>
       ${desv.length ? `<p class="epm-dica">Pedem desvantagem: ${escapar(desv.join(", "))}.</p>` : ""}
       ${vant.length ? `<p class="epm-dica">Dão vantagem: ${escapar(vant.join(", "))}.</p>` : ""}
+      ${inspiracaoDe(actor) >= 1 ? `<label class="epm-check"><input type="checkbox" name="inspiracao" ${dados.inspiracaoVantagem ? "checked" : ""}> Gastar 1 Inspiração: vantagem (tem ${inspiracaoDe(actor)})</label>` : ""}
     </fieldset>
     ${extras.length ? `<fieldset class="epm-aquisicao"><legend>Ataques adicionais</legend>${extras.join("")}</fieldset>` : ""}
+    ${!oportunidade && !contra ? htmlDupla(actor) : ""}
     ${opcoesArq.length ? `<fieldset class="epm-aquisicao"><legend>${ef ? `Maestria e estilo` : "Estilo e Presa"}</legend>${opcoesArq.join("")}</fieldset>` : ""}
     <div class="epm-dialogo-linha">
       <label class="epm-campo"><span>Bônus externo no acerto</span><input type="text" name="extraAcerto" placeholder="2 ou 1d4"></label>
@@ -1312,7 +1447,8 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
           return {
             modo: f.modo.value, extraAcerto: f.extraAcerto.value.trim(), extraDano: f.extraDano.value.trim(), margem: f.margem.value, mult: f.mult.value, comDano: f.comDano.checked,
             extraComum: marcado(f, "extraComum"), extraAcao: f.extraAcao?.value ?? "", extraComb: marcado(f, "extraComb"), gemea: marcado(f, "gemea"),
-            manobra: f.manobra && !f.manobra.disabled ? f.manobra.value : "", certeiro: marcado(f, "certeiro"), longa: marcado(f, "longa"), duelista: marcado(f, "duelista"), atirador: marcado(f, "atirador"), presa: marcado(f, "presa")
+            manobra: f.manobra && !f.manobra.disabled ? f.manobra.value : "", certeiro: marcado(f, "certeiro"), longa: marcado(f, "longa"), duelista: marcado(f, "duelista"), atirador: marcado(f, "atirador"), presa: marcado(f, "presa"),
+            dupla: marcado(f, "dupla") ? (f.duplaParceiro?.value ?? "") : "", inspiracao: marcado(f, "inspiracao")
           };
         }
       },
@@ -1320,6 +1456,23 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     ]
   });
   if (!escolha || typeof escolha !== "object") return null;
+
+  // Ataque em dupla: confirmação do parceiro antes de gastar qualquer coisa (um ataque só)
+  let dupla = null;
+  if (escolha.dupla) {
+    dupla = await prepararDupla(actor, at, escolha.dupla);
+    if (!dupla) return null;
+    escolha.extraComum = false; escolha.extraComb = false; escolha.gemea = false;
+  }
+  // Inspiração: gasta 1 e rola com vantagem
+  let inspirado = false;
+  if (escolha.inspiracao) {
+    inspirado = await gastarInspiracao(actor);
+    if (inspirado) {
+      escolha.modo = escolha.modo === "desvantagem" ? "normal" : "vantagem";
+      if (dados.inspiracaoVantagem) await actor.update({ [`${P}.inspiracaoVantagem`]: false });
+    }
+  }
 
   // Quantos ataques e o que cada escolha custa
   const extrasComuns = escolha.extraComum ? 1 : 0;
@@ -1330,6 +1483,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const gastos = [];
   let pe = 0;
   if (oportunidade) { updates[`${P}.acoes.reacao`] = true; gastos.push("Reação"); }
+  if (dupla) { updates[`${P}.acoes.padrao`] = true; gastos.push("Ação Padrão (dupla)"); }
   if (extrasComuns) {
     if (!acoesLivres.includes(escolha.extraAcao)) return ui.notifications.warn("A ação escolhida para o ataque extra já foi usada.");
     updates[`${P}.acoes.${escolha.extraAcao}`] = true;
@@ -1412,7 +1566,22 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (estilos.includes("pesada") && ePesada) base.notasExtra.push("Combate com Arma Pesada: se este ataque for crítico, pode fazer +1 ataque (uma vez por turno).");
   if (estilos.includes("leve") && eLeve) base.notasExtra.push("Combate com Arma Leve: dados de dano com 1 ou 2 já foram rolados de novo.");
   if (extrasEstilo.length) base.notasExtra.push(`Armamento Longo: +${extrasEstilo.join(" + ")} de dano.`);
-  const msg = await rolarAtaque(actor, at, { ...base, rotulo: oportunidade ? "Oportunidade" : contra ? "Contra-ataque" : "" });
+  // Maestria de arma (regra opcional): +1 de acerto com 50 acertos, +1 nível de dano com 500
+  const tipoArma = item ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "";
+  if (tipoArma && regra("maestria")) {
+    const bm = bonusMaestria(dados, tipoArma);
+    if (bm.acerto) base.bonusFontes.push({ valor: bm.acerto, fonte: `Domínio de arma (${tipoArma})` });
+    if (bm.nivelDano) { at = { ...at, tipoDano: subirNivelDano(at.tipoDano) }; base.notasExtra.push(`Domínio de arma (${tipoArma}, ${bm.acertos} acertos): +1 nível de dano.`); }
+  }
+  base.tipoArma = tipoArma;
+  if (dupla) {
+    at = { ...at, dano: [at.dano, dupla.danoParceiro].filter(Boolean).join(" + "), tipoDano: subirNivelDano(at.tipoDano || dupla.tipoDanoParceiro || "") };
+    base.bonusFontes.push(...dupla.bonusFontes);
+    base.notasExtra.push(...dupla.notas);
+    base.comDano = base.comDano || !!at.dano;
+  }
+  if (inspirado) base.notasExtra.push("Inspiração de Tema: vantagem (−1 Inspiração).");
+  const msg = await rolarAtaque(actor, at, { ...base, rotulo: dupla ? `Em dupla com ${dupla.parceiro.name}` : oportunidade ? "Oportunidade" : contra ? "Contra-ataque" : "" });
   const extrasRolar = [
     ...Array.from({ length: extrasComuns }, () => ({ rotulo: "Ataque extra", penalidade: -penalExtra })),
     ...Array.from({ length: extrasComb }, (_, i) => ({ rotulo: `Ataque Extra ${i + 1}/${extrasComb}` })),
@@ -1473,7 +1642,7 @@ export function somarDadosDaArma(formula, n) {
  */
 export async function rolarAtaque(actor, at, {
   modo = "normal", extraAcerto = "", extraDano = "", margem, mult, comDano = true,
-  bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestria = null, notasExtra = []
+  bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestria = null, notasExtra = [], tipoArma = ""
 } = {}) {
   const { ficha, dados } = estadoAtor(actor);
   const cena = bonusCenaAtivos(dados);
@@ -1496,6 +1665,7 @@ export async function rolarAtaque(actor, at, {
   const multFinal = Math.max(2, int(mult, at.critMult));
   const natural = atk.dice[0]?.total ?? 0;
   const critico = natural >= margemFinal;
+  const falhaCrit = (atk.dice[0]?.results ?? []).filter(r => r.active !== false).some(r => r.result === 1) && natural === 1;
   let dmg = null;
   let dmgDescartado = null;
   const notas = [];
@@ -1546,7 +1716,7 @@ export async function rolarAtaque(actor, at, {
   if (dmg) {
     const valor = Math.max(0, Math.round(dmg.total));
     botoes.unshift({
-      acao: "dano", valor, alvos: alvos.map(a => a.uuid).join(","), tipoDano: at.tipoDano ?? "",
+      acao: "dano", valor, alvos: alvos.map(a => a.uuid).join(","), tipoDano: at.tipoDano ?? "", critico: critico ? "1" : "", tipoArma: tipoArma || "",
       rotulo: `${at.nome}: dano`, icone: "fa-solid fa-burst",
       label: alvos.length ? `Aplicar ${valor} de dano em ${alvos.map(a => a.name).join(", ")}` : `Aplicar ${valor} de dano no alvo`
     });
@@ -1570,6 +1740,16 @@ export async function rolarAtaque(actor, at, {
     }
   }
   if (critico && actor.isOwner) actor.update({ [`${P}.conquistas.criticos`]: int(dados.conquistas?.criticos) + 1 }).catch(() => null);
+  // Durabilidade: falha crítica tira 10 da arma usada
+  if (falhaCrit && at.tipo === "arma") {
+    const itemArma = actor.items.get(at.id);
+    const t = itemArma ? await gastarDurabilidade(itemArma, PERDA_CRITICO, "falha crítica") : "";
+    if (t) notas.push(t);
+  }
+  // Maestria de arma (regra opcional): botão "Acertou" conta o acerto para o tipo da arma
+  if (tipoArma && regra("maestria")) {
+    botoes.push({ acao: "maestriaAcerto", tipoArma, rotulo: "Domínio", label: `Acertou (Domínio: ${tipoArma})`, icone: "fa-solid fa-medal" });
+  }
   // Maestria do Combatente depois de saber se acertou: Ataque Destrutivo (acertou) ou Acerto Alongado (errou)
   if (maestria?.id === "destrutivo") {
     botoes.push({ acao: "destrutivo", alvos: alvos.map(a => a.uuid).join(","), tipoDano: at.tipoDano ?? "", custo: maestria.custo, rotulo: maestria.nome,
@@ -1586,11 +1766,13 @@ export async function rolarAtaque(actor, at, {
     actorUuid: actor.uuid, img: at.img, nome: rotulo ? `${at.nome} · ${rotulo}` : at.nome, periciaNome: per?.nome ?? "sem perícia",
     modo: rotulos[modo] ?? "", htmlAtaque: await atk.render(), htmlDano: dmg ? await dmg.render() : "",
     critico, mult: multFinal, tipoDano: at.tipoDano, notas, botoes, cor: critico ? "#E8C547" : "#D3A85E",
-    defensores, acertoTotal: atk.total, danoValor: dmg ? Math.max(0, Math.round(dmg.total)) : 0
+    defensores, acertoTotal: atk.total, danoValor: dmg ? Math.max(0, Math.round(dmg.total)) : 0, tipoArma: regra("maestria") ? tipoArma : ""
   });
-  const mensagem = { speaker: falar(actor), content, rolls: [atk, dmg, dmgDescartado].filter(Boolean), sound: CONFIG.sounds?.dice, flags: { [FLAG]: { tipo: "ataque" } } };
+  const mensagem = { speaker: falar(actor), content, rolls: [atk, dmg, dmgDescartado].filter(Boolean), sound: CONFIG.sounds?.dice, flags: { [FLAG]: { tipo: "ataque", tipoArma: tipoArma || "", atacante: actor.uuid } } };
   try { ChatMessage.applyRollMode(mensagem, game.settings.get("core", "rollMode")); } catch { /* modo padrão */ }
-  return ChatMessage.create(mensagem);
+  const criada = await ChatMessage.create(mensagem);
+  if (falhaCrit) await falhaCritica(actor, at);
+  return criada;
 }
 
 export async function definirVidaTemp(actor) {
@@ -1991,31 +2173,46 @@ export function horasLivres(actor) {
 }
 
 /** Ação de Treinamento ou Estudo: 6 horas → 5 PT. */
-export async function treinoGanharPT(actor) {
+export async function treinoGanharPT(actor, { grupo = null } = {}) {
+  const { parceirosTreino, BONUS_TREINO_GRUPO } = await import("./oficina.mjs");
   const livres = horasLivres(actor);
   // Inteligência acima de 4 (Notion): ação de treino mais curta, PT e PH extras
   const altos = estadoAtor(actor).ficha.extras?.altos ?? {};
   const horas = Math.min(TREINO.acao.horas, int(altos.horasTreino) || TREINO.acao.horas);
-  const pt = TREINO.acao.pt + Math.max(0, int(altos.ptTreino));
+  const ptBase = TREINO.acao.pt + Math.max(0, int(altos.ptTreino));
   const ph = Math.max(0, int(altos.phExtra));
-  if (livres < horas) return ui.notifications.warn(`Faltam horas de treino hoje: precisa de ${horas} h e restam ${livres} h.`);
-  const ganho = `${pt} PT${ph ? ` e ${ph} PH` : ""}`;
+  // Treino em grupo: 25% menos tempo e 25% mais PT (arredondado para cima)
+  const horasGrupo = Math.round(horas * (2 - BONUS_TREINO_GRUPO) * 10) / 10;
+  const ptGrupo = Math.ceil(ptBase * BONUS_TREINO_GRUPO);
+  const hTxt = h => String(h).replace(".", ",");
+  if (livres < horasGrupo) return ui.notifications.warn(`Faltam horas de treino hoje: precisa de ${horas} h (ou ${hTxt(horasGrupo)} h em grupo) e restam ${livres} h.`);
+  const texto = pt => `${pt} PT${ph ? ` e ${ph} PH` : ""}`;
+  const parceiros = Array.isArray(grupo) ? [] : parceirosTreino(actor);
   const r = await fvtt.DialogV2.wait({
     window: { title: "Treinar ou estudar" }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
-    content: `<p>${horas} horas de treino ou estudo valem <strong>${ganho}</strong>.${horas < TREINO.acao.horas || pt > TREINO.acao.pt || ph ? " <span class=\"epm-dica\">(Inteligência acima de 4)</span>" : ""}</p>
-      <label class="epm-campo"><span>O que fez (opcional)</span><input type="text" name="oque" placeholder="Treino de esgrima, estudo de runas…"></label>`,
+    content: `<p>${Array.isArray(grupo) ? hTxt(horasGrupo) : horas} horas de treino ou estudo valem <strong>${texto(Array.isArray(grupo) ? ptGrupo : ptBase)}</strong>${Array.isArray(grupo) ? " (treino em grupo)" : ""}.${horas < TREINO.acao.horas || ptBase > TREINO.acao.pt || ph ? " <span class=\"epm-dica\">(Inteligência acima de 4)</span>" : ""}</p>
+      <label class="epm-campo"><span>O que fez (opcional)</span><input type="text" name="oque" placeholder="Treino de esgrima, estudo de runas…"></label>
+      ${parceiros.length ? `<fieldset class="epm-aquisicao"><legend>Treino em grupo: ${hTxt(horasGrupo)} h e ${texto(ptGrupo)}</legend>${parceiros.map(pc => `<label class="epm-check"><input type="checkbox" name="p_${escapar(pc.uuid)}" value="${escapar(pc.uuid)}"> ${escapar(pc.nome)} (afinidade ${pc.afinidade >= 0 ? "+" : ""}${pc.afinidade})</label>`).join("")}
+        <p class="epm-dica">Em grupo: 25% menos tempo e 25% mais PT. Quem treinou junto registra na própria ficha pelo botão do cartão.</p></fieldset>` : ""}`,
     buttons: [
-      { action: "ok", label: `+${ganho}`, icon: "fa-solid fa-check", default: true, callback: (e, b) => ({ oque: b.form.elements.oque.value.trim() }) },
+      { action: "ok", label: "Treinar", icon: "fa-solid fa-check", default: true, callback: (e, b) => ({ oque: b.form.elements.oque.value.trim(), parceiros: [...b.form.querySelectorAll("input[name^='p_']:checked")].map(x => x.value) }) },
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
   });
   if (!r || typeof r !== "object") return;
+  const comQuem = Array.isArray(grupo) ? grupo : (r.parceiros ?? []);
+  const pt = comQuem.length ? ptGrupo : ptBase;
+  const gasto = comQuem.length ? horasGrupo : horas;
+  if (livres < gasto) return ui.notifications.warn(`Faltam horas de treino hoje: precisa de ${hTxt(gasto)} h e restam ${livres} h.`);
   const { ficha } = estadoAtor(actor);
   const usadas = TREINO.horasDia - livres;
-  const upd = { [`${P}.pontos.pt`]: ficha.pontos.pt + pt, [`${P}.treinoDia.horas`]: usadas + horas };
+  const upd = { [`${P}.pontos.pt`]: ficha.pontos.pt + pt, [`${P}.treinoDia.horas`]: usadas + gasto };
   if (ph) upd[`${P}.pontos.ph`] = ficha.pontos.ph + ph;
   await actor.update(upd);
-  return notaChat(actor, `<p><strong>${escapar(actor.name)}</strong> ${r.oque ? `fez: ${escapar(r.oque)}` : "treinou ou estudou"} (${horas} h): <strong>+${ganho}</strong>.</p>`);
+  const nome = u => { try { return fromUuidSync(u)?.name ?? ""; } catch { return ""; } };
+  const nomes = comQuem.map(nome).filter(Boolean);
+  const botoes = Array.isArray(grupo) ? "" : comQuem.filter(nome).map(u => `<button type="button" class="epm-botao epm-botao-mini" data-epm-action="treinoPtGrupo" data-parceiro="${escapar(u)}" data-de="${escapar(actor.uuid)}"><i class="fa-solid fa-dumbbell"></i> ${escapar(nome(u))}: registrar o meu</button>`).join("");
+  return notaChat(actor, `<p><strong>${escapar(actor.name)}</strong> ${r.oque ? `fez: ${escapar(r.oque)}` : "treinou ou estudou"} (${hTxt(gasto)} h): <strong>+${texto(pt)}</strong>.${nomes.length ? `<br><span class="epm-dica">Treino em grupo com ${escapar(nomes.join(", "))}: ${horas} → ${hTxt(gasto)} h e ${ptBase} → ${pt} PT.</span>` : ""}</p>${botoes ? `<p>${botoes}</p>` : ""}`);
 }
 
 /** Conversa ou tutor: 1 a 3 PT, conforme o tempo (não gasta horas de treino). */
@@ -2047,8 +2244,19 @@ export async function comecarTreinamento(actor, id) {
   const pt = Math.max(0, int(t.pt));
   const { ficha } = estadoAtor(actor);
   if (pt > ficha.pontos.pt) return ui.notifications.warn(`Faltam ${pt - ficha.pontos.pt} PT: custa ${pt} e você tem ${ficha.pontos.pt}.`);
-  const req = [t.requisitos ? `Requisitos: ${escapar(t.requisitos)}` : "", t.treinador ? "Precisa de treinador." : ""].filter(Boolean);
-  if (req.length && !(await confirmar(`Começar ${t.nome || "treinamento"}`, `<p>${req.join("<br>")}</p><p>Os requisitos estão cumpridos? Serão gastos ${pt} PT.</p>`))) return;
+  // Requisitos: atributo, perícia e outro treinamento a ficha confere sozinha; treinador o jogador ou o Mestre confirma
+  const { avaliarRequisitos } = await import("./oficina.mjs");
+  const av = avaliarRequisitos(t.requisitos, ficha, actor.flags[FLAG], id);
+  if (!av.ok && !game.user.isGM) return ui.notifications.warn(`Falta para começar ${t.nome || "o treinamento"}: ${av.faltas.join("; ")}.`);
+  const manuais = [...av.manuais, ...(t.treinador ? ["Precisa de treinador"] : [])];
+  if (!av.ok || manuais.length) {
+    const linhas = [
+      av.cumpridos.length ? `<p><i class="fa-solid fa-check" aria-hidden="true"></i> Cumpre: ${escapar(av.cumpridos.join("; "))}.</p>` : "",
+      av.faltas.length ? `<p><i class="fa-solid fa-xmark" aria-hidden="true"></i> Falta: ${escapar(av.faltas.join("; "))} (o Mestre pode liberar).</p>` : "",
+      manuais.length ? `<p><i class="fa-solid fa-user-check" aria-hidden="true"></i> Confirme: ${escapar(manuais.join("; "))}.</p>` : ""
+    ].join("");
+    if (!(await confirmar(`Começar ${t.nome || "treinamento"}`, `${linhas}<p>Começar? Serão gastos ${pt} PT.</p>`))) return;
+  }
   await actor.update({ [`${P}.pontos.pt`]: ficha.pontos.pt - pt, [`${P}.treinamentos.${id}.estado`]: "andamento", [`${P}.treinamentos.${id}.horasFeitas`]: 0 });
   return notaChat(actor, `<p><strong>${escapar(actor.name)}</strong> começou o treinamento <strong>${escapar(t.nome || "sem nome")}</strong> (−${pt} PT).</p>`);
 }
@@ -2059,41 +2267,66 @@ export function horasDoTreino(t) {
   return Math.max(1, Math.round(Math.max(0, num(t?.tempo)) * u.horas));
 }
 
-/** Registra horas num treinamento em andamento (limitado às horas livres do dia). */
-export async function treinarHoras(actor, id, horasPedidas = null) {
+/**
+ * Registra horas num treinamento em andamento (limitado às horas livres do dia).
+ * Treino em grupo (parceiros com afinidade +2): as horas contam 25% a mais. Treinador NPC com preço por hora:
+ * a ficha paga com as moedas (troco automático); sem dinheiro, as horas não são registradas.
+ */
+export async function treinarHoras(actor, id, horasPedidas = null, { grupo = null } = {}) {
+  const { parceirosTreino, pagarTreinador, textoPreco, BONUS_TREINO_GRUPO } = await import("./oficina.mjs");
   const t = actor.flags?.[FLAG]?.treinamentos?.[id];
   if (!t || t.estado !== "andamento") return;
   const total = horasDoTreino(t);
   const feitas = Math.max(0, num(t.horasFeitas));
   const livres = horasLivres(actor);
-  const maximo = Math.min(livres, total - feitas);
+  const maximo = Math.min(livres, Math.ceil(total - feitas));
   if (maximo <= 0) return ui.notifications.warn("Sem horas de treino livres hoje.");
   let horas = horasPedidas;
+  let comQuem = Array.isArray(grupo) ? grupo : [];
+  const preco = textoPreco(t);
   if (horas === null) {
+    const parceiros = parceirosTreino(actor);
     const r = await fvtt.DialogV2.wait({
       window: { title: `Treinar: ${t.nome || "treinamento"}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
-      content: `<p>Faltam ${total - feitas} h para concluir. Você tem ${livres} h de treino livres hoje.</p>
-        <label class="epm-campo"><span>Horas</span><input type="number" name="horas" min="1" max="${maximo}" value="${maximo}"></label>`,
+      content: `<p>Faltam ${Math.round((total - feitas) * 10) / 10} h para concluir. Você tem ${livres} h de treino livres hoje.</p>
+        <label class="epm-campo"><span>Horas</span><input type="number" name="horas" min="1" max="${maximo}" value="${maximo}"></label>
+        ${preco ? `<p class="epm-dica"><i class="fa-solid fa-coins" aria-hidden="true"></i> Treinador: ${escapar(preco)} (a ficha paga com as moedas; sem dinheiro, as horas não entram).</p>` : ""}
+        ${parceiros.length ? `<fieldset class="epm-aquisicao"><legend>Treino em grupo (+25% nas horas)</legend>${parceiros.map(pc => `<label class="epm-check"><input type="checkbox" name="p_${escapar(pc.uuid)}" value="${escapar(pc.uuid)}"> ${escapar(pc.nome)} (afinidade ${pc.afinidade >= 0 ? "+" : ""}${pc.afinidade})</label>`).join("")}
+          <p class="epm-dica">Quem treinou junto registra as horas na própria ficha pelo botão do cartão, também com +25%.</p></fieldset>` : ""}`,
       buttons: [
-        { action: "ok", label: "Treinar", icon: "fa-solid fa-dumbbell", default: true, callback: (e, b) => ({ horas: num(b.form.elements.horas.value) }) },
+        { action: "ok", label: "Treinar", icon: "fa-solid fa-dumbbell", default: true, callback: (e, b) => ({ horas: num(b.form.elements.horas.value), parceiros: [...b.form.querySelectorAll("input[name^='p_']:checked")].map(x => x.value) }) },
         { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
       ]
     });
     if (!r || typeof r !== "object") return;
     horas = r.horas;
+    comQuem = r.parceiros ?? [];
   }
   horas = limitar(Math.round(num(horas)), 0, maximo);
   if (!horas) return;
-  const agora = feitas + horas;
+  const pago = pagarTreinador(actor.flags[FLAG], t, horas);
+  if (!pago) return ui.notifications.warn(`Sem dinheiro para pagar o treinador (${preco}): as horas não foram registradas.`);
+  const ganho = comQuem.length ? Math.round(horas * BONUS_TREINO_GRUPO * 10) / 10 : horas;
+  const agora = Math.min(total, Math.round((feitas + ganho) * 10) / 10);
   const concluiu = agora >= total;
   const usadas = TREINO.horasDia - livres;
   await actor.update({
+    ...pago.updates,
     [`${P}.treinamentos.${id}.horasFeitas`]: agora, [`${P}.treinoDia.horas`]: usadas + horas,
     ...(concluiu ? { [`${P}.treinamentos.${id}.estado`]: "concluido" } : {})
   });
+  const nomes = comQuem.map(u => { try { return fromUuidSync(u)?.name; } catch { return null; } }).filter(Boolean);
+  const extra = [
+    nomes.length ? `Treinou com ${nomes.join(", ")}: +25% (${horas} h contam ${ganho} h).` : "",
+    pago.texto ? `${pago.texto[0].toUpperCase()}${pago.texto.slice(1)}.` : ""
+  ].filter(Boolean).map(x => `<br><span class="epm-dica">${escapar(x)}</span>`).join("");
+  const botoes = Array.isArray(grupo) ? "" : comQuem.map(u => {
+    const nome = (() => { try { return fromUuidSync(u)?.name ?? ""; } catch { return ""; } })();
+    return nome ? `<button type="button" class="epm-botao epm-botao-mini" data-epm-action="treinoEmGrupo" data-parceiro="${escapar(u)}" data-horas="${horas}" data-de="${escapar(actor.uuid)}"><i class="fa-solid fa-dumbbell"></i> ${escapar(nome)}: registrar no meu treino</button>` : "";
+  }).join("");
   return notaChat(actor, concluiu
-    ? `<p><strong>${escapar(actor.name)}</strong> concluiu <strong>${escapar(t.nome || "o treinamento")}</strong>!${t.beneficios ? `<br>${escapar(t.beneficios)}` : ""}</p>`
-    : `<p><strong>${escapar(actor.name)}</strong> treinou ${horas} h em <strong>${escapar(t.nome || "treinamento")}</strong> (${agora} de ${total} h).</p>`);
+    ? `<p><strong>${escapar(actor.name)}</strong> concluiu <strong>${escapar(t.nome || "o treinamento")}</strong>!${t.beneficios ? `<br>${escapar(t.beneficios)}` : ""}${extra}</p>${botoes ? `<p>${botoes}</p>` : ""}`
+    : `<p><strong>${escapar(actor.name)}</strong> treinou ${horas} h em <strong>${escapar(t.nome || "treinamento")}</strong> (${agora} de ${total} h).${extra}</p>${botoes ? `<p>${botoes}</p>` : ""}`);
 }
 
 /** Resultado de um minijogo de treino rápido: usa 1 h do dia e dá PT conforme os acertos. */
@@ -2106,7 +2339,10 @@ export async function resultadoMinijogo(actor, jogo, acertos, rodadas = 5) {
   const usadas = TREINO.horasDia - livres;
   await actor.update({ [`${P}.treinoDia.horas`]: usadas + TREINO.minijogo.horas, ...(pt ? { [`${P}.pontos.pt`]: ficha.pontos.pt + pt } : {}) });
   const nome = MINIJOGOS[jogo]?.label ?? "Treino rápido";
-  await notaChat(actor, `<p><strong>${escapar(actor.name)}</strong> fez um treino rápido (<em>${escapar(nome)}</em>): ${a} de ${rodadas} acertos, <strong>${pt ? `+${pt} PT` : "nenhum PT desta vez"}</strong>.</p>`);
+  // Lesão: 0 acertos deixa Lesionado (−2 em Força, Destreza e Constituição até o próximo descanso longo)
+  const lesao = a === 0;
+  if (lesao) { try { if (!actor.statuses?.has("epm-lesionado")) await actor.toggleStatusEffect("epm-lesionado", { active: true }); } catch (err) { console.warn("EPM |", err); } }
+  await notaChat(actor, `<p><strong>${escapar(actor.name)}</strong> fez um treino rápido (<em>${escapar(nome)}</em>): ${a} de ${rodadas} acertos, <strong>${pt ? `+${pt} PT` : "nenhum PT desta vez"}</strong>.</p>${lesao ? "<p><strong>Lesionado</strong>: −2 nos testes de Força, Destreza e Constituição até o próximo descanso longo.</p>" : ""}`);
   return pt;
 }
 

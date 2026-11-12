@@ -11,17 +11,18 @@
     <div class="epm-grupo-opcoes">
       <button type="button" class="epm-link" data-action="marcarTodos">Marcar todos</button>
       <button type="button" class="epm-link" data-action="desmarcarTodos">Desmarcar</button>
+      <button type="button" class="epm-link" data-action="adicionarAtor" title="Também dá para arrastar um ator da aba Atores para cá"><i class="fa-solid fa-user-plus"></i> Adicionar ator</button>
       <label class="epm-check"><input type="checkbox" data-incluir-todos="1" {{#if todos}}checked{{/if}} /> Incluir personagens sem jogador</label>
     </div>
   </section>
-  {{#if vazio}}<p class="epm-vazio">Nenhum personagem de jogador no mundo.</p>{{/if}}
+  {{#if vazio}}<p class="epm-vazio">Nenhum personagem no painel. Use "Adicionar ator" ou arraste um ator da aba Atores.</p>{{/if}}
   <ol class="epm-grupo-lista">
     {{#each atores}}
     <li class="epm-grupo-ator{{#if marcado}} marcado{{/if}}">
       <input type="checkbox" data-marcar="{{this.id}}" {{#if marcado}}checked{{/if}} aria-label="Marcar {{this.name}}" />
       <img class="epm-grupo-img" src="{{this.img}}" alt="" data-action="abrirFicha" data-id="{{this.id}}" title="Abrir a ficha" />
       <div class="epm-grupo-info">
-        <div class="epm-grupo-nome"><strong>{{this.name}}</strong>{{#if nivel}} <span class="epm-dica">Nv. {{this.nivel}}{{#if arquetipo}} · {{this.arquetipo}}{{/if}}{{#if jogadores}} · {{this.jogadores}}{{/if}}</span>{{/if}}{{#if transformacao}} <span class="epm-tag epm-tag-ativa">{{this.transformacao}}</span>{{/if}}</div>
+        <div class="epm-grupo-nome"><strong>{{this.name}}</strong>{{#if npc}} <span class="epm-tag">NPC</span>{{/if}}{{#if nivel}} <span class="epm-dica">Nv. {{this.nivel}}{{#if arquetipo}} · {{this.arquetipo}}{{/if}}{{#if jogadores}} · {{this.jogadores}}{{/if}}</span>{{/if}}{{#if transformacao}} <span class="epm-tag epm-tag-ativa">{{this.transformacao}}</span>{{/if}}</div>
         {{#if erro}}<p class="epm-aviso">Não consegui ler esta ficha.</p>{{/if}}
         <div class="epm-grupo-recursos">
           {{#each recursos}}<div class="epm-grupo-recurso{{#if baixo}} baixo{{/if}}" style="--cor: {{this.cor}}" title="{{this.label}}"><span><strong>{{this.abrev}}</strong> {{this.value}}/{{this.max}}{{#if temp}} <em>+{{this.temp}}</em>{{/if}}</span><div class="epm-barra" aria-hidden="true"><span style="width: {{epmPct pct}}"></span></div></div>{{/each}}
@@ -33,6 +34,7 @@
           {{#if maisCondicoes}}<span class="epm-dica">+{{this.maisCondicoes}}</span>{{/if}}
         </div>
       </div>
+      <button type="button" class="epm-icone-botao perigo" data-action="tirarAtor" data-id="{{this.id}}" title="Tirar do painel"><i class="fa-solid fa-xmark"></i></button>
     </li>
     {{/each}}
   </ol>

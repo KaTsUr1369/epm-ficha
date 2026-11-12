@@ -22,7 +22,17 @@
     <div class="epm-linha-identidade">
       <label class="epm-campo"><span>Raça</span><input type="text" name="flags.epm-ficha.raca" value="{{dados.raca}}" /></label>
       <label class="epm-campo"><span>Arquétipo</span><input type="text" name="flags.epm-ficha.arquetipo" value="{{dados.arquetipo}}" list="epm-arquetipos-{{actor.id}}" /></label>
-      <label class="epm-campo"><span>Classe</span><input type="text" name="flags.epm-ficha.classe" value="{{dados.classe}}" /></label>
+      {{#if classePainel.temArquetipo}}
+      <label class="epm-campo"><span>Classe</span><select data-escolher-classe aria-label="Classe" title="Só as classes do arquétipo">
+        <option value="">— Escolher —</option>
+        {{#each classePainel.opcoes}}<option value="{{this.id}}" {{#if (epmEq this.id @root.classePainel.id)}}selected{{/if}}>{{this.nome}}</option>{{/each}}
+        {{#if classePainel.foraDoArquetipo}}<option value="{{classePainel.id}}" selected>{{classePainel.nome}} (outro arquétipo)</option>{{/if}}
+        <option value="__livre" {{#if classePainel.livre}}selected{{/if}}>Outra (escrever)…</option>
+      </select></label>
+      {{#if classePainel.livre}}<label class="epm-campo"><span>Nome da classe</span><input type="text" name="flags.epm-ficha.classe" value="{{dados.classe}}" placeholder="Escreva a classe" /></label>{{/if}}
+      {{else if dados.classe}}
+      <label class="epm-campo" title="Escolha o arquétipo para trocar a classe"><span>Classe</span><input type="text" disabled value="{{dados.classe}}" /></label>
+      {{/if}}
       <label class="epm-campo epm-campo-nivel"><span>Nível</span><input type="number" name="flags.epm-ficha.nivel" value="{{dados.nivel}}" min="1" max="50" /></label>
       <datalist id="epm-arquetipos-{{actor.id}}">{{#each arquetiposSugeridos}}<option value="{{this}}"></option>{{/each}}</datalist>
     </div>
@@ -37,6 +47,7 @@
       <div><dt>Nível</dt><dd>{{ficha.nivelTotal}}</dd></div>
     </dl>
     {{/if}}
+    {{#if novas}}{{> "epm-novas" secao="cabecalho"}}{{/if}}
 
     <div class="epm-recursos">
       {{#each recursosLista}}

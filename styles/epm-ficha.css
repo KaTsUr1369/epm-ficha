@@ -2891,3 +2891,89 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 
 .epm-pericia-parte { font-size: 0.75em; opacity: 0.8; padding: 0 3px; border-radius: 4px; white-space: nowrap; }
 .epm-pericia-parte.externo { background: rgba(211,168,94,0.18); color: #E8C547; cursor: help; opacity: 1; }
+
+/* Imagens do token por estado */
+.epm-token-estados { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.epm-token-estado { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 72px; font-size: 0.75em; text-align: center; }
+.epm-token-estado .epm-token-img { width: 56px; height: 56px; padding: 0; border: 1px dashed var(--epm-linha, #445); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
+.epm-token-estado .epm-token-img img { width: 100%; height: 100%; object-fit: cover; border: 0; }
+.epm-token-estado:not(.vazia) .epm-token-img { border-style: solid; }
+.epm-token-opcoes { display: flex; flex-direction: column; gap: 6px; }
+.epm-token-opcao { display: flex; align-items: center; gap: 8px; }
+.epm-token-opcao img { border-radius: 50%; object-fit: cover; }
+
+
+/* Escolha e progressão da classe pronta */
+.epm-classe-painel { border-left: 3px solid var(--cor, var(--epm-destaque, #A47DDB)); }
+.epm-classe-cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 6px 0; }
+.epm-classe-cartao { border: 1px solid var(--epm-linha, #2E4844); border-top: 3px solid var(--cor, #A47DDB); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.epm-classe-cartao h4 { margin: 0; }
+.epm-classe-cartao p { margin: 0; font-size: 0.9em; }
+.epm-classe-cartao .epm-botao { margin-top: auto; align-self: flex-start; }
+.epm-classe-lista { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.epm-classe-lista li { display: grid; grid-template-columns: 48px 1fr auto; gap: 8px; align-items: start; padding: 4px 6px; border-radius: 4px; }
+.epm-classe-lista li.bloqueada { opacity: 0.55; }
+.epm-classe-lista li p { margin: 2px 0 0; font-size: 0.88em; }
+.epm-classe-nivel { font-weight: 700; font-size: 0.85em; color: var(--cor, inherit); }
+.epm-classe-estado { white-space: nowrap; font-size: 0.85em; }
+.epm-classe-trocar { text-align: right; margin: 4px 0 0; }
+
+/* ---------------- Novas mecânicas ---------------- */
+.epm .epm-inspiracao { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.82em; color: var(--epm-suave); }
+.epm .epm-inspiracao-pontos { display: inline-flex; gap: 2px; color: #E8C547; }
+.epm .epm-inspiracao-pontos .fa-regular { color: var(--epm-linha-forte); }
+.epm .epm-inspiracao .epm-icone-botao { width: 20px; height: 20px; font-size: 0.75em; }
+.epm .epm-inspiracao .epm-link.ativo { color: #E8C547; font-weight: 600; }
+.epm .epm-inspiracao.armada .epm-inspiracao-rotulo { color: #E8C547; }
+.epm .epm-acumulos { margin-top: 6px; }
+.epm .epm-acumulo { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--epm-linha); border-radius: 999px; font-size: 0.85em; }
+.epm .epm-acumulo .epm-icone-botao { width: 18px; height: 18px; font-size: 0.7em; }
+.epm .epm-acumulo-n { color: var(--epm-erro); }
+.epm .epm-novas-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.epm .epm-novas-lista > li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--epm-linha); border-radius: 6px; }
+.epm .epm-novas-lista .epm-medidor { flex: 1 1 120px; min-width: 80px; }
+.epm .epm-juramento.estado-cumprido { opacity: 0.75; }
+.epm .epm-juramento.estado-quebrado { opacity: 0.6; text-decoration: line-through; }
+.epm .epm-juramento-texto { flex: 1 1 200px; }
+.epm .epm-motivo-rapido { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-size: 0.85em; }
+.epm .epm-motivo-rapido input { flex: 1; }
+.epm .epm-eventos-afinidade { font-size: 0.82em; margin: 2px 0; }
+.epm .epm-eventos-afinidade summary { cursor: pointer; color: var(--epm-suave); }
+.epm .epm-eventos-afinidade .epm-botao { margin: 3px 3px 0 0; }
+.epm .epm-eventos-afinidade .positivo { border-color: var(--epm-ok); }
+.epm .epm-eventos-afinidade .negativo { border-color: var(--epm-erro); }
+.epm .epm-fase { border: 1px solid var(--epm-linha); border-radius: 6px; padding: 6px 8px; margin: 6px 0; position: relative; }
+.epm .epm-fase.usada { opacity: 0.7; }
+.epm .epm-fase > .epm-icone-botao { position: absolute; top: 4px; right: 4px; }
+.epm .epm-campo.curto input, .epm input.curto { width: 4.5em; }
+.epm .epm-subaba-treinos { display: none; }
+.epm .epm-subaba-treinos.active { display: flex; flex-direction: column; gap: 12px; }
+.epm .epm-criacao { border: 1px solid var(--epm-linha); border-radius: 8px; padding: 8px; margin-bottom: 8px; display: grid; gap: 6px; }
+.epm .epm-criacao.estado-concluido { opacity: 0.7; }
+.epm .epm-criacao-nome { flex: 1; font-weight: 600; }
+.epm .epm-criacao-zonas { display: grid; grid-template-columns: 1fr 2fr; gap: 6px; }
+.epm .epm-zona-soltar { min-height: 38px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; border: 1px dashed var(--epm-linha-forte); border-radius: 6px; color: var(--epm-suave); font-size: 0.85em; }
+.epm .epm-zona-soltar img { width: 24px; height: 24px; border: 0; }
+.epm .epm-material { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px; border: 1px solid var(--epm-linha); border-radius: 4px; color: var(--epm-texto); }
+.epm .epm-material.falta { border-color: var(--epm-erro); }
+.epm .epm-material input { width: 3em; }
+.epm .epm-durabilidade { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78em; color: var(--epm-suave); }
+.epm .epm-durabilidade-barra { width: 40px; height: 4px; background: var(--epm-linha); border-radius: 2px; overflow: hidden; display: inline-block; }
+.epm .epm-durabilidade-barra > span { display: block; height: 100%; }
+.epm .epm-durabilidade.quebrado { color: var(--epm-erro); font-weight: 600; }
+.epm-dialogo .epm-atividade-extra { margin: 0 0 4px 24px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.epm-dialogo .epm-dupla select { max-width: 60%; }
+.epm-chat-insp { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+/* Principal: painéis secundários dentro da coluna da esquerda, um embaixo do outro */
+.epm-coluna .epm-060-grade { grid-template-columns: minmax(0, 1fr); margin: 0; gap: 12px; }
+.epm-coluna > .epm-060-grade + .epm-060-grade { margin-top: 0; }
+
+
+/* Espaço igual entre os painéis de cada aba (antes alguns encostavam) */
+.application.epm-ficha .epm-aba > .epm-painel { margin-bottom: 12px; }
+.application.epm-ficha .epm-aba > .epm-painel:last-child { margin-bottom: 0; }
+/* Categoria vazia fora do modo edição: só a linha do título, mais apagada */
+.epm-secao-poder:not(:has(.epm-poder)) .epm-secao-titulo { opacity: 0.6; }
+.epm-secao-poder:not(:has(.epm-poder)) { margin-bottom: 6px; }
+.epm .epm-requisito-falta { color: var(--epm-erro); font-size: 0.85em; }
+.epm .epm-requisito-ok { color: var(--epm-ok); font-size: 0.85em; }

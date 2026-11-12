@@ -2,11 +2,12 @@
  * Escudo do Mestre: janela do Mestre para conduzir o combate, aplicar dano, cura e condições,
  * dar itens e moedas, pedir testes ao grupo e consultar as regras. Só o Mestre abre.
  */
-import { FLAG, CAMINHO, MOEDAS, RECURSOS, COR_PADRAO, BRILHO_PADRAO, SUGESTOES } from "./config.mjs";
+import { FLAG, CAMINHO, MOEDAS, RECURSOS, COR_PADRAO, BRILHO_PADRAO, SUGESTOES, TRANSFORMACOES_PRONTAS } from "./config.mjs";
 import { int, num, danoRecebido } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import { aplicarPaleta } from "./personalizacao.mjs";
 import { listaPericias, conteudoNotion } from "./settings.mjs";
+import { contextoEscudoNovas, acumularNoEscudo } from "./escudo-novas.mjs";
 import { montarEscudo } from "./escudo-contexto.mjs";
 import {
   estadoAtor, calcularPerda, calcularRecuperacao, novoTurno, descanso, definirExaustao, formulaD20
@@ -24,8 +25,8 @@ const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo",
-  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "rolarTestes", "rolarLivre", "abrirItem",
-  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo"
+  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "rolarTestes", "rolarLivre", "abrirItem",
+  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre"
 ];
 
 export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -143,6 +144,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
         grupoAjustado: (() => { const c = this._cfgGrupo(); return c.extras.length + c.fora.length > 0; })() }
     });
     ctx.dtTeste = this._ui.dtTeste ?? 15;
+    ctx.novasMestre = contextoEscudoNovas();
     ctx.mundo = this._contextoMundo();
     ctx.tiposDano = conteudoNotion("danos") ? [...SUGESTOES.dano, ...SUGESTOES.danoExtra] : (SUGESTOES.dano ?? []);
     return ctx;
@@ -257,6 +259,14 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
   _trocarAba(ev, alvo) { this._aba = alvo.dataset.tab; this.render(); }
 
   /** Liga/desliga um conteúdo extra do Notion (configuração privada do Mestre) e redesenha as fichas abertas. */
+  /** Novas mecânicas: regras opcionais, listas, Inspiração, feitos e Aura de Horror. */
+  async _novasMestre(ev, alvo) {
+    if (!game.user.isGM) return;
+    const N = await import("./escudo-novas.mjs");
+    await N.acaoEscudo(this, alvo.dataset.op, alvo);
+    this.render();
+  }
+
   async _alternarNotion(ev, alvo) {
     if (!game.user.isGM) return;
     const chave = alvo.dataset.chave;
@@ -365,6 +375,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const { atores } = this._alvos();
     if (!atores.length) return ui.notifications.warn("Marque alguém no escudo ou selecione tokens na cena.");
     const todos = atores.every(a => a.statuses?.has(id));
+    if (todos && await acumularNoEscudo(atores, id)) return this.render();
     for (const a of atores) await a.toggleStatusEffect(id, { active: !todos });
     this.render();
   }
@@ -390,6 +401,20 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     delete dados._id;
     await destino.createEmbeddedDocuments("Item", [dados]);
     ui.notifications.info(`${item.name} foi para ${destino.name}.`);
+  }
+
+  async _darTransformacao(ev, alvo) {
+    const destino = game.actors.get(this._valor("[data-destino-item]") || this._ui.alvoItem);
+    const t = TRANSFORMACOES_PRONTAS.find(x => x.id === alvo.dataset.id);
+    if (!destino || !t) return ui.notifications.warn("Escolha para quem dar.");
+    const { mods, ...resto } = t;
+    delete resto.id;
+    const novoId = () => foundry.utils.randomID();
+    await destino.update({ [`${P}.transformacoes.${novoId()}`]: {
+      ...resto, img: "", trocarToken: false, criado: Date.now(),
+      mods: Object.fromEntries(mods.map(m => [novoId(), { ...m }]))
+    } });
+    ui.notifications.info(`${t.nome} foi para ${destino.name} (aba Habilidades → Transformações).`);
   }
 
   async _darMoedas() {

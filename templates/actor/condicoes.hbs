@@ -45,7 +45,7 @@
       {{#each condicoes}}
       <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if automatica}} automatica{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{this.id}}" data-busca="{{this.busca}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}} title="{{this.descricao}}">
         <img src="{{this.icone}}" alt="" />
-        <span class="epm-condicao-nome">{{this.label}}{{#if imune}} <em>imune</em>{{/if}}{{#if automatica}} <em class="auto" title="Ativa por causa de {{this.porQueTexto}}">automática</em>{{/if}}</span>
+        <span class="epm-condicao-nome">{{this.label}}{{#with (lookup @root.novas.acumulos this.id) as |q|}}{{#if (epmMenor 1 q)}} <strong class="epm-acumulo-n">×{{q}}</strong>{{/if}}{{/with}}{{#if imune}} <em>imune</em>{{/if}}{{#if automatica}} <em class="auto" title="Ativa por causa de {{this.porQueTexto}}">automática</em>{{/if}}</span>
         <span class="epm-condicao-desc">{{this.efeito}}</span>
         {{#if automatica}}<span class="epm-condicao-por">por {{this.porQueTexto}}</span>{{/if}}
         {{#if resumo.length}}<span class="epm-condicao-efeitos">{{#each resumo}}<span>{{this}}</span>{{/each}}</span>{{/if}}
@@ -71,7 +71,7 @@
         {{#each this.condicoes}}
         <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if automatica}} automatica{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{this.id}}" data-busca="{{this.busca}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}} title="{{this.descricao}}">
           <img src="{{this.icone}}" alt="" />
-          <span class="epm-condicao-nome">{{this.label}}{{#if imune}} <em>imune</em>{{/if}}{{#if automatica}} <em class="auto" title="Ativa por causa de {{this.porQueTexto}}">automática</em>{{/if}}</span>
+          <span class="epm-condicao-nome">{{this.label}}{{#with (lookup @root.novas.acumulos this.id) as |q|}}{{#if (epmMenor 1 q)}} <strong class="epm-acumulo-n">×{{q}}</strong>{{/if}}{{/with}}{{#if imune}} <em>imune</em>{{/if}}{{#if automatica}} <em class="auto" title="Ativa por causa de {{this.porQueTexto}}">automática</em>{{/if}}</span>
           <span class="epm-condicao-desc">{{this.efeito}}</span>
           {{#if automatica}}<span class="epm-condicao-por">por {{this.porQueTexto}}</span>{{/if}}
           {{#if resumo.length}}<span class="epm-condicao-efeitos">{{#each resumo}}<span>{{this}}</span>{{/each}}</span>{{/if}}

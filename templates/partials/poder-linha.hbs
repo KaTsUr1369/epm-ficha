@@ -15,6 +15,7 @@
       </div>
     </div>
     <button type="button" class="epm-botao epm-usar{{#if bloqueada}} bloqueado{{/if}}" data-action="usarPoder" data-item-id="{{this.id}}" title="{{#if bloqueada}}Bloqueada por: {{this.motivosTexto}}{{else}}Usar{{#if variasFormas}} (você escolhe a forma){{/if}}{{/if}}">{{#if bloqueada}}<i class="fa-solid fa-lock" aria-hidden="true"></i> Bloqueada{{else}}Usar{{/if}}</button>
+    {{#if (epmEq tipo "magia")}}{{#unless bloqueada}}<button type="button" class="epm-icone-botao epm-conjunta" data-action="magiaConjunta" data-item-id="{{this.id}}" title="Magia conjunta: lançar junto com outro conjurador (dividem a Mana; CD maior + 2)"><i class="fa-solid fa-people-arrows"></i></button>{{/unless}}{{/if}}
     <div class="epm-item-controles">
       <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{this.id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
       <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar descrição no chat"><i class="fa-solid fa-comment"></i></button>

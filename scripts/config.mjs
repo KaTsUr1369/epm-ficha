@@ -89,7 +89,7 @@ export const REGRAS = {
   atributoMaxInicial: 3,      // máximo por atributo no nível 1
   atributoExcecao: 4,         // um atributo pode ir a 4 se dois ficarem em −1
   atributoMinimoExcecao: -1,
-  periciasIniciais: 45,
+  periciasIniciais: 50,
   periciasPorMarco: 15,       // a cada 5 níveis
   periciaLimiteInicial: 5,
   periciaMarcosLimite: [15, 35], // níveis em que o limite por perícia sobe
@@ -144,7 +144,8 @@ export const ORIGENS_HABILIDADE = {
   arma: "Arma",
   geral: "Geral",
   customizada: "Customizada",
-  transformacao: "Transformação"
+  transformacao: "Transformação",
+  maestria: "Domínio"
 };
 
 export const CIRCULOS = [
@@ -493,6 +494,22 @@ export const ESTADOS_TREINO = {
 };
 
 /** Modelos que vêm com o sistema (exemplos do livro). */
+/** Transformações prontas que o Mestre entrega pelo Escudo (aba Itens). */
+export const TRANSFORMACOES_PRONTAS = [
+  {
+    id: "bestaDesperta", nome: "Besta Desperta (Forma Bestial)",
+    custo: { recurso: "pe", valor: 5 }, custoPorTurno: true, duracao: 0, frenesi: true,
+    mods: [{ alvo: "acerto", valor: 8 }, { alvo: "danoAtaque", valor: 10 }, { alvo: "deslocamento", valor: 8 }, { alvo: "pericia.percepcao", valor: 6 }, { alvo: "atributo.constituicao", valor: 5 }],
+    descricao: "Transformação Suprema · 5 PE por turno · Pessoal. Libera completamente os instintos: a postura muda, os sentidos se aguçam e o corpo assume uma forma bestial, feita para caçar, perseguir e destruir.\n" +
+      "+8 Acerto, +10 Dano, +8 m de Movimento, +6 Percepção, +5 Vigor (Constituição).\n" +
+      "Predador Nato: não sofre penalidade por atacar enquanto se movimenta.\n" +
+      "Caçada Implacável: ao atingir um alvo, pode se deslocar uma curta distância sem gastar ação.\n" +
+      "Instinto de Sobrevivência: quando um ataque o deixaria fora de combate, pode fazer um teste para ficar de pé com um mínimo de energia.\n" +
+      "Sentidos da Besta: não é facilmente surpreendido por criaturas no alcance dos seus sentidos.\n" +
+      "Frenesi: +5 de dano com até 100% da Vida, +10 até 75%, +15 até 50% e +20 até 25%."
+  }
+];
+
 export const EXEMPLOS_TREINAMENTO = [
   { nome: "Corredor", tempo: 48, unidade: "horas", pt: 5, requisitos: "4 de Destreza", treinador: false,
     beneficios: "Seu deslocamento aumenta em 3 metros e você pode realizar a ação Disparada como ação bônus.",

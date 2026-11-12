@@ -30,6 +30,7 @@
         {{#each condicoesBox.condicoes}}<span class="epm-chip epm-chip-condicao{{#if imune}} imune{{/if}}{{#if automatica}} automatica{{/if}}" title="{{this.efeito}}{{#if automatica}}&#10;Automática: vem de {{this.porQueTexto}}{{/if}}{{#if imune}}&#10;Imune: sem efeito{{/if}}"><img src="{{this.icone}}" alt="" />{{this.label}}{{#if automatica}}<i class="fa-solid fa-link" aria-label="automática"></i>{{/if}}</span>{{/each}}
       </div>
       {{/if}}
+      {{#if novas.acumulaveis.length}}<div class="epm-chips epm-acumulos">{{> "epm-novas" secao="acumulos"}}</div>{{/if}}
       {{#each condicoesBox.combinacoes}}
       <div class="epm-combinacao" title="{{this.texto}}">
         <span class="epm-combinacao-nome"><i class="fa-solid fa-flask-vial" aria-hidden="true"></i> {{this.titulo}}</span>
@@ -54,7 +55,6 @@
     </section>
   </div>
 
-  {{#if v060}}{{> "epm-painel-060" secao="principal"}}{{/if}}
   <div class="epm-principal-grade">
     <div class="epm-coluna">
       <section class="epm-painel epm-atributos">
@@ -107,6 +107,8 @@
           <span title="DT dos testes de resistência contra suas habilidades e magias: {{ficha.cd.formula}}">DT <strong>{{ficha.cd.valor}}</strong></span>
         </div>
       </section>
+      {{#if novas}}{{> "epm-novas" secao="principal"}}{{/if}}
+      {{#if v060}}{{> "epm-painel-060" secao="principal"}}{{/if}}
     </div>
 
 {{#*inline "linhaPericia"}}
@@ -137,6 +139,7 @@
           {{/if}}
         </li>
 {{/inline}}
+    <div class="epm-coluna">
     <section class="epm-painel epm-pericias epm-resistencias{{#if edicao}} editando{{/if}}">
       <header class="epm-painel-titulo"><h3>Testes de Resistência</h3></header>
       <ol class="epm-lista-pericias">
@@ -147,12 +150,11 @@
     <section class="epm-painel epm-pericias{{#if edicao}} editando{{/if}}">
       <header class="epm-painel-titulo">
         <h3>Perícias</h3>
-        <span class="epm-contador {{this.estadoPericias}}" title="45 pontos, +15 a cada 5 níveis">{{ficha.pontosPericia.gasto}} de {{ficha.pontosPericia.disponivel}}</span>
+        <span class="epm-contador {{this.estadoPericias}}" title="50 pontos, +15 a cada 5 níveis">{{ficha.pontosPericia.gasto}} de {{ficha.pontosPericia.disponivel}}</span>
         <span class="epm-contador" title="Máximo de pontos numa perícia (sobe +5 nos níveis 15 e 35)">limite {{ficha.pontosPericia.limite}}</span>
       </header>
       <div class="epm-pericias-opcoes">{{#if editavel}}<button type="button" class="epm-check-botao{{#if periciasFavoritasTopo}} ativo{{/if}}" data-action="favoritasNoTopo" aria-pressed="{{#if periciasFavoritasTopo}}true{{else}}false{{/if}}" title="Mostra as perícias marcadas com estrela antes das outras"><i class="{{#if periciasFavoritasTopo}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> Favoritas no topo</button>{{#if edicao}}{{#if periciasOrdemPropria}} <button type="button" class="epm-check-botao" data-action="ordemPericiasPadrao" title="Volta à ordem original das perícias"><i class="fa-solid fa-rotate-left"></i> Ordem padrão</button>{{/if}}{{/if}}{{/if}}</div>
       {{#if ficha.desvantagens.testes.length}}<p class="epm-aviso">Testes com desvantagem: {{epmJoin ficha.desvantagens.testes}}</p>{{/if}}
-      {{#if ficha.penalidades.testes.total}}<p class="epm-dica">Os números em vermelho ao lado das perícias e atributos entram nas rolagens.</p>{{/if}}
       <ol class="epm-lista-pericias">
         {{#each pericias}}{{> linhaPericia}}{{/each}}
       </ol>
@@ -165,5 +167,6 @@
       </div>
       {{/if}}
     </section>
+    </div>
   </div>
 </section>

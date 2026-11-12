@@ -43,6 +43,7 @@
     {{> "epm-transformacoes"}}
     {{else}}
     {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
+    {{#if eClasse}}{{> "epm-classe-painel"}}{{/if}}
     {{#if origem}}<p class="epm-dica">Habilidades de {{this.label}} usam só Passiva e Comum.{{#if @root.dados.personalizacao.abasExtras.arqclasse}} Elas também aparecem na aba Arquétipo e Classe.{{/if}}</p>{{/if}}
     {{#each secoes}}
     {{#unless (epmAnd destaque vazia)}}
@@ -52,7 +53,7 @@
         {{#if dica}}<span class="epm-dica">{{this.dica}}</span>{{/if}}
         {{#if limite}}<span class="epm-contador{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" title="Limite desta raridade{{#if (epmEq @root.modoLimites "combinados")}} (habilidades e magias somadas){{/if}}">{{this.usados}} de {{this.limite}}</span>{{/if}}
       </header>
-      {{#if vazia}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}
+      {{#if vazia}}{{#if @root.edicao}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}{{/if}}
       <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>
     </section>
     {{/unless}}

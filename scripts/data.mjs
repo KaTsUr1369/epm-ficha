@@ -2,6 +2,7 @@
  * Camada de regras "pura": não depende do Foundry, para poder ser testada fora dele.
  * Recebe dados simples e devolve números prontos para a ficha.
  */
+import { ATRIBUTO_RECURSO_PADRAO } from "./regras-extras.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { modsDeArquetipo } from "./arquetipos.mjs";
 import {
@@ -138,7 +139,7 @@ export function migrarPericias(pericias = {}, lista = PERICIAS_PADRAO, obsoletas
 }
 
 /** Versão atual do formato dos dados (normalizarDados e migrarDados levam fichas antigas até ela). */
-export const VERSAO_DADOS = 5;
+export const VERSAO_DADOS = 6;
 
 export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
   return {
@@ -262,6 +263,14 @@ export function migrarDados(bruto = {}) {
     if (vontade.atributo !== undefined) updates["pericias.vontade.-=atributo"] = null;
   }
   if (vontade && soNucleo(vontade.sugestoes)) updates["pericias.vontade.sugestoes"] = ["autocontrole"];
+  // 0.7.0: Vontade é só Autocontrole (sem Núcleo, mesmo somado com outro atributo)
+  const v6 = versao < 6 ? bruto?.pericias?.vontade : null;
+  const temNucleo = v => (Array.isArray(v) ? v.includes("nucleo") : v === "nucleo");
+  if (v6 && !updates["pericias.vontade.atributos"] && temNucleo(v6.atributos ?? v6.atributo)) {
+    updates["pericias.vontade.atributos"] = ["autocontrole"];
+    if (v6.atributo !== undefined) updates["pericias.vontade.-=atributo"] = null;
+  }
+  if (v6 && !updates["pericias.vontade.sugestoes"] && temNucleo(v6.sugestoes)) updates["pericias.vontade.sugestoes"] = ["autocontrole"];
   // 0.5.4: a CA não tem mais o campo Armadura manual (vem só das armaduras equipadas); o valor vai para "outros"
   const armaduraManual = int(bruto?.ca?.armadura);
   if (bruto?.ca && bruto.ca.armadura !== undefined) {
@@ -318,6 +327,11 @@ export function lerEfeitosItem(item) {
 /** O item dá seus bônus passivos agora? Armas e armaduras: equipadas. Consumíveis: só ao usar. */
 export function itemAtivo(item) {
   if (!item) return false;
+  // Durabilidade 0 = Quebrado: perde os efeitos (inclusive a CA da armadura) até ser consertado
+  if (["weapon", "equipment", "tool"].includes(item.type)) {
+    const dur = item.flags?.[FLAG]?.durabilidade;
+    if (dur !== undefined && dur !== null && dur !== "" && Number(dur) <= 0) return false;
+  }
   if (EQUIPAVEIS.includes(item.type)) return !!item.system?.equipped;
   if (item.type === "consumable") return false;
   return num(item.system?.quantity, 1) > 0;
@@ -481,7 +495,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   }
   for (const x of bencaosValendo) for (const t of x.auto.efeitos.imunidades ?? []) imunidadesTags.push({ tipo: t, fonte: x.b.nome });
   // 0.6.0: raça pronta, Sanidade, idade, pactos, talentos e classes do Notion
-  const extrasFicha = fontesDaFicha(d, { opcoes, agora });
+  const extrasFicha = fontesDaFicha(d, { opcoes, agora, statuses });
   imunidadesTags.push(...extrasFicha.imunidades);
   const imunes = new Set(imunidadesTags.map(t => normalizarTexto(t.tipo)));
 
@@ -549,6 +563,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   const desv = { testes: [], ataques: [], ataquesMagicos: [], iniciativa: [], resistencias: [], dano: [], pericias: {} };
   const vant = { testes: [], ataques: [], pericias: {} };
   for (const v of extrasFicha.vantagensPericia ?? []) (vant.pericias[v.pericia] ??= []).push(v.fonte);
+  vant.testes.push(...(extrasFicha.vantagemTestes ?? []));
+  desv.testes.push(...(extrasFicha.desvantagemTestes ?? []));
   const bloqueios = { acoes: {}, requisitos: {}, magias: [], mana: [], ataques: [], origens: {}, pericias: {}, habilidades: [] };
   const recuperacao = { sem: { pv: [], pm: [], pe: [], ps: [] }, metade: { pv: [], pm: [], pe: [], ps: [] }, semDescansoCurto: [], descansoCurtoMetade: [] };
   const dots = [];
@@ -685,6 +701,11 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   // Transformação ativa (sub-aba Transformações)
   const tAtiva = d.transformacao?.ativa ? d.transformacoes?.[d.transformacao.ativa] : null;
   if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`);
+  // Frenesi: quanto mais ferido, mais dano (+5 até 100% de Vida, +10 até 75%, +15 até 50%, +20 até 25%)
+  if (tAtiva?.frenesi && num(hp.max) > 0) {
+    const pct = num(hp.value) / num(hp.max);
+    somar("danoAtaque", pct <= 0.25 ? 20 : pct <= 0.5 ? 15 : pct <= 0.75 ? 10 : 5, "Frenesi");
+  }
   // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
   for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora, itens, [...statuses])) somar(m.alvo, m.valor, m.fonte);
   // Bônus de cena ligados: CA, testes e deslocamento (acerto e dano entram no ataque; RD nas reduções)
@@ -813,6 +834,18 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     if (extrasFicha.raca.pv) recursos.pv.max += extrasFicha.raca.pv + extrasFicha.raca.pvPorNivel * Math.max(1, nivelTotal);
     if (extrasFicha.raca.pm) recursos.pm.max += extrasFicha.raca.pm;
   }
+  // Bônus no atributo do recurso (nível, habilidade, magia, item…): vale por nível, como o atributo na conta da Vida
+  const bonusAtributoRecursos = {};
+  for (const id of ["pv", "pm", "pe"]) {
+    const attr = d.recursosAuto?.atributos?.[id] ?? ATRIBUTO_RECURSO_PADRAO[id];
+    const m = Math.floor(num(atributos[attr]?.mod));
+    const valor = attr === "nenhum" || !m ? 0 : m * Math.max(1, nivelTotal);
+    bonusAtributoRecursos[id] = valor;
+    if (!recursosAuto && valor) {
+      recursos[id].max += valor;
+      recursos[id].fontes = [...recursos[id].fontes, { fonte: `${ATRIBUTOS[attr]?.label ?? attr} (bônus × nível ${Math.max(1, nivelTotal)})`, valor }];
+    }
+  }
   for (const r of Object.values(recursos)) {
     r.pct = r.max > 0 ? limitar(r.value / r.max, 0, 1) : 0;
     r.maxDiferente = r.max !== num(r.id === "pv" ? hp.maxFonte : r.maxFonte);
@@ -933,7 +966,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       disponivel: disponivelPericias, gasto: gastoPericias, restante: disponivelPericias - gastoPericias,
       limite: limitePericia, excedido: gastoPericias > disponivelPericias
     },
-    recursos, ca, deslocamento, exaustao: exaustaoInfo,
+    recursos, bonusAtributoRecursos, ca, deslocamento, exaustao: exaustaoInfo,
     condicoes, condicoesAtivas: condicoes.filter(c => c.ativa || c.automatica), condicoesDiretas: [...diretas],
     combinacoes, penalidades: {
       testes: { total: penalTestesTotal, fontes: fontesTestes },
@@ -957,7 +990,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     extrasAtaque: {
       armado: [...posAtr.extrasAtaque.armado, ...extrasFicha.extrasAtaque.armado],
       desarmado: [...posAtr.extrasAtaque.desarmado, ...extrasFicha.extrasAtaque.desarmado],
-      todos: extrasFicha.extrasAtaque.todos
+      todos: extrasFicha.extrasAtaque.todos,
+      corpo: extrasFicha.extrasAtaque.corpo ?? []
     }
   };
 }
@@ -1093,7 +1127,7 @@ export function lerPoder(item) {
     .sort((a, b) => num(a.data) - num(b.data));
   return {
     tipo, raridade, passiva: !!f.passiva, origem: f.origem ?? "", favorito: !!f.favorito,
-    transformacao: f.transformacao ?? "", arquetipoRef: f.arquetipoRef ?? "",
+    transformacao: f.transformacao ?? "", arquetipoRef: f.arquetipoRef ?? "", classeRef: f.classeRef ?? "",
     circulo: tipo === "magia" ? limitar(int(item?.system?.level, 0), 0, 9) : null,
     formas, melhorias,
     usos: { valor: Math.max(0, int(f.usos?.valor)), max: Math.max(0, int(f.usos?.max)), recarga: RECARGAS[f.usos?.recarga] ? f.usos.recarga : "nenhuma" }

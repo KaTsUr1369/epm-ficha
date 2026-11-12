@@ -1,6 +1,6 @@
 /**
  * Painel do grupo (só o Mestre): Vida, Mana, Estamina, Sanidade, CA, Exaustão e condições de todos
- * numa janela só, e "Dar aos marcados" para entregar PEv, PT e PH de uma vez.
+ * numa janela só (com qualquer ator adicionado à mão ou arrastado), e "Dar aos marcados" para entregar PEv, PT e PH de uma vez.
  */
 import { FLAG, CAMINHO, RECURSOS } from "./config.mjs";
 import { int } from "./data.mjs";
@@ -27,15 +27,58 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
       abrirFicha: function (ev, alvo) { game.actors.get(alvo.dataset.id)?.sheet?.render(true); },
       darPontos: function () { return this._darPontos(); },
       marcarTodos: function () { this._marcados = new Set(this._atores().map(a => a.id)); this.render(); },
-      desmarcarTodos: function () { this._marcados = new Set(); this.render(); }
+      desmarcarTodos: function () { this._marcados = new Set(); this.render(); },
+      adicionarAtor: function () { return this._escolherAtor(); },
+      tirarAtor: function (ev, alvo) { return this._tirar(alvo.dataset.id); }
     }
   };
 
   static PARTS = { corpo: { template: `${CAMINHO}/grupo.hbs`, scrollable: [".epm-grupo-lista"] } };
 
+  /** Mesma lista do grupo do Escudo: fichas adicionadas à mão e personagens de jogador tirados. */
+  _cfg() {
+    const c = game.settings.get(FLAG, "escudoGrupo") ?? {};
+    return { extras: Array.isArray(c.extras) ? [...c.extras] : [], fora: Array.isArray(c.fora) ? [...c.fora] : [] };
+  }
+
   _atores() {
-    return game.actors.filter(a => a.type === "character" && (this._todos || a.hasPlayerOwner))
-      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    const { extras, fora } = this._cfg();
+    const base = game.actors.filter(a => a.type === "character" && (this._todos || a.hasPlayerOwner) && !fora.includes(a.id));
+    const mais = extras.map(id => game.actors.get(id)).filter(a => a && !base.includes(a));
+    return [...base, ...mais].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }
+
+  async _incluir(actor) {
+    if (!actor || actor.pack) return ui.notifications.warn("Só fichas do mundo (da aba Atores) entram no grupo.");
+    const cfg = this._cfg();
+    cfg.fora = cfg.fora.filter(id => id !== actor.id);
+    if (!cfg.extras.includes(actor.id)) cfg.extras.push(actor.id);
+    await game.settings.set(FLAG, "escudoGrupo", cfg);
+    this._marcados?.add(actor.id);
+    this.render();
+  }
+
+  async _tirar(id) {
+    const cfg = this._cfg();
+    cfg.extras = cfg.extras.filter(x => x !== id);
+    const a = game.actors.get(id);
+    if (a?.type === "character" && !cfg.fora.includes(id)) cfg.fora.push(id);
+    await game.settings.set(FLAG, "escudoGrupo", cfg);
+    this._marcados?.delete(id);
+    this.render();
+  }
+
+  async _escolherAtor() {
+    const dentro = new Set(this._atores().map(a => a.id));
+    const opcoes = game.actors.filter(a => !dentro.has(a.id)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+      .map(a => `<option value="${a.id}">${escapar(a.name)}${a.type !== "character" ? " (NPC)" : ""}</option>`).join("");
+    if (!opcoes) return ui.notifications.info("Todos os atores já estão no painel.");
+    const id = await foundry.applications.api.DialogV2.prompt({
+      window: { title: "Adicionar ao Painel do grupo" },
+      content: `<label class="epm-campo"><span>Ator</span><select name="ator">${opcoes}</select></label><p class="hint">Dica: também dá para arrastar um ator da aba Atores para o painel.</p>`,
+      ok: { label: "Adicionar", callback: (ev, botao) => botao.form.elements.ator.value }, rejectClose: false
+    });
+    if (id) return this._incluir(game.actors.get(id));
   }
 
   async _prepareContext() {
@@ -47,7 +90,7 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
         const t = dados.transformacao?.ativa ? dados.transformacoes?.[dados.transformacao.ativa] : null;
         const jogadores = game.users.filter(u => !u.isGM && a.testUserPermission(u, "OWNER")).map(u => u.name);
         return {
-          id: a.id, name: a.name, img: a.img, nivel: ficha.nivelTotal, arquetipo: dados.arquetipo || "",
+          id: a.id, name: a.name, img: a.img, npc: a.type !== "character", nivel: ficha.nivelTotal, arquetipo: dados.arquetipo || "",
           jogadores: jogadores.join(", "), marcado: this._marcados.has(a.id), transformacao: t ? (t.nome || "Transformado") : "",
           recursos: ["pv", "pm", "pe", "ps"].map(id => {
             const r = ficha.recursos[id];
@@ -68,6 +111,15 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
   _onRender(context, options) {
     super._onRender?.(context, options);
     const raiz = this.element;
+    raiz.addEventListener("dragover", ev => ev.preventDefault());
+    raiz.addEventListener("drop", async ev => {
+      ev.preventDefault();
+      let dados;
+      try { dados = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch { return; }
+      if (dados?.type !== "Actor") return;
+      const actor = await fromUuid(dados.uuid ?? `Actor.${dados.id}`);
+      return this._incluir(actor);
+    });
     raiz.querySelectorAll("[data-marcar]").forEach(cb => cb.addEventListener("change", () => {
       if (cb.checked) this._marcados.add(cb.dataset.marcar);
       else this._marcados.delete(cb.dataset.marcar);

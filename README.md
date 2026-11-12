@@ -14,6 +14,29 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.0
+
+**Novas mecânicas na ficha**
+- **Ataque em dupla** (afinidade +3) e **Magia conjunta** (CD maior + 2): o parceiro ou o Mestre confirma, e a ficha marca as ações e desconta a Mana dos dois.
+- **Sobrecarga de Núcleo:** sem Mana, paga o resto com o dobro em PV ou o mesmo em PS; depois vem o cartão do teste de Núcleo DT 15 (falhou, Mana Instável).
+- **Concentrado:** cada dano sofrido pede Vontade DT 15 por cartão; falhou, a concentração sai sozinha.
+- **Recuperado:** quem sai de Atordoado, Paralisado ou Dominado fica imune a ela até o fim do próximo turno.
+- **Estamina zerada:** +1 de Exaustão na hora.
+- **Inspiração de Tema** (até 3, o Mestre dá): vantagem no próximo teste, rerrolar ou +5 no teste de um aliado pelos botões do cartão.
+- **Treinamentos:** requisitos de atributo, perícia e treinamento conferidos sozinhos; treino em grupo (afinidade +2); treinador com preço por hora pago com as moedas; 0 acertos no minijogo deixa Lesionado.
+- **Criação de itens:** sub-aba em Treinamentos, com item modelo e materiais arrastados, horas, perícia e DT.
+- **Durabilidade** de armas, armaduras e ferramentas: falha crítica e crítico sofrido tiram 10; em 0 o item quebra e perde os efeitos; conserto com ferramenta e Ofício DT 12.
+- **Afinidade:** histórico com data do Simple Calendar, motivo e eventos rápidos do Mestre.
+- **Juramentos** nas duas fichas; quebrar sorteia uma Maldição Memética Boa.
+
+**Regras opcionais** (Escudo do Mestre → Ajustes; começam desligadas)
+- Falha crítica com tabela, Chefes com fases, Aura de Horror, Âncoras, Traumas, Domínio de arma, Feitos e títulos, Purificação e transferência de maldição, Acúmulos de condições e Atividades de descanso (com o botão Emboscada).
+
+**Correções e visual**
+- **Vontade** usa só Autocontrole (lista do mundo, fichas novas, antigas e NPCs).
+- **Ficha mais limpa:** Principal com atributos à esquerda e perícias à direita, Turno no topo do Combate, explicações longas e painéis vazios só no modo edição.
+- **Também nesta versão:** painel do grupo com qualquer ator, perícias iniciais 50, bônus de raça automáticos, voto passivo da troca de atributo, Besta Desperta no Escudo, imagens do token por estado, bônus de atributo nos recursos e escolha de classe pelo arquétipo.
+
 ## Novidades da 0.6.6
 
 - **De onde vem o total da perícia:** fora do modo edição, cada perícia mostra o atributo com o valor, os pontos e, em dourado, os bônus de fora (passe o mouse para ver as fontes).
@@ -281,7 +304,7 @@ Esta versão junta o que tinha sido feito entre a 0.2.5 e a 0.3.0 (refeito a par
 ## Regras automatizadas
 
 - Atributos: 16 pontos + 1 a cada nível par; avisos das regras do nível 1 (máximo 3, um atributo em 4 se dois ficarem em 1).
-- Perícias: 45 pontos + 15 a cada 5 níveis; limite de 5 por perícia, +5 a cada 5 níveis.
+- Perícias: 50 pontos + 15 a cada 5 níveis; limite de 5 por perícia, +5 a cada 5 níveis.
 - Subir de nível cobra 2 × (novo nível − 1) PEv e lista o que foi ganho; conversões 5 PT → 1 PH e 2 PEv → 1 PH (Shift converte tudo).
 - Criar ou aprender habilidades e magias cobra PH conforme a raridade e confere os limites (Épica 4, Lendária 3, Única 2). Arrastar uma habilidade ou magia de um compêndio pergunta se é "aprender".
 - Melhorias com PT seguem a tabela do sistema: dano é somado à fórmula, troca de ação muda a forma e o teto de dano e de efeitos da raridade é conferido antes de cobrar.

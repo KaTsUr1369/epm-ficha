@@ -2,6 +2,7 @@
  * Escudo do Mestre: monta o contexto das abas a partir de dados simples (testável fora do Foundry).
  * Quem chama (escudo.mjs) junta o combate, os personagens, os itens do mundo e o estado da janela.
  */
+import { TRANSFORMACOES_PRONTAS } from "./config.mjs";
 import {
   TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO,
   CONDICOES, CATEGORIAS_CONDICAO, CATEGORIA_NOTION, EXAUSTAO, ACOES, DEFESAS, MOEDAS, ROTULOS_REPUTACAO, RECURSOS, REGRAS, TIPOS_ARMA
@@ -113,6 +114,7 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
   ctx.itens = itens.slice(0, 120).map(i => ({ id: i.id, uuid: i.uuid, name: i.name, img: i.img, tipoLabel: TIPOS_ITEM[i.type] }));
   ctx.itensMais = Math.max(0, itens.length - 120);
   ctx.itensVazio = !itens.length;
+  ctx.transformacoesProntas = TRANSFORMACOES_PRONTAS;
   ctx.buscaItem = ui.buscaItem ?? "";
   ctx.tiposItem = [{ id: "", label: "Todos", selected: !tipo }, ...Object.entries(TIPOS_ITEM).filter(([id]) => !["spell", "feat"].includes(id))
     .map(([id, label]) => ({ id, label, selected: id === tipo }))];

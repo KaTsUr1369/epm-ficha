@@ -13,8 +13,9 @@
           <label class="epm-campo"><span>Categoria</span><select name="flags.epm-ficha.treinamentos.{{this.id}}.categoria"><option value="">—</option>{{#each categorias}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
           <label class="epm-campo"><span>Tempo</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.treinamentos.{{this.id}}.tempo" value="{{this.tempo}}" /><select name="flags.epm-ficha.treinamentos.{{this.id}}.unidade">{{#each unidades}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
           <label class="epm-campo"><span>PT</span><input type="number" min="0" name="flags.epm-ficha.treinamentos.{{this.id}}.pt" value="{{this.pt}}" /></label>
-          <label class="epm-campo largo"><span>Requisitos</span><input type="text" name="flags.epm-ficha.treinamentos.{{this.id}}.requisitos" value="{{this.requisitos}}" placeholder="4 de Destreza" /></label>
+          <label class="epm-campo largo"><span>Requisitos</span><input type="text" name="flags.epm-ficha.treinamentos.{{this.id}}.requisitos" value="{{this.requisitos}}" placeholder="4 de Destreza, Atletismo 5, Treinamento: Corredor" title="A ficha confere sozinha atributos, perícias e treinamentos concluídos" /></label>
           <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.treinamentos.{{this.id}}.treinador" {{#if treinador}}checked{{/if}} /> Precisa de treinador</label>
+          {{#with (lookup @root.novas.precos this.id) as |pr|}}<label class="epm-campo" title="Treinador NPC: a ficha paga com as moedas ao registrar as horas"><span>Preço por hora</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.treinamentos.{{../id}}.precoHora" value="{{pr.valor}}" placeholder="0" /><select name="flags.epm-ficha.treinamentos.{{../id}}.precoMoeda">{{#each pr.moedas}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>{{/with}}
           <label class="epm-campo largo"><span>Benefícios</span><textarea rows="2" name="flags.epm-ficha.treinamentos.{{this.id}}.beneficios" placeholder="Seu deslocamento aumenta em 3 metros…">{{this.beneficios}}</textarea></label>
         </div>
         <div class="epm-mods">
@@ -35,7 +36,8 @@
         <dl class="epm-treino-ficha">
           <dt>Tempo</dt><dd>{{this.tempoTexto}}{{#unless (epmEq unidade "horas")}} <span class="epm-dica">({{this.horas}} h de treino)</span>{{/unless}}</dd>
           <dt>PT</dt><dd>{{this.pt}}</dd>
-          <dt>Requisitos</dt><dd>{{#if requisitos}}{{this.requisitos}}{{else}}Nenhum{{/if}} <span class="epm-treinador {{#if treinador}}sim{{else}}nao{{/if}}" title="{{#if treinador}}Precisa de treinador{{else}}Não precisa de treinador{{/if}}"><i class="fa-solid {{#if treinador}}fa-check{{else}}fa-xmark{{/if}}" aria-hidden="true"></i> Treinador</span></dd>
+          <dt>Requisitos</dt><dd>{{#if requisitos}}{{this.requisitos}}{{else}}Nenhum{{/if}} <span class="epm-treinador {{#if treinador}}sim{{else}}nao{{/if}}" title="{{#if treinador}}Precisa de treinador{{else}}Não precisa de treinador{{/if}}"><i class="fa-solid {{#if treinador}}fa-check{{else}}fa-xmark{{/if}}" aria-hidden="true"></i> Treinador</span>{{#with (lookup @root.novas.precos this.id) as |pr|}}{{#if pr.texto}} <span class="epm-tag" title="A ficha paga ao registrar as horas"><i class="fa-solid fa-coins" aria-hidden="true"></i> {{pr.texto}}</span>{{/if}}{{/with}}</dd>
+          {{#with (lookup @root.novas.requisitos this.id) as |rq|}}{{#if rq.faltas.length}}<dt></dt><dd class="epm-requisito-falta"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Falta: {{epmJoin rq.faltas "; "}}</dd>{{else}}{{#if rq.cumpridos.length}}<dt></dt><dd class="epm-requisito-ok"><i class="fa-solid fa-check" aria-hidden="true"></i> Requisitos cumpridos</dd>{{/if}}{{/if}}{{/with}}
           <dt>Benefícios</dt><dd>{{#if beneficios}}{{this.beneficios}}{{else}}<span class="epm-vazio">A definir.</span>{{/if}}</dd>
         </dl>
         {{#if temMods}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag{{#if (epmEq ../estado "concluido")}} epm-tag-ok{{/if}}">{{this.alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}{{#unless (epmEq estado "concluido")}}<span class="epm-dica">entra na ficha ao concluir</span>{{/unless}}</div>{{/if}}
@@ -70,6 +72,11 @@
     {{/if}}
   </header>
   <div class="epm-medidor epm-medidor-dia" aria-hidden="true"><span style="width: {{treinos.pctDia}}%"></span></div>
+  <nav class="epm-subnav" aria-label="Treinos e criação">
+    <button type="button" class="epm-subnav-item {{novas.treinoAba.treinos}}" data-action="aba" data-group="treinos" data-tab="treinos">Treinos</button>
+    <button type="button" class="epm-subnav-item {{novas.treinoAba.criacao}}" data-action="aba" data-group="treinos" data-tab="criacao">Criação<span class="epm-subnav-qtd">{{novas.criacoes.length}}</span></button>
+  </nav>
+  <div class="epm-subaba-treinos {{novas.treinoAba.treinos}}" data-group="treinos" data-tab="treinos">
 
   <section class="epm-painel epm-minijogos">
     <header class="epm-painel-titulo"><h3>Treino rápido</h3><span class="epm-contador">1 h · até 2 PT</span></header>
@@ -121,4 +128,8 @@
   <p class="epm-dica">Modelos do livro: {{#each treinos.exemplos}}<button type="button" class="epm-link" data-action="exemploTreinamento" data-indice="{{this.indice}}">{{this.nome}}</button>{{#unless @last}}, {{/unless}}{{/each}}. Tempo e PT seguem a faixa do livro (6 h a 1 mês, 1 a 20 PT); o Mestre pode liberar mais.</p>
   {{/if}}{{/if}}
   {{#if v060}}{{> "epm-painel-060" secao="treinos"}}{{/if}}
+  </div>
+  <div class="epm-subaba-treinos {{novas.treinoAba.criacao}}" data-group="treinos" data-tab="criacao">
+    {{#if novas}}{{> "epm-novas" secao="criacao"}}{{/if}}
+  </div>
 </section>

@@ -13,6 +13,7 @@
       {{#if @root.edicao}}{{{this.editor}}}{{else}}{{#if texto}}<div class="epm-descricao">{{{this.texto}}}</div>{{else}}<p class="epm-vazio">Sem anotações. Escreva no modo edição: características, progressão por nível, lembretes…</p>{{/if}}{{/if}}
     </section>
     {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
+    {{#if eClasse}}{{> "epm-classe-painel"}}{{/if}}
     <section class="epm-painel">
       <header class="epm-painel-titulo">
         <h3>Habilidades de {{this.label}}</h3>
@@ -22,7 +23,7 @@
       {{#each secoes}}
       <section class="epm-secao-poder" style="--cor: {{this.cor}}" data-secao="ac-{{../id}}-{{this.id}}">
         <header class="epm-secao-titulo"><h3>{{this.label}}</h3></header>
-        {{#if vazia}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}
+        {{#if vazia}}{{#if @root.edicao}}<p class="epm-vazio">Nada nesta categoria.</p>{{/if}}{{/if}}
         <ol class="epm-poderes">{{#each itens}}{{> "epm-poder-linha"}}{{/each}}</ol>
       </section>
       {{/each}}

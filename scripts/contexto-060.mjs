@@ -6,6 +6,7 @@
 import { ATRIBUTOS, RECURSOS, FLAG, CONDICOES } from "./config.mjs";
 import { int, num, normalizarTexto } from "./data.mjs";
 import { racaPorId, TAMANHOS } from "./racas.mjs";
+import { ESTADOS_TOKEN } from "./token-estados.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { trocasBonus } from "./ficha-extras.mjs";
 import { CATEGORIAS_TREINO, TREINAMENTOS_NOTION } from "./catalogos.mjs";
@@ -30,8 +31,14 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   const raca = racaPorId(dados.racaEscolha?.id);
   const corpo = ex.corpo ?? {};
   const tam = TAMANHO_EFEITOS[corpo.tamanho] ?? null;
+  v.tokens = {
+    estados: ESTADOS_TOKEN.map(e => ({ ...e, img: dados.tokensEstado?.[e.id] ?? "" })),
+    transformacoes: Object.entries(dados.transformacoes ?? {}).filter(([, t]) => t).map(([id, t]) => ({ id, nome: t.nome || "Transformação", img: t.img ?? "", troca: !!t.trocarToken })),
+    escolha: dados.tokenEscolha ? (ESTADOS_TOKEN.find(e => e.id === dados.tokenEscolha)?.label ?? `Transformado: ${dados.transformacoes?.[String(dados.tokenEscolha).replace("transf:", "")]?.nome ?? ""}`) : "Automático"
+  };
   v.raca = {
     escolhida: !!raca, nome: dados.raca || raca?.nome || "", info: raca ? `${TAMANHOS[raca.tamanho] ?? raca.tamanho} · ${raca.altura} · adulto ${raca.idade?.adulta}, até ${raca.idade?.maxima}` : "",
+    ativaveis: ex.raca?.ativaveis ?? [],
     habilidades: (ex.raca?.habilidades ?? []).map(h => ({ nome: h.nome, texto: h.texto, unica: !!h.unica, origem: h.origem })),
     caminhos: (raca?.caminhos ?? []).map(c => {
       const valor = Math.max(0, int(dados.caminhos?.[c.id]));
@@ -121,10 +128,6 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
     const def = CLASSES_NOTION[cl.id];
     c.id = cl.id; c.nome = def?.nome ?? cl.id; c.nivel = cl.nivel;
     c.arquetipoLabel = { combatente: "Combatente", conjurador: "Conjurador", artifice: "Artífice" }[def?.arquetipo ?? "combatente"] ?? "Combatente";
-    if (def?.habilidades) {
-      const lista = def.habilidades.map(([nivel, nome, texto]) => ({ nivel, nome, texto, liberada: cl.nivel >= nivel }));
-      c.habilidades = { liberadas: lista.filter(h => h.liberada), proximas: lista.filter(h => !h.liberada) };
-    }
     if (cl.elemental) {
       const e = cl.elemental;
       c.elemental = { ...e, texto: `Arma Elemental: +${e.dado ?? "—"} e Núcleo Vermelho +${e.bonus} de dano elemental (${e.elemento ?? "sem elemento"}) · margem de ameaça +${e.margem}`,

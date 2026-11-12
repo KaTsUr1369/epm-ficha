@@ -26,8 +26,11 @@ import {
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
 import { conteudoNotion } from "./settings.mjs";
+import { regrasLigadas, danoAcumulos } from "./opcionais.mjs";
+import { contextoNovas } from "./contexto-novas.mjs";
 import { contexto060 } from "./contexto-060.mjs";
-import { FAIXAS_IDADE } from "./regras-extras.mjs";
+import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse } from "./regras-extras.mjs";
+import { idClasse } from "./ficha-extras.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
 
@@ -73,7 +76,7 @@ export function lerAtor(actor, listaPericias) {
   let itens = [];
   try { itens = efeitosDeItens(actor?.items?.contents ?? actor?.items ?? []); } catch { itens = []; }
   const agora = Number(globalThis.game?.time?.worldTime) || 0;
-  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora, opcoes: { idade: lerConteudoNotion("idade") } });
+  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora, opcoes: { idade: lerConteudoNotion("idade"), regras: regrasLigadas(), danoAcumulos: danoAcumulos() } });
   return { dados, ficha, hp };
 }
 
@@ -222,7 +225,7 @@ export function modsDoAtaque(at, ficha) {
   const cac = !ataqueADistancia(at);
   // Arma que conta como desarmada: só os bônus de desarmado, ou os dois (opção no editor da arma)
   const usaArmado = cac && (!desarmado || !!at?.desarmadoAmbos);
-  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(ex.todos ?? [])];
+  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : []), ...(ex.todos ?? [])];
   return {
     acerto: g.penal + distancia,
     acertoFontes: [...g.fontes, ...(ataqueADistancia(at) ? g.fontesDistancia : [])],
@@ -403,6 +406,46 @@ export function visualDaFicha(pers = {}) {
 }
 
 /** Painéis dos arquétipos modelo (Combatente, Conjurador, Artífice) na sub-aba Arquétipo. */
+/**
+ * Escolha e progressão da classe pronta (sub-aba Classe). Só mostra classes do(s) arquétipo(s) do personagem;
+ * sem arquétipo, pede para escolher o arquétipo primeiro.
+ */
+function painelClasse({ dados, poderes, editavel }) {
+  const arqs = arquetiposDoPersonagem(dados);
+  const opcoes = arqs.flatMap(a => classesDoArquetipo(a.id).map(c => ({
+    id: c.id, nome: c.nome, descricao: c.descricao ?? "", arquetipo: ARQUETIPOS[a.id]?.nome ?? a.id, cor: ARQUETIPOS[a.id]?.cor ?? "",
+    qtd: habilidadesDaClasse(c.id).length
+  })));
+  const id = idClasse(dados.classe);
+  const def = id ? CLASSES_NOTION[id] : null;
+  const textoLivre = String(dados.classe ?? "").trim();
+  const base = { temArquetipo: arqs.length > 0, opcoes, semOpcoes: arqs.length > 0 && !opcoes.length, editavel };
+  if (!def) return { ...base, escolhendo: !textoLivre && !dados.classeLivre, livre: !!(textoLivre || dados.classeLivre), nomeLivre: textoLivre };
+  const arqId = def.arquetipo ?? "combatente";
+  const nivel = arqs.find(a => a.id === arqId)?.nivel ?? 0;
+  const caminhos = Array.isArray(dados.classeEpm?.caminhos) ? dados.classeEpm.caminhos : [];
+  const naFicha = new Set(poderes.map(p => p.classeRef).filter(Boolean));
+  const habilidades = habilidadesDaClasse(id).map(h => {
+    const doCaminho = !h.caminho || caminhos.includes(h.caminho);
+    const liberada = doCaminho && nivel >= h.nivel;
+    return {
+      ...h, caminhoNome: h.caminho ? (def.caminhos?.[h.caminho] ?? h.caminho) : "", foraDoCaminho: !doCaminho,
+      liberada, naFicha: naFicha.has(h.ref), podeAdicionar: editavel && liberada && !naFicha.has(h.ref)
+    };
+  });
+  const liberadas = habilidades.filter(h => h.liberada);
+  return {
+    ...base, escolhida: true, id, nome: def.nome, descricao: def.descricao ?? "", nivel, foraDoArquetipo: !arqs.some(a => a.id === arqId),
+    arquetipo: ARQUETIPOS[arqId]?.nome ?? arqId, cor: ARQUETIPOS[arqId]?.cor ?? "",
+    caminhos: Object.entries(def.caminhos ?? {}).map(([cid, label]) => ({ id: cid, label, ativo: caminhos.includes(cid) })),
+    habilidades: habilidades.filter(h => !h.foraDoCaminho),
+    foraDoCaminho: habilidades.filter(h => h.foraDoCaminho),
+    proxima: habilidades.find(h => !h.foraDoCaminho && !h.liberada) ?? null,
+    faltamAdicionar: liberadas.filter(h => !h.naFicha).length,
+    podeAdicionarTodas: editavel && liberadas.some(h => !h.naFicha)
+  };
+}
+
 function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editavel }) {
   const intel = ficha.atributos?.inteligencia?.total ?? 0;
   const naFicha = new Set(poderes.map(p => p.arquetipoRef).filter(Boolean));
@@ -893,7 +936,7 @@ export function montarContexto({
       id: item.id, uuid: item.uuid, name: item.name, img: item.img, tipo: p.tipo,
       raridade: p.raridade, raridadeLabel: r.label, raridadeCor: r.cor, elemento: item.flags?.[FLAG]?.elemento ?? "",
       passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: tNome ? `Transformação: ${tNome}` : (ORIGENS_HABILIDADE[p.origem] ?? ""), circulo: p.circulo,
-      transformacao: tVinculo, arquetipoRef: p.arquetipoRef,
+      transformacao: tVinculo, arquetipoRef: p.arquetipoRef, classeRef: p.classeRef,
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
       bloqueada: presaTransf || (formas.length > 0 && formas.every(f => f.bloqueada)),
       motivosTexto: [...new Set([...(presaTransf ? [`só transformado em ${tNome}`] : []), ...formas.filter(f => f.bloqueada).flatMap(f => f.motivosTexto.split(", "))])].filter(Boolean).join(", "),
@@ -928,7 +971,7 @@ export function montarContexto({
   const subAtual = SUBABAS_HABILIDADE.some(s => s.id === ui.abas?.habilidades) ? ui.abas.habilidades : "geral";
   const subabas = SUBABAS_HABILIDADE.map(sub => ({
     ...sub, ...secoesDe(sub), ativa: sub.id === subAtual, cls: sub.id === subAtual ? "active" : "",
-    eTransformacoes: sub.id === "transformacoes", eArquetipo: sub.id === "arquetipo"
+    eTransformacoes: sub.id === "transformacoes", eArquetipo: sub.id === "arquetipo", eClasse: sub.id === "classe"
   }));
   const geral = daSubaba(SUBABAS_HABILIDADE[0]);
   ctx.habilidades = {
@@ -943,7 +986,7 @@ export function montarContexto({
       const nomes = sub.id === "arquetipo" ? [dados.arquetipo, dados.arquetipo2] : [dados.classe];
       const notas = dados.arqclasse?.[sub.id]?.notas ?? "";
       return {
-        ...sub, ...secoesDe(sub), ativa: atual, cls: atual ? "active" : "", eArquetipo: sub.id === "arquetipo",
+        ...sub, ...secoesDe(sub), ativa: atual, cls: atual ? "active" : "", eArquetipo: sub.id === "arquetipo", eClasse: sub.id === "classe",
         nome: nomes.map(n => String(n ?? "").trim()).filter(Boolean).join(" / "),
         editor: editores.arqclasse?.[sub.id] ?? "", texto: temTexto(notas) ? (enriquecidos.arqclasse?.[sub.id] ?? "") : ""
       };
@@ -976,7 +1019,8 @@ export function montarContexto({
       const poderesT = daTransf.filter(h => h.transformacao === id).sort(ordenarPoderes);
       return {
         id, nome: t.nome || "Transformação sem nome", nomeBruto: t.nome ?? "", img: t.img || "", descricao: t.descricao ?? "",
-        custoRecurso: custoRec, custoValor, custoTexto: custoRec === "nenhum" || !custoValor ? "Sem custo" : `${custoValor} ${CUSTO_RECURSOS[custoRec].sigla}`,
+        custoRecurso: custoRec, custoValor, custoTexto: custoRec === "nenhum" || !custoValor ? "Sem custo" : `${custoValor} ${CUSTO_RECURSOS[custoRec].sigla}${t.custoPorTurno ? " por turno" : ""}`,
+        custoPorTurno: !!t.custoPorTurno, frenesi: !!t.frenesi,
         opcoesCusto: Object.entries(CUSTO_RECURSOS).map(([cid, cr]) => ({ id: cid, label: cr.label, selected: cid === custoRec })),
         duracao: Math.max(0, int(t.duracao)), duracaoTexto: int(t.duracao) > 0 ? `${int(t.duracao)} turno${int(t.duracao) > 1 ? "s" : ""}` : "até encerrar",
         trocarToken: !!t.trocarToken, ativa, turnos: ativa ? int(dados.transformacao?.turnos) : 0,
@@ -991,6 +1035,7 @@ export function montarContexto({
 
   /* ---------- Arquétipos modelo (progressão e automações) ---------- */
   ctx.arquetiposPainel = painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editavel });
+  ctx.classePainel = painelClasse({ dados, poderes, editavel });
   ctx.temArquetipoModelo = ctx.arquetiposPainel.length > 0;
   ctx.combateArquetipo = combateArquetipo({ dados, ficha, itens, tipoDe, editavel });
 
@@ -1441,6 +1486,14 @@ export function montarContexto({
   }
   ctx.tituloAtivo = ficha.extras?.titulos?.ativo?.nome ?? "";
 
+  /* ---------- Novas mecânicas ---------- */
+  try {
+    ctx.novas = contextoNovas({ actor, dados, ficha, itens, edicao, editavel, isGM, ui });
+  } catch (err) {
+    console.warn("EPM | novas mecânicas", err);
+    ctx.novas = null;
+  }
+
   return ctx;
 }
 
@@ -1576,6 +1629,8 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
   const tipo = item.type;
   const eMochila = CATEGORIA_MOCHILAS.tipos.includes(tipo);
   const eArma = tipo === "weapon";
+  const duravel = ["weapon", "equipment", "tool"].includes(tipo);
+  const durabilidade = duravel ? (item.flags?.[FLAG]?.durabilidade ?? 100) : null;
   const raridade = raridadeItem(item);
   const r = RARIDADES_ITEM[raridade];
   const pericias = ficha?.pericias ?? PERICIAS_PADRAO.map(entradaPericia);
@@ -1604,7 +1659,7 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     quantidade: num(item.system?.quantity, 1), peso: num(item.system?.weight?.value ?? item.system?.weight, 0),
     equipavel: ["weapon", "equipment"].includes(tipo), equipado: !!item.system?.equipped,
     preco: { valor: num(preco.valor), moedas: MOEDAS.map(m => ({ id: m.id, label: m.label, selected: m.id === (preco.moeda ?? "po") })) },
-    eArma, ataque, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
+    eArma, duravel, durabilidade, ataque, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
     modosArma: eArma ? modosDaArma(item).map(m => ({
       ...m, bonusTexto: m.bonusAcerto === null ? "" : m.bonusAcerto,
       opcoesPericia: [{ id: "", nome: "Igual à arma", selected: !m.pericia }, ...pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === m.pericia }))]

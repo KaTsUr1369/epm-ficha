@@ -534,6 +534,8 @@ export async function configurarChefe(actor) {
 /** updateActor (só no Mestre ativo): quando a Vida do chefe passa de 66% ou 33%, anuncia a nova fase. */
 export async function verificarFaseChefe(actor) {
   if (!souMestreAtivo()) return;
+  // Com a regra opcional "Chefes com fases" ligada, quem cuida é opcionais-acoes.verificarFases
+  try { if (game.settings.get(MODULE_ID, "regrasOpcionais")?.chefes) return; } catch { /* segue */ }
   const c = actor.flags?.[FLAG]?.chefe;
   if (!c?.ativo) return;
   const hp = actor.system?.attributes?.hp ?? {};

@@ -3,6 +3,27 @@
 
 {{#if (epmEq ../secao "principal")}}
 <div class="epm-060-grade">
+  {{#if @root.edicao}}
+  <section class="epm-painel epm-060-tokens">
+    <header class="epm-painel-titulo"><h3>Imagens do token</h3><span class="epm-contador" title="Qual imagem está sendo usada quando mais de um estado vale">{{v.tokens.escolha}}</span></header>
+    <p class="epm-dica">A imagem do token muda sozinha com o estado. Se mais de um valer ao mesmo tempo, escolha qual usar aqui ou no botão <i class="fa-solid fa-masks-theater"></i> do HUD do token.</p>
+    <div class="epm-token-estados">
+      {{#each v.tokens.estados}}
+      <figure class="epm-token-estado{{#unless img}} vazia{{/unless}}" title="{{this.dica}}">
+        <button type="button" class="epm-token-img" data-action="imagemTokenEstado" data-estado="{{this.id}}" {{#unless @root.editavel}}disabled{{/unless}}>{{#if img}}<img src="{{this.img}}" alt="" />{{else}}<i class="fa-solid fa-image"></i>{{/if}}</button>
+        <figcaption>{{this.label}}{{#if img}}{{#if @root.editavel}} <button type="button" class="epm-icone-botao perigo" data-action="limparTokenEstado" data-estado="{{this.id}}" title="Tirar a imagem"><i class="fa-solid fa-xmark"></i></button>{{/if}}{{/if}}</figcaption>
+      </figure>
+      {{/each}}
+      {{#each v.tokens.transformacoes}}
+      <figure class="epm-token-estado{{#unless img}} vazia{{/unless}}" title="Transformado: imagem e opção 'Trocar a imagem do token' ficam na transformação">
+        <span class="epm-token-img">{{#if img}}<img src="{{this.img}}" alt="" />{{else}}<i class="fa-solid fa-paw"></i>{{/if}}</span>
+        <figcaption>{{this.nome}}{{#unless troca}} <span class="epm-dica">(não troca)</span>{{/unless}}</figcaption>
+      </figure>
+      {{/each}}
+    </div>
+    {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="escolherTokenEstado"><i class="fa-solid fa-masks-theater"></i> Escolher a imagem agora</button>{{/if}}
+  </section>
+  {{/if}}
   <section class="epm-painel epm-060-raca">
     <header class="epm-painel-titulo">
       <h3>Raça e corpo</h3>
@@ -10,6 +31,10 @@
     </header>
     <p class="epm-060-raca-nome"><strong>{{#if v.raca.nome}}{{v.raca.nome}}{{else}}Sem raça definida{{/if}}</strong>{{#if v.raca.info}} <span class="epm-dica">{{v.raca.info}}</span>{{/if}}</p>
     {{#if v.raca.recursos}}<p class="epm-dica">Base da raça: {{v.raca.recursos}}</p>{{/if}}
+    {{#if v.raca.ativaveis.length}}
+    <p class="epm-rotulo">Ativar quando valer</p>
+    <div class="epm-060-opcoes">{{#each v.raca.ativaveis}}<button type="button" class="epm-chip{{#if ativa}} ativo{{/if}}" data-action="racaAtivavel" data-id="{{this.id}}" title="{{this.habilidade}}: fica ligado até você desligar" {{#unless @root.editavel}}disabled{{/unless}}>{{#if ativa}}<i class="fa-solid fa-toggle-on"></i>{{else}}<i class="fa-solid fa-toggle-off"></i>{{/if}} {{this.label}}</button>{{/each}}</div>
+    {{/if}}
     {{#if v.raca.habilidades.length}}
     <ul class="epm-060-lista">{{#each v.raca.habilidades}}<li title="{{this.texto}}"><strong>{{this.nome}}</strong>{{#if unica}} <span class="epm-tag">Única</span>{{/if}} <span class="epm-dica">{{this.texto}}</span></li>{{/each}}</ul>
     {{/if}}
@@ -74,7 +99,7 @@
     {{/if}}
   </section>
 
-  {{#if v.compendio}}
+  {{#if (epmAnd v.compendio (epmOr @root.edicao v.compendio.pendentes.length))}}
   <section class="epm-painel epm-060-compendio">
     <header class="epm-painel-titulo"><h3>Compêndio do mundo</h3>{{#if @root.isGM}}<button type="button" class="epm-link" data-action="compendioEnviar" title="Cadastrar uma entrada desta ficha no compêndio do mundo"><i class="fa-solid fa-upload"></i> Enviar</button>{{/if}}</header>
     {{#if @root.editavel}}<div class="epm-060-botoes">{{#each v.compendio.tipos}}<button type="button" class="epm-botao epm-botao-mini epm-botao-sutil" data-action="compendioPegar" data-tipo="{{this.tipo}}" {{#unless qtd}}disabled{{/unless}} title="{{this.qtd}} no compêndio"><i class="{{this.icone}}"></i> {{this.label}}</button>{{/each}}</div>{{/if}}
@@ -165,16 +190,7 @@
   <p class="epm-rotulo">Posições (até {{v.classe.posicoes.max}})</p>
   <div class="epm-060-opcoes">{{#each v.classe.posicoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="posicaoLutador" data-id="{{this.id}}" data-max="{{v.classe.posicoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
   {{/if}}
-  {{#if v.classe.habilidades}}
-  <details class="epm-treino-divisao" open><summary>Habilidades da classe ({{v.classe.habilidades.liberadas.length}})</summary>
-    <ul class="epm-060-habilidades">{{#each v.classe.habilidades.liberadas}}<li><strong>Nv. {{this.nivel}} — {{this.nome}}:</strong> {{this.texto}}</li>{{/each}}</ul>
-  </details>
-  {{#if v.classe.habilidades.proximas.length}}
-  <details class="epm-treino-divisao"><summary>Próximas ({{v.classe.habilidades.proximas.length}})</summary>
-    <ul class="epm-060-habilidades">{{#each v.classe.habilidades.proximas}}<li><strong>Nv. {{this.nivel}} — {{this.nome}}:</strong> {{this.texto}}</li>{{/each}}</ul>
-  </details>
-  {{/if}}
-  {{/if}}
+  <p class="epm-dica"><i class="fa-solid fa-book" aria-hidden="true"></i> As habilidades da classe ficam na aba Arquétipo e Classe, sub-aba Classe.</p>
 </section>
 {{/if}}
 {{#if v.classeElemental}}<p class="epm-dica epm-060-elemental"><i class="fa-solid fa-fire"></i> Árvore elemental: um golpe com 20+ de dano de um elemento pede Fortitude DT 20 ao alvo (o botão aparece no cartão do ataque). Evoluções: Fogo → Raio → Fogo Azul/Raio Negro; Água → Gelo → Ácido/Zero Absoluto; Ar → Sonoro → Vendaval/Ruído; Terra → Força → Gravidade.</p>{{/if}}

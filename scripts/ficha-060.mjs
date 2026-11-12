@@ -314,6 +314,48 @@ export async function rolarNiveisRecursos(actor) {
   return notaChat(actor, `<p><strong>Rolagens por nível</strong></p><p>${linhas.map(escapar).join("<br>")}</p>`, "#4C8EE0");
 }
 
+/**
+ * Quando um bônus muda o atributo de um recurso (ex.: +2 Constituição no nível 5 = +10 de Vida máxima),
+ * a Vida/Estamina/Mana atual sobe (ou desce) junto. Guarda o último bônus aplicado em flags.bonusRecursosAplicado.
+ */
+export async function ajustarAtualPorBonus(actor) {
+  if (!actor?.isOwner) return;
+  const { ficha, dados } = estadoAtor(actor);
+  const novo = ficha.bonusAtributoRecursos ?? {};
+  const antes = dados.bonusRecursosAplicado;
+  const upd = {};
+  if (antes && typeof antes === "object") {
+    for (const r of ["pv", "pm", "pe"]) {
+      const delta = int(novo[r]) - int(antes[r]);
+      if (!delta) continue;
+      const rec = ficha.recursos[r];
+      const valor = Math.max(0, Math.min(rec.max, int(rec.value) + delta));
+      if (valor === int(rec.value)) continue;
+      if (r === "pv") upd["system.attributes.hp.value"] = valor;
+      else upd[`${P}.recursos.${r}.value`] = valor;
+    }
+  }
+  if (JSON.stringify(antes ?? null) !== JSON.stringify({ pv: int(novo.pv), pm: int(novo.pm), pe: int(novo.pe) })) {
+    upd[`${P}.bonusRecursosAplicado`] = { pv: int(novo.pv), pm: int(novo.pm), pe: int(novo.pe) };
+  }
+  if (Object.keys(upd).length) await actor.update(upd, { epmSincronizar: true });
+}
+
+/** Visão no escuro da ficha (raça ou manual) vira o sentido do dnd5e e o alcance de visão do token. */
+export async function sincronizarVisao(actor) {
+  if (!actor?.isOwner) return;
+  const { ficha } = estadoAtor(actor);
+  const m = Math.max(0, int(ficha.extras?.corpo?.sentidos?.visaoEscuro));
+  const upd = {};
+  const sens = actor.system?.attributes?.senses ?? {};
+  if (sens.ranges && "darkvision" in sens.ranges) { if (int(sens.ranges.darkvision) !== m) upd["system.attributes.senses.ranges.darkvision"] = m; }
+  else if ("darkvision" in sens && int(sens.darkvision) !== m) upd["system.attributes.senses.darkvision"] = m;
+  const proto = actor.prototypeToken?.sight;
+  if (m > 0 && proto && int(proto.range) < m) upd["prototypeToken.sight.range"] = m;
+  if (Object.keys(upd).length) await actor.update(upd, { epmSincronizar: true });
+  if (m > 0) for (const t of actor.getActiveTokens(false, true)) if (int(t.sight?.range) < m) await t.update({ "sight.range": m }).catch(() => null);
+}
+
 /** Mantém a Vida máxima (hp.max) e os máximos de Mana/Estamina iguais ao cálculo automático, quando ligado. */
 export async function sincronizarMaximos(actor) {
   if (!actor?.isOwner || !actor.flags?.[FLAG]?.recursosAuto?.ativo) return;
@@ -554,7 +596,7 @@ export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
   "rolarNiveisRecursos", "treinoCatalogo", "catalogoItens", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
   "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
-  "restaurarPacto", "nomearCriatura", "furia", "histeria", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
+  "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
   "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias"
@@ -616,6 +658,26 @@ export const METODOS_060 = {
   },
   acaoNomearCriatura(ev, alvo) { return nomearCriatura(this.actor, alvo.dataset.id); },
   acaoFuria() { return alternarFuria(this.actor); },
+  async acaoImagemTokenEstado(ev, alvo) {
+    const { escolherImagem } = await import("./imagens.mjs");
+    const e = alvo.dataset.estado;
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.tokensEstado?.[e] ?? "", titulo: "Imagem do token" });
+    if (caminho) await this.actor.update({ [`${P}.tokensEstado.${e}`]: caminho });
+  },
+  async acaoLimparTokenEstado(ev, alvo) {
+    await this.actor.update({ [`${P}.tokensEstado.-=${alvo.dataset.estado}`]: null });
+  },
+  async acaoEscolherTokenEstado() {
+    const { escolherTokenEstado } = await import("./token-estados.mjs");
+    return escolherTokenEstado(this.actor);
+  },
+  async acaoRacaAtivavel(ev, alvo) {
+    const id = alvo.dataset.id;
+    const atual = Array.isArray(this.actor.flags?.[FLAG]?.racaAtivas) ? this.actor.flags[FLAG].racaAtivas : [];
+    const liga = !atual.includes(id);
+    await this.actor.update({ [`${P}.racaAtivas`]: liga ? [...atual, id] : atual.filter(x => x !== id) });
+    if (liga) notaChat(this.actor, `<p><strong>${alvo.textContent.trim()}</strong> ligado até ser desligado.</p>`);
+  },
   async acaoHisteria() {
     const ativa = !!this.actor.flags?.[FLAG]?.classeEpm?.histeria;
     await this.actor.update({ [`${P}.classeEpm.histeria`]: !ativa });
@@ -673,7 +735,11 @@ export const METODOS_060 = {
   async acaoImportarMagias() { const { importarMagias } = await import("./importar-magias.mjs"); return importarMagias(this.actor); },
   async acaoExcluirTrocaBonus(ev, alvo) {
     if (!(await confirmar("Desfazer troca", "<p>Desfazer esta troca de bônus? Cada atributo volta a dar o próprio bônus.</p>"))) return;
-    return this.actor.update({ [`${P}.trocasBonus.-=${alvo.dataset.id}`]: null });
+    const t = this.actor.flags?.[FLAG]?.trocasBonus?.[alvo.dataset.id];
+    const voto = t?.voto && this.actor.flags?.[FLAG]?.votos?.[t.voto];
+    const upd = { [`${P}.trocasBonus.-=${alvo.dataset.id}`]: null };
+    if (voto?.tipo === "passivo") upd[`${P}.votos.-=${t.voto}`] = null;
+    return this.actor.update(upd);
   }
 };
 
@@ -684,16 +750,20 @@ export async function novaTrocaBonus(actor) {
   const ocupados = new Set(Object.values(dados.trocasBonus ?? {}).flatMap(t => t ? [t.a, t.b] : []));
   const livres = atrs.filter(a => !ocupados.has(a)).map(a => [a, ATRIBUTOS[a].label]);
   if (livres.length < 2) return ui.notifications.warn("Não há dois atributos livres para trocar (cada atributo entra em uma troca só).");
-  const votos = Object.entries(dados.votos ?? {}).filter(([, v]) => v).map(([id, v]) => [id, `${v.nome || "Voto sem nome"}${v.aprovado ? " (aprovado)" : " (falta aprovar)"}`]);
-  if (!votos.length) return ui.notifications.warn("A troca precisa de um voto. Crie o voto em Bênçãos → Votos e peça ao Mestre para aprovar.");
   const r = await formulario("Trocar bônus de atributo", `
-    <p class="epm-dica">Os dois atributos trocam de bônus entre si (ex.: Força passa a dar RD e Constituição passa a dar dano extra). Só vale depois que o Mestre aprovar o voto.</p>
+    <p class="epm-dica">Os dois atributos trocam de bônus entre si (ex.: Força passa a dar RD e Constituição passa a dar dano extra). A ficha cria um <strong>voto passivo</strong> (não conta no limite de votos); a troca só vale depois que o Mestre aprovar esse voto.</p>
     <label class="epm-campo"><span>Atributo</span><select name="a">${opcoes(livres)}</select></label>
     <label class="epm-campo"><span>Troca com</span><select name="b">${opcoes(livres, livres[1][0])}</select></label>
-    <label class="epm-campo"><span>Voto</span><select name="voto">${opcoes(votos)}</select></label>`, { botao: "Trocar" });
+    `, { botao: "Trocar" });
   if (!r) return;
   if (r.a === r.b) return ui.notifications.warn("Escolha dois atributos diferentes.");
-  return actor.update({ [`${P}.trocasBonus.${novoId()}`]: { a: r.a, b: r.b, voto: r.voto, criado: Date.now() } });
+  const idVoto = novoId();
+  const nomeA = ATRIBUTOS[r.a]?.label ?? r.a, nomeB = ATRIBUTOS[r.b]?.label ?? r.b;
+  await actor.update({
+    [`${P}.votos.${idVoto}`]: { nome: `Troca de bônus: ${nomeA} ↔ ${nomeB}`, tipo: "passivo", custo: "", efeito: `${nomeA} e ${nomeB} trocam os bônus de atributo acima de 4.`, usado: false, aprovado: false, criado: Date.now() },
+    [`${P}.trocasBonus.${novoId()}`]: { a: r.a, b: r.b, voto: idVoto, criado: Date.now() }
+  });
+  ui.notifications.info("Troca criada com um voto passivo. Peça ao Mestre para aprovar o voto.");
 }
 
 /* -------------------------------------------- */

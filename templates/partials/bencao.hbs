@@ -11,6 +11,10 @@
     <span class="epm-bencao-nome">{{#if nome}}{{this.nome}}{{else}}Sem nome{{/if}}</span>
     <button type="button" class="epm-icone-botao" data-action="chatBencao" data-bencao="{{this.id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
     {{/if}}
+    {{#if (epmAnd @root.isGM @root.novas.regras.purificacao (epmEq tipo "maldicao"))}}
+    <button type="button" class="epm-icone-botao" data-action="purificarMaldicao" data-bencao="{{this.id}}" title="Purificar (Mestre): moedas, Sanidade ou sacrifício"><i class="fa-solid fa-hand-sparkles"></i></button>
+    <button type="button" class="epm-icone-botao" data-action="transferirMaldicao" data-bencao="{{this.id}}" title="Transferir (Mestre): o outro precisa aceitar"><i class="fa-solid fa-right-left"></i></button>
+    {{/if}}
   </header>
   {{#if naturezaLabel}}
   <div class="epm-bencao-selos">

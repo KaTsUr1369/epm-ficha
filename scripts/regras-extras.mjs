@@ -153,7 +153,8 @@ export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], ro
 
 export const TIPOS_VOTO = {
   ativavel: { label: "Ativável", dica: "O jogador escolhe quando usar; o custo é pago na hora." },
-  permanente: { label: "Permanente", dica: "Acontece uma vez ou fica ativo para sempre; o custo também é permanente ou muito alto." }
+  permanente: { label: "Permanente", dica: "Acontece uma vez ou fica ativo para sempre; o custo também é permanente ou muito alto." },
+  passivo: { label: "Passivo", dica: "Não conta no limite de votos (ex.: troca de bônus de atributo acima de 4). Só vale com a aprovação do Mestre." }
 };
 /** Até o nível 20: 3 votos; depois +1 a cada 10 níveis (30: 4, 40: 5, 50: 6). */
 export const limiteVotos = nivel => {
@@ -279,7 +280,17 @@ export function nocaoVitalidade(atual, max) {
 
 export const CLASSES_NOTION = {
   barbaro: {
-    nome: "Bárbaro", arquetipo: "combatente",
+    nome: "Bárbaro", arquetipo: "combatente", descricao: "Combatente da Fúria: dano extra, RD e críticos brutais. Pode seguir o Caminho do Escudo.",
+    caminhos: { escudo: "Caminho do Escudo" },
+    habilidades: [
+      [3, "Fúria", "Entra em Fúria por 1 cena, 2 vezes por descanso: +1 de dano e RD 3 (+2 e RD 6 no 12, +3 e RD 9 no 21, +5 e RD 12 no 30, +10 e RD 15 no 39, +15 e RD 20 no 48). O botão fica no painel da classe, na aba Combate."],
+      [6, "Proteção de Bárbaro", "Escolhe 1 proteção (mais 1 no 24 e no 42): Proteção sem Armadura, Proteção Divina, Escudo Humano, Pele de Espinhos, Escudo Maior ou Escudo de Espinho. A escolha fica no painel da classe, na aba Combate."],
+      [9, "Crítico Brutal", "+1 no multiplicador de crítico (máx. 4×). Sobe com o nível: margem 19 no 15 e 18 no 33, até +5× (máx. 10×) no 45."],
+      [3, "Mestre dos Escudos", "Caminho do Escudo: +1 nos bônus de todo escudo que estiver segurando.", { caminho: "escudo" }],
+      [18, "Avanço", "Caminho do Escudo: com escudo, a Disparada dá +5 de CA e causa 5 + Força de dano Contundente a quem você passar rente ou acertar numa Investida.", { caminho: "escudo" }],
+      [33, "Escudo Lanceiro", "Caminho do Escudo: ganha o Escudo de Espinho da Proteção de Bárbaro, com +1 dado durante o Avanço; se já tinha, ele causa +2d8 em vez de +1d6.", { caminho: "escudo" }],
+      [48, "Escudo Inquebrável", "Caminho do Escudo: ao cair a 0 PV, faz um teste de Constituição DT 10 para ficar de pé com 5 PV. A DT sobe 5 a cada uso e volta ao normal no descanso longo.", { caminho: "escudo" }]
+    ],
     furia: { usos: 2, duracao: "1 cena", tabela: [[3, 1, 3], [12, 2, 6], [21, 3, 9], [30, 5, 12], [39, 10, 15], [48, 15, 20]] },
     protecao: { niveis: [6, 24, 42], opcoes: [
       ["semArmadura", "Proteção sem Armadura", "Soma a Constituição na CA, na Defesa e na Esquiva."],
@@ -292,12 +303,29 @@ export const CLASSES_NOTION = {
     critico: [[9, 1, 20, 4], [15, 1, 19, 5], [18, 2, 19, 6], [27, 3, 19, 7], [33, 3, 18, 8], [36, 4, 18, 9], [45, 5, 18, 10]]
   },
   guardiao: {
-    nome: "Guardião", arquetipo: "combatente",
+    nome: "Guardião", arquetipo: "combatente", descricao: "Protege os aliados: armaduras pesadas sem desvantagem, Proteção com a Reação e Corpo de Pedra.",
+    habilidades: [
+      [3, "Armadurado", "Proficiência em Armaduras Médias e Pesadas e não sofre as desvantagens das Armaduras Pesadas."],
+      [6, "Proteção", "Reação: entra na frente de um ataque contra um aliado a até 6 m e recebe RD 1d3 + Constituição + 1 (2d4 + 2 no 12, 3d6 + 3 no 18, 4d8 + 4 no 24, 5d10 + 5 no 36, 10d12 + 10 no 48). Se zerar o dano, recupera 2 PE (5 PE no 30; a partir do 42 não precisa zerar)."],
+      [9, "Corpo de Pedra", "RD 3 contra todo dano (6 no 15, 9 no 21, 12 no 27, 15 no 33, 20 no 39)."],
+      [45, "Resistir à Morte", "Ao cair a 0 PV, faz um teste de Constituição DT 10 para ficar de pé com 5 PV. A DT sobe 5 a cada uso e volta ao normal no descanso longo."]
+    ],
     corpoDePedra: [[9, 3], [15, 6], [21, 9], [27, 12], [33, 15], [39, 20]],
     protecao: [[6, "1d3 + @atr.constituicao + 1"], [12, "2d4 + @atr.constituicao + 2"], [18, "3d6 + @atr.constituicao + 3"], [24, "4d8 + @atr.constituicao + 4"], [36, "5d10 + @atr.constituicao + 5"], [48, "10d12 + @atr.constituicao + 10"]]
   },
   lutador: {
-    nome: "Lutador", arquetipo: "combatente",
+    nome: "Lutador", arquetipo: "combatente", descricao: "Luta desarmado: Porrada Franca, Braço de Aço e Posições de Combate. Pode seguir o Punho de Aço.",
+    caminhos: { punhoAco: "Punho de Aço" },
+    habilidades: [
+      [3, "Porrada Franca", "O ataque desarmado corpo a corpo vira sua Arma Favorita e causa +1d4 (1d6 no 12, 1d8 no 21, 1d10 no 30, 1d12 no 39, 2d6 no 48). Pode usar Destreza no lugar de Força. No 48, cada acerto seguido soma +2d8 (ou 1d6 na Mana ou Estamina do alvo), voltando a zero ao errar."],
+      [6, "Braço de Aço", "Desarmado e sem armadura, soma metade da Força ou da Destreza na Defesa e na CA (inteira no 15). No 24, quem você agarra sofre 1d10 Contundente por turno (2d6 no 33, 4d6 no 42) e você tem vantagem nos ataques desarmados contra ele."],
+      [9, "Posição de Combate", "Entra numa posição (2 no 27, 3 no 45): Poderoso, Descuidado, Ágil, Protetor e Punho de Ferro; no 27, Ginga, Respiração de Aço, Lobo, Tigre e Macaco; no 45, Dragão Cromático e Dragão de Lata. A escolha fica no painel da classe, na aba Combate."],
+      [18, "Lutador Resiliente", "Gasta PE para recuperar Vida (1 PE vira 2 PV). Sem PE, uma vez por descanso longo, usa uma habilidade ignorando o custo de PE."],
+      [36, "Recuperação por Round", "No início de cada turno recupera 3d10 PV e pode fazer um teste de Constituição DT 20: sucesso recupera +25 PV, falha perde 1d10 PV."],
+      [3, "Mão Pesada", "Punho de Aço: ataques desarmados causam +1 dado de dano (+5 dados no 33).", { caminho: "punhoAco" }],
+      [18, "Braço de Titânio", "Punho de Aço: o Braço de Aço também dá +4 de CA e +1 de Defesa.", { caminho: "punhoAco" }],
+      [48, "Porrada Metálica", "Punho de Aço: cada acerto seguido da Porrada Franca soma +3d8 em vez de +2d8.", { caminho: "punhoAco" }]
+    ],
     porradaFranca: [[3, "1d4"], [12, "1d6"], [21, "1d8"], [30, "1d10"], [39, "1d12"], [48, "2d6"]],
     posicoesPorNivel: [[9, 1], [27, 2], [45, 3]],
     posicoes: [
@@ -316,7 +344,7 @@ export const CLASSES_NOTION = {
     ].map(([id, nome, nivel, texto, auto]) => ({ id, nome, nivel, texto, auto }))
   },
   guerreiroElemental: {
-    nome: "Guerreiro Elemental", arquetipo: "combatente",
+    nome: "Guerreiro Elemental", arquetipo: "combatente", descricao: "Arma Elemental e Núcleo Vermelho: dano, crítico e efeitos de um elemento que evolui com o nível.",
     armaElemental: [[3, "1d8"], [12, "1d10"], [27, "2d10"], [39, "4d12"]],
     nucleoVermelho: [[3, 5, 1], [12, 10, 2], [21, 15, 3], [30, 20, 4], [39, 25, 5], [48, 30, 6]],
     elementos: [[3, ["Fogo", "Água", "Ar", "Terra"]], [12, ["Raio", "Gelo", "Som", "Pressão"]], [27, ["Gravidade"]], [39, ["Fogo Azul", "Raio Negro", "Ácido", "Zero Absoluto", "Vendaval", "Ruído"]]],
@@ -340,7 +368,7 @@ export const CLASSES_NOTION = {
     ]
   },
   alice: {
-    nome: "Portadora do País Impossível", arquetipo: "combatente",
+    nome: "Portadora do País Impossível", arquetipo: "combatente", descricao: "A Faca Vorpal que copia armas, a Histeria e as manifestações impossíveis do País das Maravilhas.",
     formas: [[3, 3], [21, 5], [30, 6], [39, 7]],
     habilidades: [
       [3, "Faca Vorpal", "Item único que absorve a forma de armas tocadas (3 formas; o Mestre define dano e alcance). Corte Vorpal: uma vez por turno, ao acertar com a Faca, faz um segundo ataque no mesmo alvo só com o dano básico."],
@@ -362,7 +390,7 @@ export const CLASSES_NOTION = {
     ]
   },
   cacador: {
-    nome: "Caçador", arquetipo: "artifice",
+    nome: "Caçador", arquetipo: "artifice", descricao: "Pistola do Caçador, Rally, munições da Oficina e as Ferramentas do Caçador.",
     pistola: [[3, "2d8"], [30, "3d10"]],
     habilidades: [
       [3, "Arsenal do Caçador", "Pistola do Caçador: 18 m, 2d8 Perfurante, dispara com Ação Bônus gastando 1 Bala de Mercúrio. Tiro de Impacto: cada acerto dá 1 Ponto de Impacto; com 3, o alvo fica Atordoado até o início do turno dele (uma vez por criatura por combate)."],
@@ -384,7 +412,7 @@ export const CLASSES_NOTION = {
     ]
   },
   trovador: {
-    nome: "Trovador", arquetipo: "conjurador",
+    nome: "Trovador", arquetipo: "conjurador", descricao: "Transforma a expressão artística em magia: inspira aliados e enfraquece inimigos.",
     inspiracao: [[3, "1d8"], [12, "1d10"], [21, "2d8"], [30, "2d10"], [39, "3d10"], [48, "4d12"]],
     habilidades: [
       [3, "Primeiro Verso", "Escolha sua Expressão Artística (música, poesia, dança, pintura…). Inspiração: com uma Ação Bônus, dá um Dado de Inspiração a um aliado que perceba sua expressão (1 por aliado). Ele soma o dado depois de uma rolagem; se for Ataque, Resistência ou Perícia, também recebe +5."],
@@ -451,3 +479,27 @@ export const EFEITO_ELEMENTO = {
 };
 export const DANO_EFEITO_ELEMENTO = 20;
 export const DT_EFEITO_ELEMENTO = 20;
+
+/* -------------------------------------------- */
+/*  Escolha de classe                           */
+/* -------------------------------------------- */
+
+const slugHabilidade = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+/** Habilidades de uma classe pronta: [{ ref, nivel, nome, texto, caminho }], na ordem de nível. */
+export function habilidadesDaClasse(id) {
+  const c = CLASSES_NOTION[id];
+  return (c?.habilidades ?? [])
+    .map(([nivel, nome, texto, extra = {}]) => ({ ref: `${id}:${slugHabilidade(nome)}`, nivel, nome, texto, caminho: extra.caminho ?? "" }))
+    .sort((a, b) => a.nivel - b.nivel);
+}
+
+/** Classes prontas de um arquétipo ("combatente", "conjurador" ou "artifice"). */
+export function classesDoArquetipo(arqId) {
+  return Object.entries(CLASSES_NOTION).filter(([, c]) => (c.arquetipo ?? "combatente") === arqId).map(([id, c]) => ({ id, ...c }));
+}
+
+/** Habilidades liberadas no nível (e nos caminhos escolhidos). */
+export function habilidadesLiberadas(id, nivel, caminhos = []) {
+  return habilidadesDaClasse(id).filter(h => h.nivel <= nivel && (!h.caminho || caminhos.includes(h.caminho)));
+}

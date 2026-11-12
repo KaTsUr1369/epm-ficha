@@ -1,6 +1,7 @@
 /** Opções do módulo (Configurações > Configurar opções > Escolhidos pelo Multiverso). */
 import { MODULE_ID, PERICIAS_PADRAO } from "./config.mjs";
 import { CAMPOS_NUMEROS, aplicarNumeros, padraoNumero } from "./numeros.mjs";
+import { registrarOpcionais } from "./opcionais.mjs";
 
 export function registrarAjustes() {
   const reg = (chave, dados) => game.settings.register(MODULE_ID, chave, dados);
@@ -12,7 +13,7 @@ export function registrarAjustes() {
   });
   reg("condicoesHudTodas", {
     name: "Todas as condições no HUD do token",
-    hint: "Desligado: o HUD do token mostra só as 43 condições básicas (Lento, Cego, Caído…). Ligado: mostra as 131. Na ficha todas aparecem sempre.",
+    hint: "Desligado: o HUD do token mostra só as 46 condições básicas (Lento, Cego, Caído…). Ligado: mostra as 136. Na ficha todas aparecem sempre.",
     scope: "world", config: true, type: Boolean, requiresReload: true, default: false
   });
   reg("afinidadeSoMestre", {
@@ -91,6 +92,8 @@ export function registrarAjustes() {
   reg("dockConfigurado", { scope: "world", config: false, type: Boolean, default: false });
   reg("migracaoVontade", { scope: "world", config: false, type: Boolean, default: false });
   reg("periciasPadrao", { scope: "world", config: false, type: Array, default: [] });
+  // Novas mecânicas: regras opcionais e listas editadas no Escudo do Mestre
+  registrarOpcionais(reg);
 }
 
 function ler(chave, padrao) {
@@ -154,6 +157,26 @@ export async function migrarListaPericiasMundo() {
     if (JSON.stringify(nova) !== JSON.stringify(salva)) await game.settings.set(MODULE_ID, "periciasPadrao", nova);
   }
   await game.settings.set(MODULE_ID, "migracaoVontade", true);
+}
+
+/**
+ * 0.7.0: Vontade é só Autocontrole. Tira o Núcleo da lista do mundo e migra todas as fichas EPM
+ * (personagens e NPCs), mesmo as que ninguém abriu. Roda no Mestre ativo.
+ */
+export async function migrarVontadeAutocontrole() {
+  if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
+  const salva = ler("periciasPadrao", null);
+  if (Array.isArray(salva) && salva.length) {
+    const nova = salva.map(e => (Array.isArray(e) && e[0] === "vontade" ? [e[0], e[1], ["autocontrole"], ["autocontrole"], ...e.slice(4)] : e));
+    if (JSON.stringify(nova) !== JSON.stringify(salva)) await game.settings.set(MODULE_ID, "periciasPadrao", nova);
+  }
+  const { migrarDados, VERSAO_DADOS } = await import("./data.mjs");
+  for (const a of game.actors ?? []) {
+    const bruto = a.flags?.[MODULE_ID];
+    if (!bruto || Number(bruto.versao) >= VERSAO_DADOS) continue;
+    const upd = Object.fromEntries(Object.entries(migrarDados(bruto)).map(([k, v]) => [`flags.${MODULE_ID}.${k}`, v]));
+    if (Object.keys(upd).length) await a.update(upd).catch(err => console.warn("EPM | migração", a.name, err));
+  }
 }
 
 /** 0.6.5: a lista de perícias salva pelo Mestre ganha Reflexos (Teste de Resistência). */

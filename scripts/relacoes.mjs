@@ -104,7 +104,7 @@ async function escolherAtores({ titulo, excluir = [], multiplos = false, dica = 
         callback: (ev, b) => {
           const f = b.form.elements;
           const marcados = [...b.form.querySelectorAll('input[name="ator"]:checked')].map(i => i.value);
-          return { uuids: marcados, delta: f.delta?.value, tipo: f.tipo?.value, origem: f.origem?.value, mutua: !!f.mutua?.checked };
+          return { uuids: marcados, delta: f.delta?.value, tipo: f.tipo?.value, origem: f.origem?.value, mutua: !!f.mutua?.checked, motivo: f.motivo?.value ?? "" };
         }
       },
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
@@ -143,6 +143,7 @@ export async function relacaoMultipla(origemPadrao = null) {
       <label class="epm-campo"><span>Tipo, se a relação for nova</span><select name="tipo">${tipos}</select></label>
       <label class="epm-check"><input type="checkbox" name="mutua" checked> Mudar também na ficha de quem</label>
     </div>
+    <label class="epm-campo"><span>Motivo (opcional, entra no histórico)</span><input type="text" name="motivo" placeholder="Salvou a vila"></label>
     <p class="epm-dica">Marque com quem a afinidade muda:</p>`;
   const r = await escolherAtores({ titulo: "Relação múltipla", multiplos: true, extra });
   if (!r?.uuids?.length) return;
@@ -152,8 +153,8 @@ export async function relacaoMultipla(origemPadrao = null) {
   const alvos = r.uuids.map(atorDaRelacao).filter(a => a && a.uuid !== origem.uuid);
   const nomes = [];
   for (const alvo of alvos) {
-    await mudarAfinidade(alvo, origem, delta, r.tipo);
-    if (r.mutua && usaFichaEPM(origem)) await mudarAfinidade(origem, alvo, delta, r.tipo);
+    await mudarAfinidade(alvo, origem, delta, r.tipo, r.motivo ?? "");
+    if (r.mutua && usaFichaEPM(origem)) await mudarAfinidade(origem, alvo, delta, r.tipo, r.motivo ?? "");
     nomes.push(alvo.name);
   }
   if (!nomes.length) return;
@@ -164,7 +165,7 @@ export async function relacaoMultipla(origemPadrao = null) {
 }
 
 /** Soma `delta` à afinidade de `ator` com `com` (cria a relação se não existir). */
-export async function mudarAfinidade(ator, com, delta, tipo = "aliado") {
+export async function mudarAfinidade(ator, com, delta, tipo = "aliado", motivo = "") {
   if (!usaFichaEPM(ator)) return;
   const relacoes = ator.flags?.[FLAG]?.relacoes ?? {};
   const existente = Object.entries(relacoes).find(([, x]) => x?.uuid === com.uuid);
@@ -174,11 +175,11 @@ export async function mudarAfinidade(ator, com, delta, tipo = "aliado") {
     const de = limitarAf(int(rel.afinidade));
     const para = limitarAf(de + delta);
     if (para === de) return null;
-    return ator.update({ [`${P}.relacoes.${rid}.afinidade`]: para, ...entradaHistorico(rel, `relacoes.${rid}`, de, para, { origem: "Relação múltipla" }) });
+    return ator.update({ [`${P}.relacoes.${rid}.afinidade`]: para, ...entradaHistorico(rel, `relacoes.${rid}`, de, para, { origem: "Relação múltipla", motivo: String(motivo ?? "").trim() }) });
   }
   const rid = novoId();
   const entrada = novaEntrada(com, TIPOS_RELACAO[tipo] ? tipo : "aliado", limitarAf(delta));
-  return ator.update({ [`${P}.relacoes.${rid}`]: entrada, ...entradaHistorico(entrada, `relacoes.${rid}`, 0, limitarAf(delta), { origem: "Relação múltipla" }) });
+  return ator.update({ [`${P}.relacoes.${rid}`]: entrada, ...entradaHistorico(entrada, `relacoes.${rid}`, 0, limitarAf(delta), { origem: "Relação múltipla", motivo: String(motivo ?? "").trim() }) });
 }
 
 /** Personagem de jogador? (afinidade entre jogadores é decidida por eles; com NPCs, só pelo Mestre) */

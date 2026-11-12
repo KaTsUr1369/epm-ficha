@@ -170,13 +170,33 @@ export async function migrarVontadeAutocontrole() {
     const nova = salva.map(e => (Array.isArray(e) && e[0] === "vontade" ? [e[0], e[1], ["autocontrole"], ["autocontrole"], ...e.slice(4)] : e));
     if (JSON.stringify(nova) !== JSON.stringify(salva)) await game.settings.set(MODULE_ID, "periciasPadrao", nova);
   }
-  const { migrarDados, VERSAO_DADOS } = await import("./data.mjs");
+  const { migrarDados, VERSAO_DADOS, entradaPericia } = await import("./data.mjs");
+  const lista = listaPericias();
+  let atualizadas = 0;
   for (const a of game.actors ?? []) {
     const bruto = a.flags?.[MODULE_ID];
     if (!bruto || Number(bruto.versao) >= VERSAO_DADOS) continue;
     const upd = Object.fromEntries(Object.entries(migrarDados(bruto)).map(([k, v]) => [`flags.${MODULE_ID}.${k}`, v]));
-    if (Object.keys(upd).length) await a.update(upd).catch(err => console.warn("EPM | migração", a.name, err));
+    // Perícias da lista do mundo que a ficha antiga ainda não tem (não apaga nada)
+    if (bruto.pericias) {
+      for (const e of lista) {
+        const x = entradaPericia(e);
+        if (x.id && !bruto.pericias[x.id] && !upd[`flags.${MODULE_ID}.pericias.${x.id}`]) {
+          upd[`flags.${MODULE_ID}.pericias.${x.id}`] = { nome: x.nome, atributos: x.atributos, sugestoes: x.sugestoes, pontos: 0, outros: 0 };
+        }
+      }
+    }
+    if (Object.keys(upd).length) {
+      await a.update(upd).catch(err => console.warn("EPM | migração", a.name, err));
+      atualizadas++;
+    }
+    // Classe pronta já escolhida: as habilidades liberadas entram (as apagadas pelo jogador não voltam)
+    try {
+      const { adicionarHabilidadesClasse } = await import("./extras.mjs");
+      if (a.flags?.[MODULE_ID]?.classe) await adicionarHabilidadesClasse(a, "", { automatico: true });
+    } catch (err) { console.warn("EPM | classe", a.name, err); }
   }
+  if (atualizadas) ui.notifications?.info(`Ficha EPM: ${atualizadas} ficha(s) antiga(s) atualizadas para a ${game.modules.get(MODULE_ID)?.version ?? "versão nova"}.`);
 }
 
 /** 0.6.5: a lista de perícias salva pelo Mestre ganha Reflexos (Teste de Resistência). */

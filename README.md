@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.3
+
+- **Fichas antigas em dia:** quando o Mestre entra no mundo, todas as fichas EPM (personagens e NPCs, mesmo as que ninguém abriu) recebem o que entrou até agora: perícias da lista do mundo que faltavam, Testes de Resistência, Vontade com Autocontrole e as habilidades da classe pronta já escolhida. Nada é apagado.
+
 ## Novidades da 0.7.2
 
 - **Treinamentos recolhíveis:** cada treino (e cada projeto de Criação) tem a seta no canto para recolher; recolhido, fica só o nome e a barra de progresso.

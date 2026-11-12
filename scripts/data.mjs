@@ -152,7 +152,7 @@ export function migrarPericias(pericias = {}, lista = PERICIAS_PADRAO, obsoletas
 }
 
 /** Versão atual do formato dos dados (normalizarDados e migrarDados levam fichas antigas até ela). */
-export const VERSAO_DADOS = 7;
+export const VERSAO_DADOS = 8;
 
 export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
   return {

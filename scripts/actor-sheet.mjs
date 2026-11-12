@@ -402,6 +402,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const bruto = this.actor.flags?.[FLAG] ?? {};
     const updates = Object.fromEntries(Object.entries(migrarDados(bruto)).map(([k, v]) => [`${P}.${k}`, v]));
     Object.assign(updates, migrarIdiomas(this.actor) ?? {});
+    // Perícias da lista do mundo que faltam nesta ficha antiga (não apaga nada)
+    if (bruto.pericias) for (const [k, v] of Object.entries(periciasParaObjeto(listaPericias()))) if (!bruto.pericias[k] && !updates[`${P}.pericias.${k}`]) updates[`${P}.pericias.${k}`] = v;
     await this.actor.update(updates);
     for (const efeito of this.actor.effects?.contents ?? []) {
       const antigos = [...(efeito.statuses ?? [])].filter(s => CONDICOES_RENOMEADAS[s]);

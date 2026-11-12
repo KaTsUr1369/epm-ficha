@@ -249,11 +249,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         idiomas: { catalogo: catalogoIdiomas(), polyglot: polyglotAtivo() },
         atores: { porUuid: uuid => parceiros.get(uuid) ?? null },
         mundo060: (() => {
-          const den = mundo.densidadeAtual();
           const pend = mundo.atualizacoesPendentes(bruto);
           const pendentes = Object.entries(pend).flatMap(([tipo, ids]) => [...ids].map(id => ({ tipo, id, nome: bruto?.[tipo]?.[id]?.nome || "Sem nome", tipoLabel: mundo.TIPOS_COMPENDIO[tipo].label })));
           const comp = lerMundo("compendioMundo", {}) ?? {};
-          return { relogios: mundo.relogiosVisiveis(game.user.isGM), regiao: mundo.regiaoAtual(), densidade: { id: den, ...mundo.DENSIDADES[den] }, conhecimento: lerMundo("conhecimentoCriaturas", {}),
+          return { relogios: mundo.relogiosVisiveis(game.user.isGM), conhecimento: lerMundo("conhecimentoCriaturas", {}),
             compendio: { pendentes, tipos: Object.entries(mundo.TIPOS_COMPENDIO).map(([tipo, t]) => ({ tipo, ...t, qtd: Object.keys(comp[tipo] ?? {}).length })) } };
         })()
       });

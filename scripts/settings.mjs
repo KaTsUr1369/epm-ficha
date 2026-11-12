@@ -60,7 +60,7 @@ export function registrarAjustes() {
     scope: "world", config: false, type: Object, default: { condicoes: false, danos: false, bencaos: false, idade: false, grauNucleo: false, calculadora: false }
   });
   // 0.6.0: dados do mundo controlados pelo Escudo (lidos por todos; só o Mestre grava, jogadores pedem por socket)
-  for (const [chave, padrao] of [["codigos", {}], ["relogios", {}], ["regioes", { lista: {}, atual: "" }], ["densidadeMana", "normal"],
+  for (const [chave, padrao] of [["codigos", {}], ["relogios", {}],
     ["compendioMundo", {}], ["conhecimentoCriaturas", {}], ["discord", { url: "", sessao: true, nivel: true, morte: true, bencao: true, relogio: true }]]) {
     reg(chave, { name: chave, scope: "world", config: false, type: typeof padrao === "string" ? String : Object, default: padrao });
   }

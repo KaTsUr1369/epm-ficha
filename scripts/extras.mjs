@@ -210,9 +210,8 @@ export async function recuperarMana(actor) {
   const { ficha } = estadoAtor(actor);
   const c = custoRecurso(ficha, "pe", rec.pe);
   if (!c.ok) return ui.notifications.warn(`Recuperar Mana: faltam ${c.falta} PE.`);
-  const mult = ficha.extras?.recuperarManaMult ?? 1;
-  const qtd = Math.max(0, Math.floor(rec.pm * mult));
-  const r = calcularRecuperacao(ficha, "pm", qtd, { fonte: mult !== 1 ? `Recuperar Mana (densidade de mana ${mult > 1 ? "alta" : "baixa"})` : "Recuperar Mana", trocaPm: false });
+  const qtd = rec.pm;
+  const r = calcularRecuperacao(ficha, "pm", qtd, { fonte: "Recuperar Mana", trocaPm: false });
   await actor.update({ ...c.updates, ...r.updates, [`${P}.usos.recuperarMana`]: true });
   return nota(actor, `<p><strong>Recuperar Mana</strong>: −${rec.pe} PE. ${escapar(r.texto || `+${qtd} PM`)}</p><p class="epm-dica">Usa uma ação. Uma vez por cena.</p>`, "#8A7CE0");
 }

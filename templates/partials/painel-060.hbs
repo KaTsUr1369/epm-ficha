@@ -72,8 +72,6 @@
       {{#each v.relogios}}<span class="epm-060-relogio{{#if aFavor}} a-favor{{/if}}{{#if oculto}} oculto{{/if}}" title="{{this.nome}}: {{this.atual}} de {{this.partes}}{{#if oculto}} (só o Mestre vê){{/if}}">{{{this.svg}}}<span>{{this.nome}}</span></span>{{/each}}
     </div>
     {{/if}}
-    {{#if v.regiao}}<p class="epm-dica"><i class="fa-solid fa-map-location-dot"></i> {{v.regiao.nome}}{{#if v.regiao.mundo}} ({{v.regiao.mundo}}){{/if}} · tecnologia {{v.regiao.tecnologia}}{{#if v.regiao.idioma}} · idioma comum: {{v.regiao.idioma}}{{/if}}</p>{{/if}}
-    {{#if v.densidade}}<p class="epm-aviso">Densidade de mana {{v.densidade.label}}: {{v.densidade.texto}}</p>{{/if}}
   </section>
 
   {{#if v.compendio}}
@@ -365,13 +363,6 @@
 {{/if}}
 {{/if}}
 
-{{#if (epmEq ../secao "sobre")}}
-{{#if v.passaporte.length}}
-<section class="epm-painel epm-060-passaporte">
-  <header class="epm-painel-titulo"><h3>Passaporte do Multiverso</h3><span class="epm-contador">{{v.passaporte.length}}</span></header>
-  <div class="epm-chips">{{#each v.passaporte}}<span class="epm-chip" title="Primeira visita: {{this.quando}}">{{this.nome}}{{#if mundo}} · {{this.mundo}}{{/if}}</span>{{/each}}</div>
-</section>
-{{/if}}
-{{/if}}
+
 
 {{/with}}

@@ -188,10 +188,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
 
   /* Relógios visíveis e região */
   v.relogios = mundo.relogios ?? [];
-  v.regiao = mundo.regiao ?? null;
-  v.densidade = mundo.densidade && mundo.densidade.id !== "normal" ? mundo.densidade : null;
   v.compendio = mundo.compendio ?? null;
-  v.passaporte = Object.entries(dados.passaporte ?? {}).map(([id, p]) => ({ id, ...p })).sort((a, b) => String(a.quando).localeCompare(String(b.quando)));
 
   /* Companheiros: nomeação, liderança e hierarquia */
   const nivelTotal = ficha.nivelTotal ?? 1;

@@ -138,13 +138,6 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
   if (tam?.furtividade) out.mods.push({ alvo: "pericia.furtividade", valor: tam.furtividade, fonte: "Tamanho" });
   out.tamanho = tam ?? null;
 
-  // Densidade de mana da região (Escudo → Mundo)
-  const dens = opcoes.densidade ?? "normal";
-  out.densidade = dens;
-  if (dens === "nula") out.implica.push({ id: "epm-antimagia", motivo: "Densidade de mana nula" });
-  out.custoMagiaPct = dens === "baixa" ? 0.25 : 0;
-  out.recuperarManaMult = dens === "alta" ? 1.5 : dens === "baixa" ? 0.5 : 1;
-
   // Corrupção acumulada (0–100)
   // O máximo (quanto a pessoa resiste) é ajustável pelo Mestre; os marcos acompanham a proporção (25%, 50%, 75%, 100%)
   const corrMax = Math.max(1, Math.min(1000, Math.floor(n(d.corrupcaoMax)) || 100));

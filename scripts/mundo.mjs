@@ -1,6 +1,6 @@
 /**
  * Mundo (0.6.0): o que o Mestre controla para a mesa inteira, no Escudo → Mundo.
- * Códigos de recompensa, enquetes, relógios de urgência, regiões (passaporte, idioma, tecnologia e densidade de mana),
+ * Códigos de recompensa, enquetes, relógios de urgência,
  * compêndio do mundo, conhecimento de criaturas, chefes com fases, calculadora de encontro, ficha rápida de NPC
  * e avisos no Discord. Jogadores leem as configurações do mundo e pedem as gravações ao Mestre pelo socket.
  */
@@ -376,86 +376,6 @@ export function relogiosVisiveis(isGM = false) {
   return Object.entries(lerMundo("relogios", {})).filter(([, x]) => x && (x.visivel || isGM)).map(([id, x]) => ({
     id, nome: x.nome, atual: int(x.atual), partes: int(x.partes), aFavor: !!x.aFavor, svg: svgRelogio(x.partes, x.atual, x.aFavor ? "#5FB38A" : "#D2544A"), oculto: !x.visivel
   }));
-}
-
-/* -------------------------------------------- */
-/*  Regiões: passaporte, tecnologia e mana      */
-/* -------------------------------------------- */
-
-export const DENSIDADES = {
-  normal: { label: "Normal", texto: "Sem efeito." },
-  alta: { label: "Alta", texto: "Recuperar Mana rende 50% a mais." },
-  baixa: { label: "Baixa", texto: "Magias custam +25% de PM e Recuperar Mana rende metade." },
-  nula: { label: "Nula", texto: "Todos ficam com Antimagia." }
-};
-export const NIVEIS_TECNOLOGIA = { 1: "1 (Umbra'Draxil)", 2: "2 (Briavoterna)", 3: "3 (Genesis)" };
-export const TECNOLOGIA_REGIAO = { umbra: 1, briavoterna: 2, genesis: 3 };
-
-export function densidadeAtual() {
-  const d = lerMundo("densidadeMana", "normal");
-  return DENSIDADES[d] ? d : "normal";
-}
-
-export async function definirDensidade(id) {
-  if (!DENSIDADES[id]) return;
-  await gravar("densidadeMana", id);
-  redesenharFichas();
-  return cartao(`<p><strong>Densidade de mana: ${DENSIDADES[id].label}</strong>. ${escapar(DENSIDADES[id].texto)}</p>`, "#4C8EE0");
-}
-
-export async function regioesPadrao() {
-  const reg = foundry.utils.deepClone(lerMundo("regioes", { lista: {}, atual: "" }));
-  reg.lista ??= {};
-  for (const [id, nome] of Object.entries(REGIOES)) {
-    if (reg.lista[id]) continue;
-    reg.lista[id] = { nome, idioma: "Comum", tecnologia: TECNOLOGIA_REGIAO[id] ?? 1, densidade: id === "genesis" ? "baixa" : id === "umbra" ? "alta" : "normal", criado: Date.now() };
-  }
-  return gravar("regioes", reg);
-}
-
-export async function editarRegiao(id = null) {
-  const reg = foundry.utils.deepClone(lerMundo("regioes", { lista: {}, atual: "" }));
-  reg.lista ??= {};
-  const x = id ? reg.lista[id] ?? {} : {};
-  const r = await formulario(id ? "Editar região" : "Nova região", `
-    <label class="epm-campo"><span>Nome</span><input type="text" name="nome" value="${escapar(x.nome ?? "")}"></label>
-    <label class="epm-campo"><span>Mundo (opcional)</span><input type="text" name="mundo" value="${escapar(x.mundo ?? "")}"></label>
-    <label class="epm-campo"><span>Idioma comum</span><input type="text" name="idioma" value="${escapar(x.idioma ?? "Comum")}"></label>
-    <label class="epm-campo"><span>Tecnologia</span><select name="tecnologia">${opcoes(Object.entries(NIVEIS_TECNOLOGIA), x.tecnologia ?? 1)}</select></label>
-    <label class="epm-campo"><span>Densidade de mana</span><select name="densidade">${opcoes(Object.entries(DENSIDADES).map(([d, v]) => [d, v.label]), x.densidade ?? "normal")}</select></label>`, { botao: "Salvar" });
-  if (!r) return;
-  reg.lista[id ?? novoId()] = { nome: String(r.nome || "Região"), mundo: String(r.mundo ?? ""), idioma: String(r.idioma ?? ""), tecnologia: int(r.tecnologia, 1), densidade: DENSIDADES[r.densidade] ? r.densidade : "normal", criado: x.criado ?? Date.now() };
-  return gravar("regioes", reg);
-}
-
-export async function apagarRegiao(id) {
-  const reg = foundry.utils.deepClone(lerMundo("regioes", { lista: {}, atual: "" }));
-  delete reg.lista?.[id];
-  if (reg.atual === id) reg.atual = "";
-  await game.settings.set(MODULE_ID, "regioes", { lista: {}, atual: "" });
-  return gravar("regioes", reg);
-}
-
-/** Viagem: troca a região atual, a densidade de mana e carimba o passaporte do grupo. */
-export async function viajarPara(id) {
-  const reg = foundry.utils.deepClone(lerMundo("regioes", { lista: {}, atual: "" }));
-  const x = reg.lista?.[id];
-  if (!x) return;
-  reg.atual = id;
-  await gravar("regioes", reg);
-  await game.settings.set(MODULE_ID, "densidadeMana", x.densidade ?? "normal");
-  for (const a of personagensDoGrupo()) {
-    if (a.flags?.[FLAG]?.passaporte?.[id]) continue;
-    await a.update({ [`${P}.passaporte.${id}`]: { nome: x.nome, mundo: x.mundo ?? "", quando: new Date().toISOString().slice(0, 10) } });
-  }
-  redesenharFichas();
-  return cartao(`<p><strong>Chegada: ${escapar(x.nome)}</strong>${x.mundo ? ` (${escapar(x.mundo)})` : ""}</p>
-    <p>Idioma comum: ${escapar(x.idioma || "—")} · Tecnologia ${int(x.tecnologia, 1)} · Mana ${escapar(DENSIDADES[x.densidade]?.label ?? "Normal")} (${escapar(DENSIDADES[x.densidade]?.texto ?? "")})</p>`, "#5FB38A");
-}
-
-export function regiaoAtual() {
-  const reg = lerMundo("regioes", { lista: {}, atual: "" });
-  return reg?.lista?.[reg?.atual] ? { id: reg.atual, ...reg.lista[reg.atual] } : null;
 }
 
 /* -------------------------------------------- */

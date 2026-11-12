@@ -205,8 +205,6 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
   /* ---------- Mundo (0.6.0) ---------- */
 
   _contextoMundo() {
-    const reg = lerMundo("regioes", { lista: {}, atual: "" });
-    const dens = mundo.densidadeAtual();
     const comp = lerMundo("compendioMundo", {}) ?? {};
     const calc = this._ui.calc ?? [{ nd: "", qtd: 1 }, { nd: "", qtd: 1 }, { nd: "", qtd: 1 }];
     const grupo = this._grupo();
@@ -215,9 +213,6 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const discord = lerMundo("discord", {}) ?? {};
     const token = canvas?.tokens?.controlled?.[0]?.actor ?? null;
     return {
-      regioes: Object.entries(reg.lista ?? {}).map(([id, x]) => ({ id, ...x, atual: reg.atual === id, densidadeLabel: mundo.DENSIDADES[x.densidade]?.label ?? "Normal" })),
-      densidades: Object.entries(mundo.DENSIDADES).map(([id, d]) => ({ id, ...d, atual: id === dens })),
-      densidade: mundo.DENSIDADES[dens],
       relogios: mundo.relogiosVisiveis(true),
       codigos: Object.entries(lerMundo("codigos", {}) ?? {}).map(([id, c]) => ({
         id, ...c, modoLabel: mundo.MODOS_CODIGO[c.modo] ?? "", usos: Object.values(c.usos ?? {}).map(u => u.quem).filter(Boolean).join(", "),
@@ -234,8 +229,6 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!game.user.isGM) return;
     const { op, id } = alvo.dataset;
     const ops = {
-      novaRegiao: () => mundo.editarRegiao(), editarRegiao: () => mundo.editarRegiao(id), apagarRegiao: () => mundo.apagarRegiao(id),
-      regioesPadrao: () => mundo.regioesPadrao(), viajar: () => mundo.viajarPara(id), densidade: () => mundo.definirDensidade(id),
       novoRelogio: () => mundo.novoRelogio(), editarRelogio: () => mundo.novoRelogio(id), apagarRelogio: () => mundo.apagarRelogio(id),
       relogioMais: () => mundo.avancarRelogio(id, 1), relogioMenos: () => mundo.avancarRelogio(id, -1),
       novoCodigo: () => mundo.novoCodigo(), editarCodigo: () => mundo.novoCodigo(id), apagarCodigo: () => mundo.apagarCodigo(id),

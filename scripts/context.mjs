@@ -25,7 +25,7 @@ import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
-import { conteudoNotion, lerMundo } from "./settings.mjs";
+import { conteudoNotion } from "./settings.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
 
@@ -71,7 +71,7 @@ export function lerAtor(actor, listaPericias) {
   let itens = [];
   try { itens = efeitosDeItens(actor?.items?.contents ?? actor?.items ?? []); } catch { itens = []; }
   const agora = Number(globalThis.game?.time?.worldTime) || 0;
-  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora, opcoes: { idade: lerConteudoNotion("idade"), densidade: lerMundo("densidadeMana", "normal") } });
+  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora, opcoes: { idade: lerConteudoNotion("idade") } });
   return { dados, ficha, hp };
 }
 

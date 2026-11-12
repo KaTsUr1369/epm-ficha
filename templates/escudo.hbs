@@ -242,23 +242,6 @@
     {{#if (epmEq aba "mundo")}}
     <div class="epm-escudo-mundo">
       <section class="epm-painel">
-        <header class="epm-painel-titulo"><h3>Região e mana</h3>
-          <button type="button" class="epm-link" data-action="mundo" data-op="novaRegiao"><i class="fa-solid fa-plus"></i> Região</button>
-          {{#unless mundo.regioes.length}}<button type="button" class="epm-link" data-action="mundo" data-op="regioesPadrao">Criar Umbra'Draxil, Briavoterna e Genesis</button>{{/unless}}
-        </header>
-        <div class="epm-060-botoes">{{#each mundo.densidades}}<button type="button" class="epm-botao epm-botao-mini{{#if atual}} epm-botao-forte{{/if}}" data-action="mundo" data-op="densidade" data-id="{{this.id}}" title="{{this.texto}}">Mana {{this.label}}</button>{{/each}}</div>
-        <p class="epm-dica">Densidade atual: <strong>{{mundo.densidade.label}}</strong>. {{mundo.densidade.texto}}</p>
-        {{#each mundo.regioes}}
-        <div class="epm-060-item{{#if atual}} atual{{/if}}">
-          <span><strong>{{this.nome}}</strong>{{#if mundo}} · {{this.mundo}}{{/if}}<br><span class="epm-dica">Idioma {{this.idioma}} · tecnologia {{this.tecnologia}} · mana {{this.densidadeLabel}}</span></span>
-          <button type="button" class="epm-botao epm-botao-mini{{#if atual}} epm-botao-forte{{/if}}" data-action="mundo" data-op="viajar" data-id="{{this.id}}" title="Troca a região atual e a densidade de mana e carimba o passaporte do grupo">{{#if atual}}Aqui{{else}}Viajar{{/if}}</button>
-          <button type="button" class="epm-icone-botao" data-action="mundo" data-op="editarRegiao" data-id="{{this.id}}" title="Editar"><i class="fa-solid fa-pen"></i></button>
-          <button type="button" class="epm-icone-botao perigo" data-action="mundo" data-op="apagarRegiao" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
-        </div>
-        {{/each}}
-      </section>
-
-      <section class="epm-painel">
         <header class="epm-painel-titulo"><h3>Relógios de urgência</h3><button type="button" class="epm-link" data-action="mundo" data-op="novoRelogio"><i class="fa-solid fa-plus"></i> Relógio</button><button type="button" class="epm-link" data-action="mundo" data-op="enquete"><i class="fa-solid fa-square-poll-vertical"></i> Enquete</button></header>
         {{#unless mundo.relogios.length}}<p class="epm-vazio">Nenhum relógio. Avança com falha ligada à ameaça (+1), falha crítica (+2), tempo ou barulho.</p>{{/unless}}
         {{#each mundo.relogios}}

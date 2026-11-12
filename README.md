@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.2
+
+- Removida a mecânica de **região e densidade de mana**: a seção "Região e mana" do Escudo → Mundo, o passaporte da aba Sobre e os efeitos da densidade nas magias (custo extra, Recuperar Mana e Antimagia). A região das armas e armaduras do catálogo e o nível de tecnologia continuam.
+
 ## Novidades da 0.6.1
 
 - **Corrupção com máximo ajustável:** o Mestre define quanto cada personagem resiste. O padrão é 100. Os marcos ficam em 25%, 50%, 75% e 100% do máximo.
@@ -61,7 +65,6 @@ Conteúdo do Notion e as ideias novas. Precisa recarregar o mundo (o módulo pas
 - **Tamanho, movimentos e sentidos**. Idade como regra opcional.
 - **Títulos e conquistas**.
 - **Escudo do Mestre → Mundo**:
-  - Regiões (passaporte, idioma, tecnologia, densidade de mana).
   - Relógios de urgência e enquetes.
   - Códigos de recompensa.
   - Ficha rápida de NPC.

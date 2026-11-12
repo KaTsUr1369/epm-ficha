@@ -943,8 +943,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     extras: {
       raca: extrasFicha.raca, sanidade: extrasFicha.sanidade, idade: extrasFicha.idade ?? null, classe: extrasFicha.classe,
       votos: extrasFicha.votos, pactos: extrasFicha.pactos, altos: posAtr.altos, teto: posAtr.teto, recursosAuto, corpo,
-      vantagensPericia: extrasFicha.vantagensPericia, tamanho: extrasFicha.tamanho, densidade: extrasFicha.densidade,
-      custoMagiaPct: extrasFicha.custoMagiaPct, recuperarManaMult: extrasFicha.recuperarManaMult, corrupcao: extrasFicha.corrupcao,
+      vantagensPericia: extrasFicha.vantagensPericia, tamanho: extrasFicha.tamanho,
+      corrupcao: extrasFicha.corrupcao,
       menteBlindada: extrasFicha.menteBlindada, meditacaoNucleo: extrasFicha.meditacaoNucleo, memoriaTreinada: extrasFicha.memoriaTreinada,
       especiaisTreino: extrasFicha.especiaisTreino, tecnologia: extrasFicha.tecnologia, titulos: extrasFicha.titulos, grau: posAtr.grau
     },
@@ -1113,9 +1113,8 @@ export function formaOfensiva(forma) {
 /** Custo real de uma forma (Mana Corrompida e afins somam PM às magias). */
 export function custoEfetivo(forma, ficha, tipo = "habilidade") {
   if (!forma || forma.custo?.recurso === "nenhum") return { recurso: "nenhum", valor: 0, extra: 0 };
-  const densidade = tipo === "magia" && forma.custo.recurso === "pm" && ficha?.extras?.custoMagiaPct ? Math.ceil(Math.max(0, int(forma.custo.valor)) * ficha.extras.custoMagiaPct) : 0;
   const extra = (tipo === "magia" && forma.custo.recurso === "pm" ? (ficha?.especiais?.custoExtraMagia?.valor ?? 0) : 0)
-    + (["pm", "pe"].includes(forma.custo.recurso) && int(forma.custo.valor) > 0 ? (ficha?.especiais?.custoExtra?.valor ?? 0) : 0) + densidade;
+    + (["pm", "pe"].includes(forma.custo.recurso) && int(forma.custo.valor) > 0 ? (ficha?.especiais?.custoExtra?.valor ?? 0) : 0);
   return { recurso: forma.custo.recurso, valor: Math.max(0, int(forma.custo.valor)) + extra, extra };
 }
 

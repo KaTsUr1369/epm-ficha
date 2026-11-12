@@ -109,19 +109,10 @@
       </section>
     </div>
 
-    <section class="epm-painel epm-pericias{{#if edicao}} editando{{/if}}">
-      <header class="epm-painel-titulo">
-        <h3>Perícias</h3>
-        <span class="epm-contador {{this.estadoPericias}}" title="45 pontos, +15 a cada 5 níveis">{{ficha.pontosPericia.gasto}} de {{ficha.pontosPericia.disponivel}}</span>
-        <span class="epm-contador" title="Máximo de pontos numa perícia (sobe +5 nos níveis 15 e 35)">limite {{ficha.pontosPericia.limite}}</span>
-      </header>
-      <div class="epm-pericias-opcoes">{{#if editavel}}<button type="button" class="epm-check-botao{{#if periciasFavoritasTopo}} ativo{{/if}}" data-action="favoritasNoTopo" aria-pressed="{{#if periciasFavoritasTopo}}true{{else}}false{{/if}}" title="Mostra as perícias marcadas com estrela antes das outras"><i class="{{#if periciasFavoritasTopo}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> Favoritas no topo</button>{{/if}}</div>
-      {{#if ficha.desvantagens.testes.length}}<p class="epm-aviso">Testes com desvantagem: {{epmJoin ficha.desvantagens.testes}}</p>{{/if}}
-      {{#if ficha.penalidades.testes.total}}<p class="epm-dica">Os números em vermelho ao lado das perícias e atributos entram nas rolagens.</p>{{/if}}
-      <ol class="epm-lista-pericias">
-        {{#each pericias}}
-        <li class="epm-pericia{{#if acimaLimite}} acima{{/if}}{{#if favorita}} favorita{{/if}}">
+{{#*inline "linhaPericia"}}
+        <li data-pericia-id="{{this.id}}" {{#if @root.edicao}}draggable="true"{{/if}} class="epm-pericia{{#if acimaLimite}} acima{{/if}}{{#if favorita}} favorita{{/if}}">
           {{#if @root.edicao}}
+          <span class="epm-pericia-mover"><button type="button" class="epm-icone-botao" data-action="moverPericia" data-pericia="{{this.id}}" data-dir="-1" title="Subir" {{#if primeira}}disabled{{/if}}><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="epm-icone-botao" data-action="moverPericia" data-pericia="{{this.id}}" data-dir="1" title="Descer" {{#if ultima}}disabled{{/if}}><i class="fa-solid fa-chevron-down"></i></button></span>
           <button type="button" class="epm-icone-botao perigo" data-action="removerPericia" data-pericia="{{this.id}}" title="Remover {{this.nome}}"><i class="fa-solid fa-xmark"></i></button>
           <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da perícia" />
           <label class="epm-mini"><span>pontos</span><input type="number" class="epm-pericia-pontos" name="flags.epm-ficha.pericias.{{this.id}}.pontos" value="{{this.pontos}}" min="0" {{#if acimaLimite}}title="Acima do limite do seu nível"{{/if}} /></label>
@@ -143,7 +134,25 @@
           <span class="epm-pericia-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
           {{/if}}
         </li>
-        {{/each}}
+{{/inline}}
+    <section class="epm-painel epm-pericias epm-resistencias{{#if edicao}} editando{{/if}}">
+      <header class="epm-painel-titulo"><h3>Testes de Resistência</h3></header>
+      <ol class="epm-lista-pericias">
+        {{#each resistenciasPericia}}{{> linhaPericia}}{{/each}}
+      </ol>
+    </section>
+
+    <section class="epm-painel epm-pericias{{#if edicao}} editando{{/if}}">
+      <header class="epm-painel-titulo">
+        <h3>Perícias</h3>
+        <span class="epm-contador {{this.estadoPericias}}" title="45 pontos, +15 a cada 5 níveis">{{ficha.pontosPericia.gasto}} de {{ficha.pontosPericia.disponivel}}</span>
+        <span class="epm-contador" title="Máximo de pontos numa perícia (sobe +5 nos níveis 15 e 35)">limite {{ficha.pontosPericia.limite}}</span>
+      </header>
+      <div class="epm-pericias-opcoes">{{#if editavel}}<button type="button" class="epm-check-botao{{#if periciasFavoritasTopo}} ativo{{/if}}" data-action="favoritasNoTopo" aria-pressed="{{#if periciasFavoritasTopo}}true{{else}}false{{/if}}" title="Mostra as perícias marcadas com estrela antes das outras"><i class="{{#if periciasFavoritasTopo}}fa-solid fa-square-check{{else}}fa-regular fa-square{{/if}}" aria-hidden="true"></i> Favoritas no topo</button>{{#if edicao}}{{#if periciasOrdemPropria}} <button type="button" class="epm-check-botao" data-action="ordemPericiasPadrao" title="Volta à ordem original das perícias"><i class="fa-solid fa-rotate-left"></i> Ordem padrão</button>{{/if}}{{/if}}{{/if}}</div>
+      {{#if ficha.desvantagens.testes.length}}<p class="epm-aviso">Testes com desvantagem: {{epmJoin ficha.desvantagens.testes}}</p>{{/if}}
+      {{#if ficha.penalidades.testes.total}}<p class="epm-dica">Os números em vermelho ao lado das perícias e atributos entram nas rolagens.</p>{{/if}}
+      <ol class="epm-lista-pericias">
+        {{#each pericias}}{{> linhaPericia}}{{/each}}
       </ol>
       {{#if edicao}}
       <p class="epm-dica">Clique nos atributos para escolher quais somam. Os destacados são os indicados pela regra.</p>

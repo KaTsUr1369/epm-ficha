@@ -1,8 +1,10 @@
+import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
 /**
  * Partes da ficha que vieram na 0.6.0 (raça pronta, Sanidade com estados e insanidades, idade opcional,
  * classes do Notion, votos, pactos, talentos, atributos acima de 4, teto de atributo e máximos automáticos).
  * Contas puras, chamadas por calcularFicha (data.mjs). Sem Foundry.
  */
+import { num as numBonus } from "./numeros.mjs";
 import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
 import {
@@ -30,6 +32,10 @@ export function idClasse(texto) {
   if (t.includes("barbar")) return "barbaro";
   if (t.includes("guardi")) return "guardiao";
   if (t.includes("lutador")) return "lutador";
+  if (t.includes("elemental")) return "guerreiroElemental";
+  if (t.includes("alice") || t.includes("portadora") || t.includes("pais impossivel")) return "alice";
+  if (t.includes("cacador") || t.includes("hunter")) return "cacador";
+  if (t.includes("trovador") || t.includes("trovoador") || t.includes("bardo")) return "trovador";
   return "";
 }
 
@@ -101,9 +107,31 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
 
   // Classes completas do Notion
   const classe = idClasse(d.classe);
-  const comb = nivelDe(d, "combatente");
+  const comb = nivelDe(d, CLASSES_NOTION[classe]?.arquetipo ?? "combatente");
   const opc = d.classeEpm ?? {};
-  out.classe = { id: classe, nivel: comb };
+  out.classe = { id: classe, nivel: comb, arquetipo: CLASSES_NOTION[classe]?.arquetipo ?? "combatente" };
+  if (classe === "guerreiroElemental" && comb >= 3) {
+    const def = CLASSES_NOTION.guerreiroElemental;
+    const dado = valorPorNivel(def.armaElemental, comb)?.[1];
+    const verm = valorPorNivel(def.nucleoVermelho, comb);
+    const liberados = def.elementos.filter(([nv]) => nv <= comb).flatMap(([, l]) => l);
+    const elemento = liberados.includes(opc.elemento) ? opc.elemento : liberados[0];
+    const tipo = elemento ? `[${elemento}]` : "";
+    if (dado) out.extrasAtaque.todos.push({ formula: `${dado}${tipo}`, fonte: "Arma Elemental" });
+    if (verm) out.extrasAtaque.todos.push({ formula: `${verm[1]}${tipo}`, fonte: "Núcleo Vermelho" });
+    out.classe.elemental = { dado, bonus: verm?.[1] ?? 0, margem: verm?.[2] ?? 0, elemento, liberados };
+    if (comb >= 9) for (const alvo of ["acerto", "pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: 5, fonte: "Corpo e Mente Fortificados" });
+  }
+  if (classe === "alice" && comb >= 3) {
+    out.classe.formas = valorPorNivel(CLASSES_NOTION.alice.formas, comb)?.[1] ?? 3;
+    if (opc.histeria && comb >= 15) {
+      out.mods.push({ alvo: "acerto", valor: 5, fonte: "Histeria" });
+      out.extrasAtaque.todos.push({ formula: comb >= 45 ? "4d12" : "2d10", fonte: comb >= 45 ? "Histeria Absoluta (Faca)" : "Histeria (Faca)" });
+    }
+    out.classe.histeria = comb >= 15 ? { ativa: !!opc.histeria, dano: comb >= 45 ? "4d12" : "2d10" } : null;
+  }
+  if (classe === "cacador" && comb >= 3) out.classe.pistola = valorPorNivel(CLASSES_NOTION.cacador.pistola, comb)?.[1];
+  if (classe === "trovador" && comb >= 3) out.classe.inspiracao = valorPorNivel(CLASSES_NOTION.trovador.inspiracao, comb)?.[1];
   if (classe === "barbaro" && comb >= 3) {
     const f = valorPorNivel(CLASSES_NOTION.barbaro.furia.tabela, comb);
     out.classe.furia = f ? { dano: f[1], rd: f[2], ativa: !!opc.furiaAtiva } : null;
@@ -153,12 +181,13 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
 
   // Treinos concluídos com efeito especial
   const concluidos = Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido");
-  const temEspecial = id => concluidos.some(t => t.especial === id);
+  const espSet = especiaisConcluidos(d);
+  const temEspecial = id => espSet.has(id);
   out.menteBlindada = temEspecial("menteBlindada");
   out.meditacaoNucleo = temEspecial("meditacaoNucleo");
   out.memoriaTreinada = temEspecial("memoriaTreinada");
-  out.especiaisTreino = [...new Set(concluidos.map(t => t.especial).filter(Boolean))];
-  out.tecnologia = Math.max(1, Math.min(3, Math.floor(n(d.tecnologia) || 1) + concluidos.filter(t => t.especial === "familiaridade").length));
+  out.especiaisTreino = [...espSet];
+  out.tecnologia = Math.max(1, Math.min(3, Math.floor(n(d.tecnologia) || 1) + concluidos.filter(t => especialDoTreino(t) === "familiaridade").length));
 
   // Títulos: conquistas (contadas pela ficha) e títulos ganhos; só o ativo dá bônus
   const cont = d.conquistas ?? {};
@@ -212,13 +241,15 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   }
 
   // Aura de Proteção (treino): 2 × Núcleo de RD ou Núcleo na CA; a Superior dá os dois
-  const concl = Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido");
+  const esp = especiaisConcluidos(d);
   const nuc = Math.floor(n(totais.nucleo));
-  if (nuc > 0 && concl.some(t => t.especial === "auraProtecao" || t.especial === "auraProtecaoSuperior")) {
-    const superior = concl.some(t => t.especial === "auraProtecaoSuperior");
+  // Aura Iniciante: soma o Núcleo em todo ataque corpo a corpo desarmado (vale para armas que contam como desarmadas)
+  if (nuc && esp.has("auraIniciante")) extrasAtaque.desarmado.push({ formula: String(Math.floor(nuc * numBonus("treino.auraIniciante"))), fonte: "Aura Iniciante" });
+  if (nuc > 0 && (esp.has("auraProtecao") || esp.has("auraProtecaoSuperior"))) {
+    const superior = esp.has("auraProtecaoSuperior");
     const naCa = d.auraProtecaoCa === true;
-    if (superior || !naCa) rd.push({ valor: 2 * nuc, tipos: "todos os danos", fonte: "Aura de Proteção" });
-    if (superior || naCa) mods.push({ alvo: "ca", valor: nuc, fonte: "Aura de Proteção" });
+    if (superior || !naCa) rd.push({ valor: Math.floor(numBonus("treino.auraProtecaoRd") * nuc), tipos: "todos os danos", fonte: "Aura de Proteção" });
+    if (superior || naCa) mods.push({ alvo: "ca", valor: Math.floor(numBonus("treino.auraProtecaoCa") * nuc), fonte: "Aura de Proteção" });
   }
   const grau = grauNucleo(totais.nucleo);
 
@@ -227,7 +258,23 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   const teto = tetoAtributo(maiorNivel);
   const acima = Object.values(atributos).filter(a => a.base + a.raca + a.aumento + a.outros > teto).map(a => a.label);
   const avisos = acima.length ? [`Acima do teto de ${teto} para o nível ${maiorNivel}: ${acima.join(", ")}.`] : [];
-  return { altos, mods, rd, extrasAtaque, teto, acima, avisos, grau };
+  // Aura de Deslocamento: 9 m com Ação Bônus (+3 m por ponto de Núcleo acima de 3; Superior +9 m)
+  const treinosInfo = [];
+  if (esp.has("auraDeslocamento") || esp.has("auraDeslocamentoSuperior")) {
+    const m = numBonus("treino.auraDeslocBase") + numBonus("treino.auraDeslocPorPonto") * Math.max(0, nuc - 3) + (esp.has("auraDeslocamentoSuperior") ? numBonus("treino.auraDeslocSuperior") : 0);
+    treinosInfo.push(`Aura de Deslocamento: move ${m} m com a Ação Bônus.`);
+  }
+  if (esp.has("fortalecimentoMental")) treinosInfo.push(`Fortalecimento Mental por Aura: +${Math.floor(nuc * numBonus("treino.fortalecimentoMental"))} (Núcleo) nos testes de resistência de Autocontrole.`);
+  if (esp.has("magiaPotente")) treinosInfo.push(`Magia Potente: +${Math.floor(n(totais.inteligencia) * numBonus("treino.magiaPotente"))} (Inteligência) no dano e na cura das magias.`);
+  if (esp.has("corredor")) treinosInfo.push(`Corredor: +${numBonus("treino.corredor")} m de deslocamento e Disparada como Ação Bônus.`);
+  if (esp.has("miraRapida")) treinosInfo.push("Mira Rápida: Mira como Ação Bônus.");
+  if (esp.has("sintonizacao")) treinosInfo.push("Sintonização com Arma: marque a arma como \"conta como ataque desarmado\" no editor dela.");
+  if (esp.has("versatilidade")) treinosInfo.push("Versatilidade Armada: usa o maior tipo de dano e o maior atributo nas armas.");
+  if (esp.has("delinquente")) treinosInfo.push("Delinquente Briguento: primeiro ataque da briga que você começou causa o dobro de dano.");
+  if (esp.has("apostador")) treinosInfo.push("Apostador Experiente: vantagem em Intuição ligada a jogos de azar.");
+  if (esp.has("estrategista")) treinosInfo.push(`Estrategista: quem segue seu plano tem +${numBonus("treino.estrategista")} nos testes.`);
+  if (esp.has("musculosAco")) treinosInfo.push("Músculos de Aço: a CA pode usar Força ou Constituição no lugar da Destreza (Combate → CA).");
+  return { altos, mods, rd, extrasAtaque, teto, acima, avisos, grau, treinosInfo, magiaPotente: esp.has("magiaPotente") ? Math.floor(n(totais.inteligencia) * numBonus("treino.magiaPotente")) : 0, fortalecimentoMental: esp.has("fortalecimentoMental") ? Math.floor(nuc * numBonus("treino.fortalecimentoMental")) : 0 };
 }
 
 /**
@@ -250,6 +297,14 @@ export function trocasBonus(d) {
   return { mapa, lista };
 }
 const trocasAtivas = d => trocasBonus(d).mapa;
+
+/** Efeito especial de um treino: o gravado nele ou, para treinos antigos, o do catálogo do Notion pelo nome. */
+export function especialDoTreino(t) {
+  if (t?.especial) return t.especial;
+  const nome = norm(t?.nome);
+  return TREINAMENTOS_NOTION.find(x => norm(x.nome) === nome)?.especial ?? "";
+}
+const especiaisConcluidos = d => new Set(Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido").map(especialDoTreino).filter(Boolean));
 
 /** Vida, Mana e Estamina máximas automáticas (quando ligadas na ficha). */
 export function maximosAutomaticos(d, atributos, raca) {

@@ -86,6 +86,7 @@ const LISTA = [
   ["voando", "Voando", "basicas", "Está no ar.", "Está no ar.", {}],
   // 0.6.0: efeitos da árvore elemental (Ar e Sombra); reaproveitam ícones parecidos
   ["flutuando", "Flutuando", "elementos", "Erguido por correntes de ar.", "Fica no ar sem controle: deslocamento 0 até o fim do próximo turno e desvantagem em ataques corpo a corpo.", { deslocamentoMult: 0, avisos: ["Flutuando: desvantagem em ataques corpo a corpo"] }, "voando"],
+  ["bebado", "Bêbado", "basicas", "Sob efeito de bebida.", "Penalidades definidas pelo Mestre. Com o Estilo de Combate Bêbado, vira +5 Acerto, +2 Esquiva e +2 CA. Depois de 2 horas fica Exausto e Desequilibrado.", { avisos: ["Bêbado: depois de 2 horas, Exausto e Desequilibrado"] }, "confuso"],
   ["assustado", "Assustado", "medo", "Sombras tomam a mente.", "Desvantagem no próximo teste ou ataque.", { avisos: ["Assustado: desvantagem no próximo teste ou ataque"] }, "medo-absoluto"],
   ["concentrado", "Concentrado", "basicas", "Mantendo uma habilidade ou magia que exige concentração.", "Mantendo uma habilidade ou magia que exige concentração.", {}],
 

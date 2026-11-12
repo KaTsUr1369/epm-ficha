@@ -63,6 +63,7 @@ export const PERICIAS_PADRAO = [
   ["pilotagem", "Pilotagem", ["destreza", "inteligencia"]],
   ["pontaria", "Pontaria", ["destreza"]],
   ["psicologia", "Psicologia", ["carisma", "inteligencia"]],
+  ["reflexos", "Reflexos", ["destreza"]],
   ["religiao", "Religião", ["inteligencia"]],
   ["sobrevivencia", "Sobrevivência", ["inteligencia"]],
   ["tecnologia", "Tecnologia", ["inteligencia"]],
@@ -70,7 +71,10 @@ export const PERICIAS_PADRAO = [
 ];
 
 /** Perícias da lista provisória da versão 0.1 (removidas na migração se estiverem zeradas). */
-export const PERICIAS_OBSOLETAS = ["atuacao", "canalizacao", "conhecimento", "disfarce", "enganacao", "iniciativa", "ladinagem", "misticismo", "reflexos", "seducao"];
+/** Testes de Resistência (caixa própria acima das perícias). */
+export const PERICIAS_RESISTENCIA = ["fortitude", "reflexos", "vontade"];
+
+export const PERICIAS_OBSOLETAS = ["atuacao", "canalizacao", "conhecimento", "disfarce", "enganacao", "iniciativa", "ladinagem", "misticismo", "seducao"];
 
 /** Recursos. PV usa o campo nativo do dnd5e (barra do token funciona); os demais ficam nas flags. */
 export const RECURSOS = {
@@ -252,7 +256,7 @@ export const MELHORIAS = [
 
 export const DEFESAS = {
   esquiva: {
-    label: "Esquiva", pericia: "acrobacia", icone: "fa-solid fa-person-running",
+    label: "Esquiva", pericia: "reflexos", icone: "fa-solid fa-person-running",
     descricao: "Tenta evitar o ataque por completo. Se o atacante passar, você recebe o dano; se falhar, não recebe nada."
   },
   bloqueio: {

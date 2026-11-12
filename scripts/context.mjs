@@ -7,7 +7,7 @@ import {
   FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
   AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
-  PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
+  PERICIAS_PADRAO, PERICIAS_RESISTENCIA, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
   CATEGORIAS_CONDICAO, CATEGORIA_NOTION, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
   CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO,
   SUBABAS_ARQCLASSE, ESTILO_RELACAO, ROTULOS_REPUTACAO, TIPOS_COMPANHEIRO, MOLDURAS, FONTES, ESCALA_TEXTO, RECARGAS, TIPOS_ARMA
@@ -712,8 +712,19 @@ export function montarContexto({
       id, abrev: a.abrev, label: a.label, ativo: p.atributos.includes(id), sugerido: p.sugestoes.includes(id)
     }))
   }));
-  if (favoritasTopo) ctx.pericias = [...ctx.pericias.filter(p => p.favorita), ...ctx.pericias.filter(p => !p.favorita)];
+  const ordemP = Array.isArray(dados.ui?.ordemPericias) ? dados.ui.ordemPericias : [];
+  if (ordemP.length) {
+    const pos = id => { const i = ordemP.indexOf(id); return i < 0 ? 9999 : i; };
+    ctx.pericias = ctx.pericias.map((p, i) => [p, i]).sort((a, b) => pos(a[0].id) - pos(b[0].id) || a[1] - b[1]).map(x => x[0]);
+  }
+  ctx.periciasOrdemPropria = ordemP.length > 0;
+  ctx.pericias.forEach((p, i, l) => { p.primeira = i === 0; p.ultima = i === l.length - 1; });
+  if (favoritasTopo && !edicao) ctx.pericias = [...ctx.pericias.filter(p => p.favorita), ...ctx.pericias.filter(p => !p.favorita)];
   ctx.periciasTemFavoritas = ctx.pericias.some(p => p.favorita);
+  // Testes de Resistência (Fortitude, Reflexos, Vontade) numa caixa própria
+  ctx.resistenciasPericia = ctx.pericias.filter(p => PERICIAS_RESISTENCIA.includes(p.id));
+  ctx.pericias = ctx.pericias.filter(p => !PERICIAS_RESISTENCIA.includes(p.id));
+  for (const l of [ctx.resistenciasPericia, ctx.pericias]) l.forEach((p, i) => { p.primeira = i === 0; p.ultima = i === l.length - 1; });
   ctx.pontosLista = [
     { id: "pev", sigla: "PEv", nome: "Evolução", valor: ficha.pontos.pev, dica: "Pontos de Evolução: combates (5 × ND), encontros e recompensas" },
     { id: "pt", sigla: "PT", nome: "Treinamento", valor: ficha.pontos.pt, dica: "Pontos de Treinamento: 6 horas de treino ou estudo dão 5 PT" },
@@ -1046,7 +1057,7 @@ export function montarContexto({
         podeTreinar: editavel && estado === "andamento" && livres > 0,
         foraDaFaixa: pt > TREINO.ptMax || horas > TREINO.horasMax || (pt > 0 && pt < TREINO.ptMin) || horas < TREINO.horasMin,
         mods, temMods: mods.some(m => m.alvoLabel), criado: num(t.criado),
-        categoriaLabel: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.label ?? "", categoriaIcone: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.icone ?? "",
+        categoriaId: t.categoria ?? "", categoriaLabel: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.label ?? "", categoriaIcone: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.icone ?? "",
         categorias: CATEGORIAS_TREINO.map(c => ({ id: c.id, label: c.label, selected: c.id === t.categoria }))
       };
     }).sort((a, b) => a.criado - b.criado);
@@ -1057,7 +1068,14 @@ export function montarContexto({
       exemplos: EXEMPLOS_TREINAMENTO.map((e, i) => ({ indice: i, nome: e.nome })),
       grupos: ["andamento", "planejado", "concluido"].map(estado => {
         const itens = lista.filter(t => t.estado === estado);
-        return { id: estado, label: ESTADOS_TREINO[estado].label, icone: ESTADOS_TREINO[estado].icone, itens, vazio: !itens.length };
+        // Concluídos: divididos por categoria (fechadas quando são muitos)
+        let divisoes = null;
+        if (estado === "concluido" && itens.length) {
+          const cats = [...CATEGORIAS_TREINO, { id: "", label: "Sem categoria", icone: "fa-solid fa-dumbbell" }];
+          divisoes = cats.map(c => ({ ...c, itens: itens.filter(t => (CATEGORIAS_TREINO.some(x => x.id === t.categoriaId) ? t.categoriaId : "") === c.id) }))
+            .filter(d => d.itens.length).map(d => ({ ...d, aberta: itens.length <= 6 }));
+        }
+        return { id: estado, label: ESTADOS_TREINO[estado].label, icone: ESTADOS_TREINO[estado].icone, itens, vazio: !itens.length, divisoes };
       }),
       total: lista.length
     };

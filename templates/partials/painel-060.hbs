@@ -133,7 +133,7 @@
 </section>
 {{#if v.classe}}
 <section class="epm-painel epm-060-classe">
-  <header class="epm-painel-titulo"><h3>{{v.classe.nome}}</h3><span class="epm-contador">Combatente {{v.classe.nivel}}</span></header>
+  <header class="epm-painel-titulo"><h3>{{v.classe.nome}}</h3><span class="epm-contador">{{v.classe.arquetipoLabel}} {{v.classe.nivel}}</span></header>
   {{#if v.classe.furia}}
   <div class="epm-060-furia{{#if v.classe.furia.ativa}} ativa{{/if}}">
     <button type="button" class="epm-botao{{#if v.classe.furia.ativa}} epm-botao-forte{{/if}}" data-action="furia" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-fire"></i> {{#if v.classe.furia.ativa}}Encerrar Fúria{{else}}Fúria{{/if}}</button>
@@ -148,9 +148,32 @@
   <p class="epm-rotulo">Proteções (até {{v.classe.protecoes.max}})</p>
   <div class="epm-060-opcoes">{{#each v.classe.protecoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="protecaoBarbaro" data-id="{{this.id}}" data-max="{{v.classe.protecoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
   {{/if}}
+  {{#if v.classe.elemental}}
+  <div class="epm-060-corpo"><label class="epm-mini"><span>Elemento Principal</span><select name="flags.epm-ficha.classeEpm.elemento" {{#unless @root.editavel}}disabled{{/unless}}>{{#each v.classe.elemental.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label></div>
+  <p class="epm-dica">{{v.classe.elemental.texto}}</p>
+  {{/if}}
+  {{#if v.classe.formas}}<p class="epm-dica">{{v.classe.formas}}</p>{{/if}}
+  {{#if v.classe.histeria}}
+  <div class="epm-060-furia{{#if v.classe.histeria.ativa}} ativa{{/if}}">
+    <button type="button" class="epm-botao{{#if v.classe.histeria.ativa}} epm-botao-forte{{/if}}" data-action="histeria" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-hat-wizard"></i> {{#if v.classe.histeria.ativa}}Encerrar Histeria{{else}}Histeria{{/if}}</button>
+    <span class="epm-dica">Com 10 PV ou menos, 1 vez por combate, 3 rodadas: +5 de Acerto e +{{v.classe.histeria.dano}} de dano</span>
+  </div>
+  {{/if}}
+  {{#if v.classe.pistola}}<p class="epm-dica">{{v.classe.pistola}}</p>{{/if}}
+  {{#if v.classe.inspiracao}}<p class="epm-dica">{{v.classe.inspiracao}}</p>{{/if}}
   {{#if v.classe.posicoes}}
   <p class="epm-rotulo">Posições (até {{v.classe.posicoes.max}})</p>
   <div class="epm-060-opcoes">{{#each v.classe.posicoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="posicaoLutador" data-id="{{this.id}}" data-max="{{v.classe.posicoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
+  {{/if}}
+  {{#if v.classe.habilidades}}
+  <details class="epm-treino-divisao" open><summary>Habilidades da classe ({{v.classe.habilidades.liberadas.length}})</summary>
+    <ul class="epm-060-habilidades">{{#each v.classe.habilidades.liberadas}}<li><strong>Nv. {{this.nivel}} — {{this.nome}}:</strong> {{this.texto}}</li>{{/each}}</ul>
+  </details>
+  {{#if v.classe.habilidades.proximas.length}}
+  <details class="epm-treino-divisao"><summary>Próximas ({{v.classe.habilidades.proximas.length}})</summary>
+    <ul class="epm-060-habilidades">{{#each v.classe.habilidades.proximas}}<li><strong>Nv. {{this.nivel}} — {{this.nome}}:</strong> {{this.texto}}</li>{{/each}}</ul>
+  </details>
+  {{/if}}
   {{/if}}
 </section>
 {{/if}}
@@ -264,6 +287,12 @@
 {{/if}}
 
 {{#if (epmEq ../secao "treinos")}}
+{{#if v.treinosInfo.length}}
+<section class="epm-painel epm-060-treinos-info">
+  <header class="epm-painel-titulo"><h3>Efeitos dos treinos concluídos</h3></header>
+  <ul class="epm-060-lista">{{#each v.treinosInfo}}<li>{{this}}</li>{{/each}}</ul>
+</section>
+{{/if}}
 <div class="epm-060-grade">
   <section class="epm-painel epm-060-catalogo-treinos">
     <header class="epm-painel-titulo"><h3>Treinamentos do Notion</h3>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="compendioPegar" data-tipo="treinamentos" title="Treinos cadastrados pelo Mestre no compêndio do mundo"><i class="fa-solid fa-book-atlas"></i> Do compêndio</button>{{/if}}</header>

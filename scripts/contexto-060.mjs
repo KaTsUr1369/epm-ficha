@@ -120,6 +120,20 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   if (cl.id) {
     const def = CLASSES_NOTION[cl.id];
     c.id = cl.id; c.nome = def?.nome ?? cl.id; c.nivel = cl.nivel;
+    c.arquetipoLabel = { combatente: "Combatente", conjurador: "Conjurador", artifice: "Artífice" }[def?.arquetipo ?? "combatente"] ?? "Combatente";
+    if (def?.habilidades) {
+      const lista = def.habilidades.map(([nivel, nome, texto]) => ({ nivel, nome, texto, liberada: cl.nivel >= nivel }));
+      c.habilidades = { liberadas: lista.filter(h => h.liberada), proximas: lista.filter(h => !h.liberada) };
+    }
+    if (cl.elemental) {
+      const e = cl.elemental;
+      c.elemental = { ...e, texto: `Arma Elemental: +${e.dado ?? "—"} e Núcleo Vermelho +${e.bonus} de dano elemental (${e.elemento ?? "sem elemento"}) · margem de ameaça +${e.margem}`,
+        opcoes: e.liberados.map(x => ({ id: x, label: x, selected: x === e.elemento })) };
+    }
+    if (cl.formas) c.formas = `Faca Vorpal: ${cl.formas} formas de arma`;
+    if (cl.histeria) c.histeria = cl.histeria;
+    if (cl.pistola) c.pistola = `Pistola do Caçador: ${cl.pistola} Perfurante, 18 m, Ação Bônus + 1 Bala de Mercúrio`;
+    if (cl.inspiracao) c.inspiracao = `Dado de Inspiração: ${cl.inspiracao} (+5 quando usado em Ataque, Resistência ou Perícia)`;
     if (cl.furia) c.furia = { ...cl.furia, usos: int(dados.classeEpm?.furiaUsos), max: CLASSES_NOTION.barbaro.furia.usos };
     if (cl.critico) c.critico = `Crítico Brutal: ${cl.critico.margem < 20 ? `margem ${cl.critico.margem}–20, ` : ""}multiplicador +${cl.critico.mult} (até ×${cl.critico.max})`;
     if (cl.id === "barbaro" && cl.nivel >= 6) {
@@ -190,6 +204,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   /* Relógios visíveis e região */
   v.relogios = mundo.relogios ?? [];
   v.compendio = mundo.compendio ?? null;
+  v.treinosInfo = ex.treinosInfo ?? [];
 
   /* Companheiros: nomeação, liderança e hierarquia */
   const nivelTotal = ficha.nivelTotal ?? 1;

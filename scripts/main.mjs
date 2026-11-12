@@ -3,7 +3,7 @@
  */
 import { MODULE_ID, CAMINHO, FLAG } from "./config.mjs";
 import { registrarHelpers, fvtt, escapar } from "./helpers.mjs";
-import { registrarAjustes, ajustes, migrarListaPericiasMundo } from "./settings.mjs";
+import { registrarAjustes, ajustes, migrarListaPericiasMundo, migrarReflexosMundo } from "./settings.mjs";
 import { registrarCondicoes } from "./conditions.mjs";
 import { EPMActorSheet, catalogoBencaos } from "./actor-sheet.mjs";
 import { EPMPoderSheet, abrirEditorPoder } from "./poder-sheet.mjs";
@@ -63,7 +63,7 @@ Hooks.once("ready", () => {
   mecanicas.integrarIniciativa(EPMActorSheet);
   prepararPastaImagens();
   verificarFichaPadrao();
-  migrarListaPericiasMundo().catch(err => console.warn("EPM | Migração da lista de perícias", err));
+  migrarListaPericiasMundo().then(() => migrarReflexosMundo()).catch(err => console.warn("EPM | Migração da lista de perícias", err));
   console.log(`${MODULE_ID} | Ficha Escolhidos pelo Multiverso pronta`);
 });
 

@@ -17,7 +17,9 @@ import { lerAtor, dadosRolagemEPM, danoArma, periciaAtaquePadrao, ataqueDeArma, 
 import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos.mjs";
 import { fvtt, enriquecer, escapar } from "./helpers.mjs";
 import { ajustes, listaPericias } from "./settings.mjs";
+import { num as numBonus } from "./numeros.mjs";
 import { ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, estilosEscolhidos, custoMagiaCirculo, eTipoFavorito } from "./arquetipos.mjs";
+import { listaPropriedades as listaPropriedadesItem, ataqueDesarmado } from "./context.mjs";
 import { EFEITO_ELEMENTO, DANO_EFEITO_ELEMENTO, DT_EFEITO_ELEMENTO } from "./regras-extras.mjs";
 import { custoRecurso, turnoTransformacao, destransformar, cliqueChatExtra, registrarBestiario } from "./extras.mjs";
 
@@ -479,10 +481,12 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
     }
     if (forma.dano.formula) {
       const cura = /cura/i.test(forma.dano.tipo);
+      const potente = p.tipo === "magia" && ficha.extras?.magiaPotente ? ficha.extras.magiaPotente : 0;
+      const formulaDano = potente ? `${forma.dano.formula} + ${potente}` : forma.dano.formula;
       botoes.push({
-        acao: "formula", formula: forma.dano.formula,
+        acao: "formula", formula: formulaDano,
         rotulo: `${cura ? "Cura" : "Dano"}: ${item.name}${forma.dano.tipo && !cura ? ` (${forma.dano.tipo})` : ""}`,
-        label: `${cura ? "Cura" : "Dano"} ${forma.dano.formula}`, icone: cura ? "fa-solid fa-heart" : "fa-solid fa-burst"
+        label: `${cura ? "Cura" : "Dano"} ${formulaDano}${potente ? " (Magia Potente)" : ""}`, icone: cura ? "fa-solid fa-heart" : "fa-solid fa-burst"
       });
     }
     for (const [k, ligado] of Object.entries(forma.requisitos)) if (ligado) requisitos.push(REQUISITOS[k]?.label ?? k);
@@ -913,7 +917,7 @@ export async function descanso(actor, tipo) {
   if (int(dados.classeEpm?.furiaUsos)) updates[`${P}.classeEpm.furiaUsos`] = 0;
   // 0.6.0: Meditação de Núcleo (descanso curto +1d6 PM) e insanidades temporárias que acabam no descanso longo
   if (!longo && ficha.extras?.meditacaoNucleo) {
-    const rol = new Roll("1d6");
+    const rol = new Roll(String(numBonus("treino.meditacaoNucleo")));
     await rol.evaluate();
     const base = updates[`${P}.recursos.pm.value`] ?? ficha.recursos.pm.value;
     updates[`${P}.recursos.pm.value`] = Math.min(ficha.recursos.pm.max, base + rol.total);
@@ -1167,7 +1171,7 @@ export function fonteAtaque(actor, tipo, ref) {
 
 /** Diálogo antes do ataque: modo, bônus externos, crítico, ataques adicionais, Maestria, Estilo, Presa, munição e cargas. */
 export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, contra = false } = {}) {
-  const at = fonteAtaque(actor, tipo, ref);
+  let at = fonteAtaque(actor, tipo, ref);
   if (!at) return null;
   const { ficha, dados } = estadoAtor(actor);
   if (ficha.ataquesGerais.bloqueados.length) {
@@ -1229,6 +1233,12 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     multPadrao = Math.min(multPadrao + brutal.mult, Math.max(multPadrao, brutal.max));
     notas.push(`Crítico Brutal: crítico ${margemPadrao < 20 ? `${margemPadrao}–20` : "20"}/×${multPadrao}`);
   }
+  // Núcleo Vermelho (Guerreiro Elemental): + Margem de Ameaça
+  const nucVerm = ficha.extras?.classe?.elemental?.margem;
+  if (nucVerm) {
+    margemPadrao = Math.max(2, margemPadrao - nucVerm);
+    notas.push(`Núcleo Vermelho: margem de ameaça +${nucVerm} (crítico ${margemPadrao}–20)`);
+  }
   const acoesLivres = ["bonus", "movimento"].filter(a => !dados.acoes?.[a] && !ficha.bloqueios.acoes?.[a]?.length);
   const chk = (nome, rotulo, { desabilitado = false, dica = "" } = {}) =>
     `<label class="epm-check"${dica ? ` title="${escapar(dica)}"` : ""}><input type="checkbox" name="${nome}" ${desabilitado ? "disabled" : ""}> ${rotulo}</label>`;
@@ -1252,7 +1262,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (ef?.id === "longa") opcoesArq.push(chk("longa", `Arma Longa: ${ef.custo} PE → +${String(ef.alcance).replace(".", ",")} m de alcance`, { desabilitado: peDisp < ef.custo }));
   if (ef?.id === "leve" && ef.danoDex) notas.push("Arma Leve: +3 de dano se a arma já usa Destreza (some no bônus externo)");
   if (estilos.includes("duelista")) opcoesArq.push(chk("duelista", `Duelista: alvo é um único inimigo isolado (+${ARQUETIPOS.combatente.estilos.duelista.acertoIsolado})`));
-  if (estilos.includes("atirador")) opcoesArq.push(chk("atirador", "Atirador: abrir mão do modificador de dano para reduzir a margem de crítico em 2"));
+  if (estilos.includes("atirador")) opcoesArq.push(chk("atirador", `Atirador: abrir mão do modificador de dano para reduzir a margem de crítico em ${ARQUETIPOS.combatente.estilos.atirador.margem}`));
   if (estilos.includes("dupla") && armasEquipadas >= 2) notas.push(`Arma Dupla: +${ARQUETIPOS.combatente.estilos.dupla.acerto} de Acerto (duas armas equipadas)`);
   if (presa) opcoesArq.push(chk("presa", `Contra a Presa (${escapar(presa)}): +${ARQUETIPOS.combatente.cacador.acerto} de Acerto e +1 dado de dano`));
   // Manobra do Combatente (Notion): 1 vez por turno, ao atacar
@@ -1377,7 +1387,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (estilos.includes("dupla") && armasEquipadas >= 2) bonusFontes.push({ valor: ARQUETIPOS.combatente.estilos.dupla.acerto, fonte: "Arma Dupla" });
   if (escolha.presa) bonusFontes.push({ valor: ARQUETIPOS.combatente.cacador.acerto, fonte: `Presa (${presa})` });
   const base = {
-    ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador, margemBonus: escolha.atirador ? 2 : 0,
+    ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador, margemBonus: escolha.atirador ? ARQUETIPOS.combatente.estilos.atirador.margem : 0,
     maestria: favorita && ef && ["destrutivo", "alongado"].includes(ef.id) ? ef : null,
     notasExtra: [
       ...(gastos.length ? [`Gastou: ${gastos.join(", ")}.`] : []),
@@ -1387,6 +1397,21 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
       ...(contra ? ["Contra-ataque (pago com a defesa)."] : [])
     ]
   };
+  // Estilos que mexem no dano: Arma Leve (rola de novo 1 e 2), Armamento Longo (+1d6 / desarmado +1d4), Arma Pesada (nota)
+  const props = (item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])]] : []).map(p => normalizarTexto(p));
+  const ePesada = props.some(p => ["pesada", "enorme", "hvy"].includes(p));
+  const eLeve = props.some(p => ["leve", "lgt", "light"].includes(p));
+  const aDistancia = at.periciaId === "pontaria" || /pontaria/.test(String(at.pericia ?? ""));
+  const E = ARQUETIPOS.combatente.estilos;
+  if (estilos.includes("leve") && eLeve && at.dano) at = { ...at, dano: String(at.dano).replace(/(\d*)d(\d+)(?![\dr])/g, "$1d$2ro<=2") };
+  const extrasEstilo = [];
+  if (estilos.includes("longo") && aDistancia && ePesada) extrasEstilo.push(E.longo.dano);
+  const temLongaPesada = actor.items.some(i => i.type === "weapon" && i.system?.equipped && [...listaPropriedadesItem(i.flags?.[FLAG] ?? {}), ...[...(i.system?.properties ?? [])]].map(normalizarTexto).some(p => ["pesada", "enorme", "hvy"].includes(p)) && (i.flags?.[FLAG]?.periciaAtaque === "pontaria"));
+  if (estilos.includes("longo") && ataqueDesarmado(at) && temLongaPesada) extrasEstilo.push(E.longo.desarmado);
+  if (extrasEstilo.length) base.extraDano = [base.extraDano, ...extrasEstilo].filter(Boolean).join(" + ");
+  if (estilos.includes("pesada") && ePesada) base.notasExtra.push("Combate com Arma Pesada: se este ataque for crítico, pode fazer +1 ataque (uma vez por turno).");
+  if (estilos.includes("leve") && eLeve) base.notasExtra.push("Combate com Arma Leve: dados de dano com 1 ou 2 já foram rolados de novo.");
+  if (extrasEstilo.length) base.notasExtra.push(`Armamento Longo: +${extrasEstilo.join(" + ")} de dano.`);
   const msg = await rolarAtaque(actor, at, { ...base, rotulo: oportunidade ? "Oportunidade" : contra ? "Contra-ataque" : "" });
   const extrasRolar = [
     ...Array.from({ length: extrasComuns }, () => ({ rotulo: "Ataque extra", penalidade: -penalExtra })),
@@ -1504,7 +1529,7 @@ export async function rolarAtaque(actor, at, {
   if (bonusFontes.length) notas.push(`Acerto: ${bonusFontes.map(f => `${sinalCurto(int(f.valor))} ${f.fonte}`).join(", ")}.`);
   if (penalidade) notas.push(`Ataque extra: ${sinalCurto(int(penalidade))} no acerto.`);
   if (dadosExtra) notas.push(`+${dadosExtra} dado de dano (Presa).`);
-  if (semModDano) notas.push("Atirador: sem o modificador de dano, margem de crítico −2.");
+  if (semModDano) notas.push(`Atirador: sem o modificador de dano, margem de crítico −${ARQUETIPOS.combatente.estilos.atirador.margem}.`);
   if (m.dano) notas.push(`Dano ${sinalCurto(m.dano)}: ${m.danoFontes.map(f => f.fonte).join(", ")}.`);
   if (m.danoMult > 1) notas.push(`Dano ×${m.danoMult}: ${ficha.ataquesGerais.danoMult.fontes.join(", ")}.`);
   if (cena.nomes.length) notas.push(`Bônus de cena: ${cena.nomes.join(", ")}.`);

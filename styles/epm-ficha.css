@@ -2877,3 +2877,14 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
   backdrop-filter: blur(3px);
 }
 .application.epm-ficha.epm-com-fundo .epm-cabecalho { background: color-mix(in srgb, var(--epm-fundo) 45%, transparent); }
+.epm-treino-divisao { border-top: 1px solid var(--epm-linha); padding: 4px 0; }
+.epm-treino-divisao > summary { cursor: pointer; font-weight: 600; padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+
+.epm-060-habilidades { margin: 0.25rem 0 0.25rem 1rem; padding: 0; font-size: 0.85em; }
+.epm-060-habilidades li { margin-bottom: 0.25rem; }
+
+.epm-pericia-mover { display: inline-flex; flex-direction: column; }
+.epm-pericia-mover .epm-icone-botao { padding: 0 0.2rem; line-height: 1; font-size: 0.7em; }
+
+.epm-pericia.arrastando { opacity: 0.4; }
+.epm-pericias.editando li[draggable="true"] { cursor: grab; }

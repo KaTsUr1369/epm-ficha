@@ -4,6 +4,7 @@
  * classes do Notion (Fúria, Proteções, Posições), conversão da Ação Padrão e Noção de Vitalidade.
  * As funções `acao*` viram métodos da ficha (actor-sheet.mjs); o resto é chamado por hooks e pelo chat.
  */
+import { num as numBonus } from "./numeros.mjs";
 import { FLAG, RECURSOS, ATRIBUTOS, GRUPOS_ATRIBUTO } from "./config.mjs";
 import { int, num, novoId, formaPadrao } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
@@ -235,9 +236,9 @@ export async function danoSanidade(actor, { formula = "", motivo = "" } = {}) {
   const notas = [`Dano rolado: ${dano}`];
   if (r.teste) {
     const atr = ficha.atributos.autocontrole;
-    const blindada = ficha.extras?.menteBlindada ? 5 : 0;
-    const tituloSan = int(ficha.extras?.titulos?.ativo?.sanidade);
-    const extrasTxt = [blindada ? "Mente Blindada +5" : "", tituloSan ? `${ficha.extras.titulos.ativo.nome} +${tituloSan}` : ""].filter(Boolean).join(", ");
+    const blindada = ficha.extras?.menteBlindada ? numBonus("treino.menteBlindada") : 0;
+    const tituloSan = int(ficha.extras?.titulos?.ativo?.sanidade) + int(ficha.extras?.fortalecimentoMental);
+    const extrasTxt = [blindada ? "Mente Blindada +5" : "", tituloSan ? `títulos e treinos +${tituloSan}` : ""].filter(Boolean).join(", ");
     const t = await rolarTeste(actor, { rotulo: `Resistir (Autocontrole) DT ${dt}${extrasTxt ? ` · ${extrasTxt}` : ""}`, bonus: (atr?.testeTotal ?? atr?.total ?? 0) + blindada + tituloSan });
     const natural = t?.dice?.[0]?.results?.find(x => x.active)?.result ?? t?.dice?.[0]?.total ?? 0;
     if (natural === 1) { dano *= 2; notas.push("falha crítica: dobro"); }
@@ -553,7 +554,7 @@ export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
   "rolarNiveisRecursos", "treinoCatalogo", "catalogoItens", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
   "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
-  "restaurarPacto", "nomearCriatura", "furia", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
+  "restaurarPacto", "nomearCriatura", "furia", "histeria", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
   "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias"
@@ -615,6 +616,11 @@ export const METODOS_060 = {
   },
   acaoNomearCriatura(ev, alvo) { return nomearCriatura(this.actor, alvo.dataset.id); },
   acaoFuria() { return alternarFuria(this.actor); },
+  async acaoHisteria() {
+    const ativa = !!this.actor.flags?.[FLAG]?.classeEpm?.histeria;
+    await this.actor.update({ [`${P}.classeEpm.histeria`]: !ativa });
+    if (!ativa) notaChat(this.actor, `<p><strong>Histeria!</strong> +5 de Acerto, imune a Amedrontada e dano extra com a Faca por 3 rodadas.</p>`, "#B48CE0");
+  },
   acaoProtecaoBarbaro(ev, alvo) { return alternarLista(this.actor, "classeEpm.protecoes", alvo.dataset.id, int(alvo.dataset.max, 1)); },
   acaoPosicaoLutador(ev, alvo) { return alternarLista(this.actor, "classeEpm.posicoes", alvo.dataset.id, int(alvo.dataset.max, 1)); },
   acaoConverterPadrao(ev, alvo) { return converterPadrao(this.actor, alvo.dataset.para); },

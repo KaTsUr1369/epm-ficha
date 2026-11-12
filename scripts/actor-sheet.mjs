@@ -51,7 +51,7 @@ const ACOES_FICHA = [
   "usarBencao", "encerrarBencao", "recarregarBencao", "chatBencao",
   "novaRelacao", "excluirRelacao", "abrirRelacao", "conectarRelacao", "relacaoMultipla", "ajustarAfinidade", "abrirBackground",
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
-  "favoritarPericia", "favoritasNoTopo", "recolherPainel",
+  "favoritarPericia", "favoritasNoTopo", "moverPericia", "ordemPericiasPadrao", "recolherPainel",
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
   "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila",
   // 0.5.4
@@ -291,8 +291,30 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this._inicializarDados();
   }
 
+  /** Guarda a rolagem das abas antes de redesenhar (evita o "pulo" ao sair de um campo). */
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    this._rolagens = new Map([...(this.element?.querySelectorAll(".epm-aba, .epm-nav") ?? [])].map(el => [el.dataset.tab ?? el.className, el.scrollTop]));
+  }
+
+  _restaurarRolagens() {
+    if (!this._rolagens?.size) return;
+    for (const el of this.element.querySelectorAll(".epm-aba, .epm-nav")) {
+      const y = this._rolagens.get(el.dataset.tab ?? el.className);
+      if (y !== undefined && el.scrollTop !== y) el.scrollTop = y;
+    }
+  }
+
   async _onRender(context, options) {
     await super._onRender(context, options);
+    try { await this._onRenderEpm(context, options); } finally {
+      this._restaurarRolagens();
+      requestAnimationFrame(() => { this._restaurarRolagens(); this._rolagens = null; });
+    }
+  }
+
+  async _onRenderEpm(context, options) {
+    try { this._ativarArrastePericias(); } catch (e) { console.warn("EPM | arrastar perícias", e); }
     this.element.classList.toggle("epm-limitado", this._visaoLimitada());
     const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
     aplicarPaleta(this.element, pers.cor ?? COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
@@ -1797,6 +1819,43 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const acertos = await jogarMinijogo(alvo.dataset.jogo);
     if (acertos === null) return;
     return M.resultadoMinijogo(this.actor, alvo.dataset.jogo, acertos);
+  }
+
+  async acaoMoverPericia(ev, alvo) {
+    if (!this.isEditable) return;
+    const id = alvo.dataset.pericia, dir = Number(alvo.dataset.dir) || 0;
+    const li = alvo.closest("li[data-pericia-id]");
+    const vizinho = dir < 0 ? li?.previousElementSibling : li?.nextElementSibling;
+    if (!li || !vizinho) return;
+    if (dir < 0) vizinho.before(li); else vizinho.after(li);
+    return this._salvarOrdemPericias();
+  }
+
+  /** Salva a ordem das perícias como está na tela (resistências primeiro). */
+  _salvarOrdemPericias() {
+    const lista = [...this.element.querySelectorAll("li[data-pericia-id]")].map(li => li.dataset.periciaId);
+    return this.actor.update({ [`${P}.ui.ordemPericias`]: lista });
+  }
+
+  /** Arrastar perícias no modo edição (só dentro da mesma caixa). */
+  _ativarArrastePericias() {
+    let arrastada = null, antes = "";
+    const ordem = () => [...this.element.querySelectorAll("li[data-pericia-id]")].map(li => li.dataset.periciaId).join();
+    for (const li of this.element.querySelectorAll('li[data-pericia-id][draggable="true"]')) {
+      li.addEventListener("dragstart", ev => { arrastada = li; antes = ordem(); li.classList.add("arrastando"); ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", li.dataset.periciaId); ev.stopPropagation(); });
+      li.addEventListener("dragend", () => { li.classList.remove("arrastando"); arrastada = null; if (ordem() !== antes) this._salvarOrdemPericias(); });
+      li.addEventListener("dragover", ev => {
+        if (!arrastada || arrastada === li || arrastada.parentElement !== li.parentElement) return;
+        ev.preventDefault(); ev.stopPropagation();
+        const r = li.getBoundingClientRect();
+        if (ev.clientY < r.top + r.height / 2) li.before(arrastada); else li.after(arrastada);
+      });
+      li.addEventListener("drop", ev => { if (arrastada) { ev.preventDefault(); ev.stopPropagation(); } });
+    }
+  }
+
+  async acaoOrdemPericiasPadrao() {
+    if (this.isEditable) await this.actor.update({ [`${P}.ui.ordemPericias`]: [] });
   }
 
   async acaoFavoritasNoTopo() {

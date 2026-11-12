@@ -75,14 +75,14 @@ export const ARQUETIPOS = {
     /** Estilos de Combate (1 no Nv. 5, 2 no Nv. 25, 3 no Nv. 49). */
     estilosPorNivel: [{ nivel: 5, qtd: 1 }, { nivel: 25, qtd: 2 }, { nivel: 49, qtd: 3 }],
     estilos: {
-      duelista:  { nome: "Duelista",  texto: "+3 Acerto contra um único inimigo isolado.", acertoIsolado: 3 },
-      atirador:  { nome: "Atirador",  texto: "Pode abrir mão do modificador de dano da arma para reduzir a margem de crítico em 2.", margem: 2 },
-      dupla:     { nome: "Arma Dupla", texto: "Usando duas armas, +2 Acerto e +1 CA.", acerto: 2, ca: 1 },
-      defensivo: { nome: "Combate Defensivo", texto: "Mantém o efeito original." },
-      pesada:    { nome: "Arma Pesada", texto: "Mantém o efeito original." },
-      leve:      { nome: "Arma Leve", texto: "Mantém o efeito original." },
-      bebado:    { nome: "Bêbado", texto: "Mantém o efeito original." },
-      longo:     { nome: "Armamento Longo", texto: "Mantém o efeito original." }
+      defensivo: { nome: "Combate Defensivo", texto: "Usando Escudo ou Armadura: +2 Defesa (Bloqueio) e +1 CA.", defesa: 2, ca: 1 },
+      pesada:    { nome: "Combate com Arma Pesada", texto: "Crítico com arma Pesada ou maior: pode fazer +1 ataque, uma vez por turno." },
+      leve:      { nome: "Combate com Arma Leve", texto: "Com arma Leve ou menor, 1 ou 2 num dado de dano: rola aquele dado de novo." },
+      duelista:  { nome: "Duelista",  texto: "Enfrentando um inimigo isoladamente: +5 Acerto.", acertoIsolado: 5 },
+      bebado:    { nome: "Bêbado", texto: "Com a condição Bêbado, as penalidades viram +5 Acerto, +2 Esquiva e +2 CA. Ainda fica Exausto e Desequilibrado depois de 2 horas.", acerto: 5, esquiva: 2, ca: 2 },
+      atirador:  { nome: "Atirador",  texto: "Atacando com arma à distância, pode abrir mão do modificador de dano para aumentar a margem de crítico em 2.", margem: 2 },
+      longo:     { nome: "Armamento Longo", texto: "Arma à distância Pesada ou Enorme: +1d6 de dano. Também pode atacar corpo a corpo desarmado com +1d4 de dano.", dano: "1d6", desarmado: "1d4" },
+      dupla:     { nome: "Arma Dupla", texto: "Usando duas ou mais armas: +3 Acerto e +2 CA.", acerto: 3, ca: 2 }
     },
     cacador: { nivel: 17, custo: 20, acerto: 5, transferir: 8 }
   },
@@ -336,7 +336,7 @@ export function circuloLiberado(circulo, nivel) {
  * @param {object} dados       flags da ficha (normalizadas)
  * @param {object[]} armasEquipadas  [{ id }] armas equipadas
  */
-export function modsDeArquetipo(dados = {}, armasEquipadas = [], agora = null) {
+export function modsDeArquetipo(dados = {}, armasEquipadas = [], agora = null, itensAtivos = armasEquipadas, statuses = []) {
   const out = [];
   if (agora !== null) out.push(...modsDeProjetos(dados, agora));
   const opc = dados.arquetipoOpcoes ?? {};
@@ -355,8 +355,16 @@ export function modsDeArquetipo(dados = {}, armasEquipadas = [], agora = null) {
   if (comb) {
     const m = efeitoMaestria(opc.combatente?.maestria, comb);
     if (m?.id === "protetora" && armasEquipadas.some(a => eTipoFavorito(a, dados))) out.push({ alvo: "ca", valor: m.ca, fonte: "Arma Protetora (Combatente)" });
+    if (comb >= 7) out.push({ alvo: "pericia.reflexos", valor: 5, fonte: "Reflexos de Combate" });
     const estilos = estilosEscolhidos(dados, comb);
     if (estilos.includes("dupla") && armasEquipadas.length >= 2) out.push({ alvo: "ca", valor: ARQUETIPOS.combatente.estilos.dupla.ca, fonte: "Arma Dupla (Combatente)" });
+    const E = ARQUETIPOS.combatente.estilos;
+    if (estilos.includes("defensivo") && itensAtivos.some(i => i.armadura > 0 || i.escudo)) {
+      out.push({ alvo: "ca", valor: E.defensivo.ca, fonte: "Combate Defensivo" }, { alvo: "defesa.bloqueio", valor: E.defensivo.defesa, fonte: "Combate Defensivo" });
+    }
+    if (estilos.includes("bebado") && statuses.includes("epm-bebado")) {
+      out.push({ alvo: "acerto", valor: E.bebado.acerto, fonte: "Bêbado (estilo)" }, { alvo: "defesa.esquiva", valor: E.bebado.esquiva, fonte: "Bêbado (estilo)" }, { alvo: "ca", valor: E.bebado.ca, fonte: "Bêbado (estilo)" });
+    }
   }
   return out;
 }

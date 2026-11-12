@@ -1,5 +1,6 @@
 /** Opções do módulo (Configurações > Configurar opções > Escolhidos pelo Multiverso). */
 import { MODULE_ID, PERICIAS_PADRAO } from "./config.mjs";
+import { CAMPOS_NUMEROS, aplicarNumeros, padraoNumero } from "./numeros.mjs";
 
 export function registrarAjustes() {
   const reg = (chave, dados) => game.settings.register(MODULE_ID, chave, dados);
@@ -60,6 +61,16 @@ export function registrarAjustes() {
     hint: "Usa o anel roxo do EPM em volta do token de quem está na vez. Só vale se em Combate → Configurar o marcador de turno estiver sem imagem própria.",
     scope: "world", config: true, type: Boolean, default: true, requiresReload: true
   });
+  reg("numerosBonus", {
+    scope: "world", config: false, type: Object, default: {},
+    onChange: v => { aplicarNumeros(v); for (const a of game.actors ?? []) if (a.sheet?.rendered) a.sheet.render(); }
+  });
+  game.settings.registerMenu(MODULE_ID, "numerosBonusMenu", {
+    name: "Bônus de estilos e treinos", label: "Editar números",
+    hint: "O Mestre muda os bônus numéricos dos Estilos de Combate e dos treinos automáticos. Campo vazio volta ao padrão.",
+    icon: "fa-solid fa-sliders", type: criarEditorNumeros(), restricted: true
+  });
+  try { aplicarNumeros(game.settings.get(MODULE_ID, "numerosBonus")); } catch (e) { /* ainda sem mundo */ }
   reg("conteudoNotion", {
     name: "Conteúdo extra do Notion", hint: "Ligado no Escudo do Mestre → Ajustes.",
     scope: "world", config: false, type: Object, default: { condicoes: false, danos: false, bencaos: false, idade: false, grauNucleo: false, calculadora: false }
@@ -145,6 +156,45 @@ export async function migrarListaPericiasMundo() {
   await game.settings.set(MODULE_ID, "migracaoVontade", true);
 }
 
+/** 0.6.5: a lista de perícias salva pelo Mestre ganha Reflexos (Teste de Resistência). */
+export async function migrarReflexosMundo() {
+  if (!game.user?.isGM) return;
+  const salva = ler("periciasPadrao", null);
+  if (Array.isArray(salva) && salva.length && !salva.some(e => Array.isArray(e) && e[0] === "reflexos")) {
+    await game.settings.set(MODULE_ID, "periciasPadrao", [...salva, ["reflexos", "Reflexos", ["destreza"]]]);
+  }
+}
+
 export function salvarListaPericias(lista) {
   return game.settings.set(MODULE_ID, "periciasPadrao", lista);
+}
+
+/** Janela do Mestre com os números editáveis. */
+const criarEditorNumeros = () => class EditorNumeros extends foundry.applications.api.ApplicationV2 {
+  static DEFAULT_OPTIONS = {
+    id: "epm-numeros-bonus", tag: "form", classes: ["epm-numeros"],
+    window: { title: "Bônus de estilos e treinos", icon: "fa-solid fa-sliders", resizable: true },
+    position: { width: 520, height: 640 },
+    form: { handler: salvarNumeros, closeOnSubmit: true }
+  };
+  async _renderHTML() {
+    const salvos = game.settings.get(MODULE_ID, "numerosBonus") ?? {};
+    const esc = foundry.utils.escapeHTML ?? (x => String(x));
+    const grupos = CAMPOS_NUMEROS.map(([titulo, campos]) => `<fieldset><legend>${titulo}</legend>${campos.map(([k, rot, tipo]) =>
+      `<div class="form-group"><label>${esc(rot)}</label><input type="${tipo === "n" ? "number" : "text"}" ${tipo === "n" ? 'step="any"' : ""} name="${k}" value="${esc(salvos[k] ?? "")}" placeholder="${esc(padraoNumero(k))}"></div>`).join("")}</fieldset>`).join("");
+    const div = document.createElement("div");
+    div.style.cssText = "overflow-y:auto;padding:0.5rem;height:100%";
+    div.innerHTML = `<p class="hint">Deixe em branco para usar o padrão (mostrado em cinza). Dados aceitam fórmulas como 1d8 ou 2d6+1.</p>${grupos}
+      <footer class="form-footer"><button type="button" data-action="padrao"><i class="fa-solid fa-rotate-left"></i> Restaurar padrões</button>
+      <button type="submit"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></footer>`;
+    div.querySelector('[data-action="padrao"]').addEventListener("click", () => div.querySelectorAll("input").forEach(i => { i.value = ""; }));
+    return div;
+  }
+  _replaceHTML(result, content) { content.replaceChildren(result); }
+};
+async function salvarNumeros(event, form, formData) {
+    const dados = {};
+    for (const [k, v] of Object.entries(formData.object)) if (v !== "" && v !== null) dados[k] = v;
+    await game.settings.set(MODULE_ID, "numerosBonus", dados);
+    ui.notifications.info("Bônus de estilos e treinos salvos.");
 }

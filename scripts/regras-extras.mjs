@@ -314,6 +314,85 @@ export const CLASSES_NOTION = {
       ["cromatico", "Posição do Dragão Cromático", 45, "Seus ataques causam +2d6 de Fogo, Gelo, Ácido ou Raio.", { dano: "2d6", tipo: "Fogo" }],
       ["lata", "Posição do Dragão de Lata", 45, "Seus ataques causam +1d12 de Força.", { dano: "1d12", tipo: "Força" }]
     ].map(([id, nome, nivel, texto, auto]) => ({ id, nome, nivel, texto, auto }))
+  },
+  guerreiroElemental: {
+    nome: "Guerreiro Elemental", arquetipo: "combatente",
+    armaElemental: [[3, "1d8"], [12, "1d10"], [27, "2d10"], [39, "4d12"]],
+    nucleoVermelho: [[3, 5, 1], [12, 10, 2], [21, 15, 3], [30, 20, 4], [39, 25, 5], [48, 30, 6]],
+    elementos: [[3, ["Fogo", "Água", "Ar", "Terra"]], [12, ["Raio", "Gelo", "Som", "Pressão"]], [27, ["Gravidade"]], [39, ["Fogo Azul", "Raio Negro", "Ácido", "Zero Absoluto", "Vendaval", "Ruído"]]],
+    habilidades: [
+      [3, "Despertar Elemental", "Arma Elemental: seus ataques causam dano extra do Elemento Principal (1d8; 1d10 no 12, 2d10 no 27, 4d12 no 39). Núcleo Vermelho: +5 de dano elemental e +1 de Margem de Ameaça (+5/+1 a cada 9 níveis, até +30/+6 no 48). Com 20+ de dano elemental num ataque, pode aplicar o efeito do elemento (Tabela 1.2), uma vez por rodada por alvo."],
+      [6, "Revestimento Elemental", "Resistência a um elemento desbloqueado (não precisa ser o principal). Troca após um descanso."],
+      [9, "Corpo e Mente Fortificados", "+5 em Testes de Ataque e +5 em Testes de Resistência."],
+      [12, "Refinamento Vermelho", "+10 de dano elemental e +2 de Margem. Arma Elemental 1d10; libera Raio, Gelo, Som e Pressão."],
+      [15, "Contra-Ataque Elemental", "Após um Contra-Ataque bem-sucedido, pode usar o Ataque Extra do Combatente (uma vez por rodada)."],
+      [18, "Visão Elemental", "Ação Padrão: descobre vulnerabilidades, resistências e imunidades elementais de uma criatura e enxerga concentrações de mana."],
+      [21, "Refinamento Vermelho II", "+15 de dano elemental e +3 de Margem."],
+      [24, "Fluxo Elemental", "Ao trocar o Elemento Principal com a Ação Bônus, o primeiro ataque que acertar no turno causa +1 dado da Arma Elemental."],
+      [27, "Corpo Elemental", "Passar num Teste de Resistência de \"metade do dano\" anula o dano. Arma Elemental 2d10; libera Gravidade."],
+      [30, "Refinamento Elemental", "Divide os dados da Arma Elemental entre dois elementos desbloqueados. Núcleo Vermelho: +20 de dano e +4 de Margem."],
+      [33, "Núcleo Branco", "A primeira habilidade de classe ou magia elemental com custo de mana no turno custa metade (mínimo 1)."],
+      [36, "Corpo de Mana", "Resistência a dano mágico e Imunidade a um elemento desbloqueado (troca após descanso)."],
+      [39, "Arma Elemental Superior", "Arma Elemental 4d12; libera Fogo Azul, Raio Negro, Ácido, Zero Absoluto, Vendaval e Ruído (ignoram imunidade ao elemento). Núcleo Vermelho: +25 e +5 de Margem."],
+      [42, "Transcendência", "Troca o Elemento Principal sem gastar ação (uma vez por turno) e a Arma Elemental ignora Resistência ao elemento."],
+      [45, "Domínio Elemental", "Ação Bônus, 1 vez por combate, 3 rodadas: dois Elementos Principais e aplica o efeito do elemento sem precisar de 20 de dano (uma vez por turno)."],
+      [48, "Avatar Elemental", "Ação Livre, 1 vez por combate, 3 rodadas: dobro de dados da Arma Elemental em dois elementos, imunidade a eles, ignora Resistências e uma habilidade de mana a custo 0 por turno. Núcleo Vermelho: +30 e +6 de Margem."]
+    ]
+  },
+  alice: {
+    nome: "Portadora do País Impossível", arquetipo: "combatente",
+    formas: [[3, 3], [21, 5], [30, 6], [39, 7]],
+    habilidades: [
+      [3, "Faca Vorpal", "Item único que absorve a forma de armas tocadas (3 formas; o Mestre define dano e alcance). Corte Vorpal: uma vez por turno, ao acertar com a Faca, faz um segundo ataque no mesmo alvo só com o dano básico."],
+      [6, "Esquiva de Borboletas", "Ao Esquivar, vira borboletas e se move até 3 m atravessando criaturas. Se o ataque errar, ataca o agressor com a Faca como Ação Livre (uma vez por rodada)."],
+      [9, "País das Maravilhas", "Ação Livre, 3 rodadas: percebe passagens, objetos e criaturas ocultas, armadilhas, fraquezas e ilusões comuns."],
+      [12, "Loucura Criativa", "Uma vez por turno, cria uma pequena Manifestação Impossível (apoio, passagem, mudar tamanho ou direção de um objeto). Não causa dano nem prende."],
+      [15, "Fúria da Loucura", "Com 10 PV ou menos, entra em Histeria (Ação Livre, 1 vez por combate, 3 rodadas): +5 de Acerto, imune a Amedrontada, +2d10 de dano com a Faca e ignora redução de deslocamento."],
+      [18, "Tamanho Não Importa", "Ação Bônus: Forma Pequena (+5 em Destreza, passa por frestas, sem armas pesadas) ou Gigante (+1d10 de dano corpo a corpo, quebra obstáculos, metade do deslocamento)."],
+      [21, "Arsenal Expandido", "A Faca guarda 5 formas e troca a forma ativa como Ação Livre uma vez por turno."],
+      [24, "Imaginação Materializada", "Ação Padrão: cria por 3 rodadas uma plataforma, parede, armadilha simples ou ferramenta (sem dano direto)."],
+      [27, "Dança Impossível", "Uma vez por turno, antes ou depois de atacar com a Faca, move até 5 m sem ação e sem provocar. Ataques de oportunidade contra você têm desvantagem."],
+      [30, "Arsenal Distorcido", "6 formas; as novas têm uma habilidade básica, que pode ser usada sem ação ao trocar para elas (uma vez por turno)."],
+      [33, "Pesadelo Manifestado", "Ação Padrão, 1 vez por combate: uma criatura faz Teste Mental; na falha, −5 em Ataque e Resistência e sem Reações contra você por até 3 rodadas."],
+      [36, "Mundo de Cabeça para Baixo", "Ação Padrão, 1 vez por combate: muda uma regra do ambiente ao redor por 3 rodadas (afeta todos)."],
+      [39, "Arsenal do Pesadelo", "7 formas, as novas com até duas habilidades. Ataques normais com a Faca causam +2d10 de dano (não vale no Corte Vorpal)."],
+      [42, "País Impossível", "Ação Padrão, 1 vez por combate: área distorcida por 3 rodadas; uma Manifestação por rodada sem ação e inimigos na área com −3 contra suas habilidades."],
+      [45, "Histeria Absoluta", "A Histeria pode virar a forma verdadeira: +4d12 de dano com a Faca, Esquiva como Ação Livre uma vez por rodada, duas formas no mesmo turno e imune a Amedrontada, Atordoada e Encantada."],
+      [48, "Alice no País Impossível", "Ação Livre, 1 vez por combate, 3 rodadas: anda em qualquer superfície, troca de tamanho e formas livremente, faz um ataque errar uma vez por rodada e fica com 1 PV uma vez ao cair a 0."]
+    ]
+  },
+  cacador: {
+    nome: "Caçador", arquetipo: "artifice",
+    pistola: [[3, "2d8"], [30, "3d10"]],
+    habilidades: [
+      [3, "Arsenal do Caçador", "Pistola do Caçador: 18 m, 2d8 Perfurante, dispara com Ação Bônus gastando 1 Bala de Mercúrio. Tiro de Impacto: cada acerto dá 1 Ponto de Impacto; com 3, o alvo fica Atordoado até o início do turno dele (uma vez por criatura por combate)."],
+      [6, "Rally", "Quem te causar dano ativa o Rally até o fim do seu próximo turno: cada acerto nele recupera 1d10 + Constituição de PV, até o que você perdeu."],
+      [9, "Arma de Transformação", "Arma de Oficina com duas formas (troca com Ação Livre, uma vez por turno): Compacta +1 de Margem de Ameaça; Estendida +1d8 de dano corpo a corpo."],
+      [12, "Munição de Oficina", "3 usos por descanso: Incendiária (+2d8 Fogo), Serrilhada (+2d8; +3d8 contra Bestas) ou Explosiva (2d8 de Força a até 1,5 m do alvo)."],
+      [15, "Frasco de Sangue", "3 por descanso. Ação Bônus: recupera 4d8 + nível de Artífice em PV."],
+      [18, "Ataque Visceral", "Ação Padrão contra alvo Atordoado pelos Pontos de Impacto: 6d10 Perfurante e recupera 2d8 PV. Encerra o Atordoamento."],
+      [21, "Sangue na Oficina", "Ao usar um Frasco, escolha: próximo ataque +2d8 de dano, +3 m de deslocamento, recuperar 2d8 PE ou +3 no próximo ataque contra alvo com condição."],
+      [24, "Oficina de Combate", "Ação Bônus, uma vez por turno: recarregar 2 Balas, trocar a munição preparada, Afiar (+2d8 no próximo corpo a corpo) ou Pressurizar (+1 de Margem no próximo disparo)."],
+      [27, "Ferramentas do Caçador", "Hunter Tools (1 vez por descanso cada): Olho Negro (24 m, 4d10 Arcano), Luvas do Executor (até 3 alvos, 2d8 Arcano), Rugido da Besta (3 m, 4d8 de Força e empurra 3 m)."],
+      [30, "Munição de Mercúrio Refinada", "Pistola 3d10. Carrega 2 Balas e pode gastar as duas num Tiro Duplo de 6d10."],
+      [33, "Cinza de Medula", "3 por descanso. Ação Bônus: o próximo disparo causa +4d10 (+6d10 contra Atordoado)."],
+      [36, "Ferramenta do Cosmos", "Tiny Tonitrus (linha de 12 m, 6d10 Trovejante) e Coração do Cosmos (até 4 alvos, 4d10 Arcano), 1 vez por descanso cada."],
+      [39, "Sangue de Caçador", "Rally também recupera 1d8 PE ou 1 Bala. Ataque Visceral recupera metade dos PV perdidos desde o início do Rally."],
+      [42, "Pesadelo do Caçador", "Ação Padrão, 1 vez por combate, 3 rodadas: Hunter Tool como Ação Bônus, +2d8 de dano nelas e cada uma aplica 1 Ponto de Impacto."],
+      [45, "Chamado Além", "Ação Padrão, 1 vez por descanso, 5 Balas: até 6 criaturas a 24 m fazem teste (6d10 Arcano, metade no sucesso); depois ataca até 3 delas por +3d10."],
+      [48, "O Último Caçador", "Ação Livre, 1 vez por combate, 3 rodadas: Pistola 4d10, +2d10 nas armas, +2 Pontos de Impacto por disparo, Rally contra qualquer agressor, Visceral +4d10 e Hunter Tools custam 2 Balas a menos."]
+    ]
+  },
+  trovador: {
+    nome: "Trovador", arquetipo: "conjurador",
+    inspiracao: [[3, "1d8"], [12, "1d10"], [21, "2d8"], [30, "2d10"], [39, "3d10"], [48, "4d12"]],
+    habilidades: [
+      [3, "Primeiro Verso", "Escolha sua Expressão Artística (música, poesia, dança, pintura…). Inspiração: com uma Ação Bônus, dá um Dado de Inspiração a um aliado que perceba sua expressão (1 por aliado). Ele soma o dado depois de uma rolagem; se for Ataque, Resistência ou Perícia, também recebe +5."],
+      [6, "Palavra Desmoralizante", "Ação Bônus: um inimigo que perceba sua expressão tem desvantagem no próximo Ataque ou Teste de Resistência até o início do seu próximo turno (um inimigo por vez)."],
+      [9, "Conjuração Inspirada", "Magia que fortalece, cura ou protege um aliado, ou impõe condição a um inimigo, pode pegar um segundo alvo com metade do valor (para cima) ou condição por no máximo 1 rodada. Uma vez por turno."],
+      [12, "Inspiração Aprimorada", "Dado 1d10. Ao gastar o dado, o aliado escolhe: Coragem (Vida Temporária igual ao dado), Precisão (soma de novo metade do dado no Ataque) ou Resistência (RD igual ao dado contra o próximo dano)."],
+      [15, "Refrão Persistente", "Quando uma magia sua que fortalece um aliado termina, ele mantém metade de um bônus numérico dela por mais 1 rodada. Sem bônus numérico: +5 no próximo Teste de Resistência até o fim do próximo turno."]
+    ]
   }
 };
 

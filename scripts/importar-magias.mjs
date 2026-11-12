@@ -70,7 +70,7 @@ export function lerMagiaPf2(texto) {
   return out;
 }
 
-const PERICIA_RESISTENCIA = { reflexos: "acrobacia", fortitude: "fortitude", vontade: "vontade" };
+const PERICIA_RESISTENCIA = { reflexos: "reflexos", fortitude: "fortitude", vontade: "vontade" };
 
 /** Magia lida → dados do item EPM (spell). `conjurador` = cobra PM pelo círculo. */
 export function dadosMagiaEpm(m, { url = "", conjurador = true } = {}) {

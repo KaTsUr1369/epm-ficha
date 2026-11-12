@@ -2,6 +2,7 @@
  * Camada de regras "pura": não depende do Foundry, para poder ser testada fora dele.
  * Recebe dados simples e devolve números prontos para a ficha.
  */
+import { num as numBonus } from "./numeros.mjs";
 import { modsDeArquetipo } from "./arquetipos.mjs";
 import {
   FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, RECURSOS, REGRAS, custoNivel,
@@ -11,7 +12,7 @@ import {
   TIPOS_BONUS_SITUACIONAL, GATILHOS_BONUS
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
-import { fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos } from "./ficha-extras.mjs";
+import { especialDoTreino, fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos } from "./ficha-extras.mjs";
 
 /* -------------------------------------------- */
 /*  Utilitários                                 */
@@ -193,7 +194,7 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
       fundo: "", fundoVeu: 70, moldura: "astrolabio", fonte: "classica", escala: 100
     },
     arqclasse: { arquetipo: { notas: "" }, classe: { notas: "" } },
-    ui: { ordemAbas: [], ordemCategorias: [], periciasFavoritasTopo: false }
+    ui: { ordemAbas: [], ordemCategorias: [], ordemPericias: [], periciasFavoritasTopo: false }
   };
 }
 
@@ -335,7 +336,8 @@ export function efeitosDeItens(itens = []) {
       if (item.type === "equipment") armadura = int(item.flags?.[FLAG]?.armadura);
       arma = item.type === "weapon";
     } catch { continue; }
-    if (efeitos.length || armadura || arma) out.push({ id: item.id, nome: item.name, efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "" });
+    if (efeitos.length || armadura || arma || /escudo/i.test(item.name ?? "")) out.push({ id: item.id, nome: item.name, efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "",
+      escudo: /escudo/i.test(String(item.flags?.[FLAG]?.tipoArma ?? "")) || /escudo/i.test(item.name ?? "") || item.system?.type?.value === "shield" });
   }
   return out;
 }
@@ -676,14 +678,15 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   for (const c of efetivas) for (const m of c.efeitos.mods ?? []) somar(m.alvo, m.valor, c.label);
   for (const t of Object.values(d.treinamentos ?? {})) {
     if (t?.estado !== "concluido") continue;
-    for (const m of Object.values(t.mods ?? {})) somar(m?.alvo, m?.valor, `Treinamento: ${t.nome || "sem nome"}`);
+    const corredor = especialDoTreino(t) === "corredor";
+    for (const m of Object.values(t.mods ?? {})) somar(m?.alvo, corredor && m?.alvo === "deslocamento" ? numBonus("treino.corredor") : m?.valor, `Treinamento: ${t.nome || "sem nome"}`);
   }
   for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome);
   // Transformação ativa (sub-aba Transformações)
   const tAtiva = d.transformacao?.ativa ? d.transformacoes?.[d.transformacao.ativa] : null;
   if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`);
   // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
-  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora)) somar(m.alvo, m.valor, m.fonte);
+  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora, itens, [...statuses])) somar(m.alvo, m.valor, m.fonte);
   // Bônus de cena ligados: CA, testes e deslocamento (acerto e dano entram no ataque; RD nas reduções)
   for (const b of Object.values(d.bonusCena ?? {})) {
     if (!b?.ativo) continue;
@@ -946,7 +949,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       vantagensPericia: extrasFicha.vantagensPericia, tamanho: extrasFicha.tamanho,
       corrupcao: extrasFicha.corrupcao,
       menteBlindada: extrasFicha.menteBlindada, meditacaoNucleo: extrasFicha.meditacaoNucleo, memoriaTreinada: extrasFicha.memoriaTreinada,
-      especiaisTreino: extrasFicha.especiaisTreino, tecnologia: extrasFicha.tecnologia, titulos: extrasFicha.titulos, grau: posAtr.grau
+      especiaisTreino: extrasFicha.especiaisTreino, tecnologia: extrasFicha.tecnologia, titulos: extrasFicha.titulos, grau: posAtr.grau,
+      treinosInfo: posAtr.treinosInfo ?? [], magiaPotente: posAtr.magiaPotente ?? 0, fortalecimentoMental: posAtr.fortalecimentoMental ?? 0
     },
     extrasAtaque: {
       armado: [...posAtr.extrasAtaque.armado, ...extrasFicha.extrasAtaque.armado],

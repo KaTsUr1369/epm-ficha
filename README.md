@@ -14,6 +14,17 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.5
+
+- **Estilos de Combate do Combatente:** Combate Defensivo, Arma Pesada, Arma Leve, Duelista, Bêbado (com a nova condição Bêbado), Atirador, Armamento Longo e Arma Dupla, aplicados na ficha e no ataque.
+- **Treinos automáticos:** Aura Iniciante, Magia Potente e Fortalecimento Mental passam a somar sozinhos; o quadro "Efeitos dos treinos concluídos" mostra o resto.
+- **Treinos concluídos por categoria**, em divisões que abrem e fecham.
+- **Bônus editáveis pelo Mestre:** Configurações → Bônus de estilos e treinos.
+- **Classes novas:** Guerreiro Elemental (Arma Elemental 4d12 no nível 39), Portadora do País Impossível, Caçador e Trovador, com as habilidades por nível no painel da classe.
+- **Testes de Resistência:** caixa própria acima das perícias com Fortitude, Reflexos (nova; a Esquiva agora usa Reflexos) e Vontade.
+- **Ordem das perícias:** no modo edição, arraste ou use as setas.
+- **Correção:** a ficha não pula mais de posição ao sair de um campo.
+
 ## Novidades da 0.6.4
 
 - **Marcador de turno EPM:** anel roxo em volta do token de quem está na vez. Vale quando o marcador de turno do combate está sem imagem própria. Dá para desligar em Configurações → "Marcador de turno EPM".

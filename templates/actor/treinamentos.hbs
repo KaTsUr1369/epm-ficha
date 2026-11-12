@@ -46,12 +46,15 @@
       <article class="epm-treino estado-{{this.estado}}">
         <header class="epm-treino-topo">
           <strong>{{this.nome}}</strong>
+          {{#if categoriaLabel}}<span class="epm-tag" title="Categoria do Notion"><i class="{{this.categoriaIcone}}" aria-hidden="true"></i> {{this.categoriaLabel}}</span>{{/if}}
+          {{#if @root.isGM}}<button type="button" class="epm-icone-botao" data-action="compendioEnviar" data-tipo="treinamentos" data-id="{{this.id}}" title="Enviar ao compêndio do mundo"><i class="fa-solid fa-upload"></i></button>{{/if}}
           {{#if foraDaFaixa}}<span class="epm-tag epm-tag-aviso" title="Fora da faixa do livro (1 a 20 PT, 6 h a 1 mês). Combine com o Mestre.">fora da faixa</span>{{/if}}
           {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="excluirTreinamento" data-treino="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>{{/if}}
         </header>
         {{#if @root.edicao}}
         <div class="epm-treino-campos">
           <label class="epm-campo largo"><span>Nome</span><input type="text" name="flags.epm-ficha.treinamentos.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Corredor" /></label>
+          <label class="epm-campo"><span>Categoria</span><select name="flags.epm-ficha.treinamentos.{{this.id}}.categoria"><option value="">—</option>{{#each categorias}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
           <label class="epm-campo"><span>Tempo</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.treinamentos.{{this.id}}.tempo" value="{{this.tempo}}" /><select name="flags.epm-ficha.treinamentos.{{this.id}}.unidade">{{#each unidades}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
           <label class="epm-campo"><span>PT</span><input type="number" min="0" name="flags.epm-ficha.treinamentos.{{this.id}}.pt" value="{{this.pt}}" /></label>
           <label class="epm-campo largo"><span>Requisitos</span><input type="text" name="flags.epm-ficha.treinamentos.{{this.id}}.requisitos" value="{{this.requisitos}}" placeholder="4 de Destreza" /></label>
@@ -101,4 +104,5 @@
   {{#if treinos.total}}{{#if editavel}}
   <p class="epm-dica">Modelos do livro: {{#each treinos.exemplos}}<button type="button" class="epm-link" data-action="exemploTreinamento" data-indice="{{this.indice}}">{{this.nome}}</button>{{#unless @last}}, {{/unless}}{{/each}}. Tempo e PT seguem a faixa do livro (6 h a 1 mês, 1 a 20 PT); o Mestre pode liberar mais.</p>
   {{/if}}{{/if}}
+  {{#if v060}}{{> "epm-painel-060" secao="treinos"}}{{/if}}
 </section>

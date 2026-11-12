@@ -44,7 +44,7 @@
       <section class="epm-painel epm-rd">
         <header class="epm-painel-titulo"><h3>Redução de dano (RD)</h3>
           {{#if edicao}}<button type="button" class="epm-link" data-action="novaRd"><i class="fa-solid fa-plus" aria-hidden="true"></i> RD</button>{{/if}}</header>
-        <p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade (×2) e da resistência (metade). Nível entre parênteses: "Fogo (Mágico)" segura até dano Mágico; sem nível, só Natural.</p>
+        <p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade e da resistência. Nível entre parênteses: "Fogo (Mágico)" segura até dano Mágico; sem nível, só Natural.</p>
         {{#if edicao}}
         {{#each rdBox.manuais}}
         <div class="epm-rd-linha">
@@ -61,7 +61,7 @@
         </div>
         {{#if rdBox.vazio}}<p class="epm-vazio">Nenhuma redução de dano.</p>{{/if}}
         {{/if}}
-        {{#if rdBox.deItens.length}}<div class="epm-chips"><span class="epm-rotulo">De itens</span>{{#each rdBox.deItens}}<span class="epm-chip epm-chip-rd" title="{{this.fonte}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
+        {{#if rdBox.deItens.length}}<div class="epm-chips"><span class="epm-rotulo" title="Itens, condições, raça, classe, atributos e treinos">Automáticas</span>{{#each rdBox.deItens}}<span class="epm-chip epm-chip-rd" title="{{this.fonte}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
       </section>
 
       <section class="epm-painel epm-defesas-dano">
@@ -86,10 +86,11 @@
         {{#if defesasBox.resistencias.length}}<div class="epm-chips"><span class="epm-rotulo">Resiste</span>{{#each defesasBox.resistencias}}<span class="epm-chip" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
         {{#if defesasBox.imunidades.length}}<div class="epm-chips"><span class="epm-rotulo">Imune</span>{{#each defesasBox.imunidades}}<span class="epm-chip epm-chip-imune" {{#if fonte}}title="{{this.fonte}}"{{/if}}>{{this.texto}}</span>{{/each}}</div>{{/if}}
         {{#if defesasBox.vulnerabilidades.length}}<div class="epm-chips"><span class="epm-rotulo">Vulnerável</span>{{#each defesasBox.vulnerabilidades}}<span class="epm-chip epm-chip-vulneravel{{#if anulada}} anulada{{/if}}" title="{{this.fonte}}{{#if anulada}}&#10;Anulada por {{this.anulada}}{{/if}}">{{this.texto}}</span>{{/each}}</div>{{/if}}
-        <p class="epm-dica">Ordem do dano: imunidade → vulnerabilidade (×2) → resistência (metade) → RD.</p>
+        <p class="epm-dica">Ordem do dano: imunidade → vulnerabilidade (×2 ou ×3) → resistência (nível abaixo anula, mesmo nível metade, acima passa) → RD.</p>
         {{/if}}
       </section>
 
+      {{#if v060}}{{> "epm-painel-060" secao="combate"}}{{/if}}
       <section class="epm-painel">
         <header class="epm-painel-titulo"><h3>Turno</h3></header>
         <div class="epm-turno">

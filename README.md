@@ -14,6 +14,48 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.0
+
+Conteúdo do Notion e as ideias novas. Precisa recarregar o mundo (o módulo passa a usar socket).
+
+- **Raças prontas**: 13 raças do Notion, com Habilidades Únicas, Mestiço, atributos da raça, deslocamento, tamanho, habilidades na sub-aba Raça e os Caminhos do Entretenimento Divino.
+- **Vida, Mana e Estamina automáticas**: Raça + Arquétipo + atributo (padrão Constituição, Núcleo e Constituição; dá para escolher). Por nível, a média ou o dado rolado, mais o atributo.
+- **Atributos acima de 4 e teto por nível**.
+- **Sanidade**: estados (Estável a Colapso), dano com teste de Autocontrole, as 100 insanidades do PDF com as condições ligadas, e insanidades com tipo, gatilho e intensidade.
+- **Corrupção acumulada** com marcos.
+- **Combate**:
+  - Ação Completa (Investida, Correr, Recarga Lenta, Primeiros Socorros com Medicina DT 20).
+  - Padrão → Bônus ou Movimento.
+  - Manobra do Combatente.
+  - Crítico Brutal.
+  - Noção de Vitalidade.
+  - Familiaridade tecnológica.
+  - Munição em Pacote.
+- **Classes completas do Notion**: Bárbaro (Fúria, Proteções), Guardião (Corpo de Pedra, Proteção) e Lutador (Porrada Franca, Posições). A árvore elemental vale para o Guerreiro Elemental.
+- **Votos e pactos** (quebrar e cumprir).
+- **Talentos** comprados com PEv.
+- **Treinamentos do Notion** por categoria, com modelos para a categoria Mental.
+- **Itens**:
+  - Armas e armaduras das três regiões, com propriedades e Estamina por turno.
+  - Kits iniciais.
+  - Base das Melhorias de itens.
+- **Elemento** nas magias.
+- **Nomeação de criaturas**, liderança, hierarquia militar, Receio e Confiança.
+- **Bestiário**: conhecimento de criaturas compartilhado com o grupo e ficha de criatura.
+- **Idiomas do EPM** com nível (Básico, Fluente, Nativo). Os proibidos só o Mestre concede.
+- **Tamanho, movimentos e sentidos**. Idade como regra opcional.
+- **Títulos e conquistas**.
+- **Escudo do Mestre → Mundo**:
+  - Regiões (passaporte, idioma, tecnologia, densidade de mana).
+  - Relógios de urgência e enquetes.
+  - Códigos de recompensa.
+  - Ficha rápida de NPC.
+  - Chefes com fases.
+  - Compêndio do mundo.
+  - Calculadora de encontro.
+  - Avisos no Discord.
+- **Escudo → Ajustes**: conteúdo não oficial do Notion (condições, tipos de dano, bênçãos e maldições, idade, grau do Núcleo, calculadora), tudo desligado por padrão.
+
 ## Novidades da 0.5.12
 
 - **Munição da arma**: no editor da arma, a caixa **"Gasta munição"**. Marcada, escolhe o tipo:

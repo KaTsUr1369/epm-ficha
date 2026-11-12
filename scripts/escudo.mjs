@@ -6,12 +6,14 @@ import { FLAG, CAMINHO, MOEDAS, RECURSOS, COR_PADRAO, BRILHO_PADRAO, SUGESTOES }
 import { int, num, danoRecebido } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import { aplicarPaleta } from "./personalizacao.mjs";
-import { listaPericias } from "./settings.mjs";
+import { listaPericias, conteudoNotion } from "./settings.mjs";
 import { montarEscudo } from "./escudo-contexto.mjs";
 import {
   estadoAtor, calcularPerda, calcularRecuperacao, novoTurno, descanso, definirExaustao, formulaD20
 } from "./mecanicas.mjs";
 import { lerAtor } from "./context.mjs";
+import * as mundo from "./mundo.mjs";
+import { lerMundo } from "./settings.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const P = `flags.${FLAG}`;
@@ -23,7 +25,7 @@ const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "rolarTestes", "rolarLivre", "abrirItem",
-  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo"
+  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo"
 ];
 
 export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -137,11 +139,12 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       aba: this._aba, combate, grupo: this._grupo(),
       itensMundo: game.items.contents.map(i => ({ id: i.id, uuid: i.uuid, name: i.name, img: i.img, type: i.type })),
       ui: { ...this._ui, marcados: this._marcados, nomesAlvos: alvos.atores.map(a => a.name), origemAlvos: alvos.origem,
-        condicoesDosAlvos, pericias, notas: game.settings.get(FLAG, "escudoNotas") ?? "",
+        condicoesDosAlvos, pericias, notas: game.settings.get(FLAG, "escudoNotas") ?? "", notion: conteudoNotion(),
         grupoAjustado: (() => { const c = this._cfgGrupo(); return c.extras.length + c.fora.length > 0; })() }
     });
     ctx.dtTeste = this._ui.dtTeste ?? 15;
-    ctx.tiposDano = SUGESTOES.dano ?? [];
+    ctx.mundo = this._contextoMundo();
+    ctx.tiposDano = conteudoNotion("danos") ? [...SUGESTOES.dano, ...SUGESTOES.danoExtra] : (SUGESTOES.dano ?? []);
     return ctx;
   }
 
@@ -199,9 +202,72 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _valor(sel) { return this.element.querySelector(sel)?.value ?? ""; }
 
+  /* ---------- Mundo (0.6.0) ---------- */
+
+  _contextoMundo() {
+    const reg = lerMundo("regioes", { lista: {}, atual: "" });
+    const dens = mundo.densidadeAtual();
+    const comp = lerMundo("compendioMundo", {}) ?? {};
+    const calc = this._ui.calc ?? [{ nd: "", qtd: 1 }, { nd: "", qtd: 1 }, { nd: "", qtd: 1 }];
+    const grupo = this._grupo();
+    const niveis = grupo.map(a => { try { return lerAtor(a).ficha.nivelTotal; } catch { return 1; } });
+    const resultado = mundo.calcularEncontro(calc, niveis);
+    const discord = lerMundo("discord", {}) ?? {};
+    const token = canvas?.tokens?.controlled?.[0]?.actor ?? null;
+    return {
+      regioes: Object.entries(reg.lista ?? {}).map(([id, x]) => ({ id, ...x, atual: reg.atual === id, densidadeLabel: mundo.DENSIDADES[x.densidade]?.label ?? "Normal" })),
+      densidades: Object.entries(mundo.DENSIDADES).map(([id, d]) => ({ id, ...d, atual: id === dens })),
+      densidade: mundo.DENSIDADES[dens],
+      relogios: mundo.relogiosVisiveis(true),
+      codigos: Object.entries(lerMundo("codigos", {}) ?? {}).map(([id, c]) => ({
+        id, ...c, modoLabel: mundo.MODOS_CODIGO[c.modo] ?? "", usos: Object.values(c.usos ?? {}).map(u => u.quem).filter(Boolean).join(", "),
+        esgotado: (c.modo === "unico" && Object.keys(c.usos ?? {}).length > 0) || (c.modo === "grupo" && !!c.usos?.grupo)
+      })).sort((a, b) => (b.criado ?? 0) - (a.criado ?? 0)),
+      compendio: Object.entries(mundo.TIPOS_COMPENDIO).map(([tipo, t]) => ({ tipo, ...t, itens: Object.entries(comp[tipo] ?? {}).map(([id, e]) => ({ id, nome: e.nome, quando: new Date(e.versao).toLocaleDateString("pt-BR") })) })),
+      calculadora: conteudoNotion("calculadora") ? { linhas: calc.map((l, i) => ({ i, ...l })), ...resultado, grupo: grupo.map((a, i) => ({ nome: a.name, nivel: niveis[i], pev: resultado.pev[i] })) } : null,
+      discord: { ligado: !!discord.url, eventos: Object.entries(mundo.EVENTOS_DISCORD).filter(([id]) => discord[id] !== false).map(([, l]) => l).join(", ") },
+      chefe: token ? { nome: token.name, ativo: !!token.flags?.[FLAG]?.chefe?.ativo, fase: token.flags?.[FLAG]?.chefe?.faseAtual ?? 1 } : null
+    };
+  }
+
+  async _mundo(ev, alvo) {
+    if (!game.user.isGM) return;
+    const { op, id } = alvo.dataset;
+    const ops = {
+      novaRegiao: () => mundo.editarRegiao(), editarRegiao: () => mundo.editarRegiao(id), apagarRegiao: () => mundo.apagarRegiao(id),
+      regioesPadrao: () => mundo.regioesPadrao(), viajar: () => mundo.viajarPara(id), densidade: () => mundo.definirDensidade(id),
+      novoRelogio: () => mundo.novoRelogio(), editarRelogio: () => mundo.novoRelogio(id), apagarRelogio: () => mundo.apagarRelogio(id),
+      relogioMais: () => mundo.avancarRelogio(id, 1), relogioMenos: () => mundo.avancarRelogio(id, -1),
+      novoCodigo: () => mundo.novoCodigo(), editarCodigo: () => mundo.novoCodigo(id), apagarCodigo: () => mundo.apagarCodigo(id),
+      enquete: () => mundo.novaEnquete(), npc: () => mundo.fichaRapidaNpc(), discord: () => mundo.configurarDiscord(), testarDiscord: () => mundo.testarDiscord(),
+      apagarCompendio: () => mundo.apagarDoCompendio(alvo.dataset.tipo, id),
+      chefe: () => mundo.configurarChefe(canvas?.tokens?.controlled?.[0]?.actor ?? null),
+      calcular: () => {
+        const linhas = [...this.element.querySelectorAll("[data-calc-linha]")].map(l => ({ nd: l.querySelector("[data-calc-nd]")?.value ?? "", qtd: int(l.querySelector("[data-calc-qtd]")?.value, 1) }));
+        this._ui.calc = [...linhas.filter(l => l.nd !== ""), { nd: "", qtd: 1 }];
+        this.render();
+      }
+    };
+    await ops[op]?.();
+    this.render();
+  }
+
   /* ---------- Navegação e fichas ---------- */
 
   _trocarAba(ev, alvo) { this._aba = alvo.dataset.tab; this.render(); }
+
+  /** Liga/desliga um conteúdo extra do Notion (configuração privada do Mestre) e redesenha as fichas abertas. */
+  async _alternarNotion(ev, alvo) {
+    if (!game.user.isGM) return;
+    const chave = alvo.dataset.chave;
+    const atual = conteudoNotion();
+    await game.settings.set(FLAG, "conteudoNotion", { ...atual, [chave]: !atual[chave] });
+    for (const app of foundry.applications.instances?.values?.() ?? []) {
+      if (app?.document?.documentName === "Actor" && app.rendered) app.render();
+    }
+    if (chave === "condicoes") ui.notifications.info("Condições do Notion: recarregue (F5) para atualizar o HUD do token.");
+    this.render();
+  }
   _abrirFicha(ev, alvo) { fromUuidSync(alvo.dataset.uuid)?.sheet?.render(true); }
   _abrirItem(ev, alvo) { fromUuidSync(alvo.dataset.uuid)?.sheet?.render(true); }
   _focarToken(ev, alvo) {

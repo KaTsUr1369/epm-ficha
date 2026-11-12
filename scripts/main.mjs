@@ -21,6 +21,8 @@ integrarDock();
 registrarRelogioProjetos();
 registrarSeletorDano();
 import * as extras from "./extras.mjs";
+import * as mundo from "./mundo.mjs";
+import { sincronizarMaximos } from "./ficha-060.mjs";
 
 const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 
@@ -43,17 +45,19 @@ Hooks.once("init", () => {
     "epm-bencao": `${CAMINHO}/partials/bencao.hbs`,
     "epm-arquetipo-painel": `${CAMINHO}/partials/arquetipo-painel.hbs`,
     "epm-transformacoes": `${CAMINHO}/partials/transformacoes.hbs`,
-    "epm-historico": `${CAMINHO}/partials/historico.hbs`
+    "epm-historico": `${CAMINHO}/partials/historico.hbs`,
+    "epm-painel-060": `${CAMINHO}/partials/painel-060.hbs`
   });
 
   const modulo = game.modules.get(MODULE_ID);
-  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo };
+  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo, mundo };
 });
 
 Hooks.once("setup", () => registrarCondicoes());
 
 Hooks.once("ready", () => {
   mecanicas.registrarChat();
+  mundo.registrarSocket();
   mecanicas.integrarIniciativa(EPMActorSheet);
   prepararPastaImagens();
   verificarFichaPadrao();
@@ -142,3 +146,30 @@ async function verificarFichaPadrao() {
     ui.notifications.error("Não consegui mudar a ficha padrão. Faça em Configurações → Configurar fichas padrão → Ator / Personagem.");
   }
 }
+
+/* ---------- 0.6.0 ---------- */
+
+/** Chefes com fases, aviso de queda no Discord e máximos automáticos de Vida/Mana/Estamina. */
+Hooks.on("updateActor", (ator, mudancas, opcoes) => {
+  if (!ator.flags?.[FLAG]) return;
+  if (foundry.utils.hasProperty(mudancas, "system.attributes.hp")) {
+    mundo.verificarFaseChefe(ator).catch(err => console.warn("EPM | fase do chefe", err));
+    const hp = ator.system?.attributes?.hp ?? {};
+    if (mundo.souMestreAtivo() && ator.hasPlayerOwner && Number(hp.value) <= 0 && Number(opcoes?.epmPvAntes) > 0) {
+      mundo.avisarDiscord("morte", `☠️ **${ator.name}** caiu a 0 de Vida.`);
+    }
+  }
+  if (!opcoes?.epmSincronizar && ator.isOwner && ator.flags[FLAG].recursosAuto?.ativo) {
+    const donos = game.users.filter(u => u.active && ator.testUserPermission(u, "OWNER"));
+    const resp = donos.find(u => !u.isGM) ?? game.users.activeGM;
+    if (resp?.isSelf) sincronizarMaximos(ator).catch(err => console.warn("EPM | máximos automáticos", err));
+  }
+});
+
+/** Ações de Covil: lembrete ao Mestre a cada rodada nova. */
+Hooks.on("updateCombat", (combate, mudancas) => {
+  if ("round" in (mudancas ?? {})) mundo.lembrarCovil(combate).catch(err => console.warn("EPM | covil", err));
+});
+
+/** Botões só do Mestre nos cartões (encerrar enquete). */
+Hooks.on("renderChatMessageHTML", mundo.ocultarBotoesDeMestre);

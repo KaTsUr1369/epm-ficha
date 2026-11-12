@@ -43,6 +43,12 @@
             <div class="epm-medidor" {{#if soMestreAqui}}title="Neste mundo a afinidade é definida pelo Mestre"{{/if}}><span style="width: {{this.afinidadePct}}%"></span></div>
             {{/if}}
           </div>
+          <div class="epm-060-trilhas" title="Receio e Confiança (0 a 5), separados da afinidade. Confiança 5 libera Pacto; Receio 5 faz obedecer ordens que não arrisquem a vida.">
+            <span class="epm-060-trilha"><span>Confiança</span>{{#each trilhaConfianca}}<button type="button" class="epm-pip{{#if ativa}} ativa{{/if}}" data-action="trilhaRelacao" data-relacao="{{../id}}" data-trilha="confianca" data-valor="{{this.valor}}" {{#unless @root.editavel}}disabled{{/unless}} aria-label="Confiança {{this.valor}}"></button>{{/each}}</span>
+            <span class="epm-060-trilha receio"><span>Receio</span>{{#each trilhaReceio}}<button type="button" class="epm-pip{{#if ativa}} ativa{{/if}}" data-action="trilhaRelacao" data-relacao="{{../id}}" data-trilha="receio" data-valor="{{this.valor}}" {{#unless @root.editavel}}disabled{{/unless}} aria-label="Receio {{this.valor}}"></button>{{/each}}</span>
+            {{#if @root.editavel}}{{#if (epmOr confianca receio)}}<button type="button" class="epm-botao epm-botao-mini epm-botao-sutil" data-action="rolarComRelacao" data-relacao="{{this.id}}" title="Diplomacia e Lábia: +2 por Confiança · Intimidação: +2 por Receio">Rolar com {{this.nome}}</button>{{/if}}{{/if}}
+            {{#if @root.isGM}}<button type="button" class="epm-botao epm-botao-mini epm-botao-sutil" data-action="testeTraicao" data-relacao="{{this.id}}" title="d20 + Receio − Confiança; 15 ou mais: trai ou foge">Traição?</button>{{/if}}
+          </div>
           {{> "epm-historico"}}
           {{#if @root.edicao}}
           <textarea name="flags.epm-ficha.relacoes.{{this.id}}.notas" rows="2" placeholder="Como se conheceram, o que um deve ao outro…" aria-label="Notas">{{this.notas}}</textarea>

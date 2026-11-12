@@ -18,7 +18,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "novaMelhoriaItem", "removerMelhoriaItem"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -126,3 +126,13 @@ export function abrirEditorItem(item) {
   app.render(true);
   return app;
 }
+
+/* 0.6.0: base das Melhorias de itens */
+Object.assign(EPMItemSheet.prototype, {
+  acaoNovaMelhoriaItem(ev, alvo) {
+    return this.item.update({ [`flags.${FLAG}.melhoriasItem.${foundry.utils.randomID()}`]: { categoria: alvo.dataset.categoria, nome: "", efeito: "", criado: Date.now() } });
+  },
+  acaoRemoverMelhoriaItem(ev, alvo) {
+    return this.item.update({ [`flags.${FLAG}.melhoriasItem.-=${alvo.dataset.id}`]: null });
+  }
+});

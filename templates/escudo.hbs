@@ -223,8 +223,8 @@
         <div class="epm-arq-custos">{{#each regras.custosMagia}}<span class="epm-arq-custo" title="Libera no nível {{this.nivel}}"><strong>{{this.label}}</strong> {{this.pm}} PM · Nv. {{this.nivel}}</span>{{/each}}</div></section>
       <section class="epm-painel epm-escudo-danos"><header class="epm-painel-titulo"><h3>Tipos e níveis de dano</h3></header>
         {{#each regras.tiposDano}}<p><strong>{{this.label}}:</strong> {{#each tipos}}<span class="epm-tag" title="{{this.desc}}">{{this.label}}</span> {{/each}}</p>{{/each}}
-        <p><strong>Níveis:</strong> {{epmJoin regras.niveisDano " → "}}. Resistência, imunidade e RD só seguram dano do nível delas ou abaixo (padrão Natural). Escreva o nível entre parênteses: "Fogo (Mágico)".</p>
-        <p>Ordem: imunidade → vulnerabilidade (×2) → resistência (metade) → RD.</p></section>
+        <p><strong>Níveis:</strong> {{epmJoin regras.niveisDano " → "}}. Imunidade e RD seguram dano do nível delas ou abaixo (padrão Natural). Resistência: nível abaixo dela anula, mesmo nível corta à metade, acima passa. Escreva o nível entre parênteses: "Fogo (Mágico)".</p>
+        <p>Ordem: imunidade → vulnerabilidade (×2, ou ×3 escrevendo "Fogo ×3") → resistência → RD.</p></section>
       <section class="epm-painel"><header class="epm-painel-titulo"><h3>Reputação</h3></header>
         <div class="epm-chips">{{#each regras.reputacao}}<span class="epm-tag">{{this.valor}} {{this.label}}</span>{{/each}}</div></section>
     </div>
@@ -235,6 +235,102 @@
     <section class="epm-painel epm-escudo-notas">
       <header class="epm-painel-titulo"><h3>Notas do Mestre</h3><span class="epm-dica">Só o Mestre vê. Salva ao sair do campo.</span></header>
       <textarea data-notas rows="22" placeholder="Ganchos, nomes de NPCs, o que cada jogador quer, segredos da campanha…">{{this.notas}}</textarea>
+    </section>
+    {{/if}}
+
+    {{!-- ================= MUNDO (0.6.0) ================= --}}
+    {{#if (epmEq aba "mundo")}}
+    <div class="epm-escudo-mundo">
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Região e mana</h3>
+          <button type="button" class="epm-link" data-action="mundo" data-op="novaRegiao"><i class="fa-solid fa-plus"></i> Região</button>
+          {{#unless mundo.regioes.length}}<button type="button" class="epm-link" data-action="mundo" data-op="regioesPadrao">Criar Umbra'Draxil, Briavoterna e Genesis</button>{{/unless}}
+        </header>
+        <div class="epm-060-botoes">{{#each mundo.densidades}}<button type="button" class="epm-botao epm-botao-mini{{#if atual}} epm-botao-forte{{/if}}" data-action="mundo" data-op="densidade" data-id="{{this.id}}" title="{{this.texto}}">Mana {{this.label}}</button>{{/each}}</div>
+        <p class="epm-dica">Densidade atual: <strong>{{mundo.densidade.label}}</strong>. {{mundo.densidade.texto}}</p>
+        {{#each mundo.regioes}}
+        <div class="epm-060-item{{#if atual}} atual{{/if}}">
+          <span><strong>{{this.nome}}</strong>{{#if mundo}} · {{this.mundo}}{{/if}}<br><span class="epm-dica">Idioma {{this.idioma}} · tecnologia {{this.tecnologia}} · mana {{this.densidadeLabel}}</span></span>
+          <button type="button" class="epm-botao epm-botao-mini{{#if atual}} epm-botao-forte{{/if}}" data-action="mundo" data-op="viajar" data-id="{{this.id}}" title="Troca a região atual e a densidade de mana e carimba o passaporte do grupo">{{#if atual}}Aqui{{else}}Viajar{{/if}}</button>
+          <button type="button" class="epm-icone-botao" data-action="mundo" data-op="editarRegiao" data-id="{{this.id}}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button type="button" class="epm-icone-botao perigo" data-action="mundo" data-op="apagarRegiao" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        {{/each}}
+      </section>
+
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Relógios de urgência</h3><button type="button" class="epm-link" data-action="mundo" data-op="novoRelogio"><i class="fa-solid fa-plus"></i> Relógio</button><button type="button" class="epm-link" data-action="mundo" data-op="enquete"><i class="fa-solid fa-square-poll-vertical"></i> Enquete</button></header>
+        {{#unless mundo.relogios.length}}<p class="epm-vazio">Nenhum relógio. Avança com falha ligada à ameaça (+1), falha crítica (+2), tempo ou barulho.</p>{{/unless}}
+        {{#each mundo.relogios}}
+        <div class="epm-060-item epm-060-relogio-linha{{#if aFavor}} a-favor{{/if}}">
+          {{{this.svg}}}
+          <span><strong>{{this.nome}}</strong> {{this.atual}}/{{this.partes}}{{#if oculto}} <span class="epm-tag">secreto</span>{{/if}}{{#if aFavor}} <span class="epm-tag">a favor</span>{{/if}}</span>
+          <button type="button" class="epm-icone-botao" data-action="mundo" data-op="relogioMenos" data-id="{{this.id}}" aria-label="Voltar"><i class="fa-solid fa-minus"></i></button>
+          <button type="button" class="epm-icone-botao" data-action="mundo" data-op="relogioMais" data-id="{{this.id}}" aria-label="Avançar"><i class="fa-solid fa-plus"></i></button>
+          <button type="button" class="epm-icone-botao" data-action="mundo" data-op="editarRelogio" data-id="{{this.id}}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button type="button" class="epm-icone-botao perigo" data-action="mundo" data-op="apagarRelogio" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        {{/each}}
+      </section>
+
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Códigos de recompensa</h3><button type="button" class="epm-link" data-action="mundo" data-op="novoCodigo"><i class="fa-solid fa-plus"></i> Código</button></header>
+        {{#unless mundo.codigos.length}}<p class="epm-vazio">Nenhum código. O jogador digita na ficha (Principal → Resgatar código).</p>{{/unless}}
+        {{#each mundo.codigos}}
+        <div class="epm-060-item{{#if esgotado}} usado{{/if}}">
+          <span><code>{{this.codigo}}</code> <span class="epm-tag">{{this.modoLabel}}</span><br><span class="epm-dica">{{#if pev}}+{{this.pev}} PEv {{/if}}{{#if pt}}+{{this.pt}} PT {{/if}}{{#if ph}}+{{this.ph}} PH {{/if}}{{#if itemNome}}· {{this.itemNome}} {{/if}}{{#if titulo}}· título {{this.titulo}} {{/if}}{{#if lore}}· lore{{/if}}{{#if usos}} — usado por {{this.usos}}{{/if}}</span></span>
+          <button type="button" class="epm-icone-botao" data-action="mundo" data-op="editarCodigo" data-id="{{this.id}}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button type="button" class="epm-icone-botao perigo" data-action="mundo" data-op="apagarCodigo" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        {{/each}}
+      </section>
+
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Ferramentas</h3></header>
+        <div class="epm-060-botoes">
+          <button type="button" class="epm-botao" data-action="mundo" data-op="npc"><i class="fa-solid fa-user-plus"></i> Ficha rápida de NPC</button>
+          <button type="button" class="epm-botao" data-action="mundo" data-op="chefe" {{#unless mundo.chefe}}disabled title="Selecione o token do chefe"{{/unless}}><i class="fa-solid fa-crown"></i> Chefe com fases{{#if mundo.chefe}}: {{mundo.chefe.nome}}{{#if mundo.chefe.ativo}} (fase {{mundo.chefe.fase}}){{/if}}{{/if}}</button>
+          <button type="button" class="epm-botao" data-action="mundo" data-op="discord"><i class="fa-brands fa-discord"></i> Avisos no Discord{{#if mundo.discord.ligado}} (ligado){{/if}}</button>
+          {{#if mundo.discord.ligado}}<button type="button" class="epm-botao epm-botao-sutil" data-action="mundo" data-op="testarDiscord">Testar</button>{{/if}}
+        </div>
+        {{#if mundo.discord.ligado}}<p class="epm-dica">Discord: {{mundo.discord.eventos}}.</p>{{/if}}
+        <p class="epm-dica">Chefe: em 66% e 33% da Vida, o chat anuncia a nova defesa e a nova ação (e o dano de Sanidade, se houver). A Ação de Covil é lembrada ao Mestre a cada rodada.</p>
+      </section>
+
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Compêndio do mundo</h3></header>
+        <p class="epm-dica">Cadastre a partir de uma ficha (botão "Enviar ao compêndio" nas entradas, só para o Mestre). As fichas puxam com "Do compêndio" e avisam quando há versão nova.</p>
+        {{#each mundo.compendio}}
+        <details><summary><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}} <span class="epm-contador">{{itens.length}}</span></summary>
+          {{#each itens}}<div class="epm-060-item"><span>{{this.nome}} <span class="epm-dica">{{this.quando}}</span></span><button type="button" class="epm-icone-botao perigo" data-action="mundo" data-op="apagarCompendio" data-tipo="{{../tipo}}" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button></div>{{/each}}
+        </details>
+        {{/each}}
+      </section>
+
+      {{#if mundo.calculadora}}
+      <section class="epm-painel">
+        <header class="epm-painel-titulo"><h3>Calculadora de encontro</h3><span class="epm-contador">ND {{mundo.calculadora.ndTotal}} · {{mundo.calculadora.dificuldade}}</span></header>
+        {{#each mundo.calculadora.linhas}}<div class="epm-060-corpo" data-calc-linha="{{this.i}}"><label class="epm-mini"><span>ND</span><input type="number" min="0" step="0.5" data-calc-nd value="{{this.nd}}" /></label><label class="epm-mini"><span>quantas</span><input type="number" min="1" data-calc-qtd value="{{this.qtd}}" /></label></div>{{/each}}
+        <button type="button" class="epm-botao epm-botao-mini" data-action="mundo" data-op="calcular">Calcular</button>
+        <ul class="epm-060-lista">{{#each mundo.calculadora.grupo}}<li>{{this.nome}} (nível {{this.nivel}}): {{this.pev}} PEv</li>{{/each}}</ul>
+        <p class="epm-dica">PEv por criatura: 5 × ND, +2 por nível de diferença quando o ND passa do nível do personagem. Dificuldade pela razão ND total ÷ soma dos níveis.</p>
+      </section>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ================= AJUSTES ================= --}}
+    {{#if (epmEq aba "ajustes")}}
+    <section class="epm-painel epm-escudo-ajustes">
+      <header class="epm-painel-titulo"><h3>Conteúdo extra do Notion</h3><span class="epm-dica">Configuração privada do Mestre: não é oficial e começa desligado. Vale para todas as fichas do mundo.</span></header>
+      <div class="epm-ajustes-lista">
+        {{#each ajustesNotion}}
+        <label class="epm-ajuste {{#if this.ligado}}ligado{{/if}}">
+          <input type="checkbox" data-action="alternarNotion" data-chave="{{this.chave}}" {{#if this.ligado}}checked{{/if}} />
+          <span><strong>{{this.label}}</strong><small>{{this.dica}}</small></span>
+        </label>
+        {{/each}}
+      </div>
     </section>
     {{/if}}
   </section>

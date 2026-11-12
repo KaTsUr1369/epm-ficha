@@ -16,7 +16,9 @@ import * as X from "./extras.mjs";
 import * as PJ from "./projetos.mjs";
 import * as PR from "./producao.mjs";
 import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar } from "./helpers.mjs";
-import { ajustes, listaPericias, salvarListaPericias } from "./settings.mjs";
+import { ajustes, listaPericias, salvarListaPericias, lerMundo } from "./settings.mjs";
+import * as mundo from "./mundo.mjs";
+import { NOMES_ACOES_060, METODOS_060 } from "./ficha-060.mjs";
 import * as M from "./mecanicas.mjs";
 import { MapaMental } from "./mind-map.mjs";
 import { abrirEditorPoder } from "./poder-sheet.mjs";
@@ -66,7 +68,9 @@ const ACOES_FICHA = [
   "novaRd", "removerRd",
   "novaReceita", "apagarReceita", "alternarProfissao", "novoIngrediente", "removerIngrediente", "ligarResultado",
   "produzir", "testarProducao", "terminarProducao", "apagarProducao",
-  "criarProjeto", "usarProjeto", "apagarProjeto", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto"
+  "criarProjeto", "usarProjeto", "apagarProjeto", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto",
+  // 0.6.0
+  ...NOMES_ACOES_060
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -82,7 +86,7 @@ function soAnotacoes(dados) {
 export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   constructor(options = {}) {
     super(options);
-    this._abas = { primary: "principal", magias: "0", habilidades: "geral", arqclasse: "arquetipo", notas: null };
+    this._abas = { primary: "principal", magias: "0", habilidades: "geral", arqclasse: "arquetipo", condicoes: "oficiais", notas: null };
     this._expandidos = new Set();
     this._filtroRaridades = new Set();
     this._modoEdicao = null;
@@ -222,7 +226,15 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         enriquecidos, editores,
         editavel: this.isEditable,
         idiomas: { catalogo: catalogoIdiomas(), polyglot: polyglotAtivo() },
-        atores: { porUuid: uuid => parceiros.get(uuid) ?? null }
+        atores: { porUuid: uuid => parceiros.get(uuid) ?? null },
+        mundo060: (() => {
+          const den = mundo.densidadeAtual();
+          const pend = mundo.atualizacoesPendentes(bruto);
+          const pendentes = Object.entries(pend).flatMap(([tipo, ids]) => [...ids].map(id => ({ tipo, id, nome: bruto?.[tipo]?.[id]?.nome || "Sem nome", tipoLabel: mundo.TIPOS_COMPENDIO[tipo].label })));
+          const comp = lerMundo("compendioMundo", {}) ?? {};
+          return { relogios: mundo.relogiosVisiveis(game.user.isGM), regiao: mundo.regiaoAtual(), densidade: { id: den, ...mundo.DENSIDADES[den] }, conhecimento: lerMundo("conhecimentoCriaturas", {}),
+            compendio: { pendentes, tipos: Object.entries(mundo.TIPOS_COMPENDIO).map(([tipo, t]) => ({ tipo, ...t, qtd: Object.keys(comp[tipo] ?? {}).length })) } };
+        })()
       });
       if (!contexto.abas.some(a => a.id === this._abas.primary)) this._abas.primary = contexto.abaAtual;
       return Object.assign(base, contexto);
@@ -1215,6 +1227,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
     await this.actor.update({ [`${P}.bencaos.${novoId()}`]: dadosNovaEntrada(c, { escolha, novoIdFn: novoId }) });
     ui.notifications.info(`${c.nome} adicionada à ficha de ${this.actor.name}.`);
+    import("./mundo.mjs").then(m => m.avisarDiscord("bencao", `${c.tipo === "maldicao" ? "💀" : "✨"} **${this.actor.name}** recebeu ${c.tipo === "maldicao" ? "a maldição" : "a bênção"} **${c.nome}**.`)).catch(() => null);
   }
 
   acaoUsarBencao(ev, alvo) { return M.usarBencao(this.actor, alvo.dataset.bencao); }
@@ -1810,3 +1823,6 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
 /** Catálogo exposto para macros (game.modules.get("epm-ficha").api.catalogoBencaos). */
 export const catalogoBencaos = CATALOGO;
+
+/* Ações da 0.6.0 (ficha-060.mjs) */
+Object.assign(EPMActorSheet.prototype, METODOS_060);

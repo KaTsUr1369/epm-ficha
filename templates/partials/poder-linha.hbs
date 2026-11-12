@@ -7,6 +7,7 @@
       <div class="epm-poder-meta">
         <span class="epm-raridade">{{this.raridadeLabel}}</span>
         {{#if origemLabel}}<span class="epm-tag">{{this.origemLabel}}</span>{{/if}}
+        {{#if elemento}}<span class="epm-tag epm-tag-elemento"><i class="fa-solid fa-fire-flame-curved" aria-hidden="true"></i> {{this.elemento}}</span>{{/if}}
         {{#if passiva}}<span class="epm-tag">Passiva</span>{{/if}}
         {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{this.motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{this.nome}}</strong> {{/if}}{{this.acaoLabel}}, {{this.custoTexto}}{{#if resistencia}}, DT {{@root.ficha.cd.valor}}{{/if}}</span>{{/each}}
         {{#unless nFormas}}{{#unless passiva}}<span class="epm-tag fraca">sem formas</span>{{/unless}}{{/unless}}

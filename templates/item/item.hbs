@@ -56,7 +56,7 @@
         <label class="epm-campo" title="Ação gasta ao recarregar esta arma"><span>Recarregar gasta</span><select name="flags.epm-ficha.recargaAcao">{{#each municao.opcoesRecarga}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         {{/if}}
       </div>
-      <p class="epm-dica">{{#if municao.temPente}}Pente: os tiros saem do pente; quando acaba, Recarregar puxa da munição escolhida e gasta a ação acima.{{else}}Unitário: cada ataque tira direto do item de munição (ex.: 1 flecha).{{/if}}</p>
+      <p class="epm-dica">{{#if municao.temPente}}Pente: os tiros saem do pente; quando acaba, Recarregar puxa da munição escolhida e gasta a ação acima.{{else if municao.pacote}}Pacote (mecânica opcional do Notion): o primeiro ataque do combate gasta 1 pacote da munição escolhida; o resto do combate não gasta nada.{{else}}Unitário: cada ataque tira direto do item de munição (ex.: 1 flecha).{{/if}}</p>
       {{/if}}
     </fieldset>
     <div class="epm-modos-arma">
@@ -82,6 +82,34 @@
     <p class="epm-dica">Fórmulas aceitam @atr.forca, @atr.destreza, @per.luta, @nivel…</p>
   </section>
   {{/if}}
+
+  {{#if notion060}}
+  <section class="epm-painel epm-060-item-notion">
+    <header class="epm-painel-titulo"><h3>Notion</h3><span class="epm-dica">Propriedades, região e tecnologia</span></header>
+    <div class="epm-item-editor-campos">
+      <label class="epm-campo largo" title="Separe por vírgula. A ficha mostra o que cada uma faz."><span>Propriedades</span><input type="text" name="flags.epm-ficha.propriedadesTexto" value="{{notion060.propriedadesTexto}}" list="epm-item-sug-prop" placeholder="Acuidade, Pesada, Duas mãos" /><datalist id="epm-item-sug-prop">{{#each notion060.sugestoesPropriedade}}<option value="{{this}}"></option>{{/each}}</datalist></label>
+      <label class="epm-campo"><span>Região</span><select name="flags.epm-ficha.regiao">{{#each notion060.regioes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <label class="epm-campo" title="1 Umbra'Draxil, 2 Briavoterna, 3 Genesis. Acima do nível do personagem: desvantagem e 1 natural trava a arma. 0 = sem tecnologia."><span>Nível de tecnologia</span><input type="number" min="0" max="3" name="flags.epm-ficha.nivelTec" value="{{notion060.nivelTec}}" /></label>
+      {{#if notion060.eArmadura}}
+      <label class="epm-campo"><span>Tipo de armadura</span><select name="flags.epm-ficha.tipoArmadura">{{#each notion060.tiposArmadura}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <label class="epm-campo" title="Descontada no Novo turno com a armadura equipada (armaduras de Genesis)"><span>Estamina por turno</span><input type="number" min="0" name="flags.epm-ficha.estaminaPorTurno" value="{{notion060.estaminaPorTurno}}" /></label>
+      {{else}}
+      <label class="epm-campo" title="Título da arma (ganho por feitos)"><span>Título da arma</span><input type="text" name="flags.epm-ficha.titulo" value="{{notion060.titulo}}" placeholder="A que Partiu o Céu" /></label>
+      {{/if}}
+    </div>
+    {{#if notion060.propriedades.length}}<ul class="epm-060-lista">{{#each notion060.propriedades}}<li><strong>{{this.nome}}</strong>{{#if texto}}: {{this.texto}}{{/if}}</li>{{/each}}</ul>{{/if}}
+  </section>
+  {{/if}}
+
+  <section class="epm-painel epm-060-melhorias-item">
+    <header class="epm-painel-titulo"><h3>Melhorias do item</h3><span class="epm-dica">Base: as regras de Melhorias de itens ainda vão ser definidas (limites provisórios, sem automação).</span></header>
+    {{#each melhorias060.categorias}}
+    <div class="epm-060-melhoria-cat">
+      <p class="epm-rotulo"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}} <span class="epm-contador">{{this.qtd}}/{{this.limite}}</span>{{#if @root.editavel}}{{#unless cheio}} <button type="button" class="epm-icone-botao" data-action="novaMelhoriaItem" data-categoria="{{this.id}}" title="Adicionar"><i class="fa-solid fa-plus"></i></button>{{/unless}}{{/if}}</p>
+      {{#each itens}}<div class="epm-060-item"><input type="text" name="flags.epm-ficha.melhoriasItem.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome" /><input type="text" name="flags.epm-ficha.melhoriasItem.{{this.id}}.efeito" value="{{this.efeito}}" placeholder="Efeito e preço" /><button type="button" class="epm-icone-botao perigo" data-action="removerMelhoriaItem" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button></div>{{/each}}
+    </div>
+    {{/each}}
+  </section>
 
   <section class="epm-painel">
     <header class="epm-painel-titulo"><h3>Bônus e efeitos</h3><span class="epm-dica">{{this.dicaAtivo}}</span></header>

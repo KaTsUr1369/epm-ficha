@@ -6,6 +6,7 @@
       {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoCompanheiro"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo companheiro</button>{{/if}}
     </div>
   </header>
+  {{#if v060}}{{> "epm-painel-060" secao="companheiros"}}{{/if}}
   {{#if companheiros.vazio}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhum companheiro ainda.</p></div>{{/if}}
   <div class="epm-companheiros-grade">
     {{#each companheiros.lista}}

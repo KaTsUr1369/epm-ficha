@@ -11,6 +11,7 @@ import {
   TIPOS_BONUS_SITUACIONAL, GATILHOS_BONUS
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
+import { fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos } from "./ficha-extras.mjs";
 
 /* -------------------------------------------- */
 /*  Utilitários                                 */
@@ -429,7 +430,7 @@ export function dtDe(d, atributos, periciaPorId) {
   };
 }
 
-export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [], agora = null }) {
+export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [], agora = null, opcoes = {} }) {
   const d = dados;
   const st = new Set(statuses);
   const nivel1 = Math.max(0, int(d.nivel, 1));
@@ -465,6 +466,9 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     for (const e of fonteItem.efeitos) if (e.tipo === "imunidade" && e.tipoDano) imunidadesTags.push({ tipo: e.tipoDano, fonte: fonteItem.nome });
   }
   for (const x of bencaosValendo) for (const t of x.auto.efeitos.imunidades ?? []) imunidadesTags.push({ tipo: t, fonte: x.b.nome });
+  // 0.6.0: raça pronta, Sanidade, idade, pactos, talentos e classes do Notion
+  const extrasFicha = fontesDaFicha(d, { opcoes, agora });
+  imunidadesTags.push(...extrasFicha.imunidades);
   const imunes = new Set(imunidadesTags.map(t => normalizarTexto(t.tipo)));
 
   /* ---------- Condições: diretas, implicadas (automáticas) e imunes ---------- */
@@ -483,6 +487,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     for (const id of diretas) empurrar(id, null);
     for (const x of bencaosValendo) for (const id of x.auto.efeitos.implica ?? []) empurrar(id, x.b.nome || "Bênção");
     for (let n = 1; n <= exaustao; n++) for (const id of EFEITOS_EXAUSTAO[n]?.implica ?? []) empurrar(id, `Exaustão ${n}`);
+    for (const x of extrasFicha.implica) empurrar(x.id, x.motivo);
     const vistos = new Set();
     while (fila.length) {
       const id = fila.shift();
@@ -522,13 +527,15 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   for (const k of combinacoes) if (k.efeitos) fontesEfeito.push({ fonte: k.titulo, efeitos: k.efeitos, tipo: "combinacao" });
   for (const x of bencaosValendo) fontesEfeito.push({ fonte: x.b.nome || (x.tipo === "maldicao" ? "Maldição" : "Bênção"), efeitos: x.auto.efeitos, tipo: x.tipo });
   for (let n = 1; n <= exaustao; n++) fontesEfeito.push({ fonte: `Exaustão ${n}`, efeitos: EFEITOS_EXAUSTAO[n] ?? {}, tipo: "exaustao" });
+  fontesEfeito.push(...extrasFicha.fontesEfeito);
 
   const penal = { testes: novaLista(), ataques: novaLista(), distancia: novaLista(), dano: novaLista(), defesa: novaLista() };
   const penalAtributo = {};
   const penalPericia = {};
   const desv = { testes: [], ataques: [], ataquesMagicos: [], iniciativa: [], resistencias: [], dano: [], pericias: {} };
   const vant = { testes: [], ataques: [], pericias: {} };
-  const bloqueios = { acoes: {}, requisitos: {}, magias: [], mana: [], ataques: [], origens: {}, pericias: {} };
+  for (const v of extrasFicha.vantagensPericia ?? []) (vant.pericias[v.pericia] ??= []).push(v.fonte);
+  const bloqueios = { acoes: {}, requisitos: {}, magias: [], mana: [], ataques: [], origens: {}, pericias: {}, habilidades: [] };
   const recuperacao = { sem: { pv: [], pm: [], pe: [], ps: [] }, metade: { pv: [], pm: [], pe: [], ps: [] }, semDescansoCurto: [], descansoCurtoMetade: [] };
   const dots = [];
   const turnoEfeitos = [];
@@ -539,8 +546,9 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     danoAtaques: [], danoMult: { valor: 1, fontes: [] }, custoExtraMagia: { valor: 0, fontes: [] },
     pvPorPm: [], pmPorPv: [], pvPorHabilidade: { valor: 0, fontes: [] }, psFimCombate: { valor: 0, fontes: [] },
     psPorDescansoLongo: { valor: 0, fontes: [] }, pvMaxPorDescanso: { valor: 0, fontes: [] },
-    iniciativaZero: [], metadeDinheiro: []
+    iniciativaZero: [], metadeDinheiro: [], custoExtra: { valor: 0, fontes: [] }
   };
+  const rdCondicoes = [];
   const resistenciasExtra = [];
   let deslMult = 1;
   const deslMotivos = [];
@@ -571,6 +579,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     if (e.bloqueiaMagias) bloqueios.magias.push(fonte);
     if (e.bloqueiaMana) bloqueios.mana.push(fonte);
     if (e.bloqueiaAtaques) bloqueios.ataques.push(fonte);
+    if (e.bloqueiaHabilidades) bloqueios.habilidades.push(fonte);
     for (const r of e.semRecuperar ?? []) recuperacao.sem[r]?.push(fonte);
     for (const r of e.recuperacaoMetade ?? []) recuperacao.metade[r]?.push(fonte);
     if (e.semDescansoCurto) recuperacao.semDescansoCurto.push(fonte);
@@ -588,10 +597,13 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       if (num(e[chave])) { especiais[chave].valor += num(e[chave]); especiais[chave].fontes.push(fonte); }
     }
     for (const chave of ["pvPorPm", "pmPorPv", "iniciativaZero", "metadeDinheiro"]) if (e[chave]) especiais[chave].push(fonte);
+    if (num(e.custoExtra)) { especiais.custoExtra.valor += num(e.custoExtra); especiais.custoExtra.fontes.push(fonte); }
+    if (num(e.rd) > 0) rdCondicoes.push({ valor: num(e.rd), tipos: e.rdTipo || "todos os danos", fonte });
   }
 
   /* ---------- Itens: desvantagem, vantagem, resistências, RD ---------- */
-  const reducoes = [];
+  const reducoes = [...rdCondicoes, ...extrasFicha.rd];
+  resistenciasExtra.push(...extrasFicha.resistencias);
   for (const b of Object.values(d.bonusCena ?? {})) {
     if (b?.ativo && num(b.rd) > 0) reducoes.push({ valor: num(b.rd), tipos: String(b.rdTipo ?? "").trim() || "todos os danos", fonte: b.nome || "Bônus de cena" });
   }
@@ -666,6 +678,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     for (const chave of ["ca", "testes", "deslocamento"]) if (num(b[chave])) somar(chave, num(b[chave]), b.nome || "Bônus de cena");
   }
   lerModsAE(modsAE, somar);
+  for (const m of extrasFicha.mods) somar(m.alvo, m.valor, m.fonte);
   const mod = alvo => mods[alvo]?.total ?? 0;
   const fontes = alvo => mods[alvo]?.fontes ?? [];
 
@@ -694,6 +707,13 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       testeMod, testeFontes, testeTotal: base + raca + aumento + outros + m + testeMod
     };
   }
+  // Atributos acima de 4 (Notion) e teto por nível
+  const posAtr = aposAtributos(d, atributos, {
+    pericias: Object.entries(d.pericias ?? {}).filter(([, p]) => p).map(([id, p]) => ({ id, atributos: Array.isArray(p.atributos) ? p.atributos : [p.atributo].filter(Boolean) }))
+  });
+  for (const m of posAtr.mods) somar(m.alvo, m.valor, m.fonte);
+  reducoes.push(...posAtr.rd);
+  for (const a of Object.values(atributos)) { a.teto = posAtr.teto; a.acimaTeto = posAtr.acima.includes(a.label); }
   const gruposAtributo = Object.entries(GRUPOS_ATRIBUTO).map(([id, label]) => ({
     id, label, atributos: Object.values(atributos).filter(a => a.grupo === id)
   }));
@@ -702,6 +722,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   const avisosAtributos = [];
   if (gastoAtributos > disponivelAtributos) avisosAtributos.push(`A base soma ${gastoAtributos}; o limite é ${disponivelAtributos}.`);
   if (gastoAumento > disponivelAumento) avisosAtributos.push(`Aumentos somam ${gastoAumento}; no nível ${nivelTotal} são ${disponivelAumento} (1 por nível par).`);
+  avisosAtributos.push(...posAtr.avisos);
   {
     const bases = Object.values(atributos).map(a => a.base);
     const emExcecao = bases.filter(b => b === REGRAS.atributoExcecao).length;
@@ -714,7 +735,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   // Perícias: pontos + atributos escolhidos + outros
   const marcos = Math.floor(nivelTotal / 5);
   const limitePericia = REGRAS.periciaLimiteInicial + REGRAS.periciaMarcosLimite.filter(n => nivelTotal >= n).length * REGRAS.periciaAumentoLimite;
-  const disponivelPericias = REGRAS.periciasIniciais + marcos * REGRAS.periciasPorMarco;
+  const disponivelPericias = REGRAS.periciasIniciais + marcos * REGRAS.periciasPorMarco + Math.max(0, int(d.pontosPericiaExtra));
   let gastoPericias = 0;
   const pericias = Object.entries(d.pericias ?? {}).filter(([, p]) => p).map(([id, p]) => {
     const atrs = atributosDaPericia(p);
@@ -763,6 +784,18 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       max: num(r.max) + mod(`recurso.${id}`), mod: mod(`recurso.${id}`), fontes: fontes(`recurso.${id}`), motivos: []
     };
   }
+  // Máximos automáticos (raça + arquétipo + atributo; por nível média ou rolagem + atributo)
+  const recursosAuto = maximosAutomaticos(d, atributos, extrasFicha.raca);
+  if (recursosAuto) {
+    for (const id of ["pv", "pm", "pe"]) {
+      recursos[id].auto = recursosAuto[id];
+      recursos[id].max = recursosAuto[id].total + mod(`recurso.${id}`);
+    }
+  } else if (extrasFicha.raca?.pm || extrasFicha.raca?.pv) {
+    // Sem cálculo automático, os bônus de máximo da raça (Sangue Puro, Vida de Gigante…) entram como bônus
+    if (extrasFicha.raca.pv) recursos.pv.max += extrasFicha.raca.pv + extrasFicha.raca.pvPorNivel * Math.max(1, nivelTotal);
+    if (extrasFicha.raca.pm) recursos.pm.max += extrasFicha.raca.pm;
+  }
   for (const r of Object.values(recursos)) {
     r.pct = r.max > 0 ? limitar(r.value / r.max, 0, 1) : 0;
     r.maxDiferente = r.max !== num(r.id === "pv" ? hp.maxFonte : r.maxFonte);
@@ -788,6 +821,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   deslocamento.mult = deslMult;
   deslocamento.final = arredondar(Math.max(0, deslocamento.base + deslocamento.mod) * deslMult, 2);
   deslocamento.reduzido = deslocamento.final < deslocamento.base + deslocamento.mod;
+  const corpo = movimentosESentidos(d, deslocamento.final, extrasFicha.raca);
 
   // Exaustão
   const atual = EXAUSTAO.find(e => e.nivel === exaustao) ?? null;
@@ -893,7 +927,20 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       atributos: penalAtributo, pericias: penalPericia
     },
     desvantagens, vantagens, bloqueios, recuperacao, dots, turnoEfeitos, vulneraveis, avisos, especiais,
-    ataquesGerais, tags, bencaos, defesas, iniciativa, acoes, pontos, progressao, mods
+    ataquesGerais, tags, bencaos, defesas, iniciativa, acoes, pontos, progressao, mods,
+    extras: {
+      raca: extrasFicha.raca, sanidade: extrasFicha.sanidade, idade: extrasFicha.idade ?? null, classe: extrasFicha.classe,
+      votos: extrasFicha.votos, pactos: extrasFicha.pactos, altos: posAtr.altos, teto: posAtr.teto, recursosAuto, corpo,
+      vantagensPericia: extrasFicha.vantagensPericia, tamanho: extrasFicha.tamanho, densidade: extrasFicha.densidade,
+      custoMagiaPct: extrasFicha.custoMagiaPct, recuperarManaMult: extrasFicha.recuperarManaMult, corrupcao: extrasFicha.corrupcao,
+      menteBlindada: extrasFicha.menteBlindada, meditacaoNucleo: extrasFicha.meditacaoNucleo, memoriaTreinada: extrasFicha.memoriaTreinada,
+      especiaisTreino: extrasFicha.especiaisTreino, tecnologia: extrasFicha.tecnologia, titulos: extrasFicha.titulos, grau: posAtr.grau
+    },
+    extrasAtaque: {
+      armado: [...posAtr.extrasAtaque.armado, ...extrasFicha.extrasAtaque.armado],
+      desarmado: [...posAtr.extrasAtaque.desarmado, ...extrasFicha.extrasAtaque.desarmado],
+      todos: extrasFicha.extrasAtaque.todos
+    }
   };
 }
 
@@ -1054,7 +1101,9 @@ export function formaOfensiva(forma) {
 /** Custo real de uma forma (Mana Corrompida e afins somam PM às magias). */
 export function custoEfetivo(forma, ficha, tipo = "habilidade") {
   if (!forma || forma.custo?.recurso === "nenhum") return { recurso: "nenhum", valor: 0, extra: 0 };
-  const extra = tipo === "magia" && forma.custo.recurso === "pm" ? (ficha?.especiais?.custoExtraMagia?.valor ?? 0) : 0;
+  const densidade = tipo === "magia" && forma.custo.recurso === "pm" && ficha?.extras?.custoMagiaPct ? Math.ceil(Math.max(0, int(forma.custo.valor)) * ficha.extras.custoMagiaPct) : 0;
+  const extra = (tipo === "magia" && forma.custo.recurso === "pm" ? (ficha?.especiais?.custoExtraMagia?.valor ?? 0) : 0)
+    + (["pm", "pe"].includes(forma.custo.recurso) && int(forma.custo.valor) > 0 ? (ficha?.especiais?.custoExtra?.valor ?? 0) : 0) + densidade;
   return { recurso: forma.custo.recurso, valor: Math.max(0, int(forma.custo.valor)) + extra, extra };
 }
 
@@ -1072,6 +1121,7 @@ export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [],
       if (ligado) motivos.push(...(b.requisitos?.[req] ?? []));
     }
     if (poder.tipo === "magia") motivos.push(...(b.magias ?? []));
+    else if (poder.tipo) motivos.push(...(b.habilidades ?? []));
     if (poder.origem) motivos.push(...(b.origens?.[poder.origem] ?? []));
     if (forma.custo?.recurso === "pm" && forma.custo?.valor > 0) motivos.push(...(b.mana ?? []));
     if (formaOfensiva(forma)) motivos.push(...(b.ataques ?? []));
@@ -1310,7 +1360,11 @@ export function moedaPorId(id) {
 const NIVEL_POR_NOME = new Map(NIVEIS_DANO.map(n => [normalizarTexto(n.label), n]));
 const TIPO_POR_NOME = new Map();
 for (const t of TIPOS_DANO) for (const nome of [t.id, t.label, ...t.aliases]) TIPO_POR_NOME.set(normalizarTexto(nome), t);
-const GRUPO_POR_NOME = new Map(Object.entries(GRUPOS_DANO).flatMap(([id, label]) => [[normalizarTexto(label), id], [id, id]]));
+const GRUPO_POR_NOME = new Map(Object.entries(GRUPOS_DANO).flatMap(([id, label]) => {
+  const n = normalizarTexto(label);
+  // Aceita também o singular ("físico não mágico" = grupo Físicos, nível Natural)
+  return [[n, id], [id, id], [n.replace(/s$/, ""), id], [id.replace(/s$/, ""), id]];
+}));
 
 /**
  * Lê um texto de tipo de dano: "Fogo", "Fogo (Mágico)", "Cortante, Perfurante", "Elementais (Verdadeiro)", "todos os danos".
@@ -1318,7 +1372,10 @@ const GRUPO_POR_NOME = new Map(Object.entries(GRUPOS_DANO).flatMap(([id, label])
  */
 export function lerTipoDano(texto) {
   let nivel = null;
-  let resto = normalizarTexto(texto);
+  let mult = null;
+  // "não mágico" (textos de raça) = nível Natural; "×3"/"x3" = multiplicador da vulnerabilidade
+  let resto = normalizarTexto(texto).replace(/\bnao[ -]magicos?\b/g, " natural ");
+  resto = resto.replace(/(^|[\s(,;])[x×]\s*([23])(?=$|[\s),;])/g, (_, a, n) => { mult = Number(n); return `${a} `; });
   for (const [nome, n] of NIVEL_POR_NOME) {
     const re = new RegExp(`(^|[\\s(,;/-])${nome}($|[\\s),;/-])`);
     if (re.test(resto)) { nivel = n; resto = resto.replace(new RegExp(nome, "g"), " "); }
@@ -1338,7 +1395,7 @@ export function lerTipoDano(texto) {
   }
   if (!tipos.size && !grupos.size && !partes.length) todos = true;
   const n = nivel ?? NIVEIS_DANO[0];
-  return { todos, tipos, grupos, nivel: n.valor, nivelLabel: n.label, nivelExplicito: !!nivel };
+  return { todos, tipos, grupos, nivel: n.valor, nivelLabel: n.label, nivelExplicito: !!nivel, mult };
 }
 
 /** Nome bonito de um tipo de dano ("Fogo (Mágico)"). */
@@ -1346,7 +1403,8 @@ export function rotuloTipoDano(texto) {
   const l = lerTipoDano(texto);
   const nomes = [...l.tipos].map(id => TIPOS_DANO.find(t => t.id === id)?.label ?? id);
   const base = l.todos && !nomes.length ? "" : nomes.join(", ");
-  return l.nivelExplicito ? `${base}${base ? " " : ""}(${l.nivelLabel})` : base;
+  const com = l.nivelExplicito ? `${base}${base ? " " : ""}(${l.nivelLabel})` : base;
+  return l.mult ? `${com} ×${l.mult}` : com;
 }
 
 /**
@@ -1371,26 +1429,47 @@ export function tipoCobre(protecao, tipoDano, { ignorarNivel = false } = {}) {
 }
 
 /**
- * Dano que o alvo recebe, nesta ordem: imunidade zera; vulnerabilidade dobra; resistência corta à metade
- * (com as duas, uma anula a outra); por último a RD tira o número fixo. Cada proteção só vale contra dano
- * do nível dela ou abaixo. Devolve { final, passos } para o aviso.
+ * Dano que o alvo recebe, nesta ordem: imunidade zera; vulnerabilidade multiplica (×2, ou ×3 se escrita "Fogo ×3");
+ * resistência pela escada de níveis do Notion: dano de nível ABAIXO da resistência é anulado, do MESMO nível cai
+ * à metade e de nível ACIMA passa inteiro (Corrupção não tem nível: sempre metade). Vulnerável e resistente:
+ * a vulnerabilidade anula um degrau (metade → normal; anulado → metade). Por último a RD tira o número fixo
+ * (imunidade e RD seguram dano do nível delas ou abaixo). Devolve { final, passos } para o aviso.
  */
 export function danoRecebido(ficha, valor, tipoDano = "") {
   let dano = Math.max(0, Math.floor(num(valor)));
   const passos = [];
   const tags = ficha?.tags ?? {};
   const nivelDano = lerTipoDano(tipoDano);
+  const semNivel = nivelDano.tipos.size > 0 && [...nivelDano.tipos].every(id => TIPOS_SEM_NIVEL.includes(id));
   const furou = lista => lista.some(t => tipoCobre(t, tipoDano, { ignorarNivel: true }) && !tipoCobre(t, tipoDano));
   const imunes = (tags.imunidades ?? []).map(t => t.tipo);
   const imune = (tags.imunidades ?? []).find(t => tipoCobre(t.tipo, tipoDano));
   if (dano && imune) return { final: 0, passos: [`imune (${imune.tipo})`] };
   if (dano && furou(imunes)) passos.push(`dano ${nivelDano.nivelLabel} passa a imunidade`);
   const vulneravel = [...(tags.vulnerabilidades ?? []), ...(ficha?.vulneraveis ?? []).filter(v => !v.anulada)].find(t => tipoCobre(t.tipo, tipoDano, { ignorarNivel: true }));
-  const resiste = (tags.resistencias ?? []).find(t => tipoCobre(t.tipo, tipoDano));
-  if (dano && !resiste && furou((tags.resistencias ?? []).map(t => t.tipo))) passos.push(`dano ${nivelDano.nivelLabel} passa a resistência`);
-  if (dano && vulneravel && resiste) passos.push(`vulnerável e resistente (${resiste.tipo}): uma anula a outra`);
-  else if (dano && vulneravel) { const antes = dano; dano *= 2; passos.push(`vulnerável (${vulneravel.tipo}): ${antes} → ${dano}`); }
-  else if (dano && resiste) { const antes = dano; dano = Math.floor(dano / 2); passos.push(`resistência (${resiste.tipo}): ${antes} → ${dano}`); }
+  const multVuln = vulneravel ? (lerTipoDano(vulneravel.tipo).mult ?? (num(vulneravel.mult) || 2)) : 1;
+  let efeitoRes = null;
+  let resiste = null;
+  const daMesmaFamilia = (tags.resistencias ?? []).filter(t => tipoCobre(t.tipo, tipoDano, { ignorarNivel: true }));
+  for (const t of daMesmaFamilia) {
+    const nr = lerTipoDano(t.tipo).nivel;
+    const efeito = semNivel ? "metade" : nivelDano.nivel < nr ? "anula" : nivelDano.nivel === nr ? "metade" : null;
+    if (efeito === "anula") { efeitoRes = "anula"; resiste = t; break; }
+    if (efeito === "metade" && !efeitoRes) { efeitoRes = "metade"; resiste = t; }
+  }
+  if (dano && !efeitoRes && daMesmaFamilia.length) passos.push(`dano ${nivelDano.nivelLabel} passa a resistência`);
+  if (dano && vulneravel && efeitoRes === "metade") passos.push(`vulnerável e resistente (${resiste.tipo}): uma anula a outra`);
+  else if (dano && vulneravel && efeitoRes === "anula") {
+    const antes = dano; dano = Math.floor(dano / 2);
+    passos.push(`vulnerável, mas a resistência ${resiste.tipo} é de nível acima: ${antes} → ${dano}`);
+  } else if (dano && vulneravel) {
+    const antes = dano; dano *= multVuln; passos.push(`vulnerável ×${multVuln} (${vulneravel.tipo}): ${antes} → ${dano}`);
+  } else if (dano && efeitoRes === "anula") {
+    passos.push(`resistência ${resiste.tipo} de nível acima do dano ${nivelDano.nivelLabel}: anulado`);
+    return { final: 0, passos };
+  } else if (dano && efeitoRes === "metade") {
+    const antes = dano; dano = Math.floor(dano / 2); passos.push(`resistência (${resiste.tipo}): ${antes} → ${dano}`);
+  }
   const rd = (tags.reducoes ?? []).filter(r => tipoCobre(r.tipos, tipoDano)).reduce((s, r) => s + num(r.valor), 0);
   if (dano && rd) { const antes = dano; dano = Math.max(0, dano - rd); passos.push(`RD ${rd}: ${antes} → ${dano}`); }
   else if (dano && furou((tags.reducoes ?? []).map(r => r.tipos))) passos.push(`dano ${nivelDano.nivelLabel} passa a RD`);
@@ -1407,7 +1486,7 @@ export function municaoDaArma(flags = {}) {
   const f = flags ?? {};
   const penteMax = Math.max(0, int(f.pente?.max));
   const usa = f.usaMunicao === undefined || f.usaMunicao === null ? !!(f.municao || penteMax > 0) : !!f.usaMunicao;
-  const tipo = f.municaoTipo === "pente" || f.municaoTipo === "unitario" ? f.municaoTipo : (penteMax > 0 ? "pente" : "unitario");
+  const tipo = ["pente", "unitario", "pacote"].includes(f.municaoTipo) ? f.municaoTipo : (penteMax > 0 ? "pente" : "unitario");
   if (!usa) return { usa: false, tipo, itemId: "", porAtaque: 1, pente: null };
   return {
     usa: true, tipo, itemId: f.municao ?? "", porAtaque: Math.max(1, int(f.municaoPorAtaque, 1)),

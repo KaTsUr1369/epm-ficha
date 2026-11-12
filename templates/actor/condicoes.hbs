@@ -1,4 +1,5 @@
 <section class="tab epm-aba epm-condicoes {{cls.condicoes}}{{#if condicoesUi.soAtivas}} so-ativas{{/if}}" data-group="primary" data-tab="condicoes">
+  {{#if v060}}{{> "epm-painel-060" secao="condicoes"}}{{/if}}
   <div class="epm-condicoes-barra">
     <label class="epm-busca">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
@@ -24,7 +25,14 @@
   </section>
   {{/if}}
 
+  {{#if condicoesNotion.ligado}}
+  <nav class="epm-subnav" aria-label="Condições oficiais e não oficiais">
+    <button type="button" class="epm-subnav-item {{condicoesNotion.clsOficiais}}" data-action="aba" data-group="condicoes" data-tab="oficiais">Oficiais</button>
+    <button type="button" class="epm-subnav-item {{condicoesNotion.clsNotion}}" data-action="aba" data-group="condicoes" data-tab="notion"><i class="fa-solid fa-book-bookmark" aria-hidden="true"></i> Não oficiais (Notion)<span class="epm-subnav-qtd">{{condicoesNotion.total}}</span></button>
+  </nav>
+  {{/if}}
   <p class="epm-vazio epm-busca-vazia" hidden>Nenhuma condição encontrada.</p>
+  <div class="tab epm-subaba-condicoes {{#if condicoesNotion.ligado}}{{condicoesNotion.clsOficiais}}{{else}}active{{/if}}" data-group="condicoes" data-tab="oficiais">
   {{#each categoriasCondicao}}
   <details class="epm-categoria-condicao" data-categoria-condicao="{{this.id}}" {{#if aberta}}open{{/if}}>
     <summary>
@@ -46,6 +54,34 @@
     </div>
   </details>
   {{/each}}
+  </div>
+
+  {{#if condicoesNotion.ligado}}
+  <div class="tab epm-subaba-condicoes {{condicoesNotion.clsNotion}}" data-group="condicoes" data-tab="notion">
+    <p class="epm-dica">Condições da página do Notion que não estão na lista oficial. O Mestre liga ou desliga esta aba no Escudo → Ajustes.</p>
+    {{#with condicoesNotion.categoria}}
+    <details class="epm-categoria-condicao" data-categoria-condicao="{{this.id}}" open>
+      <summary>
+        <i class="{{this.icone}}" aria-hidden="true"></i>
+        <span class="epm-categoria-nome">{{this.label}}</span>
+        <span class="epm-contador">{{this.total}}</span>
+        {{#if this.ativas}}<span class="epm-contador epm-contador-ativas">{{this.ativas}} ativa{{#unless (epmEq this.ativas 1)}}s{{/unless}}</span>{{/if}}
+      </summary>
+      <div class="epm-condicoes-grade">
+        {{#each this.condicoes}}
+        <button type="button" class="epm-condicao{{#if ativa}} ativa{{/if}}{{#if automatica}} automatica{{/if}}{{#if imune}} imune{{/if}}" data-action="alternarCondicao" data-condicao="{{this.id}}" data-busca="{{this.busca}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}} title="{{this.descricao}}">
+          <img src="{{this.icone}}" alt="" />
+          <span class="epm-condicao-nome">{{this.label}}{{#if imune}} <em>imune</em>{{/if}}{{#if automatica}} <em class="auto" title="Ativa por causa de {{this.porQueTexto}}">automática</em>{{/if}}</span>
+          <span class="epm-condicao-desc">{{this.efeito}}</span>
+          {{#if automatica}}<span class="epm-condicao-por">por {{this.porQueTexto}}</span>{{/if}}
+          {{#if resumo.length}}<span class="epm-condicao-efeitos">{{#each resumo}}<span>{{this}}</span>{{/each}}</span>{{/if}}
+        </button>
+        {{/each}}
+      </div>
+    </details>
+    {{/with}}
+  </div>
+  {{/if}}
 
   <section class="epm-painel epm-exaustao-painel">
     {{> "epm-exaustao"}}

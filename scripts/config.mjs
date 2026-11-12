@@ -4,7 +4,7 @@
  * adicionar uma condição ou mudar um limite, edite este arquivo.
  */
 
-import { CONDICOES_DADOS, CATEGORIAS_CONDICAO, COMBINACOES, CONDICOES_RENOMEADAS } from "./condicoes.mjs";
+import { CONDICOES_DADOS, CATEGORIAS_CONDICAO, COMBINACOES, CONDICOES_RENOMEADAS, CONDICOES_NOTION_DADOS, CATEGORIA_NOTION } from "./condicoes.mjs";
 
 export const MODULE_ID = "epm-ficha";
 /** Escopo das flags onde os dados da ficha ficam guardados (actor.flags["epm-ficha"]). */
@@ -286,8 +286,9 @@ export const TODAS_ACOES = ["padrao", "bonus", "movimento", "reacao", "livre", "
  * Condições pré-definidas (lista oficial em condicoes.mjs). Elas viram status do Foundry:
  * aparecem no HUD do token e podem ser ligadas tanto pela ficha quanto pelo token.
  */
-export const CONDICOES = CONDICOES_DADOS.map(c => ({ ...c, icone: `${ASSETS}/condicoes/${c.slug}.svg` }));
-export { CATEGORIAS_CONDICAO, COMBINACOES, CONDICOES_RENOMEADAS };
+export const CONDICOES = [...CONDICOES_DADOS, ...CONDICOES_NOTION_DADOS]
+  .map(c => ({ ...c, icone: `${ASSETS}/condicoes/${c.iconeSlug ?? c.slug}.svg` }));
+export { CATEGORIAS_CONDICAO, COMBINACOES, CONDICOES_RENOMEADAS, CATEGORIA_NOTION };
 
 /* -------------------------------------------- */
 /*  Modificadores (bênçãos, maldições, efeitos) */
@@ -508,6 +509,7 @@ export const PT_POR_ACERTOS = [0, 0, 1, 1, 2, 2];
 /** Sub-abas da aba Habilidades (origem da habilidade). Arquétipo e Classe só usam Passiva e Comum. */
 export const SUBABAS_HABILIDADE = [
   { id: "geral",     label: "Geral" },
+  { id: "raca",      label: "Raça",      origem: "raca" },
   { id: "arquetipo", label: "Arquétipo", origem: "arquetipo" },
   { id: "classe",    label: "Classe",    origem: "classe" },
   { id: "transformacoes", label: "Transformações", origem: "transformacao" }
@@ -552,10 +554,11 @@ export const CORES_NO = ["#2B4440", "#3A3355", "#4A2F33", "#4A4128", "#26404F", 
  * que continuam valendo nas fichas (ex.: uma resistência a "Corte" vale para dano Cortante).
  */
 export const GRUPOS_DANO = {
-  fisicos: "Físicos", elementais: "Elementais", misticos: "Energéticos e místicos", mentais: "Mentais", biologicos: "Biológicos"
+  fisicos: "Físicos", elementais: "Elementais", misticos: "Energéticos e místicos", mentais: "Mentais", biologicos: "Biológicos",
+  regionais: "Regionais (Notion)"
 };
 export const TIPOS_DANO = [
-  { id: "contundente", label: "Contundente", grupo: "fisicos", aliases: ["impacto", "concussao", "esmagamento"], desc: "Impactos, golpes, esmagamentos e colisões." },
+  { id: "contundente", label: "Contundente", grupo: "fisicos", aliases: ["impacto", "concussao", "esmagamento", "contusao"], desc: "Impactos, golpes, esmagamentos e colisões." },
   { id: "cortante", label: "Cortante", grupo: "fisicos", aliases: ["corte"], desc: "Lâminas, garras e objetos capazes de cortar." },
   { id: "perfurante", label: "Perfurante", grupo: "fisicos", aliases: ["perfuracao"], desc: "Ataques que atravessam ou perfuram o alvo." },
   { id: "fogo", label: "Fogo", grupo: "elementais", aliases: [], desc: "Chamas, combustão e calor extremo." },
@@ -563,19 +566,28 @@ export const TIPOS_DANO = [
   { id: "ar", label: "Ar", grupo: "elementais", aliases: ["vento"], desc: "Correntes de vento, rajadas e lâminas de ar." },
   { id: "terra", label: "Terra", grupo: "elementais", aliases: [], desc: "Rochas, minerais, areia e movimentos do solo." },
   { id: "gelo", label: "Gelo", grupo: "elementais", aliases: ["frio"], desc: "Congelamento, cristais de gelo e temperaturas extremamente baixas." },
-  { id: "raio", label: "Raio", grupo: "elementais", aliases: ["eletrico", "eletricidade"], desc: "Descargas elétricas e fenômenos eletromagnéticos." },
+  { id: "raio", label: "Raio", grupo: "elementais", aliases: ["eletrico", "eletricidade", "relampago"], desc: "Descargas elétricas e fenômenos eletromagnéticos." },
   { id: "acido", label: "Ácido", grupo: "elementais", aliases: [], desc: "Substâncias corrosivas que deterioram materiais e tecidos." },
-  { id: "sonoro", label: "Sonoro", grupo: "elementais", aliases: ["trovao", "som"], desc: "Ondas sonoras, vibrações e frequências destrutivas." },
+  { id: "sonoro", label: "Sonoro", grupo: "elementais", aliases: ["trovao", "som", "trovejante"], desc: "Ondas sonoras, vibrações e frequências destrutivas." },
   { id: "forca", label: "Força", grupo: "misticos", aliases: ["magico"], desc: "Energia mágica concentrada, impactos arcanos e energia pura." },
   { id: "radiante", label: "Radiante", grupo: "misticos", aliases: ["sagrado", "radiante (sagrado)"], desc: "Energia divina, santidade e poderes sagrados." },
   { id: "luz", label: "Luz", grupo: "misticos", aliases: [], desc: "Energia luminosa concentrada, feixes de luz e radiação luminosa." },
   { id: "necrotico", label: "Necrótico", grupo: "misticos", aliases: [], desc: "Morte, decomposição, corrupção e drenagem de energia vital." },
-  { id: "sombra", label: "Sombra", grupo: "misticos", aliases: ["trevas", "escuridao"], desc: "Trevas, escuridão sobrenatural e energias sombrias." },
+  { id: "sombra", label: "Sombra", grupo: "misticos", aliases: ["trevas", "escuridao", "obscuro"], desc: "Trevas, escuridão sobrenatural e energias sombrias." },
   { id: "espiritual", label: "Espiritual", grupo: "misticos", aliases: ["alma"], desc: "Afeta diretamente a alma e a essência espiritual de um ser." },
   { id: "temporal", label: "Temporal", grupo: "misticos", aliases: ["tempo"], desc: "Manipulação do tempo, envelhecimento acelerado e distorções temporais." },
   { id: "corrupcao", label: "Corrupção", grupo: "misticos", aliases: [], desc: "Corrupção. Não tem níveis." },
   { id: "psiquico", label: "Psíquico", grupo: "mentais", aliases: ["mental"], desc: "Ataques mentais, manipulação da mente e destruição cognitiva." },
-  { id: "venenoso", label: "Venenoso", grupo: "biologicos", aliases: ["veneno"], desc: "Toxinas e venenos que prejudicam o organismo." }
+  { id: "venenoso", label: "Venenoso", grupo: "biologicos", aliases: ["veneno", "venoso"], desc: "Toxinas e venenos que prejudicam o organismo." },
+  // Não oficiais (Notion): só aparecem no seletor quando o Mestre liga "Tipos de dano do Notion" no Escudo.
+  { id: "queda", label: "Queda", grupo: "fisicos", aliases: [], extra: true, desc: "Dano de queda (Notion)." },
+  { id: "balistico", label: "Balístico", grupo: "regionais", aliases: ["balistica"], extra: true, desc: "Projéteis de armas de fogo (Briavoterna)." },
+  { id: "explosivo", label: "Explosivo", grupo: "regionais", aliases: ["explosao"], extra: true, desc: "Explosões e estilhaços (granadas, foguetes)." },
+  { id: "energiaCortante", label: "Energia cortante", grupo: "regionais", aliases: ["energia (cortante)"], extra: true, desc: "Lâminas de energia (Genesis)." },
+  { id: "energiaBalistica", label: "Energia balística", grupo: "regionais", aliases: ["energia (balistica)"], extra: true, desc: "Disparos de energia (Genesis)." },
+  { id: "energiaExplosiva", label: "Energia explosiva", grupo: "regionais", aliases: ["energia (explosiva)"], extra: true, desc: "Explosões de energia (Genesis)." },
+  { id: "energiaPerfurante", label: "Energia perfurante", grupo: "regionais", aliases: ["energia (perfurante)"], extra: true, desc: "Feixes perfurantes de energia (Genesis)." },
+  { id: "sangue", label: "Sangue", grupo: "regionais", aliases: [], extra: true, desc: "Armas e magias feitas do próprio sangue (Atirador Arcano)." }
 ];
 
 /**
@@ -606,7 +618,9 @@ export const TIPOS_SEM_NIVEL = ["corrupcao"];
 
 /** Sugestões dos campos de tipo de dano: os tipos e os grupos (o nível é escolhido nos botões do seletor). */
 export const SUGESTOES = {
-  dano: [...TIPOS_DANO.map(t => t.label), ...Object.values(GRUPOS_DANO)]
+  dano: [...TIPOS_DANO.filter(t => !t.extra).map(t => t.label), ...Object.entries(GRUPOS_DANO).filter(([id]) => id !== "regionais").map(([, l]) => l)],
+  /** Tipos do Notion (não oficiais): entram nas sugestões quando o Mestre liga no Escudo. */
+  danoExtra: [...TIPOS_DANO.filter(t => t.extra).map(t => t.label), GRUPOS_DANO.regionais]
 };
 
 /** Tipos de arma sugeridos (Arma Favorita do Combatente vale para um tipo). Dá para escrever outro. */
@@ -678,4 +692,34 @@ export const PROFISSOES = {
     ],
     resultado: "Objetos encantados com os efeitos definidos pela receita."
   }
+};
+
+/* -------------------------------------------- */
+/*  Idiomas do EPM (0.6.0)                      */
+/* -------------------------------------------- */
+
+export const IDIOMAS_EPM = ["Comum", "Dracônico", "Anão", "Élfico", "Mecânico", "Infernal", "Celestial", "Gigântico", "Silvestre", "Rúnico", "Goblin", "Serpentino", "Linguagem das Ruas", "Linguagem de Sinais"];
+/** Existem no mundo, mas não podem ser escolhidos pelos jogadores (só o Mestre adiciona). */
+export const IDIOMAS_PROIBIDOS = ["Abissal", "Carmesim", "Primordial", "Astral", "Titânico"];
+export const NIVEIS_IDIOMA = {
+  nativo: { label: "Nativo", texto: "Fala, lê e escreve como língua materna." },
+  fluente: { label: "Fluente", texto: "Conversa e lê sem problemas." },
+  basico: { label: "Básico", texto: "−5 em testes sociais nessa língua." }
+};
+export const REGRAS_IDIOMA = [
+  "Aprender: 24 h / 2 PT para Básico, mais 48 h / 4 PT para Fluente.",
+  "Linguística DT 20 permite entender o básico de uma língua parecida sem treino.",
+  "Línguas arcanas (como a do Grimório): ler pede Conhecimentos Mágicos DT 25 e custa 1d6 de Sanidade."
+];
+
+/* -------------------------------------------- */
+/*  Melhorias de itens (0.6.0: só a base)       */
+/* -------------------------------------------- */
+
+/** Base para a conversa futura sobre Melhorias de itens: categorias e limites provisórios, sem automação. */
+export const CATEGORIAS_MELHORIA_ITEM = {
+  modificacao: { label: "Modificação", limite: 3, icone: "fa-solid fa-screwdriver-wrench" },
+  encantamento: { label: "Encantamento", limite: 2, icone: "fa-solid fa-wand-sparkles" },
+  maldicaoBencao: { label: "Maldição ou Bênção de item", limite: 3, icone: "fa-solid fa-skull" },
+  titulo: { label: "Título", limite: 2, icone: "fa-solid fa-award" }
 };

@@ -28,6 +28,7 @@
     </div>
     {{else}}
     <h1 class="epm-nome-texto">{{actor.name}}{{#if musica}} <button type="button" class="epm-musica" data-action="tocarMusica" data-url="{{musica}}" title="Música tema{{#if musicaNome}}: {{musicaNome}}{{/if}} (abre em outra aba)"><i class="fa-solid fa-music" aria-hidden="true"></i></button>{{/if}}</h1>
+    {{#if tituloAtivo}}<p class="epm-titulo-ativo" title="Título ativo"><i class="fa-solid fa-award" aria-hidden="true"></i> {{tituloAtivo}}</p>{{/if}}
     {{#if bordao}}<p class="epm-bordao" title="Bordão">“{{bordao}}”</p>{{/if}}
     <dl class="epm-identidade-texto">
       <div><dt>Raça</dt><dd>{{#if dados.raca}}{{dados.raca}}{{else}}—{{/if}}</dd></div>

@@ -2730,3 +2730,130 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-municao-arma { margin: 10px 0 4px; padding: 6px 10px 8px; border: 1px solid var(--epm-linha); border-radius: 6px; }
 .epm-municao-arma legend { padding: 0 6px; }
 .epm-municao-arma .epm-dica { margin: 6px 0 0; }
+
+/* ==================================================================== */
+/*  Versão 0.6.0                                                        */
+/* ==================================================================== */
+
+/* Sub-abas de Condições (oficiais / Notion) e Ajustes do Escudo */
+.epm-subaba-condicoes:not(.active) { display: none; }
+.epm-escudo-ajustes .epm-ajustes-lista { display: flex; flex-direction: column; gap: 6px; }
+.epm-ajuste { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border: 1px solid var(--epm-linha); border-radius: var(--epm-raio); background: rgba(255, 255, 255, 0.02); cursor: pointer; }
+.epm-ajuste.ligado { border-color: var(--epm-base); background: var(--epm-base-suave); }
+.epm-ajuste > span { display: flex; flex-direction: column; gap: 2px; }
+.epm-ajuste small { color: var(--epm-suave); font-size: 12px; line-height: 1.35; }
+
+/* Painéis */
+.epm-060-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; margin: 0 0 10px; align-items: start; }
+.epm-060-lista { margin: 4px 0; padding-left: 18px; font-size: 12.5px; line-height: 1.45; }
+.epm-060-lista li { margin: 1px 0; }
+.epm-060-botoes { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.epm-060-corpo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }
+.epm-060-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px 10px; margin: 6px 0; }
+.epm-060-campos .largo { grid-column: 1 / -1; }
+.epm-060-campos textarea { width: 100%; min-height: 40px; }
+.epm-060-item { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 5px 6px; border-bottom: 1px solid var(--epm-linha); }
+.epm-060-item > span:first-child { flex: 1 1 220px; min-width: 0; }
+.epm-060-item input[type="text"] { flex: 1 1 140px; min-width: 100px; }
+.epm-060-item.usado, .epm-060-item.comprado { opacity: 0.75; }
+.epm-060-item.quebrado { border-left: 3px solid var(--epm-erro); }
+.epm-060-item.cumprido { border-left: 3px solid var(--epm-ok); }
+.epm-060-item.atual { background: var(--epm-base-suave); border-radius: var(--epm-raio); }
+.epm-060-opcoes { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 8px; }
+.epm-060-opcoes .epm-chip { cursor: pointer; }
+.epm-060-opcoes .epm-chip.ativo { border-color: var(--epm-latao); background: rgba(211, 168, 94, 0.18); color: var(--epm-latao); }
+.epm-060-mod { display: inline-flex; gap: 3px; align-items: center; }
+.epm-060-mod input[type="text"] { width: 130px; flex: none; }
+.epm-060-mod input[type="number"] { width: 52px; }
+.epm-contador.excedido { color: var(--epm-erro); border-color: var(--epm-erro); }
+.epm-tag.perigo { color: #F09A8E; background: rgba(224, 90, 78, 0.14); }
+.epm-tag[style*="--cor-tag"] { color: var(--cor-tag); border: 1px solid color-mix(in srgb, var(--cor-tag) 50%, transparent); }
+
+/* Raça, caminhos e títulos */
+.epm-060-raca-nome { margin: 2px 0 4px; }
+.epm-060-caminho { display: grid; grid-template-columns: 1fr 90px auto auto auto; align-items: center; gap: 6px; font-size: 12.5px; padding: 2px 0; }
+.epm-060-caminho .epm-barra span, .epm-060-conquista .epm-barra span { background: var(--epm-latao); }
+.epm-060-caminho.completo .epm-060-caminho-nome { color: var(--epm-ok); }
+.epm-060-conquista { display: grid; grid-template-columns: 1fr 80px auto auto; align-items: center; gap: 6px; padding: 3px 0; font-size: 12.5px; opacity: 0.7; }
+.epm-060-conquista.liberado { opacity: 1; }
+.epm-060-conquista.liberado strong { color: var(--epm-latao); }
+.epm-titulo-ativo { margin: -2px 0 4px; color: var(--epm-latao); font-family: var(--epm-display); font-size: 15px; font-style: italic; }
+.epm-060-grau .epm-tag { font-weight: 600; }
+
+/* Relógios */
+.epm-060-relogios { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.epm-060-relogio { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--epm-suave); }
+.epm-060-relogio.oculto { opacity: 0.6; }
+.epm-relogio-svg { color: var(--epm-linha-forte); flex: none; }
+.epm-060-relogio-linha .epm-relogio-svg { width: 34px; height: 34px; }
+.epm-relogio-chat { display: flex; align-items: center; gap: 10px; }
+.epm-relogio-chat p { margin: 2px 0; }
+
+/* Sanidade, insanidades e corrupção */
+.epm-060-estados { display: flex; gap: 3px; margin: 4px 0; }
+.epm-060-estado { flex: 1; text-align: center; padding: 2px 4px; border-radius: 3px; font-size: 11px; background: rgba(255, 255, 255, 0.04); color: var(--epm-fraco); }
+.epm-060-estado.atual { background: rgba(164, 125, 219, 0.25); color: #D6C2F4; font-weight: 600; }
+.epm-060-insanidade { padding: 6px 0; border-top: 1px solid var(--epm-linha); }
+.epm-060-insanidade.encerrada { opacity: 0.55; }
+.epm-060-insanidade-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-060-insanidade-topo strong { flex: 1 1 200px; }
+.epm-barra-corrupcao { height: 8px; }
+.epm-barra-corrupcao span { background: linear-gradient(90deg, #6B3FA0, #B0479A); }
+.epm-060-marcos { display: flex; justify-content: space-between; gap: 4px; margin: 4px 0; font-size: 11px; color: var(--epm-fraco); }
+.epm-060-marco.atingido { color: #D58BD0; font-weight: 600; }
+
+/* Classe */
+.epm-060-furia { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.epm-060-furia.ativa .epm-botao { box-shadow: 0 0 10px rgba(210, 84, 74, 0.55); }
+
+/* Relações: Receio e Confiança */
+.epm-060-trilhas { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0; font-size: 12px; color: var(--epm-suave); }
+.epm-060-trilha { display: inline-flex; align-items: center; gap: 3px; }
+.epm-060-trilha > span { margin-right: 4px; }
+.epm-060-trilha .epm-pip { width: 11px; height: 11px; padding: 0; border-radius: 50%; border: 1px solid var(--epm-linha-forte); background: transparent; cursor: pointer; }
+.epm-060-trilha .epm-pip.ativa { background: var(--epm-ok); border-color: var(--epm-ok); }
+.epm-060-trilha.receio .epm-pip.ativa { background: var(--epm-erro); border-color: var(--epm-erro); }
+
+/* Idiomas */
+.epm-idioma-nivel { margin-left: 4px; height: 18px; padding: 0 2px; font-size: 11px; }
+.epm-idioma-tag { margin-left: 3px; font-size: 10px; color: var(--epm-alerta); }
+.epm-chip-idioma.basico { border-style: dashed; }
+.epm-regras-idioma { margin: 6px 0 0; padding-left: 16px; }
+
+/* Bestiário: ficha de criatura */
+.epm-060-criatura { border-top: 1px solid var(--epm-linha); padding: 4px 0; }
+.epm-060-criatura > summary { cursor: pointer; }
+.epm-060-ficha-criatura { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 4px 0; font-size: 12.5px; }
+.epm-060-ficha-criatura dt { color: var(--epm-suave); }
+.epm-060-ficha-criatura dd { margin: 0; white-space: pre-line; }
+
+/* Itens */
+.epm-060-melhoria-cat { margin-bottom: 6px; }
+.epm-tag-elemento { color: #F2B477; }
+
+/* Diálogos */
+.epm-form-060 { display: flex; flex-direction: column; gap: 8px; }
+.epm-form-060 .epm-lista-escolha { display: flex; flex-direction: column; gap: 4px; max-height: 340px; overflow-y: auto; }
+.epm-form-060 .epm-check-bloco { align-items: flex-start; }
+.epm-form-060 .epm-grade-atributos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.epm-form-060 .epm-cat-regiao { border: 1px solid var(--epm-linha, #2E4844); border-radius: 6px; padding: 4px 8px; }
+.epm-form-060 .epm-cat-regiao summary { cursor: pointer; font-weight: 600; }
+.epm-form-060 h4 { margin: 6px 0 2px; font-size: 13px; }
+
+/* Chat: enquete */
+.epm-enquete { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.epm-enquete-opcao { display: grid; grid-template-columns: auto 1fr 60px 20px; align-items: center; gap: 6px; font-size: 12.5px; }
+.epm-enquete-opcao:not(:has(button)) { grid-template-columns: 1fr 60px 20px; }
+.epm-enquete-barra { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.2); overflow: hidden; }
+.epm-enquete-barra span { display: block; height: 100%; background: #7FB4E6; }
+.epm-enquete-opcao.vencedora .epm-enquete-texto { font-weight: 700; }
+.epm-lore { margin: 6px 0; padding: 6px 10px; border-left: 3px solid #C9A24E; font-style: italic; }
+
+/* Escudo: Mundo */
+.epm-escudo-mundo { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 10px; align-items: start; }
+.epm-escudo-mundo code { font-size: 13px; letter-spacing: 1px; }
+.epm-060-corrupcao .epm-mini input { width: 70px; }
+.epm-060-corrupcao .epm-mini { display: inline-flex; align-items: center; gap: 6px; }
+.epm-escudo-mundo .epm-060-corpo .epm-mini { display: inline-flex; flex-direction: column; width: 110px; }
+.epm-escudo-mundo .epm-060-corpo .epm-mini input { width: 100%; }
+.epm-escudo-mundo details > summary { cursor: pointer; padding: 2px 0; }

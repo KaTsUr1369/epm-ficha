@@ -1,0 +1,46 @@
+/**
+ * "Itens extra do Notion": bênçãos e maldições da página do Notion que não estão na lista oficial (Discord).
+ * Só aparecem no catálogo quando o Mestre liga "Itens extra do Notion" no Escudo (Ajustes). Só dados.
+ * As maldições do Notion têm efeito negativo + benefício + condição.
+ */
+export const LISTA_BENCAOS_NOTION = [
+  { numero: 1, nome: "Foice da Morte", tipo: "bencao", origem: "divina",
+    efeito: "Fica com 1 de Vida máxima e não ganha Vida por nível. Cada morte válida aumenta a Vida máxima em +2.",
+    condicao: "A criatura precisa ter poder suficiente para te matar em menos de 7 turnos." },
+  { numero: 2, nome: "Sangue Absoluto", tipo: "bencao", origem: "divina",
+    efeito: "Todo dano causado por você ignora resistência física e mágica.", condicao: "Você precisa estar com menos da metade da Vida máxima." },
+  { numero: 3, nome: "Véu da Existência", tipo: "bencao", origem: "divina",
+    efeito: "Você deixa de existir para qualquer percepção (visão, magia, presença).", condicao: "Não pode atacar, conjurar ou interagir durante o efeito." },
+  { numero: 4, nome: "Peso do Mundo", tipo: "bencao", origem: "divina",
+    efeito: "Sua presença reduz drasticamente a velocidade e as ações dos inimigos próximos.", condicao: "Precisa permanecer imóvel." },
+  { numero: 5, nome: "Caos Descontrolado", tipo: "bencao", origem: "caotica",
+    efeito: "Você pode duplicar suas ações no turno.", custo: "Depois do efeito, perde todas as ações no turno seguinte." },
+  { numero: 6, nome: "Carne Instável", tipo: "bencao", origem: "caotica",
+    efeito: "Seu corpo se regenera completamente por 3 turnos.", custo: "Depois disso, sua defesa e resistência caem drasticamente até um descanso." },
+  { numero: 7, nome: "Marca do Fim", tipo: "bencao", origem: "caotica",
+    efeito: "Marca um alvo: todo dano que ele recebe é duplicado.", custo: "Metade do dano causado também volta para você." },
+  { numero: 8, nome: "Olhos do Vazio", tipo: "maldicao", origem: "notion",
+    efeito: "Você não consegue distinguir aliados de inimigos à distância.", beneficio: "Vê presenças ocultas, invisíveis ou fora da realidade.", condicao: "Precisa focar no alvo por 1 turno." },
+  { numero: 9, nome: "Eco da Morte", tipo: "maldicao", origem: "notion",
+    efeito: "Toda vez que mata alguém, perde parte da Sanidade.", beneficio: "Cada morte aumenta permanentemente seu poder ofensivo.", condicao: "Só contam criaturas com poder relevante." },
+  { numero: 10, nome: "Passos do Condenado", tipo: "maldicao", origem: "notion",
+    efeito: "Você não pode fugir de combate.", beneficio: "Em combate direto, sua resistência aumenta drasticamente.", condicao: "Só enquanto houver inimigos ativos." },
+  { numero: 11, nome: "Fome Sombria", tipo: "maldicao", origem: "notion",
+    efeito: "Precisa causar dano constantemente ou perde Vida.", beneficio: "Ataques bem-sucedidos restauram sua Vida.", condicao: "Precisa causar dano a cada turno." },
+  { numero: 12, nome: "Reflexo Quebrado", tipo: "maldicao", origem: "notion",
+    efeito: "Você não consegue se esquivar completamente de ataques.", beneficio: "Sempre que é atingido, pode contra-atacar automaticamente.", condicao: "1 vez por turno." },
+  { numero: 13, nome: "Tempo Rachado", tipo: "maldicao", origem: "notion",
+    efeito: "Às vezes perde a ação sem controle.", beneficio: "Em momentos aleatórios, age duas vezes no mesmo turno.", condicao: "Ativação imprevisível." },
+  { numero: 14, nome: "Voz Proibida", tipo: "maldicao", origem: "notion",
+    efeito: "Não pode mentir nem ocultar intenções.", beneficio: "Tudo o que fala carrega peso sobrenatural e influência forte.", condicao: "Só ao falar diretamente com alguém." },
+  { numero: 15, nome: "Marca do Predador", tipo: "maldicao", origem: "notion",
+    efeito: "Inimigos fortes são naturalmente atraídos até você.", beneficio: "Contra inimigos mais fortes, seu poder aumenta significativamente.", condicao: "Só contra alvos superiores a você." },
+  { numero: 16, nome: "Carne Rejeitada", tipo: "maldicao", origem: "notion",
+    efeito: "Cura externa é reduzida drasticamente.", beneficio: "Você regenera naturalmente ao causar dano.", condicao: "Regeneração só em combate." },
+  { numero: 17, nome: "Correntes Invisíveis", tipo: "maldicao", origem: "notion",
+    efeito: "Sua velocidade é reduzida constantemente.", beneficio: "Seus ataques têm impacto muito maior e são difíceis de interromper.", condicao: "Sempre ativo." },
+  { numero: 18, nome: "Olhar do Caçador", tipo: "maldicao", origem: "notion",
+    efeito: "É obrigado a focar sempre o mesmo alvo até ele morrer.", beneficio: "Quanto mais luta contra o mesmo alvo, mais forte fica contra ele.", condicao: "Reseta ao trocar de alvo." },
+  { numero: 19, nome: "Existência Fraturada", tipo: "maldicao", origem: "notion",
+    efeito: "Parte dos ataques contra você ignora sua existência física.", beneficio: "Parte dos seus ataques também ignora qualquer forma de defesa.", condicao: "Sempre ativo." }
+];

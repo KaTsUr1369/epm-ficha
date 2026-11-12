@@ -4,7 +4,7 @@
  */
 import {
   TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO,
-  CONDICOES, CATEGORIAS_CONDICAO, EXAUSTAO, ACOES, DEFESAS, MOEDAS, ROTULOS_REPUTACAO, RECURSOS, REGRAS, TIPOS_ARMA
+  CONDICOES, CATEGORIAS_CONDICAO, CATEGORIA_NOTION, EXAUSTAO, ACOES, DEFESAS, MOEDAS, ROTULOS_REPUTACAO, RECURSOS, REGRAS, TIPOS_ARMA
 } from "./config.mjs";
 import { lerAtor } from "./context.mjs";
 import { ARQUETIPOS } from "./arquetipos.mjs";
@@ -16,7 +16,9 @@ export const ABAS_ESCUDO = [
   { id: "itens",     label: "Itens",     icone: "fa-solid fa-sack-dollar" },
   { id: "testes",    label: "Testes",    icone: "fa-solid fa-dice-d20" },
   { id: "regras",    label: "Regras",    icone: "fa-solid fa-book" },
-  { id: "notas",     label: "Notas",     icone: "fa-solid fa-feather" }
+  { id: "notas",     label: "Notas",     icone: "fa-solid fa-feather" },
+  { id: "mundo",     label: "Mundo",     icone: "fa-solid fa-earth-americas" },
+  { id: "ajustes",   label: "Ajustes",   icone: "fa-solid fa-sliders" }
 ];
 
 const CORES = { pv: "#D2544A", pm: "#4C8EE0", pe: "#E3A13A", ps: "#A47DDB" };
@@ -82,12 +84,24 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
   /* Condições */
   const busca = norm(ui.buscaCond);
   const ativasNosAlvos = ui.condicoesDosAlvos ?? {};
-  ctx.condicoes = CATEGORIAS_CONDICAO.map(cat => {
+  const notion = { condicoes: false, danos: false, bencaos: false, idade: false, ...(ui.notion ?? {}) };
+  const categorias = notion.condicoes ? [...CATEGORIAS_CONDICAO, CATEGORIA_NOTION] : CATEGORIAS_CONDICAO;
+  ctx.condicoes = categorias.map(cat => {
     const itens = CONDICOES.filter(c => c.categoria === cat.id && (!busca || norm(`${c.label} ${c.efeito ?? ""}`).includes(busca)))
       .map(c => ({ id: c.id, label: c.label, icone: c.icone, efeito: c.efeito ?? "", estado: ativasNosAlvos[c.id] ?? "" }));
     return { ...cat, itens, qtd: itens.length };
   }).filter(c => c.qtd);
   ctx.buscaCond = ui.buscaCond ?? "";
+
+  /* Ajustes (conteúdo extra do Notion, só o Mestre muda) */
+  ctx.ajustesNotion = [
+    { chave: "condicoes", label: "Condições do Notion", dica: "Aba \"Não oficiais (Notion)\" na aba Condições das fichas (Exausto, Fatigado, Amedrontado, Agarrado, Petrificado…). No HUD do token só depois de recarregar (F5).", ligado: notion.condicoes },
+    { chave: "danos", label: "Tipos de dano do Notion", dica: "Queda, Balístico, Explosivo, Energia (cortante, balística, explosiva, perfurante) e Sangue no seletor de dano.", ligado: notion.danos },
+    { chave: "bencaos", label: "Itens extra do Notion (bênçãos e maldições)", dica: "7 bênçãos e 12 maldições do Notion que não estão na lista oficial, num grupo à parte do catálogo.", ligado: notion.bencaos },
+    { chave: "idade", label: "Idade (regra opcional)", dica: "A faixa de idade (Criança, Adolescente, Jovem, Adulto, Maduro, Idoso) aparece na aba Sobre e aplica os efeitos numéricos.", ligado: notion.idade },
+    { chave: "grauNucleo", label: "Grau do Núcleo", dica: "Mostra nas fichas o grau do Núcleo (Fraco, Moderado, Intenso) pelo Olhar de Mana. Cada ficha ainda escolhe se mostra ou não.", ligado: !!notion.grauNucleo },
+    { chave: "calculadora", label: "Calculadora de encontro", dica: "Seção na aba Mundo do Escudo: ND total, dificuldade e PEv de cada personagem.", ligado: !!notion.calculadora }
+  ];
   ctx.exaustao = EXAUSTAO;
 
   /* Itens do mundo */

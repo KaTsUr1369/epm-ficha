@@ -4,11 +4,11 @@
  * O que depende do Foundry (lista de idiomas, outros atores) chega já resolvido pela ficha.
  */
 import {
-  FLAG, ATRIBUTOS, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
+  FLAG, ATRIBUTOS, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
   AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
-  CATEGORIAS_CONDICAO, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
+  CATEGORIAS_CONDICAO, CATEGORIA_NOTION, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
   CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO,
   SUBABAS_ARQCLASSE, ESTILO_RELACAO, ROTULOS_REPUTACAO, TIPOS_COMPANHEIRO, MOLDURAS, FONTES, ESCALA_TEXTO, RECARGAS, TIPOS_ARMA
 } from "./config.mjs";
@@ -25,10 +25,29 @@ import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
+import { conteudoNotion, lerMundo } from "./settings.mjs";
+import { contexto060 } from "./contexto-060.mjs";
+import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
+
+/** Propriedades de arma do item (texto editável tem prioridade sobre a lista vinda do catálogo). */
+export function listaPropriedades(f = {}) {
+  if (typeof f.propriedadesTexto === "string") return f.propriedadesTexto.split(",").map(t => t.trim()).filter(Boolean);
+  return Array.isArray(f.propriedades) ? f.propriedades.filter(Boolean) : [];
+}
 import { contextoProducao } from "./producao.mjs";
 import { normalizarHex, posicaoNaRoda, estiloPaleta } from "./cores.mjs";
 
 /** Dados de rolagem do EPM (@atr.forca, @per.luta, @nivel, @cd …). */
+
+/** Conteúdo extra do Notion ligado pelo Mestre (falso fora do Foundry). */
+export function lerConteudoNotion(chave) {
+  try { return conteudoNotion(chave); } catch { return false; }
+}
+/** Sugestões de tipo de dano, com os tipos do Notion quando o Mestre liga no Escudo. */
+export function sugestoesDano() {
+  return lerConteudoNotion("danos") ? [...SUGESTOES.dano, ...SUGESTOES.danoExtra] : SUGESTOES.dano;
+}
+
 export function dadosRolagemEPM(ficha) {
   return {
     atr: Object.fromEntries(Object.values(ficha.atributos).map(a => [a.id, a.total])),
@@ -52,7 +71,7 @@ export function lerAtor(actor, listaPericias) {
   let itens = [];
   try { itens = efeitosDeItens(actor?.items?.contents ?? actor?.items ?? []); } catch { itens = []; }
   const agora = Number(globalThis.game?.time?.worldTime) || 0;
-  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora });
+  const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora, opcoes: { idade: lerConteudoNotion("idade"), densidade: lerMundo("densidadeMana", "normal") } });
   return { dados, ficha, hp };
 }
 
@@ -116,7 +135,7 @@ export function ataqueDeArma(item, modoId = "") {
   const modos = modosDaArma(item);
   const base = {
     tipo: "arma", id: item.id, ref: item.id, nome: item.name, img: item.img,
-    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: danoArma(item), tipoDano: f.tipoDano ?? "",
+    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: danoArma(item), tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""),
     critMargem: limitar(int(f.critMargem, margemNativa), 2, 20), critMult: Math.max(2, int(f.critMult, CRITICO_PADRAO.mult)),
     equipado: !!item?.system?.equipped,
     danoExtra: efeitos.filter(e => e.tipo === "danoExtra" && e.formula).map(e => ({ formula: e.formula, tipo: e.tipoDano })),
@@ -172,14 +191,26 @@ export function resolverReferencias(formula, ficha) {
 export const ataqueADistancia = at => at?.periciaId === "pontaria";
 
 /** Modificadores gerais que valem num ataque (condições, bênçãos, itens). */
+/** Ataque desarmado (tipo de arma "Desarmado", nome com "desarmad" ou ataque natural marcado). */
+export function ataqueDesarmado(at) {
+  const t = normalizarTexto(`${at?.tipoArma ?? ""} ${at?.nome ?? ""}`);
+  return !!at?.desarmado || t.includes("desarmad");
+}
+
 export function modsDoAtaque(at, ficha) {
   const g = ficha.ataquesGerais;
   const distancia = ataqueADistancia(at) ? g.distancia : 0;
+  // 0.6.0: Força acima de 4 (corpo a corpo armado / desarmado), Porrada Franca e posições do Lutador
+  const ex = ficha.extrasAtaque ?? {};
+  const desarmado = ataqueDesarmado(at);
+  const cac = !ataqueADistancia(at);
+  const extras = [...(cac && !desarmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(ex.todos ?? [])];
   return {
     acerto: g.penal + distancia,
     acertoFontes: [...g.fontes, ...(ataqueADistancia(at) ? g.fontesDistancia : [])],
     dano: g.dano, danoFontes: g.fontesDano,
-    danoExtra: [...g.danoExtra.map(x => x.formula), ...(at.danoExtra ?? []).map(x => x.formula)],
+    danoExtra: [...g.danoExtra.map(x => x.formula), ...(at.danoExtra ?? []).map(x => x.formula), ...extras.map(x => x.formula)],
+    danoExtraFontes: extras.map(x => x.fonte),
     danoMult: g.danoMult.valor
   };
 }
@@ -234,8 +265,15 @@ export function idiomasDoAtor(actor, catalogo = []) {
   const rotulo = new Map(catalogo.map(l => [l.key, l.label]));
   const valor = langs.value instanceof Set ? [...langs.value] : (Array.isArray(langs.value) ? langs.value : []);
   const conhecidos = valor.map(key => ({ key, label: rotulo.get(key) ?? key, custom: false }));
-  const custom = String(langs.custom ?? "").split(";").map(t => t.trim()).filter(Boolean).map(label => ({ key: "", label, custom: true }));
-  return [...conhecidos, ...custom].sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  const epm = new Set([...IDIOMAS_EPM, ...IDIOMAS_PROIBIDOS].map(normalizarTexto));
+  const custom = String(langs.custom ?? "").split(";").map(t => t.trim()).filter(Boolean).map(label => ({ key: "", label, custom: !epm.has(normalizarTexto(label)) }));
+  const niveis = actor?.flags?.[FLAG]?.idiomasNivel ?? {};
+  return [...conhecidos, ...custom].map(l => {
+    const slugI = normalizarTexto(l.label).replace(/[^a-z0-9]+/g, "-");
+    const nivel = NIVEIS_IDIOMA[niveis[slugI]] ? niveis[slugI] : "fluente";
+    return { ...l, slug: slugI, nivel, nivelLabel: NIVEIS_IDIOMA[nivel].label, basico: nivel === "basico",
+      niveis: Object.entries(NIVEIS_IDIOMA).map(([id, n]) => ({ id, label: n.label, selected: id === nivel })) };
+  }).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 }
 
 /* -------------------------------------------- */
@@ -538,7 +576,7 @@ function montarCompanheiros({ dados, edicao, editavel }) {
 
 export function montarContexto({
   actor, itens = [], ui = {}, ajustes = {}, usuario = {}, enriquecidos = {}, editores = {}, editavel = false,
-  idiomas = { catalogo: [], polyglot: false }, atores = {}
+  idiomas = { catalogo: [], polyglot: false }, atores = {}, mundo060 = {}
 }) {
   const { dados, ficha } = lerAtor(actor, ajustes.listaPericias);
   const rolagem = dadosRolagemEPM(ficha);
@@ -725,7 +763,7 @@ export function montarContexto({
       .sort(([, a], [, b]) => (a.criado ?? 0) - (b.criado ?? 0))
       .map(([id, r]) => ({ id, tipo: r.tipo ?? "", valor: r.valor ?? 0, texto: `RD ${Number(r.valor) || 0} (${String(r.tipo ?? "").trim() || "todos os danos"})`, ativa: Number(r.valor) > 0 })),
     deItens: ficha.tags.reducoes.filter(r => r.fonte !== "Ficha").map(r => ({ texto: `RD ${r.valor} (${r.tipos})`, fonte: r.fonte })),
-    sugestoes: ["Todos os danos", ...SUGESTOES.dano]
+    sugestoes: ["Todos os danos", ...sugestoesDano()]
   };
   ctx.rdBox.vazio = !ctx.rdBox.manuais.some(r => r.ativa) && !ctx.rdBox.deItens.length;
   ctx.defesasBox.deFora = [...ctx.defesasBox.resistencias, ...ctx.defesasBox.imunidades, ...ctx.defesasBox.vulnerabilidades].some(t => t.fonte);
@@ -735,7 +773,8 @@ export function montarContexto({
   ctx.idiomas = idiomasDoAtor(actor, idiomas.catalogo ?? []);
   ctx.idiomasInfo = {
     polyglot: !!idiomas.polyglot,
-    opcoes: (idiomas.catalogo ?? []).filter(l => !ctx.idiomas.some(i => i.key === l.key)).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"))
+    opcoes: (idiomas.catalogo ?? []).filter(l => !ctx.idiomas.some(i => (l.key && i.key === l.key) || normalizarTexto(i.label) === normalizarTexto(l.label))).sort((a, b) => a.label.localeCompare(b.label, "pt-BR")),
+    regras: REGRAS_IDIOMA
   };
 
   /* ---------- Combate ---------- */
@@ -749,6 +788,9 @@ export function montarContexto({
       motivo: bloq.length ? `Bloqueada: ${bloq.join(", ")}` : limite ? `Limite de ${ficha.acoes.limite} ação por turno (${ficha.acoes.limiteFontes.join(", ")})` : ""
     };
   });
+  if (["bonus", "movimento"].includes(dados.acoes?.convertida)) {
+    ctx.acoesTurno.splice(ctx.acoesTurno.length - 1, 0, { id: "extra", label: `${ACOES[dados.acoes.convertida].curto} extra`, usada: !!dados.acoes?.extra, bloqueada: false, motivo: "Ação Padrão convertida neste turno" });
+  }
   ctx.caPenalTexto = [...new Set(ficha.penalidades.defesa.fontes.map(f => f.fonte))].join(", ");
   ctx.defesasPendentes = Array.from({ length: 3 }, (_, i) => ({ ativa: i < ficha.acoes.defesas }));
   const opcoesPericia = selecionada => ficha.pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === selecionada }));
@@ -817,7 +859,7 @@ export function montarContexto({
     const presaTransf = !!tVinculo && tAtivaId !== tVinculo;
     return {
       id: item.id, uuid: item.uuid, name: item.name, img: item.img, tipo: p.tipo,
-      raridade: p.raridade, raridadeLabel: r.label, raridadeCor: r.cor,
+      raridade: p.raridade, raridadeLabel: r.label, raridadeCor: r.cor, elemento: item.flags?.[FLAG]?.elemento ?? "",
       passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: tNome ? `Transformação: ${tNome}` : (ORIGENS_HABILIDADE[p.origem] ?? ""), circulo: p.circulo,
       transformacao: tVinculo, arquetipoRef: p.arquetipoRef,
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
@@ -982,7 +1024,9 @@ export function montarContexto({
         podeComecar: editavel && estado === "planejado", semPT: pt > ficha.pontos.pt,
         podeTreinar: editavel && estado === "andamento" && livres > 0,
         foraDaFaixa: pt > TREINO.ptMax || horas > TREINO.horasMax || (pt > 0 && pt < TREINO.ptMin) || horas < TREINO.horasMin,
-        mods, temMods: mods.some(m => m.alvoLabel), criado: num(t.criado)
+        mods, temMods: mods.some(m => m.alvoLabel), criado: num(t.criado),
+        categoriaLabel: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.label ?? "", categoriaIcone: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.icone ?? "",
+        categorias: CATEGORIAS_TREINO.map(c => ({ id: c.id, label: c.label, selected: c.id === t.categoria }))
       };
     }).sort((a, b) => a.criado - b.criado);
     ctx.treinos = {
@@ -1112,7 +1156,7 @@ export function montarContexto({
   ctx.patrimonio = formatarMoedas(valorEmCobre(dados.moedas));
   ctx.metadeDinheiro = ficha.especiais.metadeDinheiro.join(", ");
   ctx.tiposEfeitoItem = Object.entries(TIPOS_EFEITO_ITEM).map(([id, t]) => ({ id, ...t }));
-  ctx.sugestoesDano = [...SUGESTOES.dano, ...ficha.condicoes.filter(c => c.categoria === "basicas").map(c => c.label)];
+  ctx.sugestoesDano = [...sugestoesDano(), ...ficha.condicoes.filter(c => c.categoria === "basicas").map(c => c.label)];
 
   /* ---------- Sobre ---------- */
   ctx.camposSobre = CAMPOS_SOBRE.map(c => ({ ...c, valor: dados.sobre?.[c.id] ?? "" }));
@@ -1177,12 +1221,27 @@ export function montarContexto({
     const aberta = abertas ? abertas.has(cat.id) || ativas > 0 : ativas > 0 || cat.id === "basicas";
     return { ...cat, condicoes: lista, total: lista.length, ativas, aberta };
   });
+  // Condições não oficiais (Notion): sub-aba própria quando o Mestre liga no Escudo (ou se alguma estiver ativa)
+  {
+    const lista = ficha.condicoes.filter(c => c.categoria === CATEGORIA_NOTION.id).map(c => ({
+      ...c, porQueTexto: c.porQue.join(", "),
+      busca: normalizarTexto(`${c.label} ${c.descricao} ${c.efeito} ${c.resumo.join(" ")}`)
+    })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+    const ativas = lista.filter(c => c.ativa || c.automatica).length;
+    const ligado = lerConteudoNotion("condicoes") || ativas > 0;
+    const sub = ui.abas?.condicoes === "notion" && ligado ? "notion" : "oficiais";
+    ctx.condicoesNotion = {
+      ligado, ativas, total: lista.length,
+      categoria: { ...CATEGORIA_NOTION, condicoes: lista, total: lista.length, ativas, aberta: true },
+      clsOficiais: sub === "oficiais" ? "active" : "", clsNotion: sub === "notion" ? "active" : ""
+    };
+  }
   ctx.totalCondicoesAtivas = ficha.condicoesAtivas.length;
   ctx.combinacoesAtivas = ficha.combinacoes;
   ctx.tagsCondicoes = [
-    { campo: "resistencias", label: "Resistências", dica: "Tipos de dano que você resiste (recebe metade). Nível entre parênteses: Fogo (Mágico) segura até dano Mágico; sem nível, só Natural. Vale também um grupo: Elementais.", itens: dados.resistencias, sugestoes: SUGESTOES.dano },
-    { campo: "imunidades", label: "Imunidades", dica: "Danos ou condições. Uma condição com o mesmo nome é ignorada. O dano aceita nível: Veneno (Verdadeiro).", itens: dados.imunidades, sugestoes: [...SUGESTOES.dano, ...ficha.condicoes.map(c => c.label)] },
-    { campo: "vulnerabilidades", label: "Vulnerabilidades", dica: "Tipos de dano que você recebe em dobro (vale para qualquer nível)", itens: dados.vulnerabilidades, sugestoes: SUGESTOES.dano }
+    { campo: "resistencias", label: "Resistências", dica: "Tipos de dano que você resiste. Escada de níveis: dano de nível abaixo da resistência é anulado, do mesmo nível cai à metade e acima passa inteiro. Sem nível = Natural; Fogo (Mágico) anula Fogo Natural e corta Fogo Mágico à metade. Vale também um grupo: Elementais.", itens: dados.resistencias, sugestoes: sugestoesDano() },
+    { campo: "imunidades", label: "Imunidades", dica: "Danos ou condições. Uma condição com o mesmo nome é ignorada. O dano aceita nível: Veneno (Verdadeiro).", itens: dados.imunidades, sugestoes: [...sugestoesDano(), ...ficha.condicoes.map(c => c.label)] },
+    { campo: "vulnerabilidades", label: "Vulnerabilidades", dica: "Tipos de dano que você recebe em dobro, em qualquer nível. Escreva ×3 para o triplo (ex.: Fogo ×3).", itens: dados.vulnerabilidades, sugestoes: sugestoesDano() }
   ];
 
   /* ---------- Bênçãos e maldições ---------- */
@@ -1204,7 +1263,7 @@ export function montarContexto({
     return {
       id, nome: b.nome ?? "", tipo, ativo: !!b.ativo,
       origem: b.origem ?? "", descricao: b.descricao ?? "", criado: num(b.criado),
-      condicao: b.condicao ?? "", custo: b.custo ?? "", consequencia: b.consequencia ?? "",
+      condicao: b.condicao ?? "", custo: b.custo ?? "", consequencia: b.consequencia ?? "", beneficio: b.beneficio ?? "",
       catalogo: b.catalogo ?? "", natureza, naturezaLabel: NATUREZAS[natureza]?.label ?? "",
       raridade, raridadeLabel: RARIDADES_BENCAO[raridade]?.label ?? "", raridadeCor: RARIDADES_BENCAO[raridade]?.cor ?? "",
       suspensa: (x?.suspensaPor ?? []).join(", "),
@@ -1231,17 +1290,27 @@ export function montarContexto({
   };
   if (ctx.catalogo.aberto) {
     const naFicha = new Set(entradas.map(e => e.catalogo).filter(Boolean));
-    ctx.catalogo.grupos = Object.entries(NATUREZAS).map(([nid, n]) => ({
+    const itemCatalogo = c => ({
+      ...c, naFicha: naFicha.has(c.id), busca: textoBusca(c),
+      frequenciaLabel: FREQUENCIAS[c.frequencia]?.curto ?? "", segundo: c.condicao || c.custo || c.consequencia,
+      segundoRotulo: c.consequencia ? "Consequência" : c.custo ? "Custo" : "Condição"
+    });
+    ctx.catalogo.grupos = Object.entries(NATUREZAS).filter(([, n]) => !n.extra).map(([nid, n]) => ({
       id: nid, label: n[ctx.catalogo.tipo], descricao: GRUPOS_BENCAO[ctx.catalogo.tipo]?.[nid]?.descricao ?? "",
       raridades: Object.entries(RARIDADES_BENCAO).map(([rid, r]) => ({
         id: rid, label: r.label, cor: r.cor,
-        itens: CATALOGO.filter(c => c.tipo === ctx.catalogo.tipo && c.natureza === nid && c.raridade === rid).map(c => ({
-          ...c, naFicha: naFicha.has(c.id), busca: textoBusca(c),
-          frequenciaLabel: FREQUENCIAS[c.frequencia]?.curto ?? "", segundo: c.condicao || c.custo || c.consequencia,
-          segundoRotulo: c.consequencia ? "Consequência" : c.custo ? "Custo" : "Condição"
-        }))
+        itens: CATALOGO.filter(c => !c.extra && c.tipo === ctx.catalogo.tipo && c.natureza === nid && c.raridade === rid).map(itemCatalogo)
       }))
     }));
+    // Itens extra do Notion (não oficiais): grupo à parte, só quando o Mestre liga no Escudo
+    if (lerConteudoNotion("bencaos")) {
+      ctx.catalogo.grupos.push({
+        id: "notion", label: "Itens extra do Notion", extra: true,
+        descricao: "Da página do Notion, fora da lista oficial. Sem raridade e sem automação (só o texto). As maldições trazem o benefício.",
+        raridades: [{ id: "notion", label: "Notion", cor: "#9A8CC9",
+          itens: CATALOGO.filter(c => c.extra && c.tipo === ctx.catalogo.tipo).map(itemCatalogo) }]
+      });
+    }
   }
 
   /* ---------- Relações ---------- */
@@ -1272,6 +1341,9 @@ export function montarContexto({
       tipo: r.tipo ?? "outro", tipoLabel: TIPOS_RELACAO[r.tipo ?? "outro"] ?? "Outro",
       tipoIcone: (ESTILO_RELACAO[r.tipo] ?? ESTILO_RELACAO.outro).icone, tipoCor: (ESTILO_RELACAO[r.tipo] ?? ESTILO_RELACAO.outro).cor,
       notaPrivada: r.notaPrivada ?? "", historico: historicoDe(r.historico, edicao), base: `flags.${FLAG}.relacoes.${id}`,
+      confianca: limitar(int(r.confianca), 0, 5), receio: limitar(int(r.receio), 0, 5),
+      trilhaConfianca: [1, 2, 3, 4, 5].map(n => ({ valor: n, ativa: n <= int(r.confianca) })),
+      trilhaReceio: [1, 2, 3, 4, 5].map(n => ({ valor: n, ativa: n <= int(r.receio) })),
       afinidade: af, afinidadeLabel: rotuloAfinidade(af), podeAfinidade: podeAjustar(ator?.jogador),
       soMestreAqui: edicao && !isGM && soMestre,
       afinidadePct: Math.round(((af - AFINIDADE.min) / (AFINIDADE.max - AFINIDADE.min)) * 100),
@@ -1313,6 +1385,15 @@ export function montarContexto({
   /* ---------- Produção (forja, alquimia, rituais, encantamento) ---------- */
   ctx.producao = contextoProducao({ dados, ficha, itens, edicao, editavel });
   ctx.itensComErro = falhas;
+
+  /* ---------- 0.6.0 ---------- */
+  try {
+    ctx.v060 = contexto060({ dados, ficha, edicao, editavel, isGM, mundo: mundo060, opcoesNotion: conteudoNotion() });
+  } catch (err) {
+    console.warn("EPM | painéis da 0.6.0", err);
+    ctx.v060 = null;
+  }
+  ctx.tituloAtivo = ficha.extras?.titulos?.ativo?.nome ?? "";
 
   return ctx;
 }
@@ -1416,6 +1497,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     cd: ficha ? ficha.cd : null, cdFormula: ficha?.cd?.formula ?? `${CD.base} + Núcleo + Arcanismo`,
     opcoesRaridade: Object.entries(RARIDADES_PODER).map(([id, x]) => ({ id, label: x.label, selected: id === p.raridade })),
     opcoesOrigem: Object.entries(ORIGENS_HABILIDADE).map(([id, label]) => ({ id, label, selected: id === p.origem })),
+    elemento: item.flags?.[FLAG]?.elemento ?? "", elementos: ["Fogo", "Água", "Ar", "Terra", "Gelo", "Raio", "Sonoro", "Ácido", "Força", "Radiante", "Luz", "Necrótico", "Sombra", "Espiritual", "Temporal", "Fogo Azul", "Raio Negro", "Zero Absoluto", "Vendaval", "Ruído", "Gravidade"],
     opcoesCirculo: Array.from({ length: maxCirculo + 1 }, (_, n) => ({
       nivel: n, label: CIRCULOS.find(c => c.nivel === n)?.label ?? `${n}º Círculo`, selected: n === p.circulo
     })),
@@ -1425,7 +1507,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     temDono: !!ficha,
     pt: ficha?.pontos.pt ?? 0,
     editorDescricao: editores.descricao ?? "",
-    sugestoesDano: [...SUGESTOES.dano, "Cura"]
+    sugestoesDano: [...sugestoesDano(), "Cura"]
   };
 }
 
@@ -1485,7 +1567,7 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     eConsumivel: tipo === "consumable", formulaUso: f.formula ?? "",
     eMochila, efeitos, temEfeitos: efeitos.length > 0,
     tiposEfeitoItem: Object.entries(TIPOS_EFEITO_ITEM).map(([id, t]) => ({ id, label: t.label, dica: t.dica ?? "" })),
-    sugestoesDano: SUGESTOES.dano ?? [],
+    sugestoesDano: sugestoesDano(),
     dicaAtivo: ["weapon", "equipment"].includes(tipo) ? "Os bônus valem com o item equipado"
       : tipo === "consumable" ? "Curas e recuperações acontecem ao usar" : "Os bônus valem enquanto o item estiver no inventário",
     descricao: editores.descricao ?? ""
@@ -1498,8 +1580,8 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     const candidatos = doDono.filter(i => ["consumable", "loot"].includes(i.type) && i.id !== item.id);
     const md = municaoDaArma(f);
     ctx.municao = {
-      usa: md.usa, unitario: md.usa && md.tipo === "unitario", temPente: md.usa && md.tipo === "pente",
-      opcoesTipo: [{ id: "unitario", label: "Unitário (1 por disparo)" }, { id: "pente", label: "Pente" }].map(x => ({ ...x, selected: x.id === md.tipo })),
+      usa: md.usa, unitario: md.usa && md.tipo === "unitario", pacote: md.usa && md.tipo === "pacote", temPente: md.usa && md.tipo === "pente",
+      opcoesTipo: [{ id: "unitario", label: "Unitário (1 por disparo)" }, { id: "pente", label: "Pente" }, { id: "pacote", label: "Pacote (1 por combate, Notion)" }].map(x => ({ ...x, selected: x.id === md.tipo })),
       porAtaque: md.porAtaque, temDono: !!item.actor,
       opcoesRecarga: ["padrao", "bonus", "movimento", "reacao", "livre"].map(id => ({ id, label: ACOES[id].label, selected: id === (ACOES[f.recargaAcao] ? f.recargaAcao : "padrao") })),
       penteMax: md.pente?.max ?? (int(f.pente?.max) || 6), penteAtual: md.pente?.atual ?? Math.max(0, int(f.pente?.atual)),
@@ -1507,6 +1589,25 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
         ...candidatos.map(i => ({ id: i.id, label: `${i.name} (×${num(i.system?.quantity, 0)})`, selected: i.id === f.municao }))]
     };
   }
+  // 0.6.0: propriedades, região e tecnologia, tipo de armadura, Estamina por turno, título e melhorias (base)
+  if (eArma || tipo === "equipment") {
+    const props = listaPropriedades(f);
+    ctx.notion060 = {
+      propriedadesTexto: props.join(", "), propriedades: props.map(n => ({ nome: n, texto: PROPRIEDADES_ARMA[n] ?? "" })),
+      sugestoesPropriedade: Object.keys(PROPRIEDADES_ARMA),
+      regioes: [{ id: "", label: "—", selected: !f.regiao }, ...Object.entries(REGIOES).map(([id, label]) => ({ id, label, selected: id === f.regiao }))],
+      nivelTec: int(f.nivelTec) || ({ umbra: 1, briavoterna: 2, genesis: 3 }[f.regiao] ?? 0),
+      eArmadura: tipo === "equipment",
+      tiposArmadura: [{ id: "", label: "—", selected: !f.tipoArmadura }, ...Object.entries(TIPOS_ARMADURA).map(([id, label]) => ({ id, label, selected: id === f.tipoArmadura }))],
+      estaminaPorTurno: int(f.estaminaPorTurno), titulo: f.titulo ?? ""
+    };
+  }
+  ctx.melhorias060 = {
+    categorias: Object.entries(CATEGORIAS_MELHORIA_ITEM).map(([id, c]) => {
+      const itens = Object.entries(f.melhoriasItem ?? {}).filter(([, m]) => m?.categoria === id).map(([mid, m]) => ({ id: mid, nome: m.nome ?? "", efeito: m.efeito ?? "" }));
+      return { id, ...c, itens, qtd: itens.length, cheio: itens.length >= c.limite };
+    })
+  };
   const recarga = RECARGAS[f.cargas?.recarga] ? f.cargas.recarga : "nenhuma";
   ctx.cargas = {
     valor: Math.max(0, int(f.cargas?.valor)), max: Math.max(0, int(f.cargas?.max)),

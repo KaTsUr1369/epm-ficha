@@ -1,6 +1,6 @@
 /** Registra as condições EPM como status do Foundry (HUD do token e Actor#toggleStatusEffect). */
 import { CONDICOES } from "./config.mjs";
-import { ajustes } from "./settings.mjs";
+import { ajustes, conteudoNotion } from "./settings.mjs";
 
 /** Status que o dnd5e e o Foundry usam internamente e que não podem sumir. */
 const MANTER = ["dead", "unconscious", "exhaustion", "concentrating", "bloodied"];
@@ -37,7 +37,9 @@ export function registrarCondicoes() {
     name: c.label,
     img: c.icone,
     description: `<p>${c.efeito}</p>`,
-    hud: todas || c.categoria === "basicas"
+    // As do Notion (não oficiais) só vão para o HUD do token quando o Mestre liga no Escudo (recarregar).
+    hud: c.extra ? conteudoNotion("condicoes") : (todas || c.categoria === "basicas"),
+    ...(c.extra ? { tint: "#B9A6E8" } : {})
   }));
   const ids = new Set(epm.map(e => e.id));
   const atuais = (CONFIG.statusEffects ?? []).filter(s => !ids.has(s.id));

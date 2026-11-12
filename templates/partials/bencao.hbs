@@ -29,6 +29,7 @@
   {{#if condicao}}<p class="epm-texto-livre"><span class="epm-rotulo">Condição</span> {{this.condicao}}</p>{{/if}}
   {{#if custo}}<p class="epm-texto-livre"><span class="epm-rotulo">Custo</span> {{this.custo}}</p>{{/if}}
   {{#if consequencia}}<p class="epm-texto-livre"><span class="epm-rotulo">Consequência</span> {{this.consequencia}}</p>{{/if}}
+  {{#if beneficio}}<p class="epm-texto-livre"><span class="epm-rotulo">Benefício</span> {{this.beneficio}}</p>{{/if}}
   {{else}}
   <div class="epm-dialogo-linha">
     <label class="epm-campo"><span>Usos</span><select name="flags.epm-ficha.bencaos.{{this.id}}.frequencia">{{#each opcoesFrequencia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
@@ -55,6 +56,7 @@
   {{#if condicao}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Condição</span> {{this.condicao}}</p>{{/if}}
   {{#if custo}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Custo</span> {{this.custo}}</p>{{/if}}
   {{#if consequencia}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Consequência</span> {{this.consequencia}}</p>{{/if}}
+  {{#if beneficio}}<p class="epm-texto-livre epm-bencao-extra"><span class="epm-rotulo">Benefício</span> {{this.beneficio}}</p>{{/if}}
   {{#if mods.length}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag">{{this.alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}</div>{{/if}}
   {{/if}}
   {{#if resumoAuto.length}}<div class="epm-chips epm-auto-chips" title="O que a ficha faz sozinha">{{#each resumoAuto}}<span class="epm-tag epm-tag-auto">{{this}}</span>{{/each}}</div>{{/if}}

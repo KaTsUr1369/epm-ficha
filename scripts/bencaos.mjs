@@ -15,11 +15,13 @@
  *  - escolha { tipo: "imunidade", rotulo, sugestoes } pergunta algo ao adicionar
  */
 import { LISTA_BENCAOS } from "./bencaos-lista.mjs";
+import { LISTA_BENCAOS_NOTION } from "./bencaos-notion.mjs";
 
 export const NATUREZAS = {
   divina:   { label: "Divina",   bencao: "Bênçãos Divinas",   maldicao: "Maldições Divinas" },
   caotica:  { label: "Caótica",  bencao: "Bênçãos Caóticas",  maldicao: "Maldições Caóticas" },
-  memetica: { label: "Memética", bencao: "Bênçãos Meméticas", maldicao: "Maldições Meméticas" }
+  memetica: { label: "Memética", bencao: "Bênçãos Meméticas", maldicao: "Maldições Meméticas" },
+  notion:   { label: "Notion",   bencao: "Itens extra do Notion", maldicao: "Itens extra do Notion", extra: true }
 };
 
 export const RARIDADES_BENCAO = {
@@ -161,6 +163,15 @@ export const CATALOGO = LISTA_BENCAOS.entradas.map(e => {
   };
 });
 
+/** Itens extra do Notion (não oficiais): sem raridade e sem automação; ligados pelo Mestre no Escudo. */
+for (const e of LISTA_BENCAOS_NOTION) {
+  CATALOGO.push({
+    id: `n${pad(e.numero)}`, numero: e.numero, nome: e.nome, tipo: e.tipo, natureza: e.origem === "notion" ? "notion" : e.origem, raridade: "",
+    extra: true, efeito: e.efeito, condicao: e.condicao ?? "", custo: e.custo ?? "", consequencia: "", beneficio: e.beneficio ?? "",
+    frequencia: "livre", duracao: 0, mods: [], efeitos: {}, aoUsar: null, aoTerminar: null, escolha: null, automatica: false
+  });
+}
+
 const POR_ID = new Map(CATALOGO.map(c => [c.id, c]));
 export const entradaCatalogo = id => POR_ID.get(id) ?? null;
 
@@ -180,7 +191,7 @@ export function dadosNovaEntrada(c, { escolha = "", criado = Date.now(), novoIdF
   return {
     catalogo: c.id, nome: c.nome, tipo: c.tipo, natureza: c.natureza, raridade: c.raridade,
     ativo: c.tipo === "maldicao" || !c.duracao,
-    origem: "", descricao: c.efeito, condicao: c.condicao, custo: c.custo, consequencia: c.consequencia,
+    origem: "", descricao: c.efeito, condicao: c.condicao, custo: c.custo, consequencia: c.consequencia, beneficio: c.beneficio ?? "",
     escolha, mods, permanentes: {}, usado: false, turnosRestantes: 0, criado
   };
 }

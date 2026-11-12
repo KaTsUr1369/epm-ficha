@@ -1,0 +1,363 @@
+{{!-- Painéis da 0.6.0. Chamado com secao="..." em cada aba; os dados ficam em @root.v060. --}}
+{{#with @root.v060 as |v|}}
+
+{{#if (epmEq ../secao "principal")}}
+<div class="epm-060-grade">
+  <section class="epm-painel epm-060-raca">
+    <header class="epm-painel-titulo">
+      <h3>Raça e corpo</h3>
+      {{#if @root.editavel}}<button type="button" class="epm-link" data-action="escolherRaca" title="Raças prontas do Notion: preenche atributos, deslocamento, tamanho e habilidades">{{#if v.raca.escolhida}}Trocar raça{{else}}Escolher raça{{/if}}</button>{{/if}}
+    </header>
+    <p class="epm-060-raca-nome"><strong>{{#if v.raca.nome}}{{v.raca.nome}}{{else}}Sem raça definida{{/if}}</strong>{{#if v.raca.info}} <span class="epm-dica">{{v.raca.info}}</span>{{/if}}</p>
+    {{#if v.raca.recursos}}<p class="epm-dica">Base da raça: {{v.raca.recursos}}</p>{{/if}}
+    {{#if v.raca.habilidades.length}}
+    <ul class="epm-060-lista">{{#each v.raca.habilidades}}<li title="{{this.texto}}"><strong>{{this.nome}}</strong>{{#if unica}} <span class="epm-tag">Única</span>{{/if}} <span class="epm-dica">{{this.texto}}</span></li>{{/each}}</ul>
+    {{/if}}
+    {{#if v.raca.caminhos.length}}
+    <details class="epm-060-caminhos"><summary>Caminhos</summary>
+      {{#each v.raca.caminhos}}
+      <div class="epm-060-caminho{{#if completo}} completo{{/if}}" title="{{this.texto}}">
+        <span class="epm-060-caminho-nome">{{this.nome}}</span>
+        <span class="epm-barra"><span style="width: {{this.pct}}%"></span></span>
+        <span class="epm-contador">{{this.valor}}/{{this.meta}}</span>
+        {{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="caminho" data-caminho="{{this.id}}" data-delta="-1" aria-label="Menos"><i class="fa-solid fa-minus"></i></button><button type="button" class="epm-icone-botao" data-action="caminho" data-caminho="{{this.id}}" data-delta="1" aria-label="Mais"><i class="fa-solid fa-plus"></i></button>{{/if}}
+      </div>
+      {{/each}}
+    </details>
+    {{/if}}
+    <div class="epm-060-corpo">
+      {{#if @root.edicao}}
+      <label class="epm-mini"><span>tamanho</span><select name="flags.epm-ficha.tamanho">{{#each v.corpo.tamanhos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      {{#each v.corpo.movimentos}}<label class="epm-mini"><span>{{this.label}} (m)</span><input type="number" min="0" name="{{this.campo}}" value="{{this.manual}}" placeholder="{{this.valor}}" /></label>{{/each}}
+      <label class="epm-mini"><span>visão no escuro (m)</span><input type="number" min="0" name="flags.epm-ficha.sentidos.visaoEscuro" value="{{v.corpo.visaoManual}}" placeholder="{{v.corpo.visao}}" /></label>
+      <label class="epm-mini largo"><span>outros sentidos</span><input type="text" name="flags.epm-ficha.sentidos.outros" value="{{v.corpo.outros}}" placeholder="Faro, tremorsenso…" /></label>
+      {{else}}
+      <span class="epm-tag" title="{{v.corpo.efeitoTamanho}}">{{v.corpo.tamanhoLabel}}</span>
+      {{#each v.corpo.movimentos}}{{#if valor}}<span class="epm-tag">{{this.label}} {{this.valor}} m</span>{{/if}}{{/each}}
+      {{#if v.corpo.visao}}<span class="epm-tag">Visão no escuro {{v.corpo.visao}} m</span>{{/if}}
+      {{#if v.corpo.outros}}<span class="epm-tag">{{v.corpo.outros}}</span>{{/if}}
+      {{/if}}
+    </div>
+    {{#if v.corpo.efeitoTamanho}}<p class="epm-dica">Tamanho: {{v.corpo.efeitoTamanho}}. Manobras só funcionam contra alvos até uma categoria maior; levantar de Caído custa 1,5 m por categoria.</p>{{/if}}
+    {{#if v.idade}}<p class="epm-dica"><strong>Idade:</strong> {{#if v.idade.faixa}}{{v.idade.faixa.label}} — {{epmJoin v.idade.faixa.efeitos " "}}{{else}}preencha a idade em Sobre.{{/if}}</p>{{/if}}
+    {{#if v.grau}}
+    <p class="epm-060-grau">
+      {{#if v.grau.mostrar}}<span class="epm-tag" style="--cor-tag: {{v.grau.cor}}" title="Olhar de Mana: intensidade do Núcleo. Informação e requisito, sem bônus próprio. Aura Exposta mostra o grau para todos.">Núcleo {{v.grau.label}}</span>{{/if}}
+      {{#if @root.edicao}}<label class="epm-check"><input type="checkbox" name="flags.epm-ficha.mostrarGrau" {{epmChecked v.grau.mostrar}} /> Mostrar o grau do Núcleo</label>{{/if}}
+    </p>
+    {{/if}}
+  </section>
+
+  <section class="epm-painel epm-060-progresso">
+    <header class="epm-painel-titulo">
+      <h3>Títulos e recompensas</h3>
+      {{#if @root.editavel}}<button type="button" class="epm-link" data-action="resgatarCodigo" title="Digite um código dado pelo Mestre"><i class="fa-solid fa-ticket"></i> Resgatar código</button>{{/if}}
+    </header>
+    <label class="epm-campo"><span>Título ativo (aparece embaixo do nome)</span>
+      <select name="flags.epm-ficha.tituloAtivo" {{#unless @root.editavel}}disabled{{/unless}}><option value="">Nenhum</option>{{#each v.titulos.liberados}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select>
+    </label>
+    {{#if v.titulos.ativo}}<p class="epm-dica">{{v.titulos.ativo.texto}}</p>{{/if}}
+    <details class="epm-060-conquistas"><summary>Conquistas ({{v.titulos.contadores.criticos}} críticos · {{v.titulos.contadores.colapsos}} colapsos · {{v.titulos.contadores.pactosCumpridos}} pactos cumpridos)</summary>
+      {{#each v.titulos.lista}}
+      <div class="epm-060-conquista{{#if liberado}} liberado{{/if}}" title="{{this.requisito}}">
+        <span><strong>{{this.nome}}</strong> <span class="epm-dica">{{this.texto}}</span></span>
+        {{#if meta}}<span class="epm-barra"><span style="width: {{this.pct}}%"></span></span><span class="epm-contador">{{this.progresso}}/{{this.meta}}</span>{{else}}<span class="epm-dica">{{this.requisito}}</span>{{/if}}
+        {{#if proprio}}{{#if @root.edicao}}<button type="button" class="epm-icone-botao perigo" data-action="excluirTitulo" data-id="{{this.proprio}}" title="Apagar título"><i class="fa-solid fa-trash"></i></button>{{/if}}{{/if}}
+      </div>
+      {{/each}}
+      {{#if @root.edicao}}<button type="button" class="epm-botao epm-botao-mini" data-action="novoTitulo"><i class="fa-solid fa-plus"></i> Título dado pelo Mestre</button>{{/if}}
+    </details>
+    {{#if v.relogios.length}}
+    <div class="epm-060-relogios">
+      {{#each v.relogios}}<span class="epm-060-relogio{{#if aFavor}} a-favor{{/if}}{{#if oculto}} oculto{{/if}}" title="{{this.nome}}: {{this.atual}} de {{this.partes}}{{#if oculto}} (só o Mestre vê){{/if}}">{{{this.svg}}}<span>{{this.nome}}</span></span>{{/each}}
+    </div>
+    {{/if}}
+    {{#if v.regiao}}<p class="epm-dica"><i class="fa-solid fa-map-location-dot"></i> {{v.regiao.nome}}{{#if v.regiao.mundo}} ({{v.regiao.mundo}}){{/if}} · tecnologia {{v.regiao.tecnologia}}{{#if v.regiao.idioma}} · idioma comum: {{v.regiao.idioma}}{{/if}}</p>{{/if}}
+    {{#if v.densidade}}<p class="epm-aviso">Densidade de mana {{v.densidade.label}}: {{v.densidade.texto}}</p>{{/if}}
+  </section>
+
+  {{#if v.compendio}}
+  <section class="epm-painel epm-060-compendio">
+    <header class="epm-painel-titulo"><h3>Compêndio do mundo</h3>{{#if @root.isGM}}<button type="button" class="epm-link" data-action="compendioEnviar" title="Cadastrar uma entrada desta ficha no compêndio do mundo"><i class="fa-solid fa-upload"></i> Enviar</button>{{/if}}</header>
+    {{#if @root.editavel}}<div class="epm-060-botoes">{{#each v.compendio.tipos}}<button type="button" class="epm-botao epm-botao-mini epm-botao-sutil" data-action="compendioPegar" data-tipo="{{this.tipo}}" {{#unless qtd}}disabled{{/unless}} title="{{this.qtd}} no compêndio"><i class="{{this.icone}}"></i> {{this.label}}</button>{{/each}}</div>{{/if}}
+    {{#each v.compendio.pendentes}}<div class="epm-060-item"><span><strong>{{this.nome}}</strong> <span class="epm-dica">({{this.tipoLabel}}) tem versão nova no compêndio</span></span>{{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="compendioAtualizar" data-tipo="{{this.tipo}}" data-id="{{this.id}}">Atualizar</button>{{/if}}</div>{{/each}}
+  </section>
+  {{/if}}
+
+  {{#if (epmOr @root.edicao v.recursosAuto.ativo)}}
+  <section class="epm-painel epm-060-recursos">
+    <header class="epm-painel-titulo">
+      <h3>Vida, Mana e Estamina automáticas</h3>
+      {{#if @root.edicao}}<label class="epm-check"><input type="checkbox" name="flags.epm-ficha.recursosAuto.ativo" {{epmChecked v.recursosAuto.ativo}} /> Calcular</label>{{/if}}
+    </header>
+    {{#if v.recursosAuto.ativo}}
+    {{#if @root.edicao}}
+    <div class="epm-060-recursos-cfg">
+      <label class="epm-mini"><span>por nível</span><select name="flags.epm-ficha.recursosAuto.modo"><option value="media" {{epmSelected v.recursosAuto.modo "media"}}>Média</option><option value="rolagem" {{epmSelected v.recursosAuto.modo "rolagem"}}>Rolar o dado</option></select></label>
+      {{#each v.recursosAuto.linhas}}<label class="epm-mini"><span>atributo da {{this.label}}</span><select name="flags.epm-ficha.recursosAuto.atributos.{{this.id}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/each}}
+      {{#if (epmEq v.recursosAuto.modo "rolagem")}}<button type="button" class="epm-botao epm-botao-mini" data-action="rolarNiveisRecursos"><i class="fa-solid fa-dice"></i> Rolar níveis que faltam</button>{{/if}}
+    </div>
+    {{/if}}
+    <ul class="epm-060-lista">{{#each v.recursosAuto.linhas}}<li><strong>{{this.label}} máxima: {{#if total}}{{this.total}}{{else}}—{{/if}}</strong> <span class="epm-dica">{{this.partes}}</span></li>{{/each}}</ul>
+    <p class="epm-dica">Inicial = Raça + Arquétipo + atributo. Cada nível acima: dado (ou média) + o mesmo atributo. Os máximos da ficha acompanham sozinhos.</p>
+    {{else}}<p class="epm-dica">Desligado: os máximos são digitados à mão.</p>{{/if}}
+  </section>
+  {{/if}}
+
+  {{#if v.altos.tem}}
+  <section class="epm-painel epm-060-altos">
+    <header class="epm-painel-titulo"><h3>Atributos acima de 4</h3><span class="epm-contador" title="Teto de atributo pelo nível">teto {{v.altos.teto}}</span></header>
+    <ul class="epm-060-lista">{{#each v.altos.linhas}}<li>{{this}}</li>{{/each}}</ul>
+  </section>
+  {{/if}}
+</div>
+{{/if}}
+
+{{#if (epmEq ../secao "combate")}}
+<section class="epm-painel epm-060-turno">
+  <header class="epm-painel-titulo"><h3>Ações especiais</h3></header>
+  <div class="epm-060-botoes">
+    <button type="button" class="epm-botao" data-action="acaoCompleta" {{#unless (epmAnd @root.editavel v.turno.completaLivre)}}disabled{{/unless}} title="Gasta a Ação Padrão e a de Movimento (sobram Bônus e Reação)"><i class="fa-solid fa-person-running"></i> Ação Completa</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="converterPadrao" data-para="bonus" {{#unless (epmAnd @root.editavel v.turno.padraoLivre)}}disabled{{/unless}} title="Troca a Ação Padrão por uma Ação Bônus extra neste turno">Padrão → Bônus</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="converterPadrao" data-para="movimento" {{#unless (epmAnd @root.editavel v.turno.padraoLivre)}}disabled{{/unless}} title="Troca a Ação Padrão por uma Ação de Movimento extra neste turno">Padrão → Movimento</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="nocaoVitalidade" {{#unless @root.editavel}}disabled{{/unless}} title="5 PE: diz como estão os alvos marcados (Intocado, Ferido, Machucado, No Limite)"><i class="fa-solid fa-heart-pulse"></i> Noção de Vitalidade</button>
+  </div>
+  <div class="epm-060-corpo">
+    <label class="epm-mini" title="Nível de tecnologia que o personagem domina. Equipamento acima dá desvantagem e um 1 natural trava a arma."><span>tecnologia</span>{{#if @root.edicao}}<select name="flags.epm-ficha.tecnologia">{{#each v.tecnologia.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{else}}<strong>{{v.tecnologia.nivel}}</strong>{{/if}}</label>
+  </div>
+</section>
+{{#if v.classe}}
+<section class="epm-painel epm-060-classe">
+  <header class="epm-painel-titulo"><h3>{{v.classe.nome}}</h3><span class="epm-contador">Combatente {{v.classe.nivel}}</span></header>
+  {{#if v.classe.furia}}
+  <div class="epm-060-furia{{#if v.classe.furia.ativa}} ativa{{/if}}">
+    <button type="button" class="epm-botao{{#if v.classe.furia.ativa}} epm-botao-forte{{/if}}" data-action="furia" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-fire"></i> {{#if v.classe.furia.ativa}}Encerrar Fúria{{else}}Fúria{{/if}}</button>
+    <span class="epm-dica">+{{v.classe.furia.dano}} de dano e RD {{v.classe.furia.rd}} por 1 cena · {{v.classe.furia.usos}}/{{v.classe.furia.max}} neste descanso</span>
+  </div>
+  {{/if}}
+  {{#if v.classe.critico}}<p class="epm-dica">{{v.classe.critico}}</p>{{/if}}
+  {{#if v.classe.corpoDePedra}}<p class="epm-dica">{{v.classe.corpoDePedra}}</p>{{/if}}
+  {{#if v.classe.protecaoGuardiao}}<p class="epm-dica">{{v.classe.protecaoGuardiao}}</p>{{/if}}
+  {{#if v.classe.porradaFranca}}<p class="epm-dica">{{v.classe.porradaFranca}}</p>{{/if}}
+  {{#if v.classe.protecoes}}
+  <p class="epm-rotulo">Proteções (até {{v.classe.protecoes.max}})</p>
+  <div class="epm-060-opcoes">{{#each v.classe.protecoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="protecaoBarbaro" data-id="{{this.id}}" data-max="{{v.classe.protecoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
+  {{/if}}
+  {{#if v.classe.posicoes}}
+  <p class="epm-rotulo">Posições (até {{v.classe.posicoes.max}})</p>
+  <div class="epm-060-opcoes">{{#each v.classe.posicoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="posicaoLutador" data-id="{{this.id}}" data-max="{{v.classe.posicoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
+  {{/if}}
+</section>
+{{/if}}
+{{#if v.classeElemental}}<p class="epm-dica epm-060-elemental"><i class="fa-solid fa-fire"></i> Árvore elemental: um golpe com 20+ de dano de um elemento pede Fortitude DT 20 ao alvo (o botão aparece no cartão do ataque). Evoluções: Fogo → Raio → Fogo Azul/Raio Negro; Água → Gelo → Ácido/Zero Absoluto; Ar → Sonoro → Vendaval/Ruído; Terra → Força → Gravidade.</p>{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "condicoes")}}
+<section class="epm-painel epm-060-sanidade">
+  <header class="epm-painel-titulo">
+    <h3>Sanidade: {{v.sanidade.estado.label}}</h3>
+    <span class="epm-contador">{{v.sanidade.valor}} / {{v.sanidade.max}}</span>
+  </header>
+  <div class="epm-060-estados">{{#each v.sanidade.estados}}<span class="epm-060-estado{{#if atual}} atual{{/if}}" title="{{this.texto}}">{{this.label}}</span>{{/each}}</div>
+  <p class="epm-dica">{{v.sanidade.estado.texto}}{{#if v.sanidade.menteBlindada}} Mente Blindada: +5 no teste.{{/if}}</p>
+  {{#if @root.editavel}}
+  <div class="epm-060-botoes">
+    <button type="button" class="epm-botao" data-action="sanidadeDano"><i class="fa-solid fa-brain"></i> Dano de Sanidade</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="sanidadeRecuperar">Recuperar</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="insanidadeRolar" data-tipo="temporaria">Sortear temporária</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="insanidadeRolar" data-tipo="permanente">Sortear permanente</button>
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="insanidadeManual" title="Fobia, compulsão, paranoia… com gatilho e efeito">Nova insanidade</button>
+  </div>
+  {{/if}}
+  {{#each v.sanidade.insanidades}}
+  <div class="epm-060-insanidade{{#if encerrada}} encerrada{{/if}}">
+    <div class="epm-060-insanidade-topo">
+      <strong>{{this.nome}}</strong>
+      <span class="epm-tag" title="{{this.intensidadeTexto}}">{{this.intensidadeLabel}}</span>
+      {{#if tipoLabel}}<span class="epm-tag">{{this.tipoLabel}}</span>{{/if}}
+      {{#if condicoes}}<span class="epm-dica">condições: {{this.condicoes}}</span>{{/if}}
+      {{#if @root.editavel}}
+      <button type="button" class="epm-icone-botao" data-action="insanidadeEncerrar" data-id="{{this.id}}" title="{{#if encerrada}}Reativar{{else}}Encerrar{{/if}}"><i class="fa-solid {{#if encerrada}}fa-rotate-left{{else}}fa-check{{/if}}"></i></button>
+      <button type="button" class="epm-icone-botao perigo" data-action="insanidadeRemover" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+      {{/if}}
+    </div>
+    {{#if @root.edicao}}
+    <div class="epm-060-corpo">
+      <label class="epm-mini"><span>tipo</span><select name="flags.epm-ficha.insanidades.{{this.id}}.categoria"><option value="">—</option>{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <label class="epm-mini"><span>intensidade</span><select name="flags.epm-ficha.insanidades.{{this.id}}.intensidade">{{#each intensidades}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <label class="epm-mini largo"><span>gatilho</span><input type="text" name="flags.epm-ficha.insanidades.{{this.id}}.gatilho" value="{{this.gatilho}}" placeholder="Ver chamas a até 9 m" /></label>
+      <label class="epm-mini largo"><span>efeito</span><input type="text" name="flags.epm-ficha.insanidades.{{this.id}}.efeito" value="{{this.efeito}}" placeholder="Fica Apavorado enquanto vê" /></label>
+    </div>
+    {{else}}
+    {{#if gatilho}}<p class="epm-dica"><em>Gatilho:</em> {{this.gatilho}}{{#if efeito}} · <em>Efeito:</em> {{this.efeito}}{{/if}}</p>{{/if}}
+    {{/if}}
+    {{#if motivo}}<p class="epm-dica">{{this.motivo}}</p>{{/if}}
+  </div>
+  {{/each}}
+</section>
+{{#if v.corrupcao.tem}}
+<section class="epm-painel epm-060-corrupcao">
+  <header class="epm-painel-titulo"><h3>Corrupção acumulada</h3><span class="epm-contador">{{v.corrupcao.valor}} / 100</span></header>
+  <div class="epm-barra epm-barra-corrupcao"><span style="width: {{v.corrupcao.valor}}%"></span></div>
+  <div class="epm-060-marcos">{{#each v.corrupcao.marcos}}<span class="epm-060-marco{{#if atingido}} atingido{{/if}}" title="{{this.texto}}">{{this.valor}}: {{this.label}}</span>{{/each}}</div>
+  <p class="epm-dica">Cada 10 de dano de Corrupção sofrido soma 1 ponto. Limpa com ritual Radiante, Pureza Divina ou na história.</p>
+  {{#if @root.isGM}}<label class="epm-mini"><span>ajustar (Mestre)</span><input type="number" min="0" max="100" name="flags.epm-ficha.corrupcao" value="{{v.corrupcao.valor}}" /></label>{{/if}}
+</section>
+{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "bencaos")}}
+<div class="epm-060-grade">
+  <section class="epm-painel epm-060-votos">
+    <header class="epm-painel-titulo"><h3>Votos</h3><span class="epm-contador{{#if v.votos.excedido}} excedido{{/if}}">{{v.votos.usados}} de {{v.votos.limite}}</span>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="novoVoto"><i class="fa-solid fa-plus"></i> Voto</button>{{/if}}</header>
+    {{#unless v.votos.lista.length}}<p class="epm-vazio">Nenhum voto. Até o nível 20: 3 votos; depois +1 a cada 10 níveis.</p>{{/unless}}
+    {{#each v.votos.lista}}
+    <div class="epm-060-item{{#if usado}} usado{{/if}}">
+      {{#if @root.edicao}}
+      <input type="text" name="flags.epm-ficha.votos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome do voto" />
+      <select name="flags.epm-ficha.votos.{{this.id}}.tipo">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+      <input type="text" name="flags.epm-ficha.votos.{{this.id}}.custo" value="{{this.custo}}" placeholder="Custo (o que você abre mão)" />
+      <input type="text" name="flags.epm-ficha.votos.{{this.id}}.efeito" value="{{this.efeito}}" placeholder="Efeito" />
+      <button type="button" class="epm-icone-botao perigo" data-action="excluirVoto" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+      {{else}}
+      <span><strong>{{this.nome}}</strong> <span class="epm-tag">{{this.tipoLabel}}</span>{{#if usado}} <span class="epm-tag">usado</span>{{/if}}<br><span class="epm-dica">Custo: {{this.custo}} · Efeito: {{this.efeito}}</span></span>
+      {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="usarVoto" data-id="{{this.id}}">Usar</button>{{/if}}
+      {{/if}}
+    </div>
+    {{/each}}
+  </section>
+  <section class="epm-painel epm-060-pactos">
+    <header class="epm-painel-titulo"><h3>Pactos</h3>{{#each v.pactos.tipos}}<span class="epm-contador{{#if excedido}} excedido{{/if}}" title="{{this.label}}">{{this.usados}}/{{this.limite}}</span>{{/each}}{{#if @root.editavel}}<button type="button" class="epm-link" data-action="novoPacto"><i class="fa-solid fa-plus"></i> Pacto</button>{{/if}}</header>
+    {{#unless v.pactos.lista.length}}<p class="epm-vazio">Nenhum pacto.</p>{{/unless}}
+    {{#each v.pactos.lista}}
+    <div class="epm-060-item{{#if quebrado}} quebrado{{/if}}{{#if cumprido}} cumprido{{/if}}">
+      {{#if @root.edicao}}
+      <input type="text" name="flags.epm-ficha.pactos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome do pacto" />
+      <select name="flags.epm-ficha.pactos.{{this.id}}.tipo">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+      <input type="text" name="flags.epm-ficha.pactos.{{this.id}}.com" value="{{this.com}}" placeholder="Com quem" />
+      <input type="text" name="flags.epm-ficha.pactos.{{this.id}}.clausulas" value="{{this.clausulas}}" placeholder="Cláusulas" />
+      <input type="text" name="flags.epm-ficha.pactos.{{this.id}}.beneficios" value="{{this.beneficios}}" placeholder="O que recebe" />
+      <button type="button" class="epm-icone-botao perigo" data-action="excluirPacto" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+      {{else}}
+      <span><strong>{{this.nome}}</strong> <span class="epm-tag">{{this.tipoLabel}}</span>{{#if com}} com {{this.com}}{{/if}}{{#if quebrado}} <span class="epm-tag perigo">quebrado{{#if penalidade}}: {{this.penalidade}}{{/if}}</span>{{/if}}{{#if cumprido}} <span class="epm-tag">cumprido</span>{{/if}}<br><span class="epm-dica">{{this.clausulas}}{{#if beneficios}} · Recebe: {{this.beneficios}}{{/if}}</span></span>
+      {{#if @root.editavel}}
+      {{#if quebrado}}{{#if @root.isGM}}<button type="button" class="epm-botao epm-botao-mini" data-action="restaurarPacto" data-id="{{this.id}}">Restaurar (Mestre)</button>{{/if}}
+      {{else unless cumprido}}<button type="button" class="epm-botao epm-botao-mini" data-action="cumprirPacto" data-id="{{this.id}}">Cumprido</button><button type="button" class="epm-botao epm-botao-mini perigo" data-action="quebrarPacto" data-id="{{this.id}}">Quebrar</button>{{/if}}
+      {{/if}}
+      {{/if}}
+    </div>
+    {{/each}}
+  </section>
+</div>
+{{/if}}
+
+{{#if (epmEq ../secao "treinos")}}
+<div class="epm-060-grade">
+  <section class="epm-painel epm-060-catalogo-treinos">
+    <header class="epm-painel-titulo"><h3>Treinamentos do Notion</h3>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="compendioPegar" data-tipo="treinamentos" title="Treinos cadastrados pelo Mestre no compêndio do mundo"><i class="fa-solid fa-book-atlas"></i> Do compêndio</button>{{/if}}</header>
+    {{#each v.catalogoTreinos}}
+    <details class="epm-060-categoria"><summary><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}} <span class="epm-contador">{{itens.length}}</span></summary>
+      {{#each itens}}
+      <div class="epm-060-item" title="{{this.beneficios}}">
+        <span><strong>{{this.nome}}</strong>{{#if modelo}} <span class="epm-tag" title="Modelo da 0.6.0 (a categoria estava vazia no Notion)">modelo</span>{{/if}}<br><span class="epm-dica">{{this.resumo}}. {{this.beneficios}}</span></span>
+        {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="treinoCatalogo" data-indice="{{this.indice}}">Adicionar</button>{{/if}}
+      </div>
+      {{/each}}
+    </details>
+    {{/each}}
+  </section>
+  <section class="epm-painel epm-060-talentos">
+    <header class="epm-painel-titulo"><h3>Talentos</h3><span class="epm-contador">{{v.talentos.pev}} PEv</span>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="novoTalento"><i class="fa-solid fa-plus"></i> Talento</button>{{/if}}</header>
+    <p class="epm-dica">Comprados com PEv. Talentos, treinos e habilidades dão no máximo +2 pontos de atributo.</p>
+    {{#unless v.talentos.lista.length}}<p class="epm-vazio">Nenhum talento.</p>{{/unless}}
+    {{#each v.talentos.lista}}
+    <div class="epm-060-item{{#if comprado}} comprado{{/if}}">
+      {{#if @root.edicao}}
+      <input type="text" name="flags.epm-ficha.talentos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome" />
+      <label class="epm-mini"><span>PEv</span><input type="number" min="0" name="flags.epm-ficha.talentos.{{this.id}}.custo" value="{{this.custo}}" /></label>
+      <input type="text" name="flags.epm-ficha.talentos.{{this.id}}.descricao" value="{{this.descricao}}" placeholder="O que faz" />
+      {{#each mods}}<span class="epm-060-mod"><input type="text" name="flags.epm-ficha.talentos.{{../id}}.mods.{{this.id}}.alvo" value="{{this.alvo}}" title="Alvo (atributo.forca, pericia.atletismo, ca, deslocamento…)" /><input type="number" name="flags.epm-ficha.talentos.{{../id}}.mods.{{this.id}}.valor" value="{{this.valor}}" /><button type="button" class="epm-icone-botao" data-action="removerModTalento" data-id="{{../id}}" data-mod="{{this.id}}"><i class="fa-solid fa-xmark"></i></button></span>{{/each}}
+      <button type="button" class="epm-icone-botao" data-action="adicionarModTalento" data-id="{{this.id}}" title="Modificador"><i class="fa-solid fa-plus"></i></button>
+      <button type="button" class="epm-icone-botao perigo" data-action="excluirTalento" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+      {{else}}
+      <span><strong>{{this.nome}}</strong> <span class="epm-dica">{{this.descricao}}</span></span>
+      {{#if comprado}}<span class="epm-tag">comprado</span>{{else if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="comprarTalento" data-id="{{this.id}}" {{#if semPev}}disabled title="PEv insuficientes"{{/if}}>Comprar ({{this.custo}} PEv)</button>{{/if}}
+      {{/if}}
+    </div>
+    {{/each}}
+  </section>
+</div>
+{{/if}}
+
+{{#if (epmEq ../secao "inventario")}}
+{{#if @root.editavel}}
+<div class="epm-060-botoes epm-060-inventario">
+  <button type="button" class="epm-botao epm-botao-sutil" data-action="catalogoItens" title="Armas e armaduras de Umbra'Draxil, Briavoterna e Genesis"><i class="fa-solid fa-book-open"></i> Armas e armaduras do Notion</button>
+  <button type="button" class="epm-botao epm-botao-sutil" data-action="kitInicial" title="Kits iniciais por arquétipo"><i class="fa-solid fa-box-open"></i> Kit inicial</button>
+</div>
+{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "companheiros")}}
+<section class="epm-painel epm-060-lideranca">
+  <header class="epm-painel-titulo"><h3>Nomeação e liderança</h3>
+    <span class="epm-contador{{#if v.lideranca.excedido}} excedido{{/if}}" title="5 criaturas nomeadas a cada 5 níveis">nomeadas {{v.lideranca.nomeadas}}/{{v.lideranca.limite}}</span>
+    <span class="epm-contador" title="Liderança: 5 + 5 a cada 5 níveis">liderança {{v.lideranca.pontos}}</span>
+    <span class="epm-contador{{#if v.lideranca.ativosExcedido}} excedido{{/if}}">em combate até {{v.lideranca.ativas}}</span>
+  </header>
+  {{#each v.lideranca.companheiros}}
+  <div class="epm-060-item">
+    <span><strong>{{this.nome}}</strong>{{#if nomeada}} <span class="epm-tag">Nomeada · {{this.faixa}}{{#if (epmNe quantidade 1)}} ×{{this.quantidade}}{{/if}}</span>{{/if}}</span>
+    {{#if @root.editavel}}
+    <label class="epm-mini"><span>posto</span><select name="flags.epm-ficha.companheiros.{{this.id}}.patente"><option value="">—</option>{{#each patentes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+    <label class="epm-check" title="Ativa no combate (até 3)"><input type="checkbox" name="flags.epm-ficha.companheiros.{{this.id}}.ativoCombate" {{epmChecked ativo}} /> em combate</label>
+    <label class="epm-mini" title="Receio (0–5)"><span>receio</span><input type="number" min="0" max="5" name="flags.epm-ficha.companheiros.{{this.id}}.receio" value="{{this.receio}}" /></label>
+    <label class="epm-mini" title="Confiança (0–5)"><span>confiança</span><input type="number" min="0" max="5" name="flags.epm-ficha.companheiros.{{this.id}}.confianca" value="{{this.confianca}}" /></label>
+    <span class="epm-tag" title="Moral = Confiança − Receio">moral {{epmSinal moral}}</span>
+    {{#unless nomeada}}<button type="button" class="epm-botao epm-botao-mini" data-action="nomearCriatura" data-id="{{this.id}}" title="Ritual de nomeação (custa PM e Exaustão)">Nomear</button>{{/unless}}
+    {{/if}}
+  </div>
+  {{/each}}
+  {{#if @root.isGM}}<button type="button" class="epm-botao epm-botao-mini" data-action="npcRapido"><i class="fa-solid fa-user-plus"></i> Ficha rápida de NPC</button>{{/if}}
+  <details><summary>Faixas de nomeação e hierarquia militar</summary>
+    <ul class="epm-060-lista">{{#each v.lideranca.faixas}}<li>{{this}}</li>{{/each}}</ul>
+    <ul class="epm-060-lista">{{#each v.lideranca.patentes}}<li><strong>{{this.label}}</strong> ({{this.comanda}}): {{this.bonus}}</li>{{/each}}</ul>
+    <ul class="epm-060-lista">{{#each v.lideranca.regras}}<li>{{this}}</li>{{/each}}</ul>
+  </details>
+</section>
+{{/if}}
+
+{{#if (epmEq ../secao "bestiario")}}
+{{#if v.criaturas.length}}
+<section class="epm-painel epm-060-criaturas">
+  <header class="epm-painel-titulo"><h3>Conhecimento e fichas de criatura</h3>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="exemploCriatura" title="Cria o Lobo de Cinzas como exemplo">Exemplo</button><button type="button" class="epm-link" data-action="compendioPegar" data-tipo="bestiario"><i class="fa-solid fa-book-atlas"></i> Do compêndio</button>{{/if}}</header>
+  <p class="epm-dica">Estudar: Investigação, Conhecimentos Mágicos ou Sobrevivência. DT 15 resistências e imunidades · DT 25 fraquezas e nível de dano · DT 35 habilidades e lore. O que alguém descobre vale para o grupo.</p>
+  {{#each v.criaturas}}
+  <details class="epm-060-criatura">
+    <summary><strong>{{this.nome}}</strong> <span class="epm-tag" title="Conhecimento do grupo">{{this.nivelLabel}}</span>{{#if nd}} <span class="epm-dica">ND {{this.nd}} = {{this.pev}} PEv</span>{{/if}}</summary>
+    <div class="epm-060-botoes">
+      {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="estudarCriatura" data-id="{{this.id}}"><i class="fa-solid fa-magnifying-glass"></i> Estudar</button>{{/if}}
+      {{#if presenca}}<button type="button" class="epm-botao epm-botao-mini" data-action="presencaCriatura" data-id="{{this.id}}" title="Manda ao chat um botão de dano de Sanidade para quem vê a criatura">Presença ({{this.presenca}})</button>{{/if}}
+      {{#if @root.isGM}}<button type="button" class="epm-botao epm-botao-mini epm-botao-sutil" data-action="compendioEnviar" data-tipo="bestiario" data-id="{{this.id}}">Enviar ao compêndio</button>{{/if}}
+    </div>
+    {{#if @root.edicao}}
+    <div class="epm-060-campos">{{#each campos}}<label class="epm-mini{{#if area}} largo{{/if}}"><span>{{this.label}}</span>{{#if area}}<textarea name="{{this.nome}}" rows="2">{{this.valor}}</textarea>{{else}}<input type="{{#if (epmEq tipo "numero")}}number{{else}}text{{/if}}" name="{{this.nome}}" value="{{this.valor}}" />{{/if}}</label>{{/each}}</div>
+    {{else}}
+    <dl class="epm-060-ficha-criatura">{{#each campos}}{{#if valor}}<dt>{{this.label}}</dt><dd>{{this.valor}}</dd>{{/if}}{{/each}}</dl>
+    {{/if}}
+  </details>
+  {{/each}}
+</section>
+{{/if}}
+{{/if}}
+
+{{#if (epmEq ../secao "sobre")}}
+{{#if v.passaporte.length}}
+<section class="epm-painel epm-060-passaporte">
+  <header class="epm-painel-titulo"><h3>Passaporte do Multiverso</h3><span class="epm-contador">{{v.passaporte.length}}</span></header>
+  <div class="epm-chips">{{#each v.passaporte}}<span class="epm-chip" title="Primeira visita: {{this.quando}}">{{this.nome}}{{#if mundo}} · {{this.mundo}}{{/if}}</span>{{/each}}</div>
+</section>
+{{/if}}
+{{/if}}
+
+{{/with}}

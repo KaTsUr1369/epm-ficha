@@ -55,6 +55,15 @@ export function registrarAjustes() {
     hint: "Ataque extra comum (gastando a Ação Bônus ou a de Movimento): quanto sai do acerto desse ataque. O Ataque Extra do Combatente (com PE) não tem penalidade.",
     scope: "world", config: true, type: Number, default: 5, range: { min: 0, max: 20, step: 1 }
   });
+  reg("conteudoNotion", {
+    name: "Conteúdo extra do Notion", hint: "Ligado no Escudo do Mestre → Ajustes.",
+    scope: "world", config: false, type: Object, default: { condicoes: false, danos: false, bencaos: false, idade: false, grauNucleo: false, calculadora: false }
+  });
+  // 0.6.0: dados do mundo controlados pelo Escudo (lidos por todos; só o Mestre grava, jogadores pedem por socket)
+  for (const [chave, padrao] of [["codigos", {}], ["relogios", {}], ["regioes", { lista: {}, atual: "" }], ["densidadeMana", "normal"],
+    ["compendioMundo", {}], ["conhecimentoCriaturas", {}], ["discord", { url: "", sessao: true, nivel: true, morte: true, bencao: true, relogio: true }]]) {
+    reg(chave, { name: chave, scope: "world", config: false, type: typeof padrao === "string" ? String : Object, default: padrao });
+  }
   reg("bestiarioAutomatico", {
     name: "Bestiário automático",
     hint: "No fim de cada combate, cada personagem registra no Bestiário as criaturas que enfrentou (pelo nome do token) e conta encontros e derrotas.",
@@ -75,6 +84,18 @@ function ler(chave, padrao) {
   } catch {
     return padrao;
   }
+}
+
+/** Conteúdo extra do Notion (não oficial), ligado pelo Mestre no Escudo → Ajustes. Lido por todos os clientes. */
+export const CONTEUDO_NOTION_PADRAO = { condicoes: false, danos: false, bencaos: false, idade: false, grauNucleo: false, calculadora: false };
+
+/** Lê uma configuração do mundo da 0.6.0 sem quebrar fora do Foundry (testes). */
+export function lerMundo(chave, padrao) {
+  try { return game.settings.get("epm-ficha", chave) ?? padrao; } catch { return padrao; }
+}
+export function conteudoNotion(chave) {
+  const v = { ...CONTEUDO_NOTION_PADRAO, ...(ler("conteudoNotion", {}) ?? {}) };
+  return chave ? !!v[chave] : v;
 }
 
 export function ajustes() {

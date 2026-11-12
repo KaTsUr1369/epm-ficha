@@ -10,7 +10,7 @@ import { fvtt, escapar } from "./helpers.mjs";
 import {
   ARQUETIPOS, TIPOS_PROJETO, nivelArquetipo, projetosDoNivel, limiteLivro, estadoProjetos, efeitosProjetoValendo
 } from "./arquetipos.mjs";
-import { estadoAtor, calcularRecuperacao } from "./mecanicas.mjs";
+import { estadoAtor, calcularRecuperacao, confirmar } from "./mecanicas.mjs";
 
 const P = `flags.${FLAG}`;
 const CFG = () => ARQUETIPOS.artifice.tempoProjeto;
@@ -159,9 +159,18 @@ export async function usarProjeto(actor, id) {
   if (!v) return;
   const volta = somarTempo(t, { horas: CFG().voltaHoras });
   const up = { [`${P}.projetos.${id}.voltaEm`]: volta };
+  // Projetos Ágeis (Notion): em combate, uma vez por combate, o projeto guardado sai com a Ação Bônus
+  let agil = "";
+  const emCombate = !!game.combat?.started && game.combat.combatants.some(c => c.actor?.uuid === actor.uuid);
+  if (emCombate && !dados.usos?.projetoAgil && !dados.acoes?.bonus
+    && await confirmar("Projeto Ágil", `<p>Usar <strong>${escapar(p.nome)}</strong> com a <strong>Ação Bônus</strong> (Projetos Ágeis, uma vez por combate)?</p><p class="epm-dica">Não: usa normalmente.</p>`)) {
+    up[`${P}.usos.projetoAgil`] = true;
+    up[`${P}.acoes.bonus`] = true;
+    agil = `<p class="epm-dica">Projeto Ágil: usado com a Ação Bônus (1 vez por combate).</p>`;
+  }
   const falar = ChatMessage.getSpeaker({ actor });
   const titulo = `<strong>${escapar(p.nome)}</strong> <em>(projeto de ${TIPOS_PROJETO[p.tipo].label.toLowerCase()})</em>`;
-  const rodape = `<p class="epm-dica">O projeto some e volta em ${CFG().voltaHoras} hora.</p>`;
+  const rodape = `${agil}<p class="epm-dica">O projeto some e volta em ${CFG().voltaHoras} hora.</p>`;
 
   if (p.tipo === "dano" || p.tipo === "cura") {
     const formula = p.tipo === "dano" ? v.dano : v.cura;

@@ -56,7 +56,7 @@
       {{#if idiomasInfo.polyglot}}<span class="epm-contador epm-polyglot" title="A lista vem do módulo Polyglot e os idiomas marcados aqui valem para ele no chat"><i class="fa-solid fa-language" aria-hidden="true"></i> Polyglot</span>{{/if}}
     </header>
     <ul class="epm-tag-lista">
-      {{#each idiomas}}<li class="epm-chip epm-chip-idioma{{#if custom}} custom{{/if}}" {{#if custom}}title="Idioma escrito à mão (não está na lista{{#if @root.idiomasInfo.polyglot}} do Polyglot{{/if}})"{{/if}}>{{this.label}}{{#if @root.edicao}}<button type="button" data-action="removerIdioma" data-chave="{{this.key}}" data-rotulo="{{this.label}}" aria-label="Remover {{this.label}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}
+      {{#each idiomas}}<li class="epm-chip epm-chip-idioma{{#if custom}} custom{{/if}}{{#if basico}} basico{{/if}}" {{#if custom}}title="Idioma escrito à mão (não está na lista{{#if @root.idiomasInfo.polyglot}} do Polyglot{{/if}})"{{/if}}>{{this.label}}{{#if @root.edicao}}<select class="epm-idioma-nivel" name="flags.epm-ficha.idiomasNivel.{{this.slug}}" aria-label="Nível em {{this.label}}">{{#each niveis}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{else}}{{#unless (epmEq nivel "fluente")}} <span class="epm-idioma-tag">{{this.nivelLabel}}</span>{{/unless}}{{/if}}{{#if @root.edicao}}<button type="button" data-action="removerIdioma" data-chave="{{this.key}}" data-rotulo="{{this.label}}" aria-label="Remover {{this.label}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{/each}}
     </ul>
     {{#unless idiomas.length}}<p class="epm-vazio">Nenhum idioma.</p>{{/unless}}
     {{#if edicao}}
@@ -64,8 +64,9 @@
       <input type="text" class="epm-tag-input" data-idioma-input="1" list="epm-idiomas-{{actor.id}}" placeholder="Escolha da lista ou digite e tecle Enter" aria-label="Adicionar idioma" />
       <datalist id="epm-idiomas-{{actor.id}}">{{#each idiomasInfo.opcoes}}<option value="{{this.label}}"></option>{{/each}}</datalist>
     </div>
-    <p class="epm-dica">{{#if idiomasInfo.polyglot}}Os idiomas da lista são os do Polyglot. Um idioma digitado que não existe nela fica como personalizado.{{else}}A lista vem do sistema. Com o módulo Polyglot ativo, ela passa a ser a do Polyglot.{{/if}}</p>
+    <p class="epm-dica">{{#if idiomasInfo.polyglot}}Os idiomas da lista são os do Polyglot mais os do EPM. Um idioma digitado que não existe nela fica como personalizado.{{else}}A lista é a do EPM. Com o módulo Polyglot ativo, os idiomas dele entram também.{{/if}} Abissal, Carmesim, Primordial, Astral e Titânico não podem ser escolhidos (só o Mestre concede).</p>
     {{/if}}
+    <ul class="epm-dica epm-regras-idioma">{{#each idiomasInfo.regras}}<li>{{this}}</li>{{/each}}</ul>
   </section>
 
   <section class="epm-painel epm-marca-painel">
@@ -115,4 +116,5 @@
     {{#if edicao}}{{{segredos.editor}}}{{else}}{{#if segredos.texto}}<div class="epm-descricao">{{{segredos.texto}}}</div>{{else}}<p class="epm-vazio">Nenhum segredo anotado. Escreva no modo edição.</p>{{/if}}{{/if}}
   </section>
   {{/if}}
+  {{#if v060}}{{> "epm-painel-060" secao="sobre"}}{{/if}}
 </section>

@@ -84,6 +84,9 @@ const LISTA = [
   ["revelado", "Revelado", "basicas", "Exposto por magia de revelação.", MESTRE, {}],
   ["invisivel", "Invisível", "basicas", "Não pode ser visto sem meios especiais.", "Não pode ser visto sem meios especiais.", {}],
   ["voando", "Voando", "basicas", "Está no ar.", "Está no ar.", {}],
+  // 0.6.0: efeitos da árvore elemental (Ar e Sombra); reaproveitam ícones parecidos
+  ["flutuando", "Flutuando", "elementos", "Erguido por correntes de ar.", "Fica no ar sem controle: deslocamento 0 até o fim do próximo turno e desvantagem em ataques corpo a corpo.", { deslocamentoMult: 0, avisos: ["Flutuando: desvantagem em ataques corpo a corpo"] }, "voando"],
+  ["assustado", "Assustado", "medo", "Sombras tomam a mente.", "Desvantagem no próximo teste ou ataque.", { avisos: ["Assustado: desvantagem no próximo teste ou ataque"] }, "medo-absoluto"],
   ["concentrado", "Concentrado", "basicas", "Mantendo uma habilidade ou magia que exige concentração.", "Mantendo uma habilidade ou magia que exige concentração.", {}],
 
   /* ---------------- Esforço e energia ---------------- */
@@ -289,8 +292,49 @@ export const CONDICOES_RENOMEADAS = {
   "epm-eletrocutado": "epm-eletrizado"
 };
 
-export const CONDICOES_DADOS = LISTA.map(([slug, label, categoria, descricao, efeito, efeitos]) => ({
-  id: `epm-${slug}`, slug, label, categoria, descricao, efeito, efeitos: efeitos ?? {}
+export const CONDICOES_DADOS = LISTA.map(([slug, label, categoria, descricao, efeito, efeitos, iconeSlug]) => ({
+  id: `epm-${slug}`, slug, label, categoria, descricao, efeito, efeitos: efeitos ?? {}, ...(iconeSlug ? { iconeSlug } : {})
+}));
+
+/**
+ * Condições NÃO oficiais, tiradas da página "Condições" do Notion (só as que não existem na lista oficial).
+ * Ficam numa aba à parte e só aparecem quando o Mestre liga "Condições do Notion" no Escudo (Ajustes).
+ * `icone`: reaproveita um ícone parecido da lista oficial (não há arte própria).
+ */
+export const CATEGORIA_NOTION = { id: "notion", label: "Não oficiais (Notion)", icone: "fa-solid fa-book-bookmark", extra: true };
+const LISTA_NOTION = [
+  ["exausto", "Exausto", "exaurido", "Fadiga extrema.", "Fica Debilitado, Lento, com Postura Aberta e Núcleo Sobrecarregado. Se ficar Exausto de novo, fica Inconsciente.",
+    { implica: ["epm-debilitado", "epm-lento", "epm-n-postura-aberta", "epm-n-nucleo-sobrecarregado"], avisos: ["Exausto de novo: fica Inconsciente"] }],
+  ["fatigado", "Fatigado", "desgastado", "Cansaço acumulado.", "Fica Fraco e com Postura Aberta. Se ficar Fatigado de novo, torna-se Exausto.",
+    { implica: ["epm-fraco", "epm-n-postura-aberta"], avisos: ["Fatigado de novo: torna-se Exausto"] }],
+  ["nucleo-frustrado", "Núcleo Frustrado", "nucleo-selado", "O Núcleo resiste ao controle.", "−5 em testes de Núcleo.", { atributos: { nucleo: -5 } }],
+  ["nucleo-sobrecarregado", "Núcleo Sobrecarregado", "sobrecarregado-de-mana", "O Núcleo passou do limite.", "−10 em testes de Núcleo.", { atributos: { nucleo: -10 } }],
+  ["amedrontado", "Amedrontado", "covarde", "Medo de uma fonte específica.", "Desvantagem em todos os testes enquanto a fonte do medo estiver na sua linha de visão.",
+    { desvTestes: true, avisos: ["Só enquanto a fonte do medo estiver à vista"] }],
+  ["pasmo", "Pasmo", "estupefato", "Atônito.", "Não pode realizar ações.", { bloqueiaAcoes: ["padrao", "bonus", "movimento", "reacao"] }],
+  ["agarrado", "Agarrado", "contido", "Seguro por outra criatura.", "−3 em testes físicos, só ataca com armas leves e fica Imóvel. Ataques à distância contra você têm 50% de chance de atingir a criatura errada.",
+    { atributos: { forca: -3, destreza: -3, constituicao: -3 }, implica: ["epm-imovel"], avisos: ["Só ataca com armas leves", "Ataques à distância contra você: 50% de atingir quem agarra"] }],
+  ["ofuscado", "Ofuscado", "privacao-de-visao", "Visão atrapalhada por luz ou brilho.", "Desvantagem em testes de ataque e de Percepção.", { desvAtaques: true, desvPericias: ["percepcao"] }],
+  ["asfixiado", "Asfixiado", "asfixia-grave", "Sem conseguir respirar.", "Prende a respiração por rodadas iguais ao Constituição; depois, Fortitude por rodada (CD 5, +5 a cada teste). Se falhar, desmaia e perde 2d6 de Vida por rodada até respirar.",
+    { dot: [{ formula: "2d6", recurso: "pv", opcional: true, rotulo: "Asfixia (depois de falhar na Fortitude)" }], avisos: ["Prende a respiração por rodadas = Constituição; depois Fortitude CD 5 (+5 por teste)"] }],
+  ["doente", "Doente", "enfermo", "Sob efeito de uma doença.", "O efeito depende da doença (definido pelo Mestre).", { avisos: ["Efeito da doença: ver com o Mestre"] }],
+  ["enjoado", "Enjoado", "vertigem", "Náusea forte.", "Só pode realizar uma ação por turno (Padrão ou Movimento); Bônus, Livre e ações Lendárias ou acima não.",
+    { acoesMax: 1, bloqueiaAcoes: ["bonus", "livre", "lendaria", "mitica", "arcaica"] }],
+  ["machucado", "Machucado", "fraturado", "Ferido.", "Tem menos da metade dos pontos de Vida totais.", {}],
+  ["morrendo", "Morrendo", "agonizante", "À beira da morte.", "Está com 0 pontos de Vida.", { avisos: ["Com 0 de Vida"] }],
+  ["postura-aberta", "Postura Aberta", "desprevenido", "Guarda baixa.", "−5 na Defesa.", { defesa: -5 }],
+  ["sobrecarregado", "Sobrecarregado", "atolado", "Carga acima do limite.", "Penalidade de armadura −5 e deslocamento −3 m.",
+    { pericias: { acrobacia: -5, atletismo: -5, furtividade: -5 }, mods: [{ alvo: "deslocamento", valor: -3 }] }],
+  ["alquebrado", "Alquebrado", "drenagem-de-esforco", "Espírito abatido.", "Os custos de Mana e Estamina aumentam em +1.", { custoExtra: 1 }],
+  ["fascinado", "Fascinado", "obnubilado", "Concentrado em algo.", "Não pode agir além de observar o fascínio; −10 em Percepção para o resto. Qualquer ação hostil contra você anula a condição; sacudir você tira dela (Ação Padrão).",
+    { bloqueiaAcoes: ["padrao", "bonus", "movimento", "reacao"], pericias: { percepcao: -10 }, avisos: ["Ação hostil contra você encerra a condição"] }],
+  ["enfeiticado", "Enfeitiçado", "dominado", "Sob encanto de alguém.", "Não pode atacar quem o enfeitiçou nem mirá-lo com efeitos nocivos. Quem enfeitiçou tem vantagem em testes sociais com você.",
+    { avisos: ["Não ataca quem enfeitiçou", "Quem enfeitiçou tem vantagem em testes sociais com você"] }],
+  ["petrificado", "Petrificado", "rigidez-muscular", "Transformado em pedra.", "Fica Inconsciente e recebe RD 20 contra dano.", { implica: ["epm-inconsciente"], rd: 20 }],
+  ["desequilibrado", "Desequilibrado", "desestabilizado", "Sem firmeza (exemplo da magia Bolha de Mana).", "−3 na Defesa e nos ataques.", { defesa: -3, ataques: -3 }]
+];
+export const CONDICOES_NOTION_DADOS = LISTA_NOTION.map(([slug, label, iconeSlug, descricao, efeito, efeitos]) => ({
+  id: `epm-n-${slug}`, slug: `n-${slug}`, iconeSlug, label, categoria: "notion", extra: true, descricao, efeito, efeitos: efeitos ?? {}
 }));
 
 /**

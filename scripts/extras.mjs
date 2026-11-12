@@ -210,9 +210,11 @@ export async function recuperarMana(actor) {
   const { ficha } = estadoAtor(actor);
   const c = custoRecurso(ficha, "pe", rec.pe);
   if (!c.ok) return ui.notifications.warn(`Recuperar Mana: faltam ${c.falta} PE.`);
-  const r = calcularRecuperacao(ficha, "pm", rec.pm, { fonte: "Recuperar Mana", trocaPm: false });
+  const mult = ficha.extras?.recuperarManaMult ?? 1;
+  const qtd = Math.max(0, Math.floor(rec.pm * mult));
+  const r = calcularRecuperacao(ficha, "pm", qtd, { fonte: mult !== 1 ? `Recuperar Mana (densidade de mana ${mult > 1 ? "alta" : "baixa"})` : "Recuperar Mana", trocaPm: false });
   await actor.update({ ...c.updates, ...r.updates, [`${P}.usos.recuperarMana`]: true });
-  return nota(actor, `<p><strong>Recuperar Mana</strong>: −${rec.pe} PE. ${escapar(r.texto || `+${rec.pm} PM`)}</p><p class="epm-dica">Usa uma ação. Uma vez por cena.</p>`, "#8A7CE0");
+  return nota(actor, `<p><strong>Recuperar Mana</strong>: −${rec.pe} PE. ${escapar(r.texto || `+${qtd} PM`)}</p><p class="epm-dica">Usa uma ação. Uma vez por cena.</p>`, "#8A7CE0");
 }
 
 /** Caçador Natural (Combatente 17): marca a Presa até o fim do combate (20 PE; trocar custa 8 PE). */
@@ -568,6 +570,7 @@ export async function somarSessao(actor, id) {
   if (!partes.length) return;
   await actor.update(updates);
   ui.notifications.info(`Sessão ${int(e.sessao) || ""}: ${partes.join(", ")} somados na ficha.`);
+  import("./mundo.mjs").then(m => m.avisarDiscord("sessao", `📜 **${actor.name}** — Sessão ${int(e.sessao) || ""}${e.titulo ? ` (${e.titulo})` : ""}: ${partes.join(", ")}.${e.resumo ? `\n${String(e.resumo).slice(0, 1200)}` : ""}`)).catch(() => null);
 }
 
 /* -------------------------------------------- */
@@ -721,6 +724,10 @@ export async function resistirDoCartao(defensor, { pericia, dt, rotulo = "" }) {
 
 /** Trata os botões novos do chat. Devolve true se tratou. */
 export async function cliqueChatExtra(acao, actor, botao) {
+  if (["votar", "encerrarEnquete", "sanidadeCartao", "condicaoAlvo"].includes(acao)) {
+    const { cliqueChat060 } = await import("./mundo.mjs");
+    if (await cliqueChat060(acao, actor, botao)) return true;
+  }
   const msgIdDef = botao.closest("[data-message-id]")?.dataset.messageId;
   if (acao === "defender" || acao === "resistir" || acao === "contraatacar") {
     let defensor = botao.dataset.defensor ? await fromUuid(botao.dataset.defensor) : null;

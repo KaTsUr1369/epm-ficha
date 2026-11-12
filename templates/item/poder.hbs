@@ -10,6 +10,7 @@
         {{else}}
         <label class="epm-campo"><span>Origem</span><select name="flags.epm-ficha.origem"><option value="">Sem origem</option>{{#each opcoesOrigem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         {{/if}}
+        <label class="epm-campo" title="Elemento da magia ou habilidade (Notion). Na árvore elemental, o elemento evoluído ignora a imunidade ao anterior."><span>Elemento</span><input type="text" name="flags.epm-ficha.elemento" value="{{elemento}}" list="epm-poder-elementos" placeholder="Fogo, Água, Raio…" /><datalist id="epm-poder-elementos">{{#each elementos}}<option value="{{this}}"></option>{{/each}}</datalist></label>
         <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.passiva" {{epmChecked dados.passiva}} /> Passiva</label>
       </div>
       <p class="epm-dica">Teto {{this.raridadeLabel}}: até {{limite.danoMax}} de dano por ativação e {{limite.efeitos}} efeito(s) adicional(is){{#if limite.limite}}; no máximo {{limite.limite}} por personagem{{/if}}.</p>

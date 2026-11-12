@@ -5,7 +5,7 @@
 import {
   FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS, ABAS, CATEGORIAS_ITEM,
   CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM,
-  MODULE_ID, SUBABAS_HABILIDADE, EXEMPLOS_TREINAMENTO
+  MODULE_ID, SUBABAS_HABILIDADE, EXEMPLOS_TREINAMENTO, ATRIBUTOS
 } from "./config.mjs";
 import {
   num, int, slug, novoId, normalizarTexto, periciasParaLista, periciasParaObjeto, migrarPericias, atributosDaPericia,
@@ -927,12 +927,37 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   async acaoAdicionarPericia() {
-    const nome = await M.perguntarTexto("Nova perícia", "Nome da perícia", "", "Adicionar");
-    if (!nome) return;
-    const atuais = this.actor.flags?.[FLAG]?.pericias ?? {};
-    let id = slug(nome) || novoId();
-    while (atuais[id]) id = `${slug(nome) || "pericia"}${Math.floor(Math.random() * 1000)}`;
-    await this.actor.update({ [`${P}.pericias.${id}`]: { nome, atributos: [], sugestoes: [], pontos: 0, outros: 0 } });
+    const atributos = Object.entries(ATRIBUTOS).map(([id, a]) => `<label class="epm-check"><input type="checkbox" name="a_${id}" value="${id}"> ${a.label}</label>`).join("");
+    const r = await fvtt.DialogV2.wait({
+      window: { title: "Nova perícia" }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+      content: `<label class="epm-campo"><span>Nome da perícia</span><input type="text" name="nome" autofocus placeholder="Navegação"></label>
+        <fieldset class="epm-aquisicao"><legend>Atributo que soma</legend><div class="epm-dialogo-linha">${atributos}</div></fieldset>
+        ${game.user.isGM ? `<label class="epm-check"><input type="checkbox" name="todas"> Adicionar em todas as fichas (antigas e novas) e na lista do mundo</label>` : ""}`,
+      buttons: [
+        { action: "ok", label: "Adicionar", icon: "fa-solid fa-plus", default: true, callback: (ev, b) => ({ nome: b.form.elements.nome.value.trim(), atributos: [...b.form.querySelectorAll("input[name^='a_']:checked")].map(i => i.value), todas: !!b.form.elements.todas?.checked }) },
+        { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+      ]
+    });
+    if (!r?.nome) return;
+    const base = slug(r.nome) || novoId();
+    const nova = { nome: r.nome, atributos: r.atributos, sugestoes: r.atributos, pontos: 0, outros: 0 };
+    if (!r.todas) {
+      const atuais = this.actor.flags?.[FLAG]?.pericias ?? {};
+      let id = base;
+      while (atuais[id]) id = `${base || "pericia"}${Math.floor(Math.random() * 1000)}`;
+      return this.actor.update({ [`${P}.pericias.${id}`]: nova });
+    }
+    // Mestre: entra na lista do mundo (fichas novas) e em todas as fichas EPM que ainda não têm
+    const lista = listaPericias();
+    if (!lista.some(e => (Array.isArray(e) ? e[0] : e?.id) === base)) await salvarListaPericias([...lista, [base, r.nome, r.atributos, r.atributos]]);
+    let n = 0;
+    for (const a of game.actors ?? []) {
+      const per = a.flags?.[FLAG]?.pericias;
+      if (!per || per[base]) continue;
+      await a.update({ [`${P}.pericias.${base}`]: { ...nova } });
+      n++;
+    }
+    ui.notifications.info(`${r.nome} entrou na lista do mundo e em ${n} ficha(s).`);
   }
 
   async acaoRemoverPericia(ev, alvo) {
@@ -1986,7 +2011,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _ligarRecolher() {
     const recolhidos = this._lerRecolhidos();
-    const seletor = ".epm-painel > header.epm-painel-titulo, .epm-secao-poder > header.epm-secao-titulo, section > header.epm-categoria-titulo";
+    const seletor = ".epm-painel > header.epm-painel-titulo, .epm-secao-poder > header.epm-secao-titulo, section > header.epm-categoria-titulo, article.epm-treino > header.epm-treino-topo, article.epm-criacao > header.epm-treino-topo";
     for (const cabeca of this.element.querySelectorAll(seletor)) {
       if (cabeca.closest(".epm-circulo")) continue;
       const bloco = cabeca.parentElement;

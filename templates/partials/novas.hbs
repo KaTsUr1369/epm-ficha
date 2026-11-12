@@ -167,7 +167,7 @@
   <p class="epm-dica">As horas saem das mesmas 8 h por dia dos treinos. No fim, teste da perícia: sucesso cria o item e gasta os materiais; falha gasta metade dos materiais e pede metade das horas de novo.</p>
   {{#unless n.criacoes.length}}<p class="epm-vazio">Nenhum projeto.</p>{{/unless}}
   {{#each n.criacoes}}
-  <article class="epm-criacao estado-{{this.estado}}">
+  <article class="epm-criacao estado-{{this.estado}}" data-secao="criacao-{{this.id}}">
     <header class="epm-treino-topo">
       {{#if n.editavel}}<input type="text" class="epm-criacao-nome" name="flags.epm-ficha.criacoes.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Nome do item" aria-label="Nome" />{{else}}<strong>{{this.nome}}</strong>{{/if}}
       {{#if concluido}}<span class="epm-tag epm-tag-ok">Concluído</span>{{/if}}

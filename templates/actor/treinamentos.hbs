@@ -1,5 +1,5 @@
 {{#*inline "cartaoTreino"}}
-      <article class="epm-treino estado-{{this.estado}}">
+      <article class="epm-treino estado-{{this.estado}}" data-secao="treino-{{this.id}}">
         <header class="epm-treino-topo">
           <strong>{{this.nome}}</strong>
           {{#if categoriaLabel}}<span class="epm-tag" title="Categoria do Notion"><i class="{{this.categoriaIcone}}" aria-hidden="true"></i> {{this.categoriaLabel}}</span>{{/if}}

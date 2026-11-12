@@ -14,6 +14,12 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.2
+
+- **Treinamentos recolhíveis:** cada treino (e cada projeto de Criação) tem a seta no canto para recolher; recolhido, fica só o nome e a barra de progresso.
+- **Perícias no modo edição:** o nome volta ao tamanho normal e com espaço para ler; os atributos ficam na linha de baixo.
+- **Nova perícia:** escolhe o atributo na hora; o Mestre pode marcar "em todas as fichas", e a perícia entra na lista do mundo (fichas novas) e em todas as fichas antigas.
+
 ## Novidades da 0.7.1
 
 - **Reflexos nas fichas antigas:** quem não tinha a perícia Reflexos (e o Teste de Resistência) ganha sozinho, com Destreza. Vale para personagens e NPCs, mesmo os que ninguém abriu; Fortitude e Vontade também entram se faltarem.

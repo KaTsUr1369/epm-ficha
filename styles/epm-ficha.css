@@ -2977,3 +2977,16 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-secao-poder:not(:has(.epm-poder)) { margin-bottom: 6px; }
 .epm .epm-requisito-falta { color: var(--epm-erro); font-size: 0.85em; }
 .epm .epm-requisito-ok { color: var(--epm-ok); font-size: 0.85em; }
+/* Perícias no modo edição: nome com espaço e no tamanho normal; atributos na linha de baixo */
+.epm-pericias.editando .epm-pericia { grid-template-columns: 30px 20px minmax(0, 1fr) 52px 52px 40px; column-gap: 5px; align-items: end; }
+.epm-pericias.editando .epm-pericia > .epm-pericia-mover { grid-row: span 1; display: flex; flex-direction: column; }
+.epm-pericias.editando .epm-pericia > .epm-chips-atributo { grid-column: 2 / -1; }
+.epm-pericias.editando .epm-pericia > .epm-selo { grid-column: 1; justify-self: start; align-self: center; font-size: 10.5px; padding: 0 3px; }
+.application.epm .epm-pericias.editando .epm-pericia-nome-input { font-size: inherit; height: 26px; width: 100%; min-width: 0; }
+.epm-pericias.editando .epm-pericia-total { align-self: center; }
+/* Treino e projeto recolhidos: fica o título e a barra de progresso */
+.epm-treino.epm-recolhivel.recolhido > footer.epm-treino-rodape,
+.epm-criacao.epm-recolhivel.recolhido > footer.epm-treino-rodape { display: flex !important; }
+.epm-treino.recolhido, .epm-criacao.recolhido { padding-bottom: 6px; }
+.epm-treino-topo > .epm-recolher { margin-left: auto; }
+.epm-treino.epm-recolhivel.recolhido, .epm-criacao.epm-recolhivel.recolhido { align-self: stretch; }

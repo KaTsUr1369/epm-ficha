@@ -724,7 +724,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   }
   // Atributos acima de 4 (Notion) e teto por nível
   const posAtr = aposAtributos(d, atributos, {
-    pericias: Object.entries(d.pericias ?? {}).filter(([, p]) => p).map(([id, p]) => ({ id, atributos: Array.isArray(p.atributos) ? p.atributos : [p.atributo].filter(Boolean) }))
+    pericias: Object.entries(d.pericias ?? {}).filter(([, p]) => p).map(([id, p]) => ({ id, atributos: Array.isArray(p.atributos) ? p.atributos : [p.atributo].filter(Boolean), sugestoes: Array.isArray(p.sugestoes) ? p.sugestoes : [] }))
   });
   for (const m of posAtr.mods) somar(m.alvo, m.valor, m.fonte);
   reducoes.push(...posAtr.rd);
@@ -777,6 +777,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       sugestoes: (Array.isArray(p.sugestoes) ? p.sugestoes : []).filter(a => ATRIBUTOS[a]),
       atributoAbrev: atrs.length ? atrs.map(a => ATRIBUTOS[a].abrev).join(" + ") : "—",
       pontos, outros, valorAtributo, mod: m,
+      atributoValorTexto: atrs.length ? `${atrs.map(a => ATRIBUTOS[a].abrev).join(" + ")} ${valorAtributo < 0 ? "−" + Math.abs(valorAtributo) : "+" + valorAtributo}` : "—",
+      externo: outros + m,
       bonusProprio: pontos + outros + m,
       total, testeMod, testeFontes, testeTotal: total + testeMod,
       desvantagem: [...(desv.pericias[id] ?? [])], vantagem: [...(vant.pericias[id] ?? [])],

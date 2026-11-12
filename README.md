@@ -14,6 +14,11 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.6
+
+- **De onde vem o total da perícia:** fora do modo edição, cada perícia mostra o atributo com o valor, os pontos e, em dourado, os bônus de fora (passe o mouse para ver as fontes).
+- **Aparência 6+:** o bônus vale para toda perícia com Carisma na base, mesmo que o atributo somado seja trocado (ex.: Intimidação com Núcleo = Núcleo + Aparência).
+
 ## Novidades da 0.6.5
 
 - **Estilos de Combate do Combatente:** Combate Defensivo, Arma Pesada, Arma Leve, Duelista, Bêbado (com a nova condição Bêbado), Atirador, Armamento Longo e Arma Dupla, aplicados na ficha e no ataque.

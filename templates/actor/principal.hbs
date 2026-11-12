@@ -126,7 +126,9 @@
           <button type="button" class="epm-pericia-rolar" data-action="rolarPericia" data-pericia="{{this.id}}" title="Rolar {{this.nome}} (Shift: vantagem, Ctrl: desvantagem)"><i class="fa-solid fa-dice-d20"></i></button>
           {{#if @root.editavel}}<button type="button" class="epm-pericia-fav{{#if favorita}} ativa{{/if}}" data-action="favoritarPericia" data-pericia="{{this.id}}" title="{{#if favorita}}Tirar dos favoritos{{else}}Favoritar{{/if}}" aria-pressed="{{#if favorita}}true{{else}}false{{/if}}"><i class="{{#if favorita}}fa-solid{{else}}fa-regular{{/if}} fa-star" aria-hidden="true"></i></button>{{else}}{{#if favorita}}<i class="fa-solid fa-star epm-pericia-fav ativa" aria-hidden="true"></i>{{/if}}{{/if}}
           <span class="epm-pericia-nome">{{this.nome}}</span>
-          <span class="epm-pericia-atributo" title="Atributo somado">{{this.atributoAbrev}}</span>
+          <span class="epm-pericia-atributo" title="Atributo somado">{{this.atributoValorTexto}}</span>
+          {{#if pontos}}<span class="epm-pericia-parte" title="Pontos de perícia">{{epmSinal pontos}} pts</span>{{/if}}
+          {{#if externo}}<span class="epm-pericia-parte externo" title="Bônus de fora (outros e efeitos):&#10;{{#if outros}}Outros: {{epmSinal outros}}&#10;{{/if}}{{this.fontesTexto}}">{{epmSinal externo}} <i class="fa-solid fa-circle-info"></i></span>{{/if}}
           {{#if bloqueadaTexto}}<i class="fa-solid fa-ban epm-marca-pericia bloqueio" title="Bloqueada: {{this.bloqueadaTexto}}"></i>{{/if}}
           {{#if desvantagemTexto}}<i class="fa-solid fa-angles-down epm-marca-pericia desv" title="Desvantagem: {{this.desvantagemTexto}}"></i>{{/if}}
           {{#if vantagemTexto}}<i class="fa-solid fa-angles-up epm-marca-pericia vant" title="Vantagem: {{this.vantagemTexto}}"></i>{{/if}}

@@ -222,7 +222,8 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   if (altos.deslocamento) mods.push({ alvo: "deslocamento", valor: altos.deslocamento, fonte: de("destreza") });
   if (altos.rd) rd.push({ valor: altos.rd, tipos: "todos os danos", fonte: de("constituicao") });
   if (altos.aparenciaCarisma) {
-    for (const p of pericias) if ((p.atributos ?? []).includes("carisma")) mods.push({ alvo: `pericia.${p.id}`, valor: altos.aparenciaCarisma, fonte: "Aparência 6+" });
+    // Vale para toda perícia que tem Carisma na BASE (lista indicada), mesmo que o jogador troque o atributo somado
+    for (const p of pericias) if ((Array.isArray(p.sugestoes) && p.sugestoes.length ? p.sugestoes : p.atributos ?? []).includes("carisma")) mods.push({ alvo: `pericia.${p.id}`, valor: altos.aparenciaCarisma, fonte: "Aparência 6+" });
   }
   const extrasAtaque = { armado: [], desarmado: [] };
   if (altos.danoArmado) extrasAtaque.armado.push({ formula: String(altos.danoArmado), fonte: de("forca") });

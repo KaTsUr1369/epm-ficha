@@ -65,7 +65,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   if (altos.phExtra) linhas.push(`${fonte("inteligencia")}: +${altos.phExtra} PH por ação de treino`);
   if (altos.rdSanidade) linhas.push(`${fonte("autocontrole")}: RD de Sanidade ${altos.rdSanidade}`);
   if (altos.magiasNucleo) linhas.push(`${fonte("nucleo")}: +${altos.magiasNucleo} magia(s) conhecida(s)`);
-  if (altos.aparenciaCarisma) linhas.push(`Aparência: +${altos.aparenciaCarisma} nas perícias de Carisma`);
+  if (altos.aparenciaCarisma) linhas.push(`Aparência: +${altos.aparenciaCarisma} nas perícias com Carisma na base`);
   const tb = trocasBonus(dados);
   const nomeBonus = id => ROTULOS_BONUS_ALTO[id] ?? id;
   v.altos = {

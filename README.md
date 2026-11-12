@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.4
+
+- **Reflexos na lista de perícias:** além da caixa de Testes de Resistência, Reflexos aparece na lista de perícias (no modo edição ele fica só na caixa, para não duplicar os campos).
+
 ## Novidades da 0.7.3
 
 - **Fichas antigas em dia:** quando o Mestre entra no mundo, todas as fichas EPM (personagens e NPCs, mesmo as que ninguém abriu) recebem o que entrou até agora: perícias da lista do mundo que faltavam, Testes de Resistência, Vontade com Autocontrole e as habilidades da classe pronta já escolhida. Nada é apagado.

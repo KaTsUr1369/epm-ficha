@@ -152,6 +152,13 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     await super._onRender(context, options);
     aplicarPaleta(this.element, COR_PADRAO, BRILHO_PADRAO);
     const raiz = this.element;
+    // Seções <details> abertas continuam abertas ao redesenhar
+    this._detalhes ??= new Set();
+    const chave = d => `${this._aba}|${(d.querySelector(":scope > summary")?.textContent ?? "").replace(/[\d()]/g, "").replace(/\s+/g, " ").trim()}`;
+    raiz.querySelectorAll("details").forEach(d => {
+      if (this._detalhes.has(chave(d))) d.open = true;
+      d.addEventListener("toggle", () => { if (d.open) this._detalhes.add(chave(d)); else this._detalhes.delete(chave(d)); });
+    });
     const zona = raiz.querySelector("[data-soltar-grupo]");
     if (zona) {
       zona.addEventListener("dragover", ev => { ev.preventDefault(); zona.classList.add("soltando"); });

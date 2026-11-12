@@ -7,7 +7,7 @@ import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
 import {
   bonusAtributosAltos, tetoAtributo, maximoRecurso, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel,
-  faixaIdade, limiteVotos, TIPOS_PACTO, TAMANHO_EFEITOS, grauNucleo, MARCOS_CORRUPCAO, CONQUISTAS, META_CACADOR
+  faixaIdade, FAIXAS_IDADE, limiteVotos, TIPOS_PACTO, TAMANHO_EFEITOS, grauNucleo, MARCOS_CORRUPCAO, CONQUISTAS, META_CACADOR
 } from "./regras-extras.mjs";
 
 const n = v => Number(v) || 0;
@@ -63,7 +63,12 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null } = {}) {
 
   // Idade (regra opcional)
   if (opcoes.idade) {
-    const faixa = faixaIdade(d.sobre?.idade ?? d.idade, d.racaEscolha?.id || "humano");
+    // Raça: a escolhida em "Escolher raça" ou, sem ela, a do texto da ficha (Anão, Elfo…). Raça sem tabela de idade: sem efeito.
+    const racaTexto = norm(d.raca);
+    const racaIdade = d.racaEscolha?.id || [["anao", "ana"], ["elfo", "elf"], ["goblin", "goblin"], ["meio-dragao", "drac"], ["meio-gigante", "gigant"], ["mutante", "mutant"], ["demonio", "demon"], ["humano", "human"]]
+      .find(([, t]) => racaTexto.includes(t))?.[0] || "";
+    // A pessoa pode escolher a fase de vida (geração) à mão em Sobre; senão, vem da idade e da raça
+    const faixa = FAIXAS_IDADE.find(f => f.id === d.faixaIdade) ?? faixaIdade(d.sobre?.idade ?? d.idade, racaIdade);
     out.idade = faixa;
     const f = `Idade: ${faixa?.label ?? ""}`;
     if (faixa?.id === "crianca") {

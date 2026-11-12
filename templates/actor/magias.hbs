@@ -9,6 +9,7 @@
     </div>
     <div class="epm-aba-acoes">
       <button type="button" class="epm-botao{{#if selecao.magias}} ativo{{/if}}" data-action="selecionarPoderes" data-aba="magias" aria-pressed="{{#if selecao.magias}}true{{else}}false{{/if}}" title="Marcar várias para usar, favoritar, mudar o círculo ou apagar de uma vez"><i class="fa-solid fa-list-check" aria-hidden="true"></i> {{#if selecao.magias}}Sair da seleção{{else}}Selecionar{{/if}}</button>
+      {{#if editavel}}<button type="button" class="epm-botao" data-action="importarMagias" title="Importar magias do Codex do Vazio (pf2srd.com.br/magias)"><i class="fa-solid fa-file-import" aria-hidden="true"></i> Codex do Vazio</button>{{/if}}
       {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="magia" title="Cria no círculo aberto"><i class="fa-solid fa-plus"></i> Nova magia</button>{{/if}}
     </div>
   </header>

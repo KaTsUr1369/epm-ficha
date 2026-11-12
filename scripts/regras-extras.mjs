@@ -249,9 +249,12 @@ export const IDADE_POR_RACA = {
 };
 /** Faixa de idade pela idade em anos e pela raça (padrão: tabela humana). */
 export function faixaIdade(anos, racaId = "humano") {
-  const n = Number(String(anos ?? "").match(/\d+/)?.[0]);
+  // "1.200 anos", "1 200" e "1200" valem 1200 (antes o ponto cortava e virava 1 = Criança)
+  const bruto = String(anos ?? "").match(/\d[\d.\s]*/)?.[0] ?? "";
+  const n = Number(bruto.replace(/[.\s]/g, ""));
   if (!Number.isFinite(n) || n <= 0) return null;
-  const tabela = IDADE_POR_RACA[racaId] ?? IDADE_POR_RACA.humano;
+  const tabela = IDADE_POR_RACA[racaId];
+  if (!tabela) return null;
   let idx = -1;
   tabela.forEach((f, i) => { const de = Number(f.split("-")[0]); if (n >= de) idx = i; });
   return idx >= 0 ? FAIXAS_IDADE[idx] : FAIXAS_IDADE[0];

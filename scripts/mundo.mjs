@@ -616,7 +616,9 @@ export function gerarNpc({ raca = "humano", arquetipo = "combatente", nivel = 1,
   return {
     nome: nome || `${PATENTES[pIdx]?.label ?? "Soldado"} ${rc.nome}`, raca: rc.nome, arquetipo: arq, nivel: n, patente: PATENTES[pIdx]?.label ?? "Soldado",
     regiao: REGIOES[regiao] ?? regiao, atributos: atr, recursos, ca, deslocamento: rc.deslocamento ?? 9,
-    ataque: { nome: arma?.nome ?? "Ataque", acerto, dano: `${danoBase} + ${atrAtaque}`, tipo: arma?.tipoDano ?? "Contundente" },
+    ataque: { nome: arma?.nome ?? "Ataque", acerto, dano: `${danoBase} + ${atrAtaque}`, tipo: arma?.tipoDano ?? "Contundente",
+      pericia: arma?.pericia === "pontaria" ? "pontaria" : "luta", atributo: arma?.pericia === "pontaria" ? "destreza" : "forca", critMargem: arma?.critMargem ?? 20, critMult: arma?.critMult ?? 2 },
+    armaduraDefesa: int(armadura?.defesa),
     armadura: armadura?.nome ?? "", nd, faixa: faixaPorNivel(n)?.label ?? ""
   };
 }
@@ -631,11 +633,12 @@ export async function fichaRapidaNpc(actorDestino = null) {
     <label class="epm-campo"><span>Nível</span><input type="number" name="nivel" value="5" min="1" max="50"></label>
     <label class="epm-campo"><span>Posto</span><select name="patente">${opcoes(PATENTES.map(p => [p.id, p.label]))}</select></label>
     <label class="epm-campo"><span>Região (armas e armaduras)</span><select name="regiao">${opcoes(Object.entries(REGIOES))}</select></label>
-    <label class="epm-campo"><span>Destino</span><select name="destino"><option value="chat">Só mostrar no chat</option>${atores.map(a => `<optgroup label="${escapar(a.name)}"><option value="comp:${a.id}" ${actorDestino?.id === a.id ? "selected" : ""}>Companheiros de ${escapar(a.name)}</option><option value="best:${a.id}">Bestiário de ${escapar(a.name)}</option></optgroup>`).join("")}</select></label>`, { botao: "Gerar", largura: 560 });
+    <label class="epm-campo"><span>Destino</span><select name="destino"><option value="ator" ${actorDestino ? "" : "selected"}>Nova ficha de NPC (na aba Atores)</option><option value="chat">Só mostrar no chat</option>${atores.map(a => `<optgroup label="${escapar(a.name)}"><option value="comp:${a.id}" ${actorDestino?.id === a.id ? "selected" : ""}>Companheiros de ${escapar(a.name)}</option><option value="best:${a.id}">Bestiário de ${escapar(a.name)}</option></optgroup>`).join("")}</select></label>`, { botao: "Gerar", largura: 560 });
   if (!r) return;
   const npc = gerarNpc(r);
   const atrTexto = Object.entries(npc.atributos).map(([id, v]) => `${ATRIBUTOS[id]?.abrev ?? id} ${v}`).join(", ");
   const resumo = `${npc.raca} ${npc.arquetipo} nível ${npc.nivel} (${npc.patente}, ${npc.regiao}). ND ${npc.nd}. ${atrTexto}. ${npc.armadura ? `Armadura: ${npc.armadura}.` : ""}`;
+  if (r.destino === "ator") return criarAtorNpc(npc, r);
   const [tipo, id] = String(r.destino).split(":");
   const destino = id ? game.actors.get(id) : null;
   if (destino && tipo === "comp") {
@@ -655,6 +658,31 @@ export async function fichaRapidaNpc(actorDestino = null) {
   await cartao(`<p><strong>${escapar(npc.nome)}</strong> — ${escapar(resumo)}</p><p>Vida ${npc.recursos.pv} · Mana ${npc.recursos.pm} · Estamina ${npc.recursos.pe} · CA ${npc.ca} · ${npc.deslocamento} m</p>
     <p>${escapar(npc.ataque.nome)} +${npc.ataque.acerto}: ${escapar(npc.ataque.dano)} ${escapar(npc.ataque.tipo)}</p>${destino ? `<p class="epm-dica">Salvo em ${tipo === "comp" ? "Companheiros" : "Bestiário"} de ${escapar(destino.name)}.</p>` : ""}`,
     "#7FB4E6", { whisper: game.users.filter(u => u.isGM).map(u => u.id) });
+}
+
+/** Cria uma ficha de NPC de verdade (ator), já com a ficha EPM, atributos, recursos, CA e o ataque. */
+export async function criarAtorNpc(npc, escolha = {}) {
+  if (!game.user.isGM) return ui.notifications.warn("Só o Mestre cria fichas de NPC.");
+  const atributos = Object.fromEntries(Object.entries(npc.atributos).map(([id, v]) => [id, { base: v }]));
+  const valorAtr = npc.atributos[npc.ataque.atributo] ?? 0;
+  const dados = {
+    raca: npc.raca, arquetipo: npc.arquetipo[0].toUpperCase() + npc.arquetipo.slice(1), nivel: npc.nivel, atributos,
+    recursos: { pm: { value: npc.recursos.pm, max: npc.recursos.pm }, pe: { value: npc.recursos.pe, max: npc.recursos.pe } },
+    ca: { base: 10, atributo: "destreza", armadura: npc.armaduraDefesa ?? 0, bonus: 0 }, deslocamento: { base: npc.deslocamento },
+    ataques: { [novoId()]: { nome: npc.ataque.nome, pericia: npc.ataque.pericia, bonusAcerto: Math.max(0, npc.ataque.acerto - valorAtr), dano: npc.ataque.dano,
+      tipoDano: npc.ataque.tipo, critMargem: npc.ataque.critMargem, critMult: npc.ataque.critMult, notas: `${npc.regiao}`, criado: Date.now() } },
+    sobre: { origem: npc.regiao, outros: `<p>${escapar(npc.patente)}, ND ${npc.nd}${npc.armadura ? `, ${escapar(npc.armadura)}` : ""}. Gerado pela ficha rápida de NPC.</p>` }
+  };
+  const ator = await Actor.create({
+    name: npc.nome, type: "npc", img: "icons/svg/mystery-man.svg",
+    system: { attributes: { hp: { value: npc.recursos.pv, max: npc.recursos.pv } } },
+    prototypeToken: { name: npc.nome, actorLink: false, disposition: -1 },
+    flags: { [FLAG]: dados, core: { sheetClass: `${MODULE_ID}.EPMActorSheet` } }
+  });
+  if (!ator) return;
+  ui.notifications.info(`Ficha de NPC criada: ${ator.name} (aba Atores).`);
+  ator.sheet?.render(true);
+  return ator;
 }
 
 /* -------------------------------------------- */

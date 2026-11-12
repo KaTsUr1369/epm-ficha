@@ -297,6 +297,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
     aplicarPaleta(this.element, pers.cor ?? COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
     try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
+    try { this._restaurarDetalhes(); } catch (err) { console.warn("EPM | detalhes abertos", err); }
     if (options.isFirstRender || options.parts?.includes("header")) {
       try { this._animarBarras(); } catch (err) { console.error("EPM | Falha ao animar as barras", err); }
     }
@@ -492,8 +493,34 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   /** Lembra quais categorias de condição estão abertas. */
+  /** Chave estável de um <details> (aba + classe + texto do resumo sem números + posição entre os iguais). */
+  _chavesDetalhes() {
+    const vistos = {};
+    const out = new Map();
+    for (const det of this.element?.querySelectorAll("details:not(.epm-categoria-condicao)") ?? []) {
+      const aba = det.closest("[data-tab]")?.dataset.tab ?? "";
+      const txt = (det.querySelector(":scope > summary")?.textContent ?? "").replace(/[\d·().,/+−-]/g, "").replace(/\s+/g, " ").trim();
+      const base = `${aba}|${det.className}|${txt}`;
+      vistos[base] = (vistos[base] ?? 0) + 1;
+      out.set(det, `${base}|${vistos[base]}`);
+    }
+    return out;
+  }
+
+  /** Depois de redesenhar, os <details> que estavam abertos continuam abertos (ex.: + nos Caminhos). */
+  _restaurarDetalhes() {
+    if (!this._detalhesAbertos?.size) return;
+    for (const [det, chave] of this._chavesDetalhes()) if (this._detalhesAbertos.has(chave)) det.open = true;
+  }
+
   _onAbrirCategoria(ev) {
     const det = ev.target;
+    if (det?.tagName === "DETAILS" && !det.matches(".epm-categoria-condicao")) {
+      this._detalhesAbertos ??= new Set();
+      const chave = this._chavesDetalhes().get(det);
+      if (chave) { if (det.open) this._detalhesAbertos.add(chave); else this._detalhesAbertos.delete(chave); }
+      return;
+    }
     if (!det?.matches?.(".epm-categoria-condicao")) return;
     if (!this._condicoesUi.abertas) {
       this._condicoesUi.abertas = new Set([...this.element.querySelectorAll(".epm-categoria-condicao[open]")].map(d => d.dataset.categoriaCondicao));

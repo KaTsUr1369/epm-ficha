@@ -104,7 +104,8 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
         id, nome: i.nome || "Insanidade", texto: i.texto ?? "", motivo: i.motivo ?? "", encerrada: !!i.encerrada,
         tipoInsanidade: i.categoria ?? "", tipoLabel: TIPOS_INSANIDADE[i.categoria] ?? "", gatilho: i.gatilho ?? "", efeito: i.efeito ?? "",
         intensidade, intensidadeLabel: INTENSIDADES_INSANIDADE[intensidade].label, intensidadeTexto: INTENSIDADES_INSANIDADE[intensidade].texto,
-        condicoes: (i.condicoes ?? []).map(cid => CONDICOES.find(c => c.id === cid)?.label ?? cid).join(", "), criado: num(i.criado),
+        condicoes: (i.condicoes ?? []).map(cid => CONDICOES.find(c => c.id === cid)?.label ?? cid).join(", "),
+        condicoesDica: (i.condicoes ?? []).map(cid => { const c = CONDICOES.find(x => x.id === cid); return c ? `${c.label}: ${c.efeito}` : cid; }).join("\n"), criado: num(i.criado),
         tipos: sel(Object.entries(TIPOS_INSANIDADE), i.categoria ?? ""), intensidades: sel(Object.entries(INTENSIDADES_INSANIDADE).map(([k, x]) => [k, x.label]), intensidade)
       };
     }).sort((a, b) => Number(a.encerrada) - Number(b.encerrada) || b.criado - a.criado),

@@ -14,6 +14,18 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.6.3
+
+- **Codex do Vazio:** botão na aba Magias para importar magias de pf2srd.com.br/magias, pelo nome, pelo endereço ou colando o texto da página.
+- **Fase de vida (geração)** escolhível em Sobre, com mais peso que a idade em anos.
+- **Idade:**
+  - "1.200 anos" passa a valer 1200;
+  - a raça escrita à mão é reconhecida;
+  - raça sem tabela de idade fica sem efeito.
+- **Passar o mouse mostra o efeito** das condições, exaustão, idade e Sanidade nas penalidades, nos atributos e nas perícias.
+- **Ficha rápida de NPC** cria uma ficha de NPC de verdade (aba Atores), já com a ficha EPM.
+- **Seções que abrem e fecham** (Caminhos, Conquistas, catálogos…) continuam abertas depois de clicar em botões dentro delas, na ficha e no Escudo.
+
 ## Novidades da 0.6.2
 
 - Removida a mecânica de **região e densidade de mana**: a seção "Região e mana" do Escudo → Mundo, o passaporte da aba Sobre e os efeitos da densidade nas magias (custo extra, Recuperar Mana e Antimagia). A região das armas e armaduras do catálogo e o nível de tecnologia continuam.

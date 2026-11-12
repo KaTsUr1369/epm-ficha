@@ -556,7 +556,7 @@ export const NOMES_ACOES_060 = [
   "restaurarPacto", "nomearCriatura", "furia", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
-  "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus"
+  "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias"
 ];
 
 export const METODOS_060 = {
@@ -664,6 +664,7 @@ export const METODOS_060 = {
   acaoRolarComRelacao(ev, alvo) { return rolarComRelacao(this.actor, alvo.dataset.relacao, ev); },
   acaoTesteTraicao(ev, alvo) { return testeTraicao(this.actor, alvo.dataset.relacao); },
   acaoNovaTrocaBonus() { return novaTrocaBonus(this.actor); },
+  async acaoImportarMagias() { const { importarMagias } = await import("./importar-magias.mjs"); return importarMagias(this.actor); },
   async acaoExcluirTrocaBonus(ev, alvo) {
     if (!(await confirmar("Desfazer troca", "<p>Desfazer esta troca de bônus? Cada atributo volta a dar o próprio bônus.</p>"))) return;
     return this.actor.update({ [`${P}.trocasBonus.-=${alvo.dataset.id}`]: null });

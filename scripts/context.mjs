@@ -4,7 +4,7 @@
  * O que depende do Foundry (lista de idiomas, outros atores) chega já resolvido pela ficha.
  */
 import {
-  FLAG, ATRIBUTOS, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
+  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
   AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
@@ -27,6 +27,8 @@ import {
 import { painelProjetos } from "./projetos.mjs";
 import { conteudoNotion } from "./settings.mjs";
 import { contexto060 } from "./contexto-060.mjs";
+import { FAIXAS_IDADE } from "./regras-extras.mjs";
+import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
 
 /** Propriedades de arma do item (texto editável tem prioridade sobre a lista vinda do catálogo). */
@@ -75,7 +77,21 @@ export function lerAtor(actor, listaPericias) {
   return { dados, ficha, hp };
 }
 
-const fontesTexto = fontes => (fontes ?? []).map(f => `${f.fonte}: ${f.valor > 0 ? "+" : ""}${f.valor}`).join("\n");
+/** O que cada fonte faz (condição, exaustão, idade, Sanidade): aparece ao passar o mouse. */
+let explicacoesCache = null;
+export function explicarFonte(nome) {
+  if (!explicacoesCache) {
+    explicacoesCache = new Map();
+    for (const c of CONDICOES) explicacoesCache.set(c.label, c.efeito || c.descricao || "");
+    for (const e of EXAUSTAO) explicacoesCache.set(`Exaustão ${e.nivel}`, e.texto ?? "");
+    for (const f of FAIXAS_IDADE) explicacoesCache.set(`Idade: ${f.label}`, f.efeitos.join(" "));
+    for (const e of ESTADOS_SANIDADE) explicacoesCache.set(`Sanidade: ${e.label}`, e.texto);
+  }
+  const t = String(nome ?? "");
+  return explicacoesCache.get(t) ?? (t.startsWith("Insanidade:") ? "Insanidade ativa (aba Condições → Sanidade)." : t.startsWith("Corrupção") ? "Corrupção acumulada passou de um marco (aba Condições)." : "");
+}
+const comExplicacao = nome => { const e = explicarFonte(nome); return e ? `${nome} — ${e}` : nome; };
+const fontesTexto = fontes => (fontes ?? []).map(f => `${comExplicacao(f.fonte)}: ${f.valor > 0 ? "+" : ""}${f.valor}`).join("\n");
 
 function rotuloAfinidade(v) {
   if (v <= -4) return "Hostil";
@@ -743,6 +759,7 @@ export function montarContexto({
   for (const dot of ficha.dots) linhas.push({ texto: `−${dot.formula} ${RECURSOS[dot.recurso]?.abrev ?? "PV"} no início do turno${dot.opcional ? " (quando valer)" : ""}`, fontes: dot.fonte, tipo: "penal" });
   for (const t of ficha.turnoEfeitos) linhas.push({ texto: "Rola 1d6 no início do turno", fontes: t.fonte, tipo: "alerta" });
   for (const av of ficha.avisos) linhas.push({ texto: av.texto, fontes: av.fonte, tipo: "alerta" });
+  for (const l of linhas) l.dica = String(l.fontes ?? "").split(", ").filter(Boolean).map(comExplicacao).join("\n");
   ctx.condicoesBox = {
     condicoes: ficha.condicoesAtivas.map(c => ({ ...c, porQueTexto: c.porQue.join(", ") })),
     combinacoes: ficha.combinacoes,
@@ -1164,6 +1181,13 @@ export function montarContexto({
 
   /* ---------- Sobre ---------- */
   ctx.camposSobre = CAMPOS_SOBRE.map(c => ({ ...c, valor: dados.sobre?.[c.id] ?? "" }));
+  {
+    const escolhida = FAIXAS_IDADE.find(f => f.id === dados.faixaIdade);
+    const auto = ficha.extras?.idade;
+    ctx.faixaIdadeOpcoes = [{ id: "", label: "Automática (pela idade e raça)", selected: !escolhida }, ...FAIXAS_IDADE.map(f => ({ id: f.id, label: f.label, dica: f.efeitos.join(" "), selected: f.id === escolhida?.id }))];
+    ctx.faixaIdadeDica = (escolhida ?? auto)?.efeitos?.join(" ") ?? "";
+    ctx.faixaIdadeTexto = escolhida ? escolhida.label : (auto?.label ? `${auto.label} (automática)` : "");
+  }
   ctx.voz = { bordao: dados.sobre?.bordao ?? "", musica: dados.sobre?.musica ?? "", musicaNome: dados.sobre?.musicaNome ?? "", link: ctx.musica };
   ctx.voz.vazia = !ctx.bordao && !ctx.musica;
   ctx.podeVerSegredos = isGM || !!usuario.dono;

@@ -39,7 +39,7 @@
       {{/if}}
     </div>
     {{#if v.corpo.efeitoTamanho}}<p class="epm-dica">Tamanho: {{v.corpo.efeitoTamanho}}. Manobras só funcionam contra alvos até uma categoria maior; levantar de Caído custa 1,5 m por categoria.</p>{{/if}}
-    {{#if v.idade}}<p class="epm-dica"><strong>Idade:</strong> {{#if v.idade.faixa}}{{v.idade.faixa.label}} — {{epmJoin v.idade.faixa.efeitos " "}}{{else}}preencha a idade em Sobre.{{/if}}</p>{{/if}}
+    {{#if v.idade}}<p class="epm-dica" title="{{#if v.idade.faixa}}{{epmJoin v.idade.faixa.efeitos " "}}{{/if}}"><strong>Idade:</strong> {{#if v.idade.faixa}}{{v.idade.faixa.label}} — {{epmJoin v.idade.faixa.efeitos " "}}{{else}}preencha a idade em Sobre.{{/if}}</p>{{/if}}
     {{#if v.grau}}
     <p class="epm-060-grau">
       {{#if v.grau.mostrar}}<span class="epm-tag" style="--cor-tag: {{v.grau.cor}}" title="Olhar de Mana: intensidade do Núcleo. Informação e requisito, sem bônus próprio. Aura Exposta mostra o grau para todos.">Núcleo {{v.grau.label}}</span>{{/if}}
@@ -180,7 +180,7 @@
       <strong>{{this.nome}}</strong>
       <span class="epm-tag" title="{{this.intensidadeTexto}}">{{this.intensidadeLabel}}</span>
       {{#if tipoLabel}}<span class="epm-tag">{{this.tipoLabel}}</span>{{/if}}
-      {{#if condicoes}}<span class="epm-dica">condições: {{this.condicoes}}</span>{{/if}}
+      {{#if condicoes}}<span class="epm-dica" title="{{this.condicoesDica}}">condições: {{this.condicoes}} <i class="fa-solid fa-circle-info" aria-hidden="true"></i></span>{{/if}}
       {{#if @root.editavel}}
       <button type="button" class="epm-icone-botao" data-action="insanidadeEncerrar" data-id="{{this.id}}" title="{{#if encerrada}}Reativar{{else}}Encerrar{{/if}}"><i class="fa-solid {{#if encerrada}}fa-rotate-left{{else}}fa-check{{/if}}"></i></button>
       <button type="button" class="epm-icone-botao perigo" data-action="insanidadeRemover" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>

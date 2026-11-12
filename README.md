@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.1
+
+- **Reflexos nas fichas antigas:** quem não tinha a perícia Reflexos (e o Teste de Resistência) ganha sozinho, com Destreza. Vale para personagens e NPCs, mesmo os que ninguém abriu; Fortitude e Vontade também entram se faltarem.
+
 ## Novidades da 0.7.0
 
 **Novas mecânicas na ficha**

@@ -6,7 +6,7 @@ import { ATRIBUTO_RECURSO_PADRAO } from "./regras-extras.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { modsDeArquetipo } from "./arquetipos.mjs";
 import {
-  FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, RECURSOS, REGRAS, custoNivel,
+  FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, PERICIAS_RESISTENCIA, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
   MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
   TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO, TIPOS_SEM_NIVEL,
@@ -89,6 +89,19 @@ export function atributosDaPericia(p) {
   return [...new Set(lista.filter(a => ATRIBUTOS[a]))];
 }
 
+/** Testes de Resistência que faltam numa ficha (com os atributos do padrão). */
+export function resistenciasQueFaltam(pericias = {}) {
+  const out = {};
+  for (const id of PERICIAS_RESISTENCIA) {
+    if (pericias?.[id]) continue;
+    const e = PERICIAS_PADRAO.find(x => x[0] === id);
+    if (!e) continue;
+    const x = entradaPericia(e);
+    out[id] = { nome: x.nome, atributos: x.atributos, sugestoes: x.sugestoes, pontos: 0, outros: 0 };
+  }
+  return out;
+}
+
 export function periciasParaObjeto(lista = PERICIAS_PADRAO) {
   const out = {};
   for (const e of lista) {
@@ -139,7 +152,7 @@ export function migrarPericias(pericias = {}, lista = PERICIAS_PADRAO, obsoletas
 }
 
 /** Versão atual do formato dos dados (normalizarDados e migrarDados levam fichas antigas até ela). */
-export const VERSAO_DADOS = 6;
+export const VERSAO_DADOS = 7;
 
 export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
   return {
@@ -204,6 +217,8 @@ export function normalizarDados(bruto = {}, listaPericias = PERICIAS_PADRAO) {
   const padrao = dadosPadrao(listaPericias);
   const dados = mesclar(padrao, bruto);
   if (eObjeto(bruto?.pericias)) dados.pericias = structuredClone(bruto.pericias);
+  // Testes de Resistência (Fortitude, Reflexos, Vontade) sempre existem, mesmo em fichas de antes deles
+  for (const [id, p] of Object.entries(resistenciasQueFaltam(dados.pericias))) dados.pericias[id] = p;
   for (const campo of ["idiomas", "resistencias", "vulnerabilidades", "imunidades"]) {
     if (!Array.isArray(dados[campo])) dados[campo] = [];
   }
@@ -271,6 +286,8 @@ export function migrarDados(bruto = {}) {
     if (v6.atributo !== undefined) updates["pericias.vontade.-=atributo"] = null;
   }
   if (v6 && !updates["pericias.vontade.sugestoes"] && temNucleo(v6.sugestoes)) updates["pericias.vontade.sugestoes"] = ["autocontrole"];
+  // 0.7.0: fichas antigas ganham Reflexos (e qualquer Teste de Resistência que falte)
+  if (versao < 7 && eObjeto(bruto?.pericias)) for (const [id, p] of Object.entries(resistenciasQueFaltam(bruto.pericias))) updates[`pericias.${id}`] = p;
   // 0.5.4: a CA não tem mais o campo Armadura manual (vem só das armaduras equipadas); o valor vai para "outros"
   const armaduraManual = int(bruto?.ca?.armadura);
   if (bruto?.ca && bruto.ca.armadura !== undefined) {

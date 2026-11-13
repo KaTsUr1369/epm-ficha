@@ -6,7 +6,7 @@
   {{#if @root.edicao}}
   <section class="epm-painel epm-060-tokens">
     <header class="epm-painel-titulo"><h3>Imagens do token</h3><span class="epm-contador" title="Qual imagem está sendo usada quando mais de um estado vale">{{v.tokens.escolha}}</span></header>
-    <p class="epm-dica">A imagem do token muda sozinha com o estado. Se mais de um valer ao mesmo tempo, escolha qual usar aqui ou no botão <i class="fa-solid fa-masks-theater"></i> do HUD do token.</p>
+    <p class="epm-dica">A imagem do token muda sozinha com o estado. No botão abaixo (ou no <i class="fa-solid fa-masks-theater"></i> do HUD do token) dá para fixar qualquer imagem, mesmo sem o estado valer.</p>
     <div class="epm-token-estados">
       {{#each v.tokens.estados}}
       <figure class="epm-token-estado{{#unless img}} vazia{{/unless}}" title="{{this.dica}}">
@@ -21,7 +21,7 @@
       </figure>
       {{/each}}
     </div>
-    {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="escolherTokenEstado"><i class="fa-solid fa-masks-theater"></i> Escolher a imagem agora</button>{{/if}}
+    {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="escolherTokenEstado"><i class="fa-solid fa-masks-theater"></i> Escolher a imagem do token</button>{{/if}}
   </section>
   {{/if}}
   <section class="epm-painel epm-060-raca">
@@ -350,6 +350,7 @@
 {{#if (epmEq ../secao "inventario")}}
 {{#if @root.editavel}}
 <div class="epm-060-botoes epm-060-inventario">
+  <button type="button" class="epm-botao epm-botao-sutil" data-action="puxarCompendio" title="Buscar itens num compêndio (o de Umbra'Draxil ou qualquer outro) e pôr direto no inventário; também abre o compêndio para arrastar"><i class="fa-solid fa-book-atlas"></i> Do compêndio</button>
   <button type="button" class="epm-botao epm-botao-sutil" data-action="catalogoCompleto" title="Armas, armaduras, escudos, poções, comida, ferramentas, materiais e mais de Umbra'Draxil, com preço e peso"><i class="fa-solid fa-book-open"></i> Catálogo de itens</button>
   <button type="button" class="epm-botao epm-botao-sutil" data-action="catalogoItens" title="Armas e armaduras do Notion de Umbra'Draxil, Briavoterna e Genesis"><i class="fa-solid fa-khanda"></i> Armas e armaduras do Notion</button>
   <button type="button" class="epm-botao epm-botao-sutil" data-action="kitInicial" title="Kits iniciais por arquétipo"><i class="fa-solid fa-box-open"></i> Kit inicial</button>

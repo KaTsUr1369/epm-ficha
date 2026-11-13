@@ -43,9 +43,36 @@ export function estadosAtivos(actor) {
   return out;
 }
 
+/**
+ * Todas as imagens que o personagem tem para o token (estados e transformações), valendo agora ou não:
+ * [{ id, label, img, ativo }].
+ */
+export function todasImagensToken(actor) {
+  const d = actor?.flags?.[FLAG] ?? {};
+  const ativos = new Set(estadosAtivos(actor).map(e => e.id));
+  const out = ESTADOS_TOKEN.filter(e => d.tokensEstado?.[e.id] || e.id === "normal").map(e => ({
+    id: e.id, label: e.label, img: d.tokensEstado?.[e.id] || (e.id === "normal" ? actor?.prototypeToken?.texture?.src || "" : ""), ativo: e.id === "normal" || ativos.has(e.id)
+  }));
+  for (const [tid, t] of Object.entries(d.transformacoes ?? {})) {
+    if (t?.img) out.push({ id: `transf:${tid}`, label: `Transformação: ${t.nome || "sem nome"}`, img: t.img, ativo: ativos.has(`transf:${tid}`) });
+  }
+  return out;
+}
+
+/** Imagem fixada pelo jogador (vale sem cumprir as condições do estado), ou null. */
+export function imagemFixada(actor) {
+  const d = actor?.flags?.[FLAG] ?? {};
+  const id = String(d.tokenFixo ?? "");
+  if (!id) return null;
+  if (id.startsWith("transf:")) return d.transformacoes?.[id.slice(7)]?.img || null;
+  return d.tokensEstado?.[id] || null;
+}
+
 /** Imagem que o token deve usar agora. */
 export function imagemAtual(actor) {
   const d = actor?.flags?.[FLAG] ?? {};
+  // Fixada: usa mesmo sem o estado valer (ex.: a imagem de Insano com a Sanidade cheia)
+  if (d.tokenFixo) return imagemFixada(actor);
   const ativos = estadosAtivos(actor);
   const escolhido = ativos.find(e => e.id === d.tokenEscolha);
   if (escolhido) return escolhido.img;
@@ -93,16 +120,16 @@ export function agendarTokenEstado(actor) {
 export async function escolherTokenEstado(actor) {
   if (!actor?.isOwner) return;
   const d = actor.flags?.[FLAG] ?? {};
-  const ativos = estadosAtivos(actor);
-  const opcoes = [{ id: "", label: "Automático (prioridade)", img: "" }, { id: "normal", label: "Normal", img: d.tokensEstado?.normal || actor.prototypeToken?.texture?.src || "" }, ...ativos];
-  const html = opcoes.map(o => `<label class="epm-token-opcao"><input type="radio" name="estado" value="${o.id}" ${(d.tokenEscolha ?? "") === o.id ? "checked" : ""}>${o.img ? `<img src="${o.img}" alt="" width="48" height="48">` : ""}<span>${o.label}</span></label>`).join("");
+  const atual = d.tokenFixo ? String(d.tokenFixo) : "";
+  const opcoes = [{ id: "", label: "Automático (muda sozinho com o estado)", img: "", ativo: true }, ...todasImagensToken(actor)];
+  const html = opcoes.map(o => `<label class="epm-token-opcao"><input type="radio" name="estado" value="${o.id}" ${atual === o.id ? "checked" : ""}>${o.img ? `<img src="${o.img}" alt="" width="48" height="48">` : '<span class="epm-token-auto"><i class="fa-solid fa-wand-magic-sparkles"></i></span>'}<span>${o.label}${o.id && o.ativo && o.id !== "normal" ? ' <em class="epm-dica">(vale agora)</em>' : ""}</span></label>`).join("");
   const r = await foundry.applications.api.DialogV2.prompt({
     window: { title: `Imagem do token: ${actor.name}` },
-    content: `<div class="epm-token-opcoes">${html}</div><p class="hint">Só aparecem os estados que valem agora e têm imagem.</p>`,
+    content: `<div class="epm-token-opcoes">${html}</div><p class="hint">Escolha qualquer imagem para fixar no token, mesmo sem o estado valer (ex.: Insano com a Sanidade cheia). "Automático" volta a trocar sozinho.</p>`,
     ok: { label: "Usar", callback: (ev, botao) => botao.form.elements.estado.value }, rejectClose: false
   });
   if (r === null || r === undefined) return;
-  await actor.update({ [`${P}.tokenEscolha`]: r });
+  await actor.update({ [`${P}.tokenFixo`]: r, [`${P}.tokenEscolha`]: "" });
 }
 
 /** Botão no HUD do token. */

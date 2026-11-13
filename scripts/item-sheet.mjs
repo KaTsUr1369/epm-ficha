@@ -5,7 +5,9 @@
  */
 import { FLAG, CAMINHO, TIPOS_EFEITO_ITEM } from "./config.mjs";
 import { novoId, int } from "./data.mjs";
-import { lerAtor, montarContextoItem } from "./context.mjs";
+import { lerAtor, montarContextoItem, listaPropriedades } from "./context.mjs";
+
+const listaPropriedadesItem = item => listaPropriedades(item.flags?.["epm-ficha"] ?? {});
 import { enriquecer, editorHTML } from "./helpers.mjs";
 import { moverMoedasMochila, recarregarArma } from "./mecanicas.mjs";
 import { listaPericias } from "./settings.mjs";
@@ -18,7 +20,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "novaMelhoriaItem", "removerMelhoriaItem"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "novaMelhoriaItem", "removerMelhoriaItem", "adicionarPropriedade", "removerPropriedade"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -63,6 +65,24 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     const moedas = dados?.flags?.[FLAG]?.moedas;
     if (moedas) for (const k of Object.keys(moedas)) moedas[k] = Math.max(0, int(moedas[k]));
     return dados;
+  }
+
+  /** Propriedades: guarda a lista (e o texto, que a ficha lê) sem repetir. */
+  async _salvarPropriedades(lista) {
+    const unicas = [...new Set(lista.map(t => String(t).trim()).filter(Boolean))];
+    await this.item.update({ [`${P}.propriedades`]: unicas, [`${P}.propriedadesTexto`]: unicas.join(", ") });
+  }
+
+  async acaoAdicionarPropriedade() {
+    const sel = this.element.querySelector("[data-nova-propriedade]");
+    const livre = this.element.querySelector("[data-propriedade-livre]");
+    const novas = [sel?.value, ...String(livre?.value ?? "").split(",")].map(t => String(t ?? "").trim()).filter(Boolean);
+    if (!novas.length) return ui.notifications.info("Escolha uma propriedade na lista ou escreva uma.");
+    return this._salvarPropriedades([...listaPropriedadesItem(this.item), ...novas]);
+  }
+
+  async acaoRemoverPropriedade(ev, alvo) {
+    return this._salvarPropriedades(listaPropriedadesItem(this.item).filter(n => n !== alvo.dataset.nome));
   }
 
   async acaoEditarImagem() {

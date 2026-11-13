@@ -14,6 +14,7 @@ import {
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
 import { penalidadeTec, efeitosSemPropriedades } from "./tecnologia.mjs";
+import { regra } from "./opcionais.mjs";
 import { especialDoTreino, fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos } from "./ficha-extras.mjs";
 
 /* -------------------------------------------- */
@@ -304,10 +305,19 @@ export function migrarDados(bruto = {}) {
 /* -------------------------------------------- */
 
 /** Aplica uma ordem salva a uma lista de ids: os conhecidos na ordem salva, os novos no fim. */
-export function ordenarPorLista(ids, salva = []) {
+export function ordenarPorLista(ids, salva = [], { aposVizinho = false } = {}) {
   const conhecidos = new Set(ids);
   const out = (Array.isArray(salva) ? salva : []).filter(id => conhecidos.has(id));
-  for (const id of ids) if (!out.includes(id)) out.push(id);
+  if (!aposVizinho) {
+    for (const id of ids) if (!out.includes(id)) out.push(id);
+    return out;
+  }
+  // Itens novos (ex.: uma categoria que chegou numa atualização) entram logo depois do vizinho de antes na ordem padrão
+  ids.forEach((id, i) => {
+    if (out.includes(id)) return;
+    const antes = ids.slice(0, i).reverse().find(x => out.includes(x));
+    out.splice(antes ? out.indexOf(antes) + 1 : 0, 0, id);
+  });
   return out;
 }
 
@@ -346,7 +356,7 @@ export function lerEfeitosItem(item) {
 export function itemAtivo(item) {
   if (!item) return false;
   // Durabilidade 0 = Quebrado: perde os efeitos (inclusive a CA da armadura) até ser consertado
-  if (["weapon", "equipment", "tool"].includes(item.type)) {
+  if (["weapon", "equipment", "tool"].includes(item.type) && regra("durabilidade")) {
     const dur = item.flags?.[FLAG]?.durabilidade;
     if (dur !== undefined && dur !== null && dur !== "" && Number(dur) <= 0) return false;
   }
@@ -1119,11 +1129,12 @@ export function normalizarBonusSituacional(b = {}) {
     .filter(([, o]) => o && TIPOS_BONUS_SITUACIONAL[o.tipo])
     .map(([id, o]) => ({
       id, tipo: o.tipo, valor: o.tipo === "dano" ? (String(o.valor ?? "").trim() || "0") : int(o.valor),
-      tipoDano: String(o.tipoDano ?? "").trim(), criado: num(o.criado)
+      tipoDano: String(o.tipoDano ?? "").trim(), criado: num(o.criado), porNivel: !!o.porNivel
     }))
     .sort((a, c) => a.criado - c.criado);
-  for (const o of opcoes) o.texto = TIPOS_BONUS_SITUACIONAL[o.tipo].texto(o.valor) + (o.tipo === "rd" && o.tipoDano ? ` (${o.tipoDano})` : "");
-  return { gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha: b?.escolha === "rolar" ? "rolar" : "escolher", opcoes };
+  for (const o of opcoes) o.texto = TIPOS_BONUS_SITUACIONAL[o.tipo].texto(o.valor) + (o.tipo === "rd" && o.tipoDano ? ` (${o.tipoDano})` : "") + (o.porNivel ? " por nível da habilidade" : "");
+  const escolha = ["rolar", "todas"].includes(b?.escolha) ? b.escolha : "escolher";
+  return { gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha, opcoes };
 }
 
 export function formaPadrao(ordem = 0, nome = "Padrão") {
@@ -1220,6 +1231,25 @@ export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [],
     efeitosUsados, limiteEfeitos,
     excedeEfeitos: efeitosUsados > limiteEfeitos
   };
+}
+
+/** Nível da habilidade (Instinto Assassino nível 3…): 1 a 50. Opções de bônus "por nível" multiplicam por ele. */
+export const nivelHabilidade = item => Math.max(1, Math.min(50, int(item?.flags?.[FLAG]?.nivelHab, 1)));
+
+/**
+ * Junta opções de bônus situacional num Bônus de cena (pura, para teste). `nivel` multiplica as opções "por nível".
+ */
+export function montarBonusCena(opcoes, nivel = 1, extra = {}) {
+  const b = { ativo: true, acerto: 0, dano: "", ca: 0, rd: 0, rdTipo: "", testes: 0, deslocamento: 0, margem: 0, cena: true, ...extra };
+  const danos = [];
+  for (const o of opcoes) {
+    const vezes = o.porNivel ? Math.max(1, int(nivel, 1)) : 1;
+    if (o.tipo === "dano") { const v = String(o.valor); danos.push(vezes > 1 ? (/^\d+$/.test(v) ? String(int(v) * vezes) : `${vezes} * (${v})`) : v); }
+    else if (o.tipo === "rd") { b.rd += int(o.valor) * vezes; if (o.tipoDano) b.rdTipo = o.tipoDano; }
+    else b[o.tipo] = int(b[o.tipo]) + int(o.valor) * vezes;
+  }
+  b.dano = danos.join(" + ");
+  return b;
 }
 
 /** Forma sustentada (gasta todo turno)? */
@@ -1583,7 +1613,10 @@ export function bonusCenaAtivos(dados) {
   const ativos = Object.values(dados?.bonusCena ?? {}).filter(b => b?.ativo);
   return {
     acerto: ativos.reduce((s, b) => s + int(b.acerto), 0),
+    margem: ativos.reduce((s, b) => s + int(b.margem), 0),
     dano: ativos.map(b => String(b.dano ?? "").trim()).filter(Boolean),
+    danoFontes: ativos.filter(b => String(b.dano ?? "").trim()).map(b => ({ formula: String(b.dano).trim(), fonte: b.nome || "Bônus" })),
+    acertoFontes: ativos.filter(b => int(b.acerto)).map(b => ({ valor: int(b.acerto), fonte: b.nome || "Bônus" })),
     nomes: ativos.map(b => b.nome || "Bônus").filter(Boolean)
   };
 }

@@ -44,7 +44,7 @@
     {{else}}
     {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
     {{#if eClasse}}{{> "epm-classe-painel"}}{{/if}}
-    {{#if origem}}<p class="epm-dica">Habilidades de {{this.label}} usam só Passiva e Comum.{{#if @root.dados.personalizacao.abasExtras.arqclasse}} Elas também aparecem na aba Arquétipo e Classe.{{/if}}</p>{{/if}}
+    {{#if origem}}<p class="epm-dica">Habilidades de {{this.label}} usam só Passiva e Comum.{{#if (epmOr eArquetipo eClasse)}}{{#if @root.dados.personalizacao.abasExtras.arqclasse}} Elas também aparecem na aba Arquétipo e Classe.{{/if}}{{/if}}</p>{{/if}}
     {{#each secoes}}
     {{#unless (epmAnd destaque vazia)}}
     <section class="epm-secao-poder{{#if destaque}} epm-secao-unica{{/if}}" style="--cor: {{this.cor}}" data-secao="{{../id}}-{{this.id}}">

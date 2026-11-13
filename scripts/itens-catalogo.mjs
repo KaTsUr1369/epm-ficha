@@ -44,7 +44,7 @@ export const ELEMENTOS = ["Ácido", "Fogo", "Frio", "Força", "Necrótico", "Ps�
 /*  Propriedades de proteção (armaduras e escudos) */
 /* -------------------------------------------- */
 
-/** Propriedades que valem em Umbra'Draxil: comuns às eras, da Era Medieval e as exclusivas de escudo. */
+/** Propriedades de proteção (armaduras e escudos) de todas as eras; as marcadas com escudo: true são só de escudo. */
 export const PROPRIEDADES_PROTECAO = {
   "Reforçada": { tipo: "Positiva", efeito: "+1 na CA." },
   "Flexível": { tipo: "Positiva", efeito: "+1 em Esquiva." },
@@ -67,6 +67,44 @@ export const PROPRIEDADES_PROTECAO = {
   "Encantada": { tipo: "Especial", efeito: "Tem 1 Encantamento (sistema de Melhorias)." },
   "Antimagia": { tipo: "Condicional", efeito: "RD 5 contra dano de magias; +2 nos testes para resistir a magias." },
   "Amaldiçoada": { tipo: "Especial", efeito: "Tem 1 Maldição de item: bônus em troca de penalidade (sistema de Melhorias)." },
+  // Tempos Modernos (Briavoterna) e comuns às eras modernas
+  "Modular": { tipo: "Especial", efeito: "+1 vaga de Modificação." },
+  "Selada": { tipo: "Positiva", efeito: "Imune a gases e partículas no ar por 1 hora." },
+  "Antirradiação": { tipo: "Positiva", efeito: "Imune a dano de radiação comum." },
+  "Balística": { tipo: "Positiva", efeito: "RD 5 contra Balístico." },
+  "Antiperfurante": { tipo: "Positiva", efeito: "RD 3 contra Perfurante." },
+  "Anticontusão": { tipo: "Positiva", efeito: "RD 3 contra Contundente." },
+  "Impermeável": { tipo: "Positiva", efeito: "Imune a Molhado." },
+  "Isolante": { tipo: "Positiva", efeito: "RD 5 contra Relâmpago." },
+  "Antichamas": { tipo: "Positiva", efeito: "RD 5 contra Fogo; Em Chamas apaga no fim do seu turno." },
+  "Anticorrosiva": { tipo: "Positiva", efeito: "RD 5 contra Ácido." },
+  "Antitóxica": { tipo: "Positiva", efeito: "RD 5 contra Venenoso; vantagem contra venenos inalados." },
+  "Visor Blindado": { tipo: "Positiva", efeito: "Imune a Ofuscado." },
+  "Compartimentada": { tipo: "Positiva", efeito: "4 objetos pequenos à mão; sacar um deles não gasta ação." },
+  "Antiexplosiva": { tipo: "Positiva", efeito: "RD 5 contra Explosivo." },
+  "Tática": { tipo: "Positiva", efeito: "+1 na iniciativa; sacar ou guardar arma não gasta ação." },
+  // Era Futurista (Genesis)
+  "Nanotecnológica": { tipo: "Positiva", efeito: "+1 na CA; conserta-se com Kit de Nanoreparo." },
+  "Autorregenerativa": { tipo: "Positiva", efeito: "Recupera 2 de Vida no início de cada turno em combate." },
+  "Adaptativa": { tipo: "Condicional", efeito: "Depois de sofrer dano de um tipo, ganha RD 5 contra ele até o fim da cena (troca quando sofrer outro tipo)." },
+  "Energizada": { tipo: "Positiva", efeito: "+2 na CA enquanto paga 1 de Estamina por turno (liga e desliga)." },
+  "Escudo Energético": { tipo: "Positiva", efeito: "Começa cada combate com 10 de Vida temporária." },
+  "Holográfica": { tipo: "Condicional", efeito: "O primeiro ataque contra você em cada cena tem desvantagem." },
+  "Camuflagem Óptica": { tipo: "Especial", efeito: "Ação Bônus: +5 em Furtividade e ataques à distância contra você com desvantagem, até você atacar; 2 de Estamina por turno." },
+  "Magnética": { tipo: "Positiva", efeito: "RD 5 contra Balístico." },
+  "Gravitacional": { tipo: "Positiva", efeito: "RD 3 contra Contundente; sem dano de queda até 9 m." },
+  "Quântica": { tipo: "Especial", efeito: "Ao sofrer dano, role 1d6; com 6, o dano é anulado." },
+  "Antienergia": { tipo: "Positiva", efeito: "RD 5 contra os quatro tipos de Energia." },
+  "Antiplasma": { tipo: "Positiva", efeito: "RD 10 contra armas com a propriedade Plasma." },
+  "Anti-EMP": { tipo: "Positiva", efeito: "Imune à Granada EMP e a pulsos eletromagnéticos." },
+  "Atmosférica": { tipo: "Positiva", efeito: "Respira no vácuo e debaixo d'água por 8 horas." },
+  "Autônoma": { tipo: "Positiva", efeito: "Uma vez por rodada, +2 na CA contra um ataque, sem gastar Reação." },
+  "Sincronizada": { tipo: "Positiva", efeito: "+1,5 m de deslocamento; ativa o bônus de itens que dizem \"sincroniza\"." },
+  "Exoesquelética": { tipo: "Positiva", efeito: "+2 em testes de Força; carga dobrada." },
+  "Supercondutora": { tipo: "Positiva", efeito: "RD 5 contra Relâmpago; alimenta aparelhos sem bateria." },
+  "Sobrecarga": { tipo: "Especial", efeito: "Ação Bônus: +3 na CA até o seu próximo turno, por 5 de Estamina." },
+  "Instável": { tipo: "Negativa", efeito: "Quando sofre um crítico, role 1d6; com 1, a armadura desliga e perde as propriedades até o fim do seu próximo turno." },
+  // Exclusivas de escudo
   "Acoplável": { tipo: "Positiva", efeito: "Preso ao antebraço: a mão fica livre para segurar objetos leves.", escudo: true },
   "Instalável": { tipo: "Condicional", efeito: "Com uma Ação de Movimento, apoia no chão e vira cobertura até você se mover.", escudo: true },
   "Protetor": { tipo: "Condicional", efeito: "Como Reação, um aliado adjacente que for atacado usa a sua CA.", escudo: true },
@@ -678,6 +716,14 @@ export function precoTexto(entrada) {
   return c ? moedasTexto(c) : "sem preço";
 }
 
+/** Texto curto do item (dica ao passar o mouse no compêndio e no catálogo). */
+export function dicaCatalogo(x) {
+  const r = resumoCatalogo(x);
+  const resumo = r.length > 260 ? `${r.slice(0, 257)}…` : r;
+  const rar = { comum: "Comum", rara: "Rara", epica: "Épica", lendaria: "Lendária", mitica: "Mítica" }[x.raridade] ?? "";
+  return [resumo, [precoTexto(x), `${Number(x.peso).toLocaleString("pt-BR")} kg`, rar].filter(Boolean).join(" · ")].filter(Boolean).join("\n");
+}
+
 /** Valor em cobre escrito em ouro (até 9.999 PO), ou em dracma/platina acima disso. */
 export function moedasTexto(c) {
   c = Math.max(0, Math.round(Number(c) || 0));
@@ -698,7 +744,7 @@ export function moedasTexto(c) {
  * (cada uma com `pacote` peças). `flag` é o id do módulo nas flags.
  */
 export function dadosItemCatalogo(x, { qtd = 1, flag = "epm-ficha", img = "" } = {}) {
-  const f = { raridade: x.raridade, catalogo: x.id, regiao: x.regiao, preco: precoEmCobre(x) };
+  const f = { raridade: x.raridade, catalogo: x.id, regiao: x.regiao, preco: precoEmCobre(x), resumo: dicaCatalogo(x) };
   const efeitos = {};
   (x.efeitos ?? []).forEach((e, i) => { efeitos[idAleatorio()] = { ...e, criado: Date.now() + i }; });
   if (Object.keys(efeitos).length) f.efeitos = efeitos;

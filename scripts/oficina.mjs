@@ -8,6 +8,7 @@ import { FLAG, MOEDAS, TREINO, CATEGORIAS_ITEM } from "./config.mjs";
 import { num, int, pagarMoedas, formatarMoedas, valorEmCobre } from "./data.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
 import { afinidadeEntre } from "./cooperacao.mjs";
+import { regra } from "./opcionais.mjs";
 
 const P = `flags.${FLAG}`;
 const M = () => import("./mecanicas.mjs");
@@ -25,6 +26,8 @@ export const CONSERTO = { dt: 12, minutos: 10, recupera: 50 };
 /** Durabilidade do item (100 se nunca mudou) ou null se o tipo não tem durabilidade. */
 export function durabilidadeDe(item) {
   if (!TIPOS_DURAVEIS.includes(item?.type)) return null;
+  // Regra opcional (Escudo do Mestre): desligada, nenhum item tem durabilidade
+  if (!regra("durabilidade")) return null;
   const v = item.flags?.[FLAG]?.durabilidade;
   return v === undefined || v === null || v === "" ? 100 : Math.max(0, Math.min(100, int(v)));
 }

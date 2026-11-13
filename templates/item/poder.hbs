@@ -13,6 +13,11 @@
         <label class="epm-campo" title="Elemento da magia ou habilidade (Notion). Na árvore elemental, o elemento evoluído ignora a imunidade ao anterior."><span>Elemento</span><input type="text" name="flags.epm-ficha.elemento" value="{{elemento}}" list="epm-poder-elementos" placeholder="Fogo, Água, Raio…" /><datalist id="epm-poder-elementos">{{#each elementos}}<option value="{{this}}"></option>{{/each}}</datalist></label>
         <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.passiva" {{epmChecked dados.passiva}} /> Passiva</label>
       </div>
+      <div class="epm-linha-identidade epm-nivel-hab">
+        <label class="epm-campo" title="Nível da habilidade. Opções de bônus marcadas como 'por nível' multiplicam por ele."><span>Nível</span><input type="number" min="1" max="50" name="flags.epm-ficha.nivelHab" value="{{nivelHab.nivel}}" /></label>
+        <label class="epm-campo" title="Quanto custa subir 1 nível (0 = não sobe de nível)"><span>PH por nível</span><input type="number" min="0" name="flags.epm-ficha.phPorNivel" value="{{nivelHab.phPorNivel}}" /></label>
+        {{#if nivelHab.phPorNivel}}{{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="subirNivelHab" title="Gasta {{nivelHab.phPorNivel}} PH da ficha{{#if nivelHab.ph}} (tem {{nivelHab.ph}}){{/if}}"><i class="fa-solid fa-arrow-up"></i> Subir de nível ({{nivelHab.phPorNivel}} PH)</button>{{/if}}{{/if}}
+      </div>
       <p class="epm-dica">Teto {{this.raridadeLabel}}: até {{limite.danoMax}} de dano por ativação e {{limite.efeitos}} efeito(s) adicional(is){{#if limite.limite}}; no máximo {{limite.limite}} por personagem{{/if}}.</p>
     </div>
   </header>
@@ -55,7 +60,7 @@
         <label class="epm-campo"><span>Teste</span><select name="flags.epm-ficha.formas.{{this.id}}.teste.tipo">{{#each opcoesTeste}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         <label class="epm-campo"><span>Perícia do teste</span><select name="flags.epm-ficha.formas.{{this.id}}.teste.pericia"><option value="">Nenhuma</option>{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
         <div class="epm-campo"><span>DT da resistência</span><span class="epm-cd{{#unless resistencia}} fraca{{/unless}}" title="Calculada: {{@root.cdFormula}}">{{#if @root.cd}}{{@root.cd.valor}} ({{@root.cdFormula}}){{else}}{{@root.cdFormula}}{{/if}}</span></div>
-        <label class="epm-campo epm-campo-largo"><span>Dano ou cura</span><input type="text" name="flags.epm-ficha.formas.{{this.id}}.dano.formula" value="{{dano.formula}}" placeholder="2d6 + @atr.nucleo" /></label>
+        <label class="epm-campo epm-campo-largo"><span>Dano ou cura</span><input type="text" name="flags.epm-ficha.formas.{{this.id}}.dano.formula" value="{{dano.formula}}" placeholder="2d6 + @nuc" title="Atalhos: @for @des @con @apa @car @int @aut @nuc (valor final do atributo)" /></label>
         <label class="epm-campo"><span>Tipo</span><input type="text" name="flags.epm-ficha.formas.{{this.id}}.dano.tipo" value="{{dano.tipo}}" list="epm-tipos-dano-{{@root.item.id}}" placeholder="Fogo, Cura…" /></label>
       </div>
       <fieldset class="epm-requisitos">
@@ -63,20 +68,19 @@
         {{#each requisitosLista}}<label class="epm-check" title="{{this.dica}}"><input type="checkbox" name="flags.epm-ficha.formas.{{../id}}.requisitos.{{this.id}}" {{epmChecked checked}} /> {{this.label}}</label>{{/each}}
       </fieldset>
       <fieldset class="epm-bonus-sit">
-        <legend>Bônus situacional (pela cena){{#if bonusSit.tem}} <span class="epm-contador">{{bonusSit.dado}}</span>{{/if}}</legend>
-        <p class="epm-dica">Ao usar, vale uma destas opções até o fim do combate (vira um Bônus de cena na aba Combate). Ex.: +10 de RD, +3 de CA, +10 de dano ou +3 no ataque.</p>
-        {{#if bonusSit.tem}}
+        <legend>Ativação condicional e bônus (pela cena){{#if bonusSit.tem}} <span class="epm-contador">{{bonusSit.dado}}</span>{{/if}}</legend>
+        <p class="epm-dica">Escolha <strong>quando</strong> a habilidade entra: ao usar, ou sozinha quando algo acontece (sofrer dano, Vida baixa, começo do combate, acertar um crítico). Ela entra uma vez por cena, se tiver o custo, e os bônus valem até o fim do combate (aba Combate → Bônus de cena). Ex.: Instinto Assassino, ao sofrer dano, −1 na margem de ameaça.</p>
         <div class="epm-bonus-sit-topo">
           <label class="epm-campo"><span>Quando</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.gatilho">{{#each bonusSit.opcoesGatilho}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
-          <label class="epm-campo"><span>Qual opção</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.escolha">{{#each bonusSit.opcoesEscolha}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+          <label class="epm-campo"><span>Quais opções</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.escolha">{{#each bonusSit.opcoesEscolha}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         </div>
-        {{/if}}
         {{#each bonusSit.linhas}}
         <div class="epm-bonus-sit-linha">
           <span class="epm-bonus-sit-n">{{this.n}}</span>
           <select name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.tipo" aria-label="Tipo do bônus">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
           <input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
           {{#if eRd}}<input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-tipos-dano-{{@root.item.id}}" placeholder="todos os danos" aria-label="Tipo de dano da RD" />{{/if}}
+          <label class="epm-check" title="O valor multiplica pelo nível desta habilidade (campo Nível lá em cima), não pelo nível do personagem"><input type="checkbox" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.porNivel" {{epmChecked porNivel}} /> por nível da habilidade</label>
           <span class="epm-dica">{{this.texto}}</span>
           {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="removerOpcaoBonus" data-forma="{{../id}}" data-opcao="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>{{/if}}
         </div>

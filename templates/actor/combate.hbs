@@ -158,8 +158,8 @@
           <li class="epm-ataque">
             <img class="epm-ataque-img" src="{{this.img}}" alt="" />
             <div class="epm-ataque-info"><span class="epm-ataque-nome" title="{{this.nome}}">{{#if modoLabel}}{{this.nomeItem}}{{else}}{{this.nome}}{{/if}}{{#if favoritaCombatente}} <span class="epm-tag epm-tag-ok" title="Arma Favorita do Combatente ({{this.tipoArma}})"><i class="fa-solid fa-medal" aria-hidden="true"></i> Maestria</span>{{/if}}</span><span class="epm-ataque-sub">{{#if modoLabel}}<span class="epm-tag epm-tag-modo">{{this.modoLabel}}{{#if tipoDano}}{{#unless (epmEq tipoDano modoLabel)}} · {{this.tipoDano}}{{/unless}}{{/if}}</span> {{/if}}{{this.periciaNome}}, crítico {{this.critTexto}}</span>{{#if (epmOr municaoTexto (epmOr cargasTexto penteTexto))}}<span class="epm-ataque-sub">{{#if penteTexto}}<span class="epm-item-recurso{{#if penteVazio}} acabou{{/if}}"><i class="fa-solid fa-gun" aria-hidden="true"></i> {{this.penteTexto}}</span> <button type="button" class="epm-link" data-action="recarregarArma" data-item-id="{{this.id}}" title="Enche o pente com a munição ligada e gasta a {{this.recargaTexto}}"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar ({{this.recargaTexto}})</button> {{/if}}{{#if municaoTexto}}<span class="epm-item-recurso{{#if semMunicao}} acabou{{/if}}"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{this.municaoTexto}}</span> {{/if}}{{#if cargasTexto}}<span class="epm-item-recurso"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{this.cargasTexto}}</span>{{/if}}</span>{{/if}}</div>
-            <span class="epm-ataque-acerto{{#if acertoMods}} penalizado{{/if}}" title="Bônus de acerto{{#if acertoModsTexto}}&#10;{{this.acertoModsTexto}}{{/if}}">{{epmSinal acertoTotal}}</span>
-            <span class="epm-ataque-dano" title="Dano{{#if danoMult}} (×{{this.danoMult}}){{/if}}">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}{{#if danoMult}} <strong>×{{this.danoMult}}</strong>{{/if}}</span>
+            <span class="epm-ataque-acerto{{#if acertoMods}} penalizado{{/if}}" data-tooltip="{{this.acertoDica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal acertoTotal}}</span>
+            <span class="epm-ataque-dano" data-tooltip="{{this.danoDica}}" data-tooltip-class="epm-dica-tooltip">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}{{#if danoMult}} <strong>×{{this.danoMult}}</strong>{{/if}}</span>
             <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="arma" data-ref="{{this.ref}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano">Atacar</button>
           </li>
           {{/each}}
@@ -167,15 +167,15 @@
           <li class="epm-ataque custom">
             <span class="epm-ataque-img epm-ataque-icone" aria-hidden="true"><i class="fa-solid fa-burst"></i></span>
             <div class="epm-ataque-info"><span class="epm-ataque-nome">{{this.nome}}</span><span class="epm-ataque-sub">{{this.periciaNome}}, crítico {{this.critTexto}}{{#if notas}}, {{this.notas}}{{/if}}</span></div>
-            <span class="epm-ataque-acerto{{#if acertoMods}} penalizado{{/if}}" title="Bônus de acerto{{#if acertoModsTexto}}&#10;{{this.acertoModsTexto}}{{/if}}">{{epmSinal acertoTotal}}</span>
-            <span class="epm-ataque-dano" title="Dano">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}{{#if danoMult}} <strong>×{{this.danoMult}}</strong>{{/if}}</span>
+            <span class="epm-ataque-acerto{{#if acertoMods}} penalizado{{/if}}" data-tooltip="{{this.acertoDica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal acertoTotal}}</span>
+            <span class="epm-ataque-dano" data-tooltip="{{this.danoDica}}" data-tooltip-class="epm-dica-tooltip">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}{{#if danoMult}} <strong>×{{this.danoMult}}</strong>{{/if}}</span>
             <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="custom" data-ref="{{this.id}}">Atacar</button>
             {{#if @root.edicao}}
             <div class="epm-ataque-campos">
               <label class="epm-mini largo"><span>nome</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.nome" value="{{this.nome}}" /></label>
               <label class="epm-mini"><span>perícia</span><select name="flags.epm-ficha.ataques.{{this.id}}.pericia">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
               <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.ataques.{{this.id}}.bonusAcerto" value="{{this.bonusAcerto}}" /></label>
-              <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8 + @atr.forca" /></label>
+              <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8 + @for" /></label>
               <label class="epm-mini"><span>tipo</span><input type="text" name="flags.epm-ficha.ataques.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-sug-dano-{{@root.actor.id}}" placeholder="Cortante" /></label>
               <label class="epm-mini"><span>margem</span><input type="number" min="2" max="20" name="flags.epm-ficha.ataques.{{this.id}}.critMargem" value="{{this.critMargem}}" /></label>
               <label class="epm-mini"><span>×crítico</span><input type="number" min="2" name="flags.epm-ficha.ataques.{{this.id}}.critMult" value="{{this.critMult}}" /></label>

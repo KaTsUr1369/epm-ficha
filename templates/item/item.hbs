@@ -17,6 +17,7 @@
       <label class="epm-campo"><span>Quantidade</span><input type="number" min="0" name="system.quantity" value="{{this.quantidade}}" /></label>
       <label class="epm-campo"><span>Peso (cada)</span><input type="number" min="0" step="any" name="system.weight.value" value="{{this.peso}}" /></label>
       <label class="epm-campo"><span>Preço</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.preco.valor" value="{{preco.valor}}" /><select name="flags.epm-ficha.preco.moeda">{{#each preco.moedas}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
+      {{#if eArmadura}}<label class="epm-campo" title="Em qual categoria do inventário o item fica (vestimentas e acessórios não contam como proteção)"><span>Categoria</span><select name="system.type.value">{{#each opcoesEquip}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
       {{#if eArmadura}}<label class="epm-campo" title="Soma em Armaduras e escudos, na CA, quando equipado"><span>CA de armadura ou escudo</span><input type="number" name="flags.epm-ficha.armadura" value="{{this.armadura}}" /></label>{{/if}}
       {{#if duravel}}<label class="epm-campo" title="0 a 100. Falha crítica com a arma ou crítico sofrido tiram 10; em 0 fica Quebrado e perde os efeitos até ser consertado"><span>Durabilidade</span><input type="number" min="0" max="100" name="flags.epm-ficha.durabilidade" value="{{durabilidade}}" /></label>{{/if}}
       {{#if eConsumivel}}<label class="epm-campo largo"><span>Rolagem ao usar</span><input type="text" name="flags.epm-ficha.formula" value="{{this.formulaUso}}" placeholder="2d4 + 2" /></label>{{/if}}
@@ -34,7 +35,8 @@
     <div class="epm-item-editor-campos">
       <label class="epm-campo"><span>Perícia de ataque</span><select name="flags.epm-ficha.periciaAtaque">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
       <label class="epm-campo"><span>Bônus de acerto</span><input type="number" name="flags.epm-ficha.bonusAcerto" value="{{ataque.bonusAcerto}}" /></label>
-      <label class="epm-campo"><span>Dano</span><input type="text" name="flags.epm-ficha.dano" value="{{ataque.dano}}" placeholder="2d10 + @atr.forca" /></label>
+      <label class="epm-campo"><span>Dano</span><input type="text" name="flags.epm-ficha.dano" value="{{ataque.dano}}" placeholder="2d10" /></label>
+      <label class="epm-campo" title="O valor do atributo é somado ao dano em todo ataque com esta arma (e nos modos extras)"><span>Somar atributo no dano</span><select name="flags.epm-ficha.atributoDano">{{#each opcoesAtributoDano}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <label class="epm-campo" title="Arma Favorita do Combatente vale para todas as armas deste tipo"><span>Tipo de arma</span><input type="text" name="flags.epm-ficha.tipoArma" value="{{tipoArma}}" list="epm-item-sug-tipo-arma" placeholder="Espada longa, Pistola…" /><datalist id="epm-item-sug-tipo-arma">{{#each sugestoesTipoArma}}<option value="{{this}}"></option>{{/each}}</datalist></label>
       <label class="epm-campo"><span>Tipo de dano</span><input type="text" name="flags.epm-ficha.tipoDano" value="{{ataque.tipoDano}}" list="epm-item-sug-dano" placeholder="Cortante" /></label>
       <label class="epm-campo" title="Menor resultado no d20 que conta como crítico"><span>Margem de crítico</span><input type="number" min="2" max="20" name="flags.epm-ficha.critMargem" value="{{ataque.critMargem}}" /></label>
@@ -73,7 +75,7 @@
       {{#each modosArma}}
       <div class="epm-modo-linha">
         <label class="epm-mini"><span>nome</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Cabo" /></label>
-        <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d4 + @atr.forca" /></label>
+        <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d4 + @for" /></label>
         <label class="epm-mini"><span>tipo de dano</span><input type="text" name="flags.epm-ficha.modos.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-item-sug-dano" placeholder="Contundente" /></label>
         <label class="epm-mini"><span>perícia</span><select name="flags.epm-ficha.modos.{{this.id}}.pericia">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
         <label class="epm-mini curto"><span>acerto</span><input type="number" name="flags.epm-ficha.modos.{{this.id}}.bonusAcerto" value="{{this.bonusTexto}}" placeholder="—" /></label>
@@ -82,7 +84,7 @@
       {{/each}}
       <button type="button" class="epm-botao epm-botao-sutil" data-action="novoModo"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modo de ataque</button>
     </div>
-    <p class="epm-dica">Fórmulas aceitam @atr.forca, @atr.destreza, @per.luta, @nivel…</p>
+    <p class="epm-dica">Fórmulas aceitam os atalhos @for, @des, @con, @apa, @car, @int, @aut, @nuc (valor final do atributo), além de @per.luta, @nivel…</p>
   </section>
   {{/if}}
 
@@ -90,7 +92,14 @@
   <section class="epm-painel epm-060-item-notion">
     <header class="epm-painel-titulo"><h3>{{#if notion060.eUso}}Tecnologia{{else}}Notion{{/if}}</h3><span class="epm-dica">{{#if notion060.eUso}}Região, nível e complexidade{{else}}Propriedades, região e tecnologia{{/if}}</span></header>
     <div class="epm-item-editor-campos">
-      {{#unless notion060.eUso}}<label class="epm-campo largo" title="Separe por vírgula. A ficha mostra o que cada uma faz."><span>Propriedades</span><input type="text" name="flags.epm-ficha.propriedadesTexto" value="{{notion060.propriedadesTexto}}" list="epm-item-sug-prop" placeholder="Acuidade, Pesada, Duas mãos" /><datalist id="epm-item-sug-prop">{{#each notion060.sugestoesPropriedade}}<option value="{{this}}"></option>{{/each}}</datalist></label>{{/unless}}
+      {{#unless notion060.eUso}}<div class="epm-campo largo epm-props-editor"><span>{{notion060.rotuloPropriedades}}</span>
+        <div class="epm-props-chips">{{#each notion060.propriedades}}<span class="epm-chip" title="{{this.texto}}">{{this.nome}}{{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="removerPropriedade" data-nome="{{this.nome}}" title="Tirar {{this.nome}}" aria-label="Tirar {{this.nome}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{else}}<span class="epm-dica">Nenhuma</span>{{/each}}</div>
+        {{#if @root.editavel}}<div class="epm-props-adicionar">
+          <select data-nova-propriedade aria-label="Propriedade para adicionar"><option value="">Escolher propriedade…</option>{{#each notion060.opcoesPropriedade}}<option value="{{this.nome}}" title="{{this.dica}}">{{this.label}}</option>{{/each}}</select>
+          <input type="text" data-propriedade-livre placeholder="ou escreva outra" aria-label="Outra propriedade" />
+          <button type="button" class="epm-botao epm-botao-mini" data-action="adicionarPropriedade"><i class="fa-solid fa-plus"></i> Adicionar</button>
+        </div>{{/if}}
+      </div>{{/unless}}
       <label class="epm-campo"><span>Região</span><select name="flags.epm-ficha.regiao">{{#each notion060.regioes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <label class="epm-campo" title="1 Umbra'Draxil, 2 Briavoterna, 3 Genesis (vem da região se ficar 0). Acima do nível do personagem: arma ou item de usar com desvantagem (2 acima: −5); armadura ou escudo com −2/−5 na CA e sem as propriedades especiais. 0 = sem tecnologia."><span>Nível de tecnologia</span><input type="number" min="0" max="3" name="flags.epm-ficha.nivelTec" value="{{notion060.nivelTec}}" /></label>
       {{#unless notion060.eArmadura}}<label class="epm-check" title="2 níveis acima do personagem: antes do primeiro uso, teste de Tecnologia DT 20"><input type="checkbox" name="flags.epm-ficha.complexo" {{epmChecked notion060.complexo}} /> Complexo{{#if notion060.tecEntendido}} <span class="epm-dica">(o dono já entendeu)</span>{{/if}}</label>{{/unless}}
@@ -102,7 +111,7 @@
       <label class="epm-campo" title="Título da arma (ganho por feitos)"><span>Título da arma</span><input type="text" name="flags.epm-ficha.titulo" value="{{notion060.titulo}}" placeholder="A que Partiu o Céu" /></label>
       {{/if}}
     </div>
-    {{#if notion060.propriedades.length}}<ul class="epm-060-lista">{{#each notion060.propriedades}}<li><strong>{{this.nome}}</strong>{{#if texto}}: {{this.texto}}{{/if}}</li>{{/each}}</ul>{{/if}}
+    {{#if notion060.propriedades.length}}<ul class="epm-060-lista">{{#each notion060.propriedades}}<li><strong>{{this.nome}}</strong>{{#if tipo}} <em>({{this.tipo}})</em>{{/if}}{{#if texto}}: {{this.texto}}{{/if}}</li>{{/each}}</ul>{{/if}}
   </section>
   {{/if}}
 

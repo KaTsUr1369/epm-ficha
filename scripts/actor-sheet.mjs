@@ -49,8 +49,8 @@ const ACOES_FICHA = [
   "converter", "subirNivel", "moedas", "filtroRaridade",
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
   "usarItem", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
-  "abrirMochila", "tirarDaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
-  "novoPoder", "usarPoder", "magiaConjunta", "editarPoder", "duplicarPoder",
+  "abrirMochila", "tirarDaMochila", "moverItemPara", "moverNaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
+  "novoPoder", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
   "alternarCondicao", "soAtivas", "aplicarCombinacao", "removerCombinacao", "removerTag", "removerIdioma",
   "novaBencao", "excluirBencao", "adicionarMod", "removerMod", "abrirCatalogo", "tipoCatalogo", "adicionarDoCatalogo",
@@ -444,6 +444,16 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (alvo.closest?.(".epm-mapa")) { ev.stopPropagation(); return; }
     if (alvo.dataset?.recursoValor) { ev.stopPropagation(); return this._mudarRecurso(alvo); }
     if (alvo.dataset?.itemCampo) { ev.stopPropagation(); return this._mudarCampoItem(alvo); }
+    if (alvo.dataset?.mochilaOrganizar) {
+      ev.stopPropagation();
+      const mochila = this.actor.items.get(alvo.dataset.mochilaOrganizar);
+      if (!mochila) return;
+      // Ao passar para "do meu jeito", começa da ordem que está na tela
+      const atual = [...(this.element?.querySelectorAll(`.epm-mochila-conteudo[data-container-id="${mochila.id}"] li.epm-item[data-item-id]`) ?? [])].map(li => li.dataset.itemId);
+      const upd = { [`${P}.organizarConteudo`]: alvo.value };
+      if (alvo.value === "manual" && !(mochila.flags?.[FLAG]?.ordemConteudo ?? []).length) upd[`${P}.ordemConteudo`] = atual;
+      return mochila.update(upd);
+    }
     if (alvo.dataset?.tagCampo) { ev.stopPropagation(); return this._adicionarTag(alvo); }
     if (alvo.dataset?.idiomaInput) { ev.stopPropagation(); return this._adicionarIdioma(alvo); }
     if (alvo.dataset?.selecionarPoder) { ev.stopPropagation(); return this._marcarPoder(alvo.dataset.selecionarPoder, alvo.checked); }
@@ -725,7 +735,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const antes = ev.clientY < caixa.top + caixa.height / 2;
     const ids = eAba ? ABAS.map(a => a.id) : CATEGORIAS_ITEM.map(c => c.id);
     const salvo = eAba ? this.actor.flags?.[FLAG]?.ui?.ordemAbas : this.actor.flags?.[FLAG]?.ui?.ordemCategorias;
-    const atual = ordenarPorLista(ids, salvo);
+    const atual = ordenarPorLista(ids, salvo, { aposVizinho: !eAba });
     const semId = atual.filter(x => x !== id);
     const i = semId.indexOf(alvoId);
     const antesDe = antes ? alvoId : (semId[i + 1] ?? null);
@@ -757,9 +767,18 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (item.parent?.uuid === this.actor.uuid) {
       if (mochila && mochila.id !== item.id) {
         if (CATEGORIA_MOCHILAS.tipos.includes(item.type)) return ui.notifications.info("Mochilas não vão dentro de outras mochilas nesta ficha.");
-        if (item.system?.container === mochila.id) return;
-        await item.update({ "system.container": mochila.id });
-        return ui.notifications.info(`${item.name} foi para ${mochila.name}.`);
+        // Solto em cima de outro item da mochila: muda a ordem (antes ou depois dele); vindo de fora, já entra ali
+        const alvoLi = event?.target?.closest?.(".epm-mochila-conteudo li.epm-item[data-item-id]");
+        const alvoId = alvoLi && alvoLi.dataset.itemId !== item.id ? alvoLi.dataset.itemId : null;
+        if (item.system?.container !== mochila.id) {
+          await item.update({ "system.container": mochila.id });
+          ui.notifications.info(`${item.name} foi para ${mochila.name}.`);
+          if (!alvoId) return;
+        }
+        if (!alvoId) return;
+        const caixa = alvoLi.getBoundingClientRect();
+        const depois = event.clientY > caixa.top + caixa.height / 2;
+        return this._reordenarMochila(mochila, item.id, alvoId, depois);
       }
       if (!mochila && item.system?.container && event?.target?.closest?.('[data-zona-inventario="geral"]')) {
         return item.update({ "system.container": null });
@@ -775,10 +794,37 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       return ui.notifications.warn(`Itens do tipo "${item.type}" não são usados na ficha EPM.`);
     }
     if (item.type === "feat" || item.type === "spell") return M.aprenderPorArraste(this.actor, item);
+    // Consumível ou material do catálogo que a ficha já tem: soma na quantidade
+    const cat = item.flags?.[FLAG]?.catalogo;
+    const igual = cat && ["consumable", "loot"].includes(item.type) ? this.actor.items.find(i => i.flags?.[FLAG]?.catalogo === cat) : null;
+    if (igual) {
+      await igual.update({ "system.quantity": (Number(igual.system?.quantity) || 0) + Math.max(1, Number(item.system?.quantity) || 1) });
+      return ui.notifications.info(`${item.name}: quantidade somada.`);
+    }
     const data = item.toObject();
     for (const k of ["_id", "folder", "sort", "ownership", "_stats"]) delete data[k];
     if (data.system) data.system.container = mochila && !CATEGORIA_MOCHILAS.tipos.includes(item.type) ? mochila.id : null;
     return this.actor.createEmbeddedDocuments("Item", [data]);
+  }
+
+  /** Ordem manual dos itens dentro da mochila (flags.ordemConteudo da mochila). */
+  async _reordenarMochila(mochila, id, alvoId, depois = false) {
+    const lista = [...(this.element?.querySelectorAll(`.epm-mochila-conteudo[data-container-id="${mochila.id}"] li.epm-item[data-item-id]`) ?? [])].map(li => li.dataset.itemId);
+    const ordem = lista.filter(x => x !== id);
+    const i = ordem.indexOf(alvoId);
+    ordem.splice(i < 0 ? ordem.length : i + (depois ? 1 : 0), 0, id);
+    await mochila.update({ [`${P}.ordemConteudo`]: ordem, [`${P}.organizarConteudo`]: "manual" });
+  }
+
+  async acaoMoverNaMochila(ev, alvo) {
+    const item = this._item(alvo);
+    const mochila = item ? this.actor.items.get(item.system?.container) : null;
+    if (!mochila) return;
+    const lista = [...(this.element?.querySelectorAll(`.epm-mochila-conteudo[data-container-id="${mochila.id}"] li.epm-item[data-item-id]`) ?? [])].map(li => li.dataset.itemId);
+    const i = lista.indexOf(item.id), j = i + int(alvo.dataset.dir);
+    if (i < 0 || j < 0 || j >= lista.length) return;
+    [lista[i], lista[j]] = [lista[j], lista[i]];
+    await mochila.update({ [`${P}.ordemConteudo`]: lista, [`${P}.organizarConteudo`]: "manual" });
   }
 
   async _soltarAtor(dados) {
@@ -1035,7 +1081,9 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   async acaoCriarItem(ev, alvo) {
-    const [item] = await this.actor.createEmbeddedDocuments("Item", [{ name: alvo.dataset.nome || "Novo item", type: alvo.dataset.tipo }]);
+    const dados = { name: alvo.dataset.nome || "Novo item", type: alvo.dataset.tipo };
+    if (alvo.dataset.subtipo) dados.system = { type: { value: alvo.dataset.subtipo } };
+    const [item] = await this.actor.createEmbeddedDocuments("Item", [dados]);
     item?.sheet?.render(true);
   }
 
@@ -1107,13 +1155,17 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this.render({ parts: ["inventario"] });
   }
 
+  acaoMoverItemPara(ev, alvo) {
+    return Sel.moverItemPara(this.actor, this._item(alvo));
+  }
+
   async acaoTirarDaMochila(ev, alvo) {
     const item = this._item(alvo);
     if (item) await item.update({ "system.container": null });
   }
 
   async acaoMoverCategoria(ev, alvo) {
-    const atual = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), this.actor.flags?.[FLAG]?.ui?.ordemCategorias);
+    const atual = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), this.actor.flags?.[FLAG]?.ui?.ordemCategorias, { aposVizinho: true });
     const i = atual.indexOf(alvo.dataset.categoria);
     const j = i + int(alvo.dataset.dir);
     if (i < 0 || j < 0 || j >= atual.length) return;
@@ -1191,6 +1243,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoUsarPoder(ev, alvo) {
     const item = this._item(alvo);
     if (item) return M.usarPoder(this.actor, item, { evento: ev });
+  }
+  acaoAlternarHabilidade(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) return M.alternarHabilidade(this.actor, item);
   }
   acaoMagiaConjunta(ev, alvo) {
     const item = this._item(alvo);

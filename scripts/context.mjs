@@ -4,9 +4,9 @@
  * O que depende do Foundry (lista de idiomas, outros atores) chega já resolvido pela ficha.
  */
 import {
-  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
-  ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
-  AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
+  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
+  ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, itemNaCategoria, eVestimenta, TIPOS_VESTIMENTA, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
+  AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, ESCOLHAS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, PERICIAS_RESISTENCIA, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
   CATEGORIAS_CONDICAO, CATEGORIA_NOTION, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
   CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO,
@@ -26,11 +26,12 @@ import {
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
 import { conteudoNotion } from "./settings.mjs";
-import { regrasLigadas, danoAcumulos } from "./opcionais.mjs";
+import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse } from "./regras-extras.mjs";
 import { idClasse, nivelTecPersonagem } from "./ficha-extras.mjs";
+import { PROPRIEDADES_PROTECAO } from "./itens-catalogo.mjs";
 import { penalidadeTec, NOMES_REGIAO } from "./tecnologia.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
@@ -57,6 +58,8 @@ export function sugestoesDano() {
 export function dadosRolagemEPM(ficha) {
   return {
     atr: Object.fromEntries(Object.values(ficha.atributos).map(a => [a.id, a.total])),
+    // Atalhos (@for, @des, @con, @apa, @car, @int, @aut, @nuc)
+    ...Object.fromEntries(Object.entries(ATALHOS_ATRIBUTO).map(([atalho, id]) => [atalho, ficha.atributos[id]?.total ?? 0])),
     per: Object.fromEntries(ficha.pericias.map(p => [p.id, p.total])),
     nivel: ficha.nivelTotal,
     ca: ficha.ca.total,
@@ -132,6 +135,14 @@ export function periciaAtaquePadrao(item) {
 /*  Ataques                                     */
 /* -------------------------------------------- */
 
+/** Soma o atributo escolhido no editor da arma ("Somar atributo no dano") à fórmula. */
+export function comAtributo(formula, atributo) {
+  if (!atributo || !ATRIBUTOS[atributo] || !String(formula ?? "").trim()) return formula ?? "";
+  const atalho = Object.entries(ATALHOS_ATRIBUTO).find(([, id]) => id === atributo)?.[0];
+  if (String(formula).includes(`@atr.${atributo}`) || (atalho && new RegExp(`@${atalho}(?![\\w.])`).test(String(formula)))) return formula;
+  return `${formula} + @atr.${atributo}`;
+}
+
 /** Modos de ataque extras da arma (ex.: lança: ponta perfurante, cabo contundente). */
 export function modosDaArma(item) {
   const f = item?.flags?.[FLAG] ?? {};
@@ -155,7 +166,7 @@ export function ataqueDeArma(item, modoId = "") {
   const modos = modosDaArma(item);
   const base = {
     tipo: "arma", id: item.id, ref: item.id, nome: item.name, img: item.img,
-    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: danoArma(item), tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""), desarmado: !!f.contaDesarmado, desarmadoAmbos: !!f.contaDesarmado && f.desarmadoBonus === "ambos",
+    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: comAtributo(danoArma(item), f.atributoDano), atributoDano: ATRIBUTOS[f.atributoDano] ? f.atributoDano : "", tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""), desarmado: !!f.contaDesarmado, desarmadoAmbos: !!f.contaDesarmado && f.desarmadoBonus === "ambos",
     critMargem: limitar(int(f.critMargem, margemNativa), 2, 20), critMult: Math.max(2, int(f.critMult, CRITICO_PADRAO.mult)),
     equipado: !!item?.system?.equipped,
     danoExtra: efeitos.filter(e => e.tipo === "danoExtra" && e.formula).map(e => ({ formula: e.formula, tipo: e.tipoDano })),
@@ -172,7 +183,7 @@ export function ataqueDeArma(item, modoId = "") {
   return {
     ...base, ref: `${item.id}:${m.id}`, modo: m.id,
     nome: `${item.name} · ${m.nome || m.tipoDano || "modo"}`, modoLabel: m.nome || m.tipoDano || "modo",
-    dano: m.dano || base.dano, tipoDano: m.tipoDano,
+    dano: m.dano ? comAtributo(m.dano, f.atributoDano) : base.dano, tipoDano: m.tipoDano,
     periciaId: m.pericia || base.periciaId,
     bonusAcerto: m.bonusAcerto ?? base.bonusAcerto,
     critMargem: m.critMargem ? limitar(m.critMargem, 2, 20) : base.critMargem,
@@ -237,6 +248,97 @@ export function modsDoAtaque(at, ficha) {
   };
 }
 
+/** Texto do dano para mostrar: tira os "+ 0" (atributo zerado, bônus vazio) e arruma os sinais. */
+export function limparFormulaTexto(f) {
+  return String(f ?? "")
+    .replace(/\s*\+\s*0(?![\d.d])(\[[^\]]*\])?/g, "")
+    .replace(/^\s*0\s*\+\s*/, "")
+    .replace(/\s*\+\s*/g, " + ").replace(/\+ -/g, "− ").replace(/\s+/g, " ").trim();
+}
+
+/** Separa uma fórmula nos termos de primeiro nível ("2d10 + @atr.forca - 1" → ["2d10", "+@atr.forca", "-1"]). */
+export function termosFormula(formula) {
+  const out = [];
+  let atual = "", nivel = 0;
+  for (const ch of String(formula ?? "")) {
+    if ("([{".includes(ch)) nivel++;
+    if (")]}".includes(ch)) nivel = Math.max(0, nivel - 1);
+    if (nivel === 0 && (ch === "+" || ch === "-") && atual.trim()) { out.push(atual.trim()); atual = ch; continue; }
+    atual += ch;
+  }
+  if (atual.trim()) out.push(atual.trim());
+  return out.map(t => t.replace(/^\+\s*/, "").replace(/^-\s*/, "-")).filter(t => t && t !== "-");
+}
+
+/** Nome de uma referência (@atr.forca → "Força", @per.luta → "Luta", @nivel → "Nível"). */
+function nomeReferencia(caminho, ficha) {
+  const [grupo, id] = String(caminho).split(".");
+  if (grupo === "atr") return ATRIBUTOS[id]?.label ?? id;
+  if (ATALHOS_ATRIBUTO[grupo] && !id) return ATRIBUTOS[ATALHOS_ATRIBUTO[grupo]].label;
+  if (grupo === "per") return ficha.periciaPorId?.[id]?.nome ?? id;
+  return { nivel: "Nível", ca: "CA", cd: "CD", pv: "PV atuais", pm: "Mana atual", pe: "Estamina atual", ps: "Sanidade atual" }[grupo] ?? caminho;
+}
+
+/**
+ * Linhas "de onde vem" de uma fórmula: cada termo com o valor já resolvido e a fonte.
+ * Termos com @referência levam o nome dela (ex.: "+4 · Força"); termos que dão 0 somem.
+ */
+export function linhasDaFormula(formula, fonte, ficha, { rotuloRef = n => n } = {}) {
+  const linhas = [];
+  for (const termo of termosFormula(formula)) {
+    const ref = termo.match(/@([\w.]+)/);
+    const valor = limparFormulaTexto(resolverReferencias(termo, ficha));
+    if (!valor || /^-?0(\[[^\]]*\])?$/.test(valor)) continue;
+    linhas.push({ valor: /^[-−]/.test(valor) ? valor.replace(/^-/, "−") : `+${valor}`, fonte: ref ? rotuloRef(nomeReferencia(ref[1], ficha)) : fonte });
+  }
+  if (linhas[0]) linhas[0].valor = linhas[0].valor.replace(/^\+/, "");
+  return linhas;
+}
+
+/** Tooltip (HTML) com um título e as linhas valor · fonte. */
+export function dicaHtml(titulo, linhas, rodape = "") {
+  if (!linhas.length && !rodape) return titulo;
+  const esc = t => String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const corpo = linhas.map(l => `<tr><td class="v">${esc(l.valor)}</td><td>${esc(l.fonte)}</td></tr>`).join("");
+  return `<div class="epm-dica-detalhe"><strong>${esc(titulo)}</strong>${corpo ? `<table>${corpo}</table>` : ""}${rodape ? `<p>${esc(rodape)}</p>` : ""}</div>`;
+}
+
+/** De onde vem cada parte do dano de um ataque. */
+export function detalharDano(at, ficha, cena) {
+  const m = modsDoAtaque(at, ficha);
+  const g = ficha.ataquesGerais;
+  const ex = ficha.extrasAtaque ?? {};
+  const linhas = [];
+  const atrSomado = at.atributoDano ? ATRIBUTOS[at.atributoDano]?.label : "";
+  linhas.push(...linhasDaFormula(at.dano, at.tipo === "arma" ? `Dano da arma (${at.nome})` : `Dano do ataque (${at.nome})`, ficha,
+    { rotuloRef: n => (atrSomado && n === atrSomado ? `${n} (atributo somado no dano)` : n) }));
+  const cenaFontes = cena.danoFontes ?? cena.dano.map(f => ({ formula: f, fonte: "Bônus de cena" }));
+  for (const c of cenaFontes) linhas.push(...linhasDaFormula(c.formula, `Bônus de cena: ${c.fonte}`, ficha));
+  for (const x of g.danoExtra ?? []) linhas.push(...linhasDaFormula(x.formula, x.fonte || "Efeito", ficha));
+  for (const x of at.danoExtra ?? []) linhas.push(...linhasDaFormula(`${x.formula}${x.tipo && !/\[/.test(x.formula) ? `[${x.tipo}]` : ""}`, `Efeito de ${at.nome}`, ficha));
+  const desarmado = ataqueDesarmado(at);
+  const cac = !ataqueADistancia(at);
+  const usaArmado = cac && (!desarmado || !!at?.desarmadoAmbos);
+  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : []), ...(ex.todos ?? [])];
+  for (const x of extras) linhas.push(...linhasDaFormula(x.formula, x.fonte || "Bônus", ficha));
+  for (const f of m.danoFontes ?? []) if (int(f.valor)) linhas.push({ valor: `${f.valor > 0 ? "+" : "−"}${Math.abs(f.valor)}`, fonte: comExplicacao(f.fonte) });
+  if (linhas[0]) linhas[0].valor = linhas[0].valor.replace(/^\+/, "");
+  const rodape = m.danoMult > 1 ? `×${m.danoMult} no total (${(g.danoMult.fontes ?? []).join(", ")})` : "";
+  return dicaHtml("Dano", linhas, rodape);
+}
+
+/** De onde vem o bônus de acerto. */
+export function detalharAcerto(at, ficha, cena) {
+  const per = ficha.periciaPorId[at.periciaId];
+  const m = modsDoAtaque(at, ficha);
+  const linhas = [{ valor: sinal(per?.total ?? 0), fonte: `Perícia ${per?.nome ?? "—"}` }];
+  if (at.bonusAcerto) linhas.push({ valor: sinal(at.bonusAcerto), fonte: at.tipo === "arma" ? `Bônus da arma (${at.nome})` : "Bônus do ataque" });
+  for (const c of cena.acertoFontes ?? []) if (c.valor) linhas.push({ valor: sinal(c.valor), fonte: `Bônus de cena: ${c.fonte}` });
+  if (!cena.acertoFontes && cena.acerto) linhas.push({ valor: sinal(cena.acerto), fonte: "Bônus de cena" });
+  for (const f of m.acertoFontes ?? []) if (int(f.valor)) linhas.push({ valor: sinal(int(f.valor)), fonte: comExplicacao(f.fonte) });
+  return dicaHtml("Acerto", linhas);
+}
+
 export function resumoAtaque(at, ficha, cena) {
   const per = ficha.periciaPorId[at.periciaId];
   const m = modsDoAtaque(at, ficha);
@@ -247,7 +349,9 @@ export function resumoAtaque(at, ficha, cena) {
     periciaNome: per?.nome ?? "sem perícia",
     acertoTotal: (per?.total ?? 0) + at.bonusAcerto + cena.acerto + m.acerto,
     acertoMods: m.acerto, acertoModsTexto: fontesTexto(m.acertoFontes),
-    danoTexto: partesDano.join(" + ").replace(/\+ -/g, "− "),
+    danoTexto: limparFormulaTexto(partesDano.join(" + ")),
+    danoDica: (() => { try { return detalharDano(at, ficha, cena); } catch (err) { console.warn("EPM |", err); return "Dano"; } })(),
+    acertoDica: (() => { try { return detalharAcerto(at, ficha, cena); } catch (err) { console.warn("EPM |", err); return "Bônus de acerto"; } })(),
     danoBase: at.dano ? resolverReferencias(at.dano, ficha).replace(/\+ -/g, "− ") : "",
     danoMult: m.danoMult > 1 ? m.danoMult : 0,
     critTexto: textoCritico(at.critMargem, at.critMult),
@@ -742,7 +846,15 @@ export function montarContexto({
   ctx.estadoPericias = estadoPontos(ficha.pontosPericia.restante);
   const badge = (valor, fontes) => (valor ? { valor, texto: sinal(valor), tipo: valor < 0 ? "penal" : "bonus", fontesTexto: fontesTexto(fontes) } : null);
   ctx.gruposAtributo = ficha.gruposAtributo.map(g => ({
-    ...g, atributos: g.atributos.map(a => ({ ...a, fontesTexto: fontesTexto(a.fontes), teste: badge(a.testeMod, a.testeFontes) }))
+    ...g, atributos: g.atributos.map(a => ({
+      ...a, fontesTexto: fontesTexto(a.fontes), teste: badge(a.testeMod, a.testeFontes),
+      dica: dicaHtml(a.label, [
+        { valor: sinal(a.base), fonte: "Base" },
+        ...(a.raca ? [{ valor: sinal(a.raca), fonte: "Raça" }] : []), ...(a.aumento ? [{ valor: sinal(a.aumento), fonte: "Aumentos" }] : []),
+        ...(a.outros ? [{ valor: sinal(a.outros), fonte: "Outros" }] : []),
+        ...(a.fontes ?? []).filter(f => int(f.valor)).map(f => ({ valor: sinal(int(f.valor)), fonte: comExplicacao(f.fonte) }))
+      ], a.testeMod ? `Nos testes: ${sinal(a.testeMod)} (${(a.testeFontes ?? []).map(f => f.fonte).join(", ")})` : "")
+    }))
   }));
   const favoritasTopo = !!dados.ui?.periciasFavoritasTopo;
   ctx.periciasFavoritasTopo = favoritasTopo;
@@ -750,6 +862,12 @@ export function montarContexto({
     ...p,
     favorita: !!dados.pericias?.[p.id]?.favorita,
     fontesTexto: fontesTexto(p.fontes),
+    dica: dicaHtml(p.nome, [
+      ...p.atributos.map(id => ({ valor: sinal(ficha.atributos[id]?.total ?? 0), fonte: ATRIBUTOS[id]?.label ?? id })),
+      ...(p.pontos ? [{ valor: sinal(p.pontos), fonte: "Pontos de perícia" }] : []),
+      ...(p.outros ? [{ valor: sinal(p.outros), fonte: "Outros" }] : []),
+      ...(p.fontes ?? []).filter(f => int(f.valor)).map(f => ({ valor: sinal(int(f.valor)), fonte: comExplicacao(f.fonte) }))
+    ], p.testeMod ? `Nos testes: ${sinal(p.testeMod)} (${(p.testeFontes ?? []).map(f => f.fonte).join(", ")})` : ""),
     teste: badge(p.testeMod, p.testeFontes),
     desvantagemTexto: p.desvantagem.join(", "), vantagemTexto: p.vantagem.join(", "), bloqueadaTexto: p.bloqueada.join(", "),
     chips: Object.entries(ATRIBUTOS).map(([id, a]) => ({
@@ -926,7 +1044,9 @@ export function montarContexto({
         id: fo.id, nome: fo.nome, acao: fo.acao, acaoLabel: ACOES[fo.acao]?.curto ?? fo.acao,
         custoTexto: textoCusto(fo, av.custo.extra), bloqueada: av.bloqueada, motivosTexto: av.motivos.join(", "),
         semRecurso: av.semRecurso, excedeDano: av.excedeDano, excedeEfeitos: av.excedeEfeitos,
-        dano: fo.dano.formula, resistencia: fo.teste.tipo === "resistencia",
+        dano: fo.dano.formula ? limparFormulaTexto(resolverReferencias(fo.dano.formula, ficha)) : "",
+        danoDica: fo.dano.formula ? dicaHtml(`Dano (${fo.dano.formula})`, linhasDaFormula(fo.dano.formula, item.name, ficha)) : "",
+        resistencia: fo.teste.tipo === "resistencia",
         requisitos: Object.entries(fo.requisitos).filter(([, v]) => v).map(([k]) => REQUISITOS[k]?.label ?? k)
       };
     });
@@ -942,6 +1062,9 @@ export function montarContexto({
       raridade: p.raridade, raridadeLabel: r.label, raridadeCor: r.cor, elemento: item.flags?.[FLAG]?.elemento ?? "",
       passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: tNome ? `Transformação: ${tNome}` : (ORIGENS_HABILIDADE[p.origem] ?? ""), circulo: p.circulo,
       transformacao: tVinculo, arquetipoRef: p.arquetipoRef, classeRef: p.classeRef,
+      nivelHab: int(item.flags?.[FLAG]?.nivelHab, 1) > 1 ? int(item.flags[FLAG].nivelHab) : 0,
+      ativa: !!item.flags?.[FLAG]?.ativa || !!dados.sustentadas?.[item.id] || Object.values(dados.bonusCena ?? {}).some(b => b?.ativo && b.origem === item.id),
+      gatilho: (() => { const g = p.formas.find(f => f.bonus?.gatilho && f.bonus.gatilho !== "uso" && f.bonus.opcoes?.length)?.bonus.gatilho; return g ? GATILHOS_BONUS[g].replace(/ \(automático\)$/, "") : ""; })(),
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
       bloqueada: presaTransf || (formas.length > 0 && formas.every(f => f.bloqueada)),
       motivosTexto: [...new Set([...(presaTransf ? [`só transformado em ${tNome}`] : []), ...formas.filter(f => f.bloqueada).flatMap(f => f.motivosTexto.split(", "))])].filter(Boolean).join(", "),
@@ -1005,7 +1128,7 @@ export function montarContexto({
   ctx.selecao = { ativo: !!selecao.aba, aba: selecao.aba ?? "", qtd: [...selecao.ids].filter(id => poderes.some(p => p.id === id)).length };
   ctx.selecao.habilidades = selecao.aba === "habilidades";
   ctx.selecao.magias = selecao.aba === "magias";
-  ctx.opcoesOrigem = [{ id: "", label: "Geral" }, { id: "arquetipo", label: "Arquétipo" }, { id: "classe", label: "Classe" }, { id: "transformacao", label: "Transformação" }];
+  ctx.opcoesOrigem = [{ id: "", label: "Geral" }, { id: "arquetipo", label: "Arquétipo" }, { id: "classe", label: "Classe" }, { id: "transformacao", label: "Transformação" }, { id: "meme", label: "Meme" }];
 
   /* ---------- Transformações ---------- */
   {
@@ -1209,21 +1332,36 @@ export function montarContexto({
   const porNome = (a, b) => a.name.localeCompare(b.name, "pt-BR");
   ctx.mochilas = cadaSeguro(doInventario.filter(i => idsMochilas.has(i.id) && !estaDentro(i)), item => {
     const base = linhaItem(item);
-    const conteudo = cadaSeguro(dentro[item.id] ?? [], linhaItem, falhas).sort((a, b) => (b.favorito - a.favorito) || porNome(a, b));
+    // Organização da mochila: manual (arrastar ou setas), nome, raridade, peso ou tipo
+    const fm = item.flags?.[FLAG] ?? {};
+    const modo = ORGANIZAR_MOCHILA[fm.organizarConteudo] ? fm.organizarConteudo : "nome";
+    let conteudo = cadaSeguro(dentro[item.id] ?? [], x => ({ ...linhaItem(x), tipoItem: TIPOS_ITEM_LABEL[x.type] ?? x.type }), falhas);
+    const comparar = {
+      nome: (a, b) => (b.favorito - a.favorito) || porNome(a, b),
+      raridade: (a, b) => (b.raridadeOrdem - a.raridadeOrdem) || porNome(a, b),
+      peso: (a, b) => (b.pesoLinha - a.pesoLinha) || porNome(a, b),
+      tipo: (a, b) => String(a.tipoItem ?? "").localeCompare(String(b.tipoItem ?? ""), "pt-BR") || porNome(a, b)
+    };
+    if (modo === "manual") {
+      const pos = new Map((Array.isArray(fm.ordemConteudo) ? fm.ordemConteudo : []).map((id, i) => [id, i]));
+      conteudo = conteudo.sort((a, b) => (pos.get(a.id) ?? 9999) - (pos.get(b.id) ?? 9999) || porNome(a, b));
+    } else conteudo = conteudo.sort(comparar[modo]);
+    conteudo.forEach((x, i, l) => { x.naMochila = true; x.manual = modo === "manual"; x.primeiraM = i === 0; x.ultimaM = i === l.length - 1; });
     const capacidade = num(item.system?.capacity?.weight?.value ?? item.system?.capacity?.value, 0);
     const pesoDentro = arredondar(conteudo.reduce((s, x) => s + x.pesoLinha, 0), 2);
     return {
       ...base, conteudo, qtdDentro: conteudo.length, pesoDentro,
       moedas: moedasDaMochila(item), temMoedas: moedasDaMochila(item).length > 0,
       capacidade, cheia: capacidade > 0 && pesoDentro > capacidade,
+      organizar: Object.entries(ORGANIZAR_MOCHILA).map(([id, label]) => ({ id, label, selected: id === modo })), organizarAtual: modo,
       aberta: !(ui.mochilasFechadas ?? new Set()).has(item.id)
     };
   }, falhas).sort(porNome);
   ctx.temMochilas = ctx.mochilas.length > 0;
-  const ordemCategorias = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), dados.ui?.ordemCategorias);
+  const ordemCategorias = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), dados.ui?.ordemCategorias, { aposVizinho: true });
   ctx.categorias = ordemCategorias.map((id, indice) => {
     const cat = CATEGORIAS_ITEM.find(c => c.id === id);
-    const lista = cadaSeguro(doInventario.filter(i => cat.tipos.includes(tipoDe(i)) && !estaDentro(i)), linhaItem, falhas);
+    const lista = cadaSeguro(doInventario.filter(i => itemNaCategoria(cat, i, tipoDe(i)) && !estaDentro(i)), linhaItem, falhas);
     const visiveis = lista.filter(i => !filtro.size || filtro.has(i.raridade));
     const grupos = [];
     const favoritos = visiveis.filter(i => i.favorito).sort((a, b) => b.raridadeOrdem - a.raridadeOrdem || porNome(a, b));
@@ -1595,7 +1733,8 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
       tem: fo.bonus.opcoes.length > 0,
       dado: `d${fo.bonus.opcoes.length || 1}`,
       opcoesGatilho: Object.entries(GATILHOS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.gatilho })),
-      opcoesEscolha: [{ id: "escolher", label: "Escolhe na hora" }, { id: "rolar", label: "Rola o dado" }].map(x => ({ ...x, selected: x.id === fo.bonus.escolha })),
+      opcoesEscolha: Object.entries(ESCOLHAS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.escolha })),
+      automatico: fo.bonus.gatilho !== "uso",
       linhas: fo.bonus.opcoes.map((o, i) => ({
         ...o, n: i + 1, eRd: o.tipo === "rd",
         tipos: Object.entries(TIPOS_BONUS_SITUACIONAL).map(([id, t]) => ({ id, label: t.label, selected: id === o.tipo }))
@@ -1606,6 +1745,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
   return {
     item: { id: item.id, uuid: item.uuid, name: item.name, img: item.img, type: item.type },
     editavel, eMagia: p.tipo === "magia", dados: p,
+    nivelHab: { nivel: int(item.flags?.[FLAG]?.nivelHab, 1) || 1, phPorNivel: int(item.flags?.[FLAG]?.phPorNivel), ph: ficha?.pontos?.ph ?? null },
     raridadeCor: r.cor, raridadeLabel: r.label,
     limite: { danoMax: r.danoMax, efeitos: r.efeitos, limite: r.limite },
     cd: ficha ? ficha.cd : null, cdFormula: ficha?.cd?.formula ?? `${CD.base} + Núcleo + Arcanismo`,
@@ -1630,6 +1770,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
 /*  Editor de item EPM (janela própria)         */
 /* -------------------------------------------- */
 
+const ORGANIZAR_MOCHILA = { nome: "Nome (favoritos primeiro)", manual: "Do meu jeito (arrastar)", raridade: "Raridade", peso: "Peso", tipo: "Tipo" };
 const TIPOS_ITEM_LABEL = { weapon: "Arma", equipment: "Armadura, escudo ou equipamento", consumable: "Consumível", tool: "Ferramenta", loot: "Loot", container: "Mochila", backpack: "Mochila" };
 
 /** Moedas guardadas numa mochila (só as que têm quantidade). */
@@ -1644,7 +1785,7 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
   const tipo = item.type;
   const eMochila = CATEGORIA_MOCHILAS.tipos.includes(tipo);
   const eArma = tipo === "weapon";
-  const duravel = ["weapon", "equipment", "tool"].includes(tipo);
+  const duravel = ["weapon", "equipment", "tool"].includes(tipo) && regra("durabilidade");
   const durabilidade = duravel ? (item.flags?.[FLAG]?.durabilidade ?? 100) : null;
   const raridade = raridadeItem(item);
   const r = RARIDADES_ITEM[raridade];
@@ -1655,7 +1796,10 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     { id: "testes", label: "Todos os testes" }, { id: "ataques", label: "Ataques" }, { id: "iniciativa", label: "Iniciativa" },
     ...pericias.map(p => ({ id: `pericia.${p.id}`, label: p.nome }))
   ];
-  const ataque = eArma ? ataqueDeArma(item) : null;
+  // No editor, o campo Dano mostra a fórmula da arma (o atributo escolhido fica no seletor ao lado)
+  const ataque = eArma ? { ...ataqueDeArma(item), dano: danoArma(item) } : null;
+  const opcoesAtributoDano = [{ id: "", label: "Nenhum", selected: !ATRIBUTOS[f.atributoDano] },
+    ...Object.entries(ATRIBUTOS).map(([id, a]) => ({ id, label: a.label, selected: id === f.atributoDano }))];
   const efeitos = lerEfeitosItem(item).map(e => ({
     ...e,
     eMod: e.tipo === "mod", eRd: e.tipo === "rd", eTipoDano: ["resistencia", "imunidade", "vulnerabilidade", "danoExtra"].includes(e.tipo),
@@ -1674,12 +1818,24 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     quantidade: num(item.system?.quantity, 1), peso: num(item.system?.weight?.value ?? item.system?.weight, 0),
     equipavel: ["weapon", "equipment"].includes(tipo), equipado: !!item.system?.equipped,
     preco: { valor: num(preco.valor), moedas: MOEDAS.map(m => ({ id: m.id, label: m.label, selected: m.id === (preco.moeda ?? "po") })) },
-    eArma, duravel, durabilidade, ataque, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
+    eArma, duravel, durabilidade, ataque, opcoesAtributoDano, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
     modosArma: eArma ? modosDaArma(item).map(m => ({
       ...m, bonusTexto: m.bonusAcerto === null ? "" : m.bonusAcerto,
       opcoesPericia: [{ id: "", nome: "Igual à arma", selected: !m.pericia }, ...pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === m.pericia }))]
     })) : [],
     eArmadura: tipo === "equipment", armadura: int(f.armadura),
+    opcoesEquip: tipo === "equipment" ? (() => {
+      const atual = String(item.system?.type?.value ?? "");
+      const naoArmadura = ["shield", ...TIPOS_VESTIMENTA];
+      const protecao = naoArmadura.includes(atual) || !atual ? "light" : atual;
+      const acessorio = ["trinket", "ring", "rod", "wand"].includes(atual) ? atual : "trinket";
+      return [
+        { id: protecao, label: "Armadura", selected: !naoArmadura.includes(atual) },
+        { id: "shield", label: "Escudo", selected: atual === "shield" },
+        { id: "clothing", label: "Vestimenta", selected: atual === "clothing" },
+        { id: acessorio, label: "Acessório", selected: atual === acessorio && atual !== "clothing" && naoArmadura.includes(atual) && atual !== "shield" }
+      ];
+    })() : [],
     eConsumivel: tipo === "consumable", formulaUso: f.formula ?? "",
     eMochila, efeitos, temEfeitos: efeitos.length > 0,
     tiposEfeitoItem: Object.entries(TIPOS_EFEITO_ITEM).map(([id, t]) => ({ id, label: t.label, dica: t.dica ?? "" })),
@@ -1710,10 +1866,18 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
   // 0.6.0: propriedades, região e tecnologia, tipo de armadura, Estamina por turno, título e melhorias (base)
   if (eArma || ["equipment", "consumable", "tool"].includes(tipo)) {
     const props = listaPropriedades(f);
+    // Propriedades de arma só para armas; de proteção só para armaduras e escudos (as de escudo, só em escudo)
+    const eEscudo = tipo === "equipment" && (item.system?.type?.value === "shield" || /escudo|broquel/i.test(item.name ?? ""));
+    const dicionario = eArma ? Object.fromEntries(Object.entries(PROPRIEDADES_ARMA).map(([k, v]) => [k, { efeito: v }]))
+      : Object.fromEntries(Object.entries(PROPRIEDADES_PROTECAO).filter(([, v]) => eEscudo || !v.escudo));
     ctx.notion060 = {
       eUso: ["consumable", "tool"].includes(tipo), complexo: !!f.complexo, tecEntendido: !!f.tecEntendido,
-      propriedadesTexto: props.join(", "), propriedades: props.map(n => ({ nome: n, texto: PROPRIEDADES_ARMA[n] ?? "" })),
-      sugestoesPropriedade: Object.keys(PROPRIEDADES_ARMA),
+      propriedadesTexto: props.join(", "),
+      propriedades: props.map(n => ({ nome: n, texto: dicionario[n]?.efeito ?? PROPRIEDADES_ARMA[n] ?? PROPRIEDADES_PROTECAO[n]?.efeito ?? "", tipo: dicionario[n]?.tipo ?? "" })),
+      opcoesPropriedade: Object.entries(dicionario).filter(([n]) => !props.includes(n)).sort((a, b) => a[0].localeCompare(b[0], "pt-BR"))
+        .map(([n, v]) => ({ nome: n, label: `${n}${v.tipo ? ` (${v.tipo})` : ""}`, dica: v.efeito })),
+      rotuloPropriedades: eArma ? "Propriedades da arma" : eEscudo ? "Propriedades do escudo" : "Propriedades da proteção",
+      sugestoesPropriedade: Object.keys(dicionario),
       regioes: [{ id: "", label: "—", selected: !f.regiao }, ...Object.entries(REGIOES).map(([id, label]) => ({ id, label, selected: id === f.regiao }))],
       nivelTec: int(f.nivelTec) || ({ umbra: 1, briavoterna: 2, genesis: 3 }[f.regiao] ?? 0),
       eArmadura: tipo === "equipment",

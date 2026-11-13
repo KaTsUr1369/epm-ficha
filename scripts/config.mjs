@@ -23,6 +23,9 @@ export const ATRIBUTOS = {
   nucleo:       { label: "Núcleo",       abrev: "NUC", grupo: "mistico" }
 };
 
+/** Atalhos dos atributos nas fórmulas (1d8 + @for): valem o total final do atributo, já com penalidades. */
+export const ATALHOS_ATRIBUTO = { for: "forca", des: "destreza", con: "constituicao", apa: "aparencia", car: "carisma", int: "inteligencia", aut: "autocontrole", nuc: "nucleo" };
+
 export const GRUPOS_ATRIBUTO = {
   fisicos: "Físicos",
   sociais: "Sociais",
@@ -145,7 +148,8 @@ export const ORIGENS_HABILIDADE = {
   geral: "Geral",
   customizada: "Customizada",
   transformacao: "Transformação",
-  maestria: "Domínio"
+  maestria: "Domínio",
+  meme: "Meme"
 };
 
 export const CIRCULOS = [
@@ -324,10 +328,18 @@ export function alvosModificador(pericias = []) {
 export const CATEGORIAS_ITEM = [
   { id: "armas",       label: "Armas",       tipos: ["weapon"],               criar: "weapon",     novo: "Nova arma",        icone: "fa-solid fa-khanda" },
   { id: "consumiveis", label: "Consumíveis", tipos: ["consumable"],           criar: "consumable", novo: "Novo consumível",  icone: "fa-solid fa-flask" },
-  { id: "armaduras",   label: "Armaduras e escudos",   tipos: ["equipment"],            criar: "equipment",  novo: "Nova armadura ou escudo",    icone: "fa-solid fa-shield-halved" },
+  { id: "armaduras",   label: "Armaduras e escudos",   tipos: ["equipment"],            criar: "equipment",  novo: "Nova armadura ou escudo",    icone: "fa-solid fa-shield-halved", semVestimentas: true },
+  { id: "vestimentas", label: "Vestimentas e acessórios", tipos: ["equipment"], subtipo: "clothing", criar: "equipment", novo: "Nova vestimenta ou acessório", icone: "fa-solid fa-shirt", soVestimentas: true },
   { id: "ferramentas", label: "Ferramentas", tipos: ["tool"],                 criar: "tool",       novo: "Nova ferramenta",  icone: "fa-solid fa-screwdriver-wrench" },
   { id: "loot",        label: "Loot",        tipos: ["loot"],                 criar: "loot",       novo: "Novo loot",        icone: "fa-solid fa-gem" }
 ];
+/** Tipos de equipamento do D&D que contam como vestimenta ou acessório (roupa, bugiganga, anel, bastão, varinha). */
+export const TIPOS_VESTIMENTA = ["clothing", "trinket", "ring", "rod", "wand"];
+/** Vestimenta ou acessório: sem CA de armadura, fica em "Vestimentas e acessórios" no inventário. */
+export const eVestimenta = item => item?.type === "equipment" && TIPOS_VESTIMENTA.includes(item?.system?.type?.value);
+/** O item entra nesta categoria do inventário? */
+export const itemNaCategoria = (cat, item, tipo = item?.type) =>
+  cat.tipos.includes(tipo) && !(cat.semVestimentas && eVestimenta(item)) && !(cat.soVestimentas && !eVestimenta(item));
 export const CATEGORIA_MOCHILAS = { id: "mochilas", label: "Mochilas", tipos: ["container", "backpack"], criar: "container", novo: "Nova mochila", icone: "fa-solid fa-suitcase" };
 
 /**
@@ -533,7 +545,8 @@ export const SUBABAS_HABILIDADE = [
   { id: "raca",      label: "Raça",      origem: "raca" },
   { id: "arquetipo", label: "Arquétipo", origem: "arquetipo" },
   { id: "classe",    label: "Classe",    origem: "classe" },
-  { id: "transformacoes", label: "Transformações", origem: "transformacao" }
+  { id: "transformacoes", label: "Transformações", origem: "transformacao" },
+  { id: "meme",      label: "Memes",     origem: "meme" }
 ];
 /** Sub-abas que também aparecem na aba opcional Arquétipo e Classe. */
 export const SUBABAS_ARQCLASSE = ["arquetipo", "classe"];
@@ -630,9 +643,23 @@ export const TIPOS_BONUS_SITUACIONAL = {
   dano: { label: "Dano", texto: v => `+${v} de dano` },
   acerto: { label: "Acerto", texto: v => `+${v} no teste de ataque` },
   testes: { label: "Testes", texto: v => `+${v} em todos os testes` },
-  deslocamento: { label: "Deslocamento", texto: v => `+${v} m de deslocamento` }
+  deslocamento: { label: "Deslocamento", texto: v => `+${v} m de deslocamento` },
+  margem: { label: "Margem de ameaça", texto: v => `−${v} na margem de ameaça (crítico mais fácil)` }
 };
-export const GATILHOS_BONUS = { uso: "Ao usar", dano: "Ao sofrer dano (automático, se tiver o custo)" };
+/**
+ * Quando o bônus da habilidade entra (ativação condicional). Os automáticos disparam sozinhos uma vez por cena,
+ * se o personagem tiver o custo; somem no fim do combate.
+ */
+export const GATILHOS_BONUS = {
+  uso: "Ao usar",
+  dano: "Ao sofrer dano (automático)",
+  vida50: "Ao ficar com a Vida em 50% ou menos (automático)",
+  vida25: "Ao ficar com a Vida em 25% ou menos (automático)",
+  combate: "No começo do combate (automático)",
+  critico: "Ao acertar um crítico (automático)"
+};
+/** Como a opção do bônus é escolhida. */
+export const ESCOLHAS_BONUS = { escolher: "O jogador escolhe uma", rolar: "Rolar uma", todas: "Todas juntas" };
 
 /** Tipos de dano sem níveis (vale contra qualquer proteção do tipo, em qualquer nível). */
 export const TIPOS_SEM_NIVEL = ["corrupcao"];

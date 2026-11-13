@@ -37,7 +37,7 @@ export const ABAS_SELECAO = {
       { op: "equipar", label: "Equipar", icone: "fa-solid fa-shirt", dica: "Equipa as armas e armaduras marcadas (se todas já estiverem equipadas, tira)" },
       { op: "favoritar", label: "Favoritar", icone: "fa-solid fa-star" },
       { op: "chat", label: "No chat", icone: "fa-solid fa-comment" },
-      { op: "mochila", label: "Mochila", icone: "fa-solid fa-suitcase", dica: "Guardar numa mochila ou tirar das mochilas" },
+      { op: "mochila", label: "Mover para", icone: "fa-solid fa-right-left", dica: "Guardar numa mochila ou tirar das mochilas" },
       { op: "raridade", label: "Raridade", icone: "fa-solid fa-gem", quando: "edicao" },
       { op: "duplicar", label: "Duplicar", icone: "fa-solid fa-clone", quando: "edicao" },
       { op: "apagar", label: "Apagar", icone: "fa-solid fa-trash", quando: "edicao", perigo: true }
@@ -259,7 +259,7 @@ export async function executar(sheet, aba, op, ids) {
         const marcados = new Set(itens.map(i => i.id));
         const mochilas = actor.items.filter(i => eMochila(i) && !marcados.has(i.id));
         const r = await dialogo({
-          titulo: "Guardar em mochila", ok: "Mover", icone: "fa-solid fa-suitcase",
+          titulo: "Mover para", ok: "Mover", icone: "fa-solid fa-right-left",
           content: `<p class="epm-dica">${itens.length} item(ns). Mochilas marcadas não entram em outras.</p><label class="epm-campo"><span>Para</span><select name="destino"><option value="">Fora das mochilas</option>${mochilas.map(m => `<option value="${m.id}">${escapar(m.name)}</option>`).join("")}</select></label>`,
           callback: el => ({ destino: el.destino?.value ?? "" })
         });
@@ -370,4 +370,43 @@ export async function executar(sheet, aba, op, ids) {
     return apagarFlags(actor, ids.map(id => `receitas:${id}`), "Apagar receitas", (g, k) => f.receitas?.[k]?.nome || "Receita sem nome");
   }
   return false;
+}
+
+
+/**
+ * "Mover para" de um item: escolhe a mochila (ou fora delas) e, se tiver mais de 1, quantos.
+ * Mover só parte separa a pilha; se o destino já tem o mesmo item, soma nele.
+ */
+export async function moverItemPara(actor, item) {
+  if (!item || eMochila(item)) return;
+  const mochilas = actor.items.filter(i => eMochila(i));
+  const qtd = Math.max(0, Number(item.system?.quantity ?? 1) || 0);
+  const atual = item.system?.container ?? "";
+  const opcoes = [{ id: "", nome: "Inventário (fora das mochilas)" }, ...mochilas.map(m => ({ id: m.id, nome: m.name }))]
+    .filter(o => o.id !== atual);
+  if (!opcoes.length) return ui.notifications.info("Não há outro lugar para mover.");
+  const r = await dialogo({
+    titulo: `Mover ${item.name}`, ok: "Mover", icone: "fa-solid fa-right-left",
+    content: `<label class="epm-campo"><span>Para</span><select name="destino">${opcoes.map(o => `<option value="${o.id}">${escapar(o.nome)}</option>`).join("")}</select></label>`
+      + (qtd > 1 ? `<label class="epm-campo"><span>Quantos (de ${qtd})</span><input type="number" name="qtd" min="1" max="${qtd}" value="${qtd}" /></label>` : ""),
+    callback: el => ({ destino: el.destino?.value ?? "", qtd: el.qtd ? Number(el.qtd.value) : qtd })
+  });
+  if (!r) return;
+  const destino = r.destino || null;
+  const n = Math.min(qtd, Math.max(1, Math.floor(r.qtd || qtd)));
+  // Se o destino já tem o mesmo item, soma nele
+  const igual = actor.items.find(i => i.id !== item.id && i.type === item.type && i.name === item.name && (i.system?.container ?? null) === destino);
+  if (qtd <= 1 || n >= qtd) {
+    if (!igual) return item.update({ "system.container": destino });
+    await igual.update({ "system.quantity": Number(igual.system?.quantity ?? 0) + Math.max(1, qtd) });
+    return actor.deleteEmbeddedDocuments("Item", [item.id]);
+  }
+  // Parte da pilha
+  await item.update({ "system.quantity": qtd - n });
+  if (igual) return igual.update({ "system.quantity": Number(igual.system?.quantity ?? 0) + n });
+  const d = item.toObject();
+  delete d._id;
+  foundry.utils.setProperty(d, "system.quantity", n);
+  foundry.utils.setProperty(d, "system.container", destino);
+  return actor.createEmbeddedDocuments("Item", [d]);
 }

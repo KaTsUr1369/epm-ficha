@@ -28,6 +28,7 @@ import { agendarTokenEstado, botaoHudToken } from "./token-estados.mjs";
 import { ligarGanchosNovas, prepararNovas } from "./novas.mjs";
 import { registrarCompendioClasses, sincronizarCompendio } from "./compendio-classes.mjs";
 import { registrarCompendioItens } from "./compendio-itens.mjs";
+import { registrarDicasCompendio } from "./compendio-dicas.mjs";
 
 ligarGanchosNovas();
 
@@ -37,6 +38,7 @@ Hooks.once("init", () => {
   registrarAjustes();
   registrarCompendioClasses();
   registrarCompendioItens();
+  registrarDicasCompendio();
   // Marcador de turno EPM em volta do token de quem está na vez (quando a configuração do combate não define outra imagem)
   if (CONFIG.Combat && ajustes().marcadorTurnoEpm !== false) CONFIG.Combat.fallbackTurnMarker = `modules/${MODULE_ID}/assets/marcador-turno.webp`;
   registrarHelpers(Handlebars);
@@ -148,6 +150,16 @@ Hooks.on("updateActor", (ator, mudancas, opcoes) => {
   const donos = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"));
   const responsavel = donos[0] ?? game.users.activeGM;
   if (responsavel?.isSelf) mecanicas.gatilhosAoSofrerDano(ator).catch(err => console.warn("EPM | gatilho ao sofrer dano", err));
+});
+/* Gatilho "no começo do combate" das habilidades com ativação condicional */
+Hooks.on("combatStart", combate => {
+  for (const c of combate?.combatants ?? []) {
+    const ator = c.actor;
+    if (!ator?.flags?.[FLAG]) continue;
+    const donos = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"));
+    const responsavel = donos[0] ?? game.users.activeGM;
+    if (responsavel?.isSelf) mecanicas.dispararGatilhos(ator, "combate").catch(err => console.warn("EPM | gatilho no começo do combate", err));
+  }
 });
 
 Hooks.on("updateActor", ator => {

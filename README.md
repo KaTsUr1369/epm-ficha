@@ -14,6 +14,26 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.4
+
+- **De onde vem cada valor**: passe o mouse no dano ou no acerto de um ataque, no dano de uma habilidade ou magia e no total de atributos e perícias para ver cada parte e a fonte dela.
+- **Atalhos de atributo nas fórmulas**: `@for`, `@des`, `@con`, `@apa`, `@car`, `@int`, `@aut` e `@nuc` (valor final, já com penalidades). Ex.: `1d8 + @for`. O chip de dano mostra a fórmula resolvida.
+- **Somar atributo no dano** das armas (seletor no editor da arma). A linha do ataque ficou em duas linhas: o nome não corta e o dano vai para baixo, sem os "+ 0".
+- **Várias propriedades por item** como chips; propriedades de arma só em armas, de proteção só em armaduras e escudos (as de escudo só em escudos).
+- **Durabilidade virou regra opcional** (desligada por padrão, em Regras opcionais).
+- **Dica no compêndio**: passar o mouse num item, classe ou habilidade do compêndio mostra um resumo.
+- **Inventário**:
+  - botão **Do compêndio** para puxar itens direto para a ficha (itens iguais somam na quantidade);
+  - categoria **Vestimentas e acessórios** abaixo de Armaduras e escudos (roupas, anéis, bugigangas, bastões, varinhas) e campo **Categoria** no editor do item;
+  - **Mover para** em cada item: escolhe a mochila e quantos levar (separa ou junta pilhas);
+  - **Organizar mochila**: por nome, raridade, peso, tipo ou do seu jeito (arrastar ou setas).
+- **Habilidades**:
+  - **interruptor Ativa/Inativa** ao lado do Usar (ligar usa e paga; desligar tira o bônus de cena e a sustentação);
+  - **ativação condicional**: ao sofrer dano, Vida abaixo de 50% ou 25%, início do combate ou crítico, com bônus de margem de ameaça e valores **por nível da habilidade** (campo Nível e botão Subir de nível);
+  - nova categoria **Meme** (subaba Memes);
+  - exemplo **Instinto Assassino** no compêndio de Arquétipos e Classes.
+- **Token fixo**: escolha qualquer imagem de token (ex.: a de insano) sem precisar cumprir a condição.
+
 ## Novidades da 0.8.3
 
 - **Borda do token em 3 cores**: **Principal** (anel), **Secundária** (chamas) e **Terciária** (só as runas e o brilho das estrelas). Cada parte tem seu seletor de cor e um botão para voltar à cor original. As partes mantêm o claro e o escuro do desenho. A janela lembra as últimas cores.

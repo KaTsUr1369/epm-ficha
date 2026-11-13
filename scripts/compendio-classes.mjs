@@ -12,6 +12,7 @@ import { ARQUETIPOS } from "./arquetipos.mjs";
 import { CLASSES_NOTION, habilidadesDaClasse, RECURSOS_ARQUETIPO } from "./regras-extras.mjs";
 import { dadosHabilidadeArquetipo, dadosHabilidadeClasse } from "./extras.mjs";
 import { escapar } from "./helpers.mjs";
+import { formaPadrao } from "./data.mjs";
 
 export const NOME_PACOTE = "epm-arquetipos-classes";
 export const ID_PACOTE = `world.${NOME_PACOTE}`;
@@ -54,13 +55,47 @@ function concessoes(lista, prefixo) {
   }));
 }
 
+/**
+ * Habilidades de exemplo (arrastar para a ficha cobra os PH como uma habilidade aprendida ou criada).
+ * Instinto Assassino: ativação condicional ao sofrer dano, +1 de margem de ameaça por nível, 6 PH por nível.
+ */
+function formaExemplo(nome, extra) {
+  return { ...formaPadrao(0, nome), ...extra };
+}
+export const HABILIDADES_EXEMPLO = [
+  {
+    _id: idFixo("exemplo:instinto-assassino"), name: "Instinto Assassino", type: "feat", img: "icons/svg/terror.svg",
+    system: { description: { value: "<p>Ao receber dano em uma cena, entra no <strong>instinto assassino</strong>, focando completamente no combate (ainda tem total controle, porém fica com uma aura mais assustadora).</p><p><strong>Efeito:</strong> +1 na margem de ameaça (o crítico sai com 1 a menos no d20) por nível, até o fim do combate.</p><p><strong>Custo:</strong> 10 PH para criar (Rara); 6 PH para cada nível.</p>" } },
+    flags: { [FLAG]: {
+      compendio: "exemplo", raridade: "rara", passiva: true, origem: "", nivelHab: 1, phPorNivel: 6,
+      formas: { [idFixo("exemplo:instinto-assassino:forma")]: formaExemplo("Instinto assassino", {
+        acao: "livre", duracao: "até o fim do combate",
+        bonus: { gatilho: "dano", escolha: "todas", opcoes: { [idFixo("exemplo:instinto-assassino:margem")]: { tipo: "margem", valor: 1, porNivel: true, tipoDano: "", criado: 1 } } }
+      }) }
+    } }
+  }
+];
+
+/** Texto curto (dica ao passar o mouse no compêndio): a descrição sem HTML, cortada. */
+export function resumoTexto(html, max = 240) {
+  const t = String(html ?? "").replace(/<\/(p|li|h\d)>/gi, " ").replace(/<[^>]+>/g, "").replace(/@UUID\[[^\]]*\]\{([^}]*)\}/g, "$1").replace(/\s+/g, " ").trim();
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+}
+
+/** Põe o resumo nas flags de cada item (o compêndio mostra como dica). */
+function comResumo(doc) {
+  const desc = doc.system?.description?.value ?? "";
+  return { ...doc, flags: { ...doc.flags, [FLAG]: { ...(doc.flags?.[FLAG] ?? {}), resumo: resumoTexto(desc) } } };
+}
+
 /** Todos os documentos do compêndio (pastas e itens), sem Foundry. */
 export function documentosDoCompendio() {
   const pastas = [
     { _id: idFixo("pasta:arquetipos"), name: "Arquétipos (Classes)", type: "Item", sorting: "m", sort: 1, color: "#8a6d3b" },
     { _id: idFixo("pasta:classes"), name: "Classes (Subclasses)", type: "Item", sorting: "m", sort: 2, color: "#5b3f8c" },
     { _id: idFixo("pasta:hab-arq"), name: "Habilidades de Arquétipo", type: "Item", sorting: "m", sort: 3 },
-    { _id: idFixo("pasta:hab-classe"), name: "Habilidades de Classe", type: "Item", sorting: "m", sort: 4 }
+    { _id: idFixo("pasta:hab-classe"), name: "Habilidades de Classe", type: "Item", sorting: "m", sort: 4 },
+    { _id: idFixo("pasta:exemplos"), name: "Habilidades de exemplo", type: "Item", sorting: "a", sort: 5, color: "#7a5a2e" }
   ];
   const itens = [];
 
@@ -117,7 +152,8 @@ export function documentosDoCompendio() {
       flags: { [FLAG]: { compendio: "classe", classeId, arquetipoId: arqId } }
     });
   }
-  return { pastas, itens };
+  itens.push(...HABILIDADES_EXEMPLO.map(h => ({ ...h, folder: idFixo("pasta:exemplos") })));
+  return { pastas, itens: itens.map(comResumo) };
 }
 
 /** Assinatura do conteúdo: muda quando os dados ou o formato mudam. */

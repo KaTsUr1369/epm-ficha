@@ -780,7 +780,7 @@ export async function acaoEmMassa(actor, ids, op) {
     }
     case "mover": {
       const transf = Object.entries(actor.flags?.[FLAG]?.transformacoes ?? {}).filter(([, t]) => t);
-      const opcoes = [["", "Geral"], ["arquetipo", "Arquétipo"], ["classe", "Classe"], ["raca", ORIGENS_HABILIDADE.raca],
+      const opcoes = [["", "Geral"], ["arquetipo", "Arquétipo"], ["classe", "Classe"], ["raca", ORIGENS_HABILIDADE.raca], ["meme", "Meme"],
         ...transf.map(([id, t]) => [`transformacao:${id}`, `Transformação: ${t.nome || "sem nome"}`])];
       const r = await dialogo({
         titulo: "Mover habilidades", ok: "Mover",

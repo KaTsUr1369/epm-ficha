@@ -73,7 +73,7 @@
             {{#each atributos}}
             <div class="epm-atributo">
               <button type="button" class="epm-atributo-nome" data-action="rolarAtributo" data-atributo="{{this.id}}" title="Rolar {{this.label}} (Shift: vantagem, Ctrl: desvantagem)">{{this.label}}</button>
-              <span class="epm-atributo-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+              <span class="epm-atributo-total" data-tooltip="{{this.dica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal total}}</span>
               {{#if teste}}<span class="epm-selo {{teste.tipo}}" title="Nos testes de {{this.label}}:&#10;{{teste.fontesTexto}}">{{teste.texto}}</span>{{/if}}
               {{#if @root.edicao}}
               <div class="epm-atributo-campos">
@@ -119,7 +119,7 @@
           <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da perícia" />
           <label class="epm-mini"><span>pontos</span><input type="number" class="epm-pericia-pontos" name="flags.epm-ficha.pericias.{{this.id}}.pontos" value="{{this.pontos}}" min="0" {{#if acimaLimite}}title="Acima do limite do seu nível"{{/if}} /></label>
           <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.pericias.{{this.id}}.outros" value="{{this.outros}}" /></label>
-          <span class="epm-pericia-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+          <span class="epm-pericia-total" data-tooltip="{{this.dica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal total}}</span>
           {{#if teste}}<span class="epm-selo {{teste.tipo}}" title="{{teste.fontesTexto}}">{{teste.texto}}</span>{{/if}}
           <div class="epm-chips-atributo" role="group" aria-label="Atributos somados em {{this.nome}}">
             {{#each chips}}<button type="button" class="epm-chip-atributo{{#if ativo}} ativo{{/if}}{{#if sugerido}} sugerido{{/if}}" data-action="alternarAtributoPericia" data-pericia="{{../id}}" data-atributo="{{this.id}}" aria-pressed="{{#if ativo}}true{{else}}false{{/if}}" title="{{this.label}}{{#if sugerido}} (indicado para esta perícia){{/if}}">{{this.abrev}}</button>{{/each}}
@@ -135,7 +135,7 @@
           {{#if desvantagemTexto}}<i class="fa-solid fa-angles-down epm-marca-pericia desv" title="Desvantagem: {{this.desvantagemTexto}}"></i>{{/if}}
           {{#if vantagemTexto}}<i class="fa-solid fa-angles-up epm-marca-pericia vant" title="Vantagem: {{this.vantagemTexto}}"></i>{{/if}}
           {{#if teste}}<span class="epm-selo {{teste.tipo}}" title="{{teste.fontesTexto}}">{{teste.texto}}</span>{{/if}}
-          <span class="epm-pericia-total" {{#if fontesTexto}}title="{{this.fontesTexto}}"{{/if}}>{{epmSinal total}}</span>
+          <span class="epm-pericia-total" data-tooltip="{{this.dica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal total}}</span>
           {{/if}}
         </li>
 {{/inline}}

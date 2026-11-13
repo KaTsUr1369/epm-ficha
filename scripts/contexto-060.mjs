@@ -34,7 +34,8 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   v.tokens = {
     estados: ESTADOS_TOKEN.map(e => ({ ...e, img: dados.tokensEstado?.[e.id] ?? "" })),
     transformacoes: Object.entries(dados.transformacoes ?? {}).filter(([, t]) => t).map(([id, t]) => ({ id, nome: t.nome || "Transformação", img: t.img ?? "", troca: !!t.trocarToken })),
-    escolha: dados.tokenEscolha ? (ESTADOS_TOKEN.find(e => e.id === dados.tokenEscolha)?.label ?? `Transformado: ${dados.transformacoes?.[String(dados.tokenEscolha).replace("transf:", "")]?.nome ?? ""}`) : "Automático"
+    escolha: dados.tokenFixo ? `Fixado: ${ESTADOS_TOKEN.find(e => e.id === dados.tokenFixo)?.label ?? `Transformação ${dados.transformacoes?.[String(dados.tokenFixo).replace("transf:", "")]?.nome ?? ""}`}`
+      : dados.tokenEscolha ? (ESTADOS_TOKEN.find(e => e.id === dados.tokenEscolha)?.label ?? `Transformado: ${dados.transformacoes?.[String(dados.tokenEscolha).replace("transf:", "")]?.nome ?? ""}`) : "Automático"
   };
   v.raca = {
     escolhida: !!raca, nome: dados.raca || raca?.nome || "", info: raca ? `${TAMANHOS[raca.tamanho] ?? raca.tamanho} · ${raca.altura} · adulto ${raca.idade?.adulta}, até ${raca.idade?.maxima}` : "",

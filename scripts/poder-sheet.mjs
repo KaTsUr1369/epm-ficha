@@ -15,7 +15,7 @@ const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
 const P = `flags.${FLAG}`;
 
-const ACOES_EDITOR = ["novaForma", "excluirForma", "duplicarForma", "moverForma", "aplicarMelhoria", "removerMelhoria", "editarImagem", "novaOpcaoBonus", "removerOpcaoBonus"];
+const ACOES_EDITOR = ["novaForma", "excluirForma", "duplicarForma", "moverForma", "aplicarMelhoria", "removerMelhoria", "editarImagem", "novaOpcaoBonus", "removerOpcaoBonus", "subirNivelHab"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -74,6 +74,22 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     const tipo = ["rd", "ca", "dano", "acerto"][n % 4];
     const valor = { rd: 10, ca: 3, dano: "10", acerto: 3 }[tipo];
     await this.item.update({ [`${P}.formas.${forma}.bonus.opcoes.${novoId()}`]: { tipo, valor, tipoDano: "", criado: Date.now() } });
+  }
+
+  /** Sobe 1 nível da habilidade pagando os PH por nível da ficha dona. */
+  async acaoSubirNivelHab() {
+    const item = this.item;
+    const custo = int(item.flags?.[FLAG]?.phPorNivel);
+    const nivel = Math.max(1, int(item.flags?.[FLAG]?.nivelHab, 1));
+    const actor = item.actor;
+    if (actor && custo) {
+      const ph = int(actor.flags?.[FLAG]?.pontos?.ph);
+      if (ph < custo) return ui.notifications.warn(`Faltam ${custo - ph} PH: subir ${item.name} custa ${custo} e ${actor.name} tem ${ph}.`);
+      if (!(await M.confirmar("Subir nível", `<p>Subir <strong>${escapar(item.name)}</strong> para o nível ${nivel + 1} por <strong>${custo} PH</strong>? (${actor.name} tem ${ph}.)</p>`))) return;
+      await actor.update({ [`${P}.pontos.ph`]: ph - custo });
+    }
+    await item.update({ [`${P}.nivelHab`]: nivel + 1 });
+    if (actor) await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: `<div class="epm-chat epm-chat-nota"><p><strong>${escapar(actor.name)}</strong> subiu <strong>${escapar(item.name)}</strong> para o nível ${nivel + 1}${custo ? ` (−${custo} PH)` : ""}.</p></div>` });
   }
 
   async acaoRemoverOpcaoBonus(ev, alvo) {

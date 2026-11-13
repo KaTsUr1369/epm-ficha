@@ -1,0 +1,1892 @@
+{
+ "armaduras.armadura-antimotim": {
+  "nome": "Armadura Antimotim",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.armadura-de-assalto": {
+  "nome": "Armadura de Assalto",
+  "raridade": "epica",
+  "regiao": "briavoterna"
+ },
+ "armaduras.armadura-de-cavaleiro-real": {
+  "nome": "Armadura de Cavaleiro Real",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "armaduras.armadura-de-cavaleiro-sagrado": {
+  "nome": "Armadura de Cavaleiro Sagrado",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "armaduras.armadura-de-combate-espacial": {
+  "nome": "Armadura de Combate Espacial",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-de-combate-orbital": {
+  "nome": "Armadura de Combate Orbital",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-de-fase": {
+  "nome": "Armadura de Fase",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-de-infiltracao": {
+  "nome": "Armadura de Infiltração",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armaduras.armadura-de-nano-fibra": {
+  "nome": "Armadura de Nano-fibra",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-de-plasma": {
+  "nome": "Armadura de Plasma",
+  "raridade": "lendaria",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-do-campeao": {
+  "nome": "Armadura do Campeão",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "armaduras.armadura-draconica": {
+  "nome": "Armadura Dracônica",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "armaduras.armadura-energetica": {
+  "nome": "Armadura Energética",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-reativa": {
+  "nome": "Armadura Reativa",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armaduras.armadura-tatica": {
+  "nome": "Armadura Tática",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.colete-balistico": {
+  "nome": "Colete Balístico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.colete-kevlar-avancado": {
+  "nome": "Colete Kevlar Avançado",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.colete-policial": {
+  "nome": "Colete Policial",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.couro-de-basilisco": {
+  "nome": "Couro de Basilisco",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "armaduras.exoesqueleto-de-batalha": {
+  "nome": "Exoesqueleto de Batalha",
+  "raridade": "lendaria",
+  "regiao": "genesis"
+ },
+ "armaduras.exotraje-de-combate": {
+  "nome": "Exotraje de Combate",
+  "raridade": "epica",
+  "regiao": "briavoterna"
+ },
+ "armaduras.exotraje-de-mineracao": {
+  "nome": "Exotraje de Mineração",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armaduras.jaqueta-reforcada": {
+  "nome": "Jaqueta Reforçada",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.malha-regenerativa": {
+  "nome": "Malha Regenerativa",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armaduras.traje-ambiental": {
+  "nome": "Traje Ambiental",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armaduras.traje-antibombas": {
+  "nome": "Traje Antibombas",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armaduras.traje-de-bombeiro": {
+  "nome": "Traje de Bombeiro",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.traje-de-invisibilidade": {
+  "nome": "Traje de Invisibilidade",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armaduras.traje-militar-pesado": {
+  "nome": "Traje Militar Pesado",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armaduras.traje-psionico": {
+  "nome": "Traje Psiônico",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.arco-composto": {
+  "nome": "Arco Composto",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.arco-de-energia": {
+  "nome": "Arco de Energia",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.arco-elfico": {
+  "nome": "Arco Élfico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "armas.baioneta": {
+  "nome": "Baioneta",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.bastao-de-choque": {
+  "nome": "Bastão de Choque",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.canhao-gauss": {
+  "nome": "Canhão Gauss",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.canhao-orbital": {
+  "nome": "Canhão Orbital",
+  "raridade": "mitica",
+  "regiao": "genesis"
+ },
+ "armas.canhao-sonico": {
+  "nome": "Canhão Sônico",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.carabina": {
+  "nome": "Carabina",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.cassetete-retratil": {
+  "nome": "Cassetete Retrátil",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.chicote-de-plasma": {
+  "nome": "Chicote de Plasma",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.derringer": {
+  "nome": "Derringer",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.disco-de-energia": {
+  "nome": "Disco de Energia",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.escopeta": {
+  "nome": "Escopeta",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.escopeta-automatica": {
+  "nome": "Escopeta Automática",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.escopeta-de-cano-serrado": {
+  "nome": "Escopeta de Cano Serrado",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.escopeta-de-plasma": {
+  "nome": "Escopeta de Plasma",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.faca-tatica": {
+  "nome": "Faca Tática",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.facao": {
+  "nome": "Facão",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.fuzil-de-atirador": {
+  "nome": "Fuzil de Atirador",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.granada": {
+  "nome": "Granada",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.granada-emp": {
+  "nome": "Granada EMP",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.katana-plasma": {
+  "nome": "Katana Plasma",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.lamina-de-energia": {
+  "nome": "Lâmina de Energia",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.lamina-fantasma": {
+  "nome": "Lâmina Fantasma",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.lamina-monomolecular": {
+  "nome": "Lâmina Monomolecular",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.lanca-arpao": {
+  "nome": "Lança-Arpão",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.lanca-chamas": {
+  "nome": "Lança-Chamas",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.lanca-de-ions": {
+  "nome": "Lança de Íons",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.lanca-foguetes": {
+  "nome": "Lança-Foguetes",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.lanca-plasma": {
+  "nome": "Lança-Plasma",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.lancador-de-granadas": {
+  "nome": "Lançador de Granadas",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.manopla-de-impacto": {
+  "nome": "Manopla de Impacto",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.martelo-gravitacional": {
+  "nome": "Martelo Gravitacional",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.metralhadora": {
+  "nome": "Metralhadora",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.motosserra": {
+  "nome": "Motosserra",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.pistola": {
+  "nome": "Pistola",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.pistola-de-agulhas": {
+  "nome": "Pistola de Agulhas",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.pistola-de-ions": {
+  "nome": "Pistola de Íons",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.pistola-laser": {
+  "nome": "Pistola Laser",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.pistola-pesada": {
+  "nome": "Pistola Pesada",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.revolver": {
+  "nome": "Revólver",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.rifle-antimateria": {
+  "nome": "Rifle Antimatéria",
+  "raridade": "lendaria",
+  "regiao": "genesis"
+ },
+ "armas.rifle-antimaterial": {
+  "nome": "Rifle Antimaterial",
+  "raridade": "epica",
+  "regiao": "briavoterna"
+ },
+ "armas.rifle-criogenico": {
+  "nome": "Rifle Criogênico",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.rifle-de-assalto": {
+  "nome": "Rifle de Assalto",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.rifle-de-caca": {
+  "nome": "Rifle de Caça",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.rifle-de-plasma": {
+  "nome": "Rifle de Plasma",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "armas.rifle-de-precisao": {
+  "nome": "Rifle de Precisão",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "armas.rifle-de-pulso": {
+  "nome": "Rifle de Pulso",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.rifle-laser": {
+  "nome": "Rifle Laser",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "armas.submetralhadora": {
+  "nome": "Submetralhadora",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.taco": {
+  "nome": "Taco",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "armas.taser": {
+  "nome": "Taser",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "arremesso.carga-explosiva-c4": {
+  "nome": "Carga Explosiva (C4)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "arremesso.coquetel-molotov": {
+  "nome": "Coquetel Molotov",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "arremesso.granada-atordoante": {
+  "nome": "Granada Atordoante",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "arremesso.granada-de-fumaca": {
+  "nome": "Granada de Fumaça",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "arremesso.granada-de-plasma": {
+  "nome": "Granada de Plasma",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "arremesso.granada-gravitacional": {
+  "nome": "Granada Gravitacional",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "arremesso.granada-incendiaria": {
+  "nome": "Granada Incendiária",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "arremesso.mina-de-pulso": {
+  "nome": "Mina de Pulso",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "arremesso.sinalizador": {
+  "nome": "Sinalizador",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.algemas-de-aco": {
+  "nome": "Algemas de Aço",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.barraca-moderna": {
+  "nome": "Barraca Moderna",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.binoculos": {
+  "nome": "Binóculos",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.bussola": {
+  "nome": "Bússola",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.camera": {
+  "nome": "Câmera",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.celular": {
+  "nome": "Celular",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.comunicador-neural": {
+  "nome": "Comunicador Neural",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "aventura.corda-de-nylon-15-m": {
+  "nome": "Corda de Nylon (15 m)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.drone-de-reconhecimento": {
+  "nome": "Drone de Reconhecimento",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "aventura.fita-adesiva": {
+  "nome": "Fita Adesiva",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.gerador-portatil": {
+  "nome": "Gerador Portátil",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "aventura.gps": {
+  "nome": "GPS",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.holo-mapa": {
+  "nome": "Holo-Mapa",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "aventura.isqueiro": {
+  "nome": "Isqueiro",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.kit-de-sobrevivencia": {
+  "nome": "Kit de Sobrevivência",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.lanterna-de-cabeca": {
+  "nome": "Lanterna de Cabeça",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.lanterna-de-plasma": {
+  "nome": "Lanterna de Plasma",
+  "raridade": "comum",
+  "regiao": "genesis"
+ },
+ "aventura.lanterna-eletrica": {
+  "nome": "Lanterna Elétrica",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.luneta": {
+  "nome": "Luneta",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "aventura.mascara-de-gas": {
+  "nome": "Máscara de Gás",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.notebook": {
+  "nome": "Notebook",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.oculos-de-visao-noturna": {
+  "nome": "Óculos de Visão Noturna",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "aventura.pilhas-4": {
+  "nome": "Pilhas (4)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.radio-comunicador-par": {
+  "nome": "Rádio Comunicador (par)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "aventura.saco-de-dormir-termico": {
+  "nome": "Saco de Dormir Térmico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "comida.bebida-energetica": {
+  "nome": "Bebida Energética",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "comida.cafe": {
+  "nome": "Café",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "comida.enlatado": {
+  "nome": "Enlatado",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "comida.isotonico-sintetico": {
+  "nome": "Isotônico Sintético",
+  "raridade": "comum",
+  "regiao": "genesis"
+ },
+ "comida.pilula-nutricional": {
+  "nome": "Pílula Nutricional",
+  "raridade": "comum",
+  "regiao": "genesis"
+ },
+ "comida.racao-militar": {
+  "nome": "Ração Militar",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "conjuracao.celula-de-mana-sintetica": {
+  "nome": "Célula de Mana Sintética",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "conjuracao.cristal-de-mana-carregado": {
+  "nome": "Cristal de Mana Carregado",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "conjuracao.microfone-e-caixa-de-som": {
+  "nome": "Microfone e Caixa de Som",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "conjuracao.pergaminho-de-encantamento": {
+  "nome": "Pergaminho de Encantamento",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "conjuracao.sintetizador-holografico": {
+  "nome": "Sintetizador Holográfico",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "conjuracao.violao": {
+  "nome": "Violão",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "criaturas.ectoplasma": {
+  "nome": "Ectoplasma",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.escama-de-dragao": {
+  "nome": "Escama de Dragão",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "criaturas.essencia-elemental-de-agua": {
+  "nome": "Essência Elemental de Água",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.essencia-elemental-de-ar": {
+  "nome": "Essência Elemental de Ar",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.essencia-elemental-de-fogo": {
+  "nome": "Essência Elemental de Fogo",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.essencia-elemental-de-terra": {
+  "nome": "Essência Elemental de Terra",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.nucleo-de-criatura-intenso": {
+  "nome": "Núcleo de Criatura (Intenso)",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "criaturas.nucleo-de-criatura-moderado": {
+  "nome": "Núcleo de Criatura (Moderado)",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.olho-de-basilisco": {
+  "nome": "Olho de Basilisco",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "criaturas.pena-de-grifo": {
+  "nome": "Pena de Grifo",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "ervas.flor-da-lua": {
+  "nome": "Flor da Lua",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "ervas.raiz-de-mandragora": {
+  "nome": "Raiz de Mandrágora",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "ervas.semente-de-arvore-mundo": {
+  "nome": "Semente de Árvore-Mundo",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "escudos.bracelete-de-campo-cinetico": {
+  "nome": "Bracelete de Campo Cinético",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-anti-explosivo": {
+  "nome": "Escudo Anti-Explosivo",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-antimotim": {
+  "nome": "Escudo Antimotim",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-balistico": {
+  "nome": "Escudo Balístico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-de-assalto": {
+  "nome": "Escudo de Assalto",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-de-batalha-exo": {
+  "nome": "Escudo de Batalha Exo",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-de-energia-portatil": {
+  "nome": "Escudo de Energia Portátil",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-de-fase": {
+  "nome": "Escudo de Fase",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-de-forca": {
+  "nome": "Escudo de Força",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-de-plasma": {
+  "nome": "Escudo de Plasma",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-draconico": {
+  "nome": "Escudo Dracônico",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "escudos.escudo-eletrico": {
+  "nome": "Escudo Elétrico",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-holografico": {
+  "nome": "Escudo Holográfico",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-magnetico": {
+  "nome": "Escudo Magnético",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-militar-pesado": {
+  "nome": "Escudo Militar Pesado",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-policial": {
+  "nome": "Escudo Policial",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "escudos.escudo-quantico": {
+  "nome": "Escudo Quântico",
+  "raridade": "lendaria",
+  "regiao": "genesis"
+ },
+ "escudos.escudo-real": {
+  "nome": "Escudo Real",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "escudos.escudo-runico": {
+  "nome": "Escudo Rúnico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "escudos.escudo-tatico": {
+  "nome": "Escudo Tático",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "especiais.adamante": {
+  "nome": "Adamante",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "especiais.cristal-de-nucleo": {
+  "nome": "Cristal de Núcleo",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "especiais.ferro-estelar": {
+  "nome": "Ferro Estelar",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "especiais.ferro-frio": {
+  "nome": "Ferro Frio",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "especiais.ferro-negro": {
+  "nome": "Ferro Negro",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "especiais.fibra-de-carbono-militar": {
+  "nome": "Fibra de Carbono Militar",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "especiais.fragmento-do-vazio": {
+  "nome": "Fragmento do Vazio",
+  "raridade": "mitica",
+  "regiao": "genesis"
+ },
+ "especiais.liga-balistica": {
+  "nome": "Liga Balística",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "especiais.madeira-elfica": {
+  "nome": "Madeira Élfica",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "especiais.mitral": {
+  "nome": "Mitral",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "especiais.nanoliga-reativa": {
+  "nome": "Nanoliga Reativa",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "especiais.oricalco": {
+  "nome": "Oricalco",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "especiais.osso-de-dragao": {
+  "nome": "Osso de Dragão",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "especiais.prata-lunar": {
+  "nome": "Prata Lunar",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "ferramentas.caixa-de-ferramentas": {
+  "nome": "Caixa de Ferramentas",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "ferramentas.fabricador-portatil": {
+  "nome": "Fabricador Portátil",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "ferramentas.ferramentas-de-encantador": {
+  "nome": "Ferramentas de Encantador",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "ferramentas.kit-de-armeiro": {
+  "nome": "Kit de Armeiro",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "ferramentas.kit-de-bioengenharia": {
+  "nome": "Kit de Bioengenharia",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "ferramentas.kit-de-hacker": {
+  "nome": "Kit de Hacker",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "ferramentas.kit-de-nanoreparo": {
+  "nome": "Kit de Nanoreparo",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "ferramentas.kit-de-quimica": {
+  "nome": "Kit de Química",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "ferramentas.kit-eletronico": {
+  "nome": "Kit Eletrônico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "ferramentas.kit-medico-profissional": {
+  "nome": "Kit Médico Profissional",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "ferramentas.scanner-multiespectral": {
+  "nome": "Scanner Multiespectral",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "gemas.artefato-pre-colapso": {
+  "nome": "Artefato Pré-Colapso",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "gemas.coroa-cerimonial": {
+  "nome": "Coroa Cerimonial",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "gemas.diamante": {
+  "nome": "Diamante",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "gemas.diamante-negro": {
+  "nome": "Diamante Negro",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "gemas.esmeralda": {
+  "nome": "Esmeralda",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "gemas.lagrima-de-estrela": {
+  "nome": "Lágrima de Estrela",
+  "raridade": "mitica",
+  "regiao": "genesis"
+ },
+ "gemas.relogio-de-luxo": {
+  "nome": "Relógio de Luxo",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "gemas.rubi": {
+  "nome": "Rubi",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "gemas.safira": {
+  "nome": "Safira",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "medicina.analgesico": {
+  "nome": "Analgésico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "medicina.antibiotico": {
+  "nome": "Antibiótico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "medicina.estimulante-de-combate": {
+  "nome": "Estimulante de Combate",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "medicina.estimulante-neural": {
+  "nome": "Estimulante Neural",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "medicina.gel-regenerativo": {
+  "nome": "Gel Regenerativo",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "medicina.injecao-de-adrenalina": {
+  "nome": "Injeção de Adrenalina",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "medicina.injetor-de-nanocura": {
+  "nome": "Injetor de Nanocura",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "medicina.kit-de-primeiros-socorros": {
+  "nome": "Kit de Primeiros Socorros",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "medicina.kit-medico-de-campo": {
+  "nome": "Kit Médico de Campo",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "medicina.soro-antiveneno": {
+  "nome": "Soro Antiveneno",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "medicina.unidade-medica-automatica": {
+  "nome": "Unidade Médica Automática",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "minerios.cristal-de-plasma": {
+  "nome": "Cristal de Plasma",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "minerios.grafeno": {
+  "nome": "Grafeno",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "minerios.litio": {
+  "nome": "Lítio",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "minerios.nanoliga": {
+  "nome": "Nanoliga",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "minerios.neutronio-fragmento": {
+  "nome": "Neutrônio (fragmento)",
+  "raridade": "lendaria",
+  "regiao": "genesis"
+ },
+ "minerios.silicio": {
+  "nome": "Silício",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "minerios.titanio": {
+  "nome": "Titânio",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "minerios.tungstenio": {
+  "nome": "Tungstênio",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "minerios.uranio-contido": {
+  "nome": "Urânio (contido)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.arpoes": {
+  "nome": "Arpões",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.arpoes-de-cabo-de-aco": {
+  "nome": "Arpões de Cabo de Aço",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.arpoes-explosivos": {
+  "nome": "Arpões Explosivos",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-bentas-50": {
+  "nome": "Balas Bentas (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-bentas-pistola": {
+  "nome": "Balas Bentas (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-bentas-rifle": {
+  "nome": "Balas Bentas (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-congelantes-50": {
+  "nome": "Balas Congelantes (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-congelantes-pistola": {
+  "nome": "Balas Congelantes (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-congelantes-rifle": {
+  "nome": "Balas Congelantes (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-borracha-50": {
+  "nome": "Balas de Borracha (.50)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-borracha-pistola": {
+  "nome": "Balas de Borracha (Pistola)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-borracha-rifle": {
+  "nome": "Balas de Borracha (Rifle)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-choque-50": {
+  "nome": "Balas de Choque (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-choque-pistola": {
+  "nome": "Balas de Choque (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-choque-rifle": {
+  "nome": "Balas de Choque (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-pistola": {
+  "nome": "Balas de Pistola",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-ponta-oca-50": {
+  "nome": "Balas de Ponta Oca (.50)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-ponta-oca-pistola": {
+  "nome": "Balas de Ponta Oca (Pistola)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-ponta-oca-rifle": {
+  "nome": "Balas de Ponta Oca (Rifle)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-prata-50": {
+  "nome": "Balas de Prata (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-prata-pistola": {
+  "nome": "Balas de Prata (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-prata-rifle": {
+  "nome": "Balas de Prata (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-de-rifle": {
+  "nome": "Balas de Rifle",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-expansivas-50": {
+  "nome": "Balas Expansivas (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-expansivas-pistola": {
+  "nome": "Balas Expansivas (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-expansivas-rifle": {
+  "nome": "Balas Expansivas (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-explosivas-50": {
+  "nome": "Balas Explosivas (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-explosivas-pistola": {
+  "nome": "Balas Explosivas (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-explosivas-rifle": {
+  "nome": "Balas Explosivas (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-incendiarias-50": {
+  "nome": "Balas Incendiárias (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-incendiarias-pistola": {
+  "nome": "Balas Incendiárias (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-incendiarias-rifle": {
+  "nome": "Balas Incendiárias (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-injetoras-50": {
+  "nome": "Balas Injetoras (.50)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-injetoras-pistola": {
+  "nome": "Balas Injetoras (Pistola)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-injetoras-rifle": {
+  "nome": "Balas Injetoras (Rifle)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-perfurantes-50": {
+  "nome": "Balas Perfurantes (.50)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-perfurantes-pistola": {
+  "nome": "Balas Perfurantes (Pistola)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-perfurantes-rifle": {
+  "nome": "Balas Perfurantes (Rifle)",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-subsonicas-50": {
+  "nome": "Balas Subsônicas (.50)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-subsonicas-pistola": {
+  "nome": "Balas Subsônicas (Pistola)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-subsonicas-rifle": {
+  "nome": "Balas Subsônicas (Rifle)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-tracantes-50": {
+  "nome": "Balas Traçantes (.50)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-tracantes-pistola": {
+  "nome": "Balas Traçantes (Pistola)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.balas-tracantes-rifle": {
+  "nome": "Balas Traçantes (Rifle)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.bateria-de-taser": {
+  "nome": "Bateria de Taser",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.bateria-gauss": {
+  "nome": "Bateria Gauss",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.bateria-gauss-perfurante": {
+  "nome": "Bateria Gauss Perfurante",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "municao.capsula-de-antimateria": {
+  "nome": "Cápsula de Antimatéria",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "municao.capsula-de-materia-escura": {
+  "nome": "Cápsula de Matéria Escura",
+  "raridade": "lendaria",
+  "regiao": "genesis"
+ },
+ "municao.cartucho-de-nanoenxame": {
+  "nome": "Cartucho de Nanoenxame",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "municao.cartuchos-de-escopeta": {
+  "nome": "Cartuchos de Escopeta",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.cartuchos-de-sal-gema": {
+  "nome": "Cartuchos de Sal-Gema",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.cartuchos-flechette": {
+  "nome": "Cartuchos Flechette",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.cartuchos-halito-de-dragao": {
+  "nome": "Cartuchos Hálito de Dragão",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.cartuchos-slug": {
+  "nome": "Cartuchos Slug",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.celula-criogenica": {
+  "nome": "Célula Criogênica",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.celula-de-energia": {
+  "nome": "Célula de Energia",
+  "raridade": "comum",
+  "regiao": "genesis"
+ },
+ "municao.celula-de-pulso-emp": {
+  "nome": "Célula de Pulso EMP",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.celula-ionica": {
+  "nome": "Célula Iônica",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.celula-sobrecarregada": {
+  "nome": "Célula Sobrecarregada",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.flechas-congelantes": {
+  "nome": "Flechas Congelantes",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.flechas-de-adamante": {
+  "nome": "Flechas de Adamante",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "municao.flechas-de-ferro-frio": {
+  "nome": "Flechas de Ferro Frio",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.flechas-de-prata": {
+  "nome": "Flechas de Prata",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.flechas-de-relampago": {
+  "nome": "Flechas de Relâmpago",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.flechas-explosivas-alquimicas": {
+  "nome": "Flechas Explosivas Alquímicas",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.flechas-runicas": {
+  "nome": "Flechas Rúnicas",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.flechas-sagradas": {
+  "nome": "Flechas Sagradas",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.foguete": {
+  "nome": "Foguete",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.foguete-perfurante": {
+  "nome": "Foguete Perfurante",
+  "raridade": "epica",
+  "regiao": "briavoterna"
+ },
+ "municao.foguete-termobarico": {
+  "nome": "Foguete Termobárico",
+  "raridade": "epica",
+  "regiao": "briavoterna"
+ },
+ "municao.granadas-atordoantes": {
+  "nome": "Granadas Atordoantes",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.granadas-de-fumaca": {
+  "nome": "Granadas de Fumaça",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.granadas-de-gas-lacrimogeneo": {
+  "nome": "Granadas de Gás Lacrimogêneo",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.granadas-de-lancador": {
+  "nome": "Granadas de Lançador",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.granadas-incendiarias": {
+  "nome": "Granadas Incendiárias",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.municao-50": {
+  "nome": "Munição .50",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.municao-rastreadora": {
+  "nome": "Munição Rastreadora",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.nucleo-de-plasma": {
+  "nome": "Núcleo de Plasma",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "municao.nucleo-de-plasma-instavel": {
+  "nome": "Núcleo de Plasma Instável",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "municao.tanque-de-combustivel": {
+  "nome": "Tanque de Combustível",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "municao.tanque-de-napalm": {
+  "nome": "Tanque de Napalm",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "municao.virotes-congelantes": {
+  "nome": "Virotes Congelantes",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.virotes-de-adamante": {
+  "nome": "Virotes de Adamante",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "municao.virotes-de-ferro-frio": {
+  "nome": "Virotes de Ferro Frio",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.virotes-de-prata": {
+  "nome": "Virotes de Prata",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.virotes-de-relampago": {
+  "nome": "Virotes de Relâmpago",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.virotes-explosivos-alquimicos": {
+  "nome": "Virotes Explosivos Alquímicos",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.virotes-runicos": {
+  "nome": "Virotes Rúnicos",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "municao.virotes-sagrados": {
+  "nome": "Virotes Sagrados",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.elixir-da-mente-serena": {
+  "nome": "Elixir da Mente Serena",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "pocoes.elixir-restaurador": {
+  "nome": "Elixir Restaurador",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.lagrima-de-anjo": {
+  "nome": "Lágrima de Anjo",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-agilidade": {
+  "nome": "Poção de Agilidade",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-foco": {
+  "nome": "Poção de Foco",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-forca-do-gigante": {
+  "nome": "Poção de Força do Gigante",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-invisibilidade": {
+  "nome": "Poção de Invisibilidade",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-mana-grande": {
+  "nome": "Poção de Mana Grande",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-mana-superior": {
+  "nome": "Poção de Mana Superior",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-mana-suprema": {
+  "nome": "Poção de Mana Suprema",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-pele-de-pedra": {
+  "nome": "Poção de Pele de Pedra",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-precisao": {
+  "nome": "Poção de Precisão",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-acido": {
+  "nome": "Poção de Proteção contra Ácido",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-fogo": {
+  "nome": "Poção de Proteção contra Fogo",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-forca": {
+  "nome": "Poção de Proteção contra Força",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-frio": {
+  "nome": "Poção de Proteção contra Frio",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-necrotico": {
+  "nome": "Poção de Proteção contra Necrótico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-psiquico": {
+  "nome": "Poção de Proteção contra Psíquico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-radiante": {
+  "nome": "Poção de Proteção contra Radiante",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-relampago": {
+  "nome": "Poção de Proteção contra Relâmpago",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-sonoro": {
+  "nome": "Poção de Proteção contra Sonoro",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-protecao-contra-venenoso": {
+  "nome": "Poção de Proteção contra Venenoso",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-acido": {
+  "nome": "Poção de Resistência a Ácido",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-fogo": {
+  "nome": "Poção de Resistência a Fogo",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-forca": {
+  "nome": "Poção de Resistência a Força",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-frio": {
+  "nome": "Poção de Resistência a Frio",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-necrotico": {
+  "nome": "Poção de Resistência a Necrótico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-psiquico": {
+  "nome": "Poção de Resistência a Psíquico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-radiante": {
+  "nome": "Poção de Resistência a Radiante",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-relampago": {
+  "nome": "Poção de Resistência a Relâmpago",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-sonoro": {
+  "nome": "Poção de Resistência a Sonoro",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-resistencia-a-venenoso": {
+  "nome": "Poção de Resistência a Venenoso",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-vida-grande": {
+  "nome": "Poção de Vida Grande",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-vida-superior": {
+  "nome": "Poção de Vida Superior",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-vida-suprema": {
+  "nome": "Poção de Vida Suprema",
+  "raridade": "lendaria",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-de-voo": {
+  "nome": "Poção de Voo",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "pocoes.pocao-do-gigante-aumentar": {
+  "nome": "Poção do Gigante (Aumentar)",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.tonico-da-lucidez": {
+  "nome": "Tônico da Lucidez",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.tonico-de-estamina-grande": {
+  "nome": "Tônico de Estamina Grande",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "pocoes.tonico-de-estamina-superior": {
+  "nome": "Tônico de Estamina Superior",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "recipientes.bolsa-dimensional": {
+  "nome": "Bolsa Dimensional",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "recipientes.mochila-antigravidade": {
+  "nome": "Mochila Antigravidade",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "recipientes.mochila-tatica": {
+  "nome": "Mochila Tática",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.bateria-industrial": {
+  "nome": "Bateria Industrial",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.borracha": {
+  "nome": "Borracha",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.cabos-de-cobre": {
+  "nome": "Cabos de Cobre",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.celula-de-fusao": {
+  "nome": "Célula de Fusão",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "recursos.chip-quantico": {
+  "nome": "Chip Quântico",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "recursos.circuito-eletronico": {
+  "nome": "Circuito Eletrônico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.combustivel-1-litro": {
+  "nome": "Combustível (1 litro)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.kevlar-rolo": {
+  "nome": "Kevlar (rolo)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.nanomaquinas-frasco": {
+  "nome": "Nanomáquinas (frasco)",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "recursos.pecas-mecanicas": {
+  "nome": "Peças Mecânicas",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.plastico": {
+  "nome": "Plástico",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.polvora-1-kg": {
+  "nome": "Pólvora (1 kg)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "recursos.sucata": {
+  "nome": "Sucata",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "venenos.essencia-de-beladona": {
+  "nome": "Essência de Beladona",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "venenos.essencia-paralisante": {
+  "nome": "Essência Paralisante",
+  "raridade": "epica",
+  "regiao": "umbra"
+ },
+ "venenos.nanotoxina": {
+  "nome": "Nanotoxina",
+  "raridade": "epica",
+  "regiao": "genesis"
+ },
+ "venenos.peconha-de-aranha-gigante": {
+  "nome": "Peçonha de Aranha Gigante",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "venenos.po-sonifero": {
+  "nome": "Pó Sonífero",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "venenos.sedativo-seringa": {
+  "nome": "Sedativo (seringa)",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "venenos.toxina-neural": {
+  "nome": "Toxina Neural",
+  "raridade": "rara",
+  "regiao": "briavoterna"
+ },
+ "vestimentas.botas-magneticas": {
+  "nome": "Botas Magnéticas",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "vestimentas.jaqueta-termica": {
+  "nome": "Jaqueta Térmica",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "vestimentas.manto-elfico": {
+  "nome": "Manto Élfico",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "vestimentas.roupa-tatica": {
+  "nome": "Roupa Tática",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "vestimentas.terno": {
+  "nome": "Terno",
+  "raridade": "comum",
+  "regiao": "briavoterna"
+ },
+ "vestimentas.traje-adaptativo": {
+  "nome": "Traje Adaptativo",
+  "raridade": "rara",
+  "regiao": "genesis"
+ },
+ "vestimentas.vestes-do-arquimago": {
+  "nome": "Vestes do Arquimago",
+  "raridade": "rara",
+  "regiao": "umbra"
+ },
+ "vestimentas.visor-tatico": {
+  "nome": "Visor Tático",
+  "raridade": "rara",
+  "regiao": "genesis"
+ }
+}

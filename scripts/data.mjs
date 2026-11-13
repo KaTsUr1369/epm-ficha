@@ -653,6 +653,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   resistenciasExtra.push(...extrasFicha.resistencias);
   for (const b of Object.values(d.bonusCena ?? {})) {
     if (b?.ativo && num(b.rd) > 0) reducoes.push({ valor: num(b.rd), tipos: String(b.rdTipo ?? "").trim() || "todos os danos", fonte: b.nome || "Bônus de cena" });
+    if (b?.ativo && String(b.resTipo ?? "").trim()) resistenciasExtra.push({ tipo: String(b.resTipo).trim(), fonte: b.nome || "Bônus de cena" });
   }
   // RD da própria ficha (aba Combate): reduz o número escolhido do dano daquele tipo
   for (const r of Object.values(d.rd ?? {})) {

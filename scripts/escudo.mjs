@@ -25,7 +25,7 @@ const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo",
-  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "rolarTestes", "rolarLivre", "abrirItem",
+  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "rolarTestes", "rolarLivre", "abrirItem",
   "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre"
 ];
 
@@ -415,6 +415,11 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       mods: Object.fromEntries(mods.map(m => [novoId(), { ...m }]))
     } });
     ui.notifications.info(`${t.nome} foi para ${destino.name} (aba Habilidades → Transformações).`);
+  }
+
+  async _abrirCatalogo() {
+    const { abrirCatalogo } = await import("./catalogo-app.mjs");
+    return abrirCatalogo({ destino: this._valor("[data-destino-item]") || this._ui.alvoItem || "" });
   }
 
   async _darMoedas() {

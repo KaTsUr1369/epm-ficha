@@ -280,7 +280,7 @@ export async function usarItem(actor, item) {
     for (const [id, x] of Object.entries(atuais)) if (x?.origem === item.id) upd[`${P}.bonusCena.-=${id}`] = null;
     upd[`${P}.bonusCena.${novoId()}`] = {
       nome: `${item.name}: ${b.texto || "bônus"}`, ativo: true, acerto: int(b.acerto), dano: String(b.dano ?? ""), ca: int(b.ca),
-      rd: int(b.rd), rdTipo: String(b.rdTipo ?? ""), testes: int(b.testes), deslocamento: num(b.deslocamento), origem: item.id, cena: true, criado: Date.now()
+      rd: int(b.rd), rdTipo: String(b.rdTipo ?? ""), resTipo: String(b.resTipo ?? ""), testes: int(b.testes), deslocamento: num(b.deslocamento), origem: item.id, cena: true, criado: Date.now()
     };
     await actor.update(upd);
     avisos.push(`${b.texto || "Bônus"} pela cena (aba Combate → Bônus de cena).`);

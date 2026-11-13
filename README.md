@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.8
+
+- **Catálogo de itens de Umbra'Draxil** (338 itens): botão **Catálogo de itens** no Inventário e no Escudo do Mestre → Itens. Busca sem acento, filtro por categoria, quantidade, total em moedas, **pagar com as moedas da ficha** e, para o Mestre, **dar** para um personagem ou **importar para o mundo** (pasta "EPM · Catálogo de itens").
+  - Já com as mudanças aprovadas na revisão dos itens: curas e consumíveis (Erva Curativa, Bandagens, itens de calma, Tônico da Lucidez, Elixir Restaurador), Poções de Proteção e de Resistência para os 10 elementos, nomes oficiais de dano (Frio, Relâmpago), Cristais de Mana como Ação Livre, ajustes de Peitoral de Aço, Couro Batido e Mangual, armaduras novas (Peles, Talas, Couro de Basilisco), a categoria **Vestimentas** (com as Vestes do Arquimago), os 8 escudos oficiais e 2 extras com as propriedades de escudo, 8 armas novas, a propriedade **Dupla**, Dardos de Zarabatana e as armas **Exóticas** com o texto da Maestria.
+  - As Poções de Resistência dão Resistência de verdade pela cena (Bônus de cena).
+  - Briavoterna e Genesis entram depois da revisão deles. O botão **Armas e armaduras do Notion** continua para as armas e armaduras dessas regiões.
+
 ## Novidades da 0.7.7
 
 - Os cartões das listas agora recolhem com a seta (para cima / para baixo) no título, como os treinamentos: bênçãos e maldições, companheiros, criaturas do bestiário, relações, facções e receitas. Recolhido, fica só a linha do nome; a ficha lembra quais estão fechados.

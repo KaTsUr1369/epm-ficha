@@ -129,7 +129,9 @@ export const PROPRIEDADES_ARMA = {
   "Incendiária": "Pode colocar o alvo em chamas.",
   "Instável": "Poderosa, mas com risco de falha.",
   "Lendária": "Propriedade rara e poderosa.",
-  "Experimental": "Tecnologia nova e imprevisível."
+  "Experimental": "Tecnologia nova e imprevisível.",
+  "Dupla": "Permite lutar com duas armas sem desvantagem, uma vez por rodada.",
+  "Exótica": "Tem uma Maestria, liberada quando o personagem domina a arma: 10 pontos na perícia da arma (15 se a arma for de outra região) ou se for a arma favorita."
 };
 
 /* -------------------------------------------- */

@@ -160,6 +160,7 @@
       <label class="epm-campo"><span>Dar para</span><select data-destino-item>{{#each destinos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <input type="search" class="epm-busca" data-busca-item value="{{this.buscaItem}}" placeholder="Buscar item do mundo…" aria-label="Buscar item" />
       <select data-tipo-item aria-label="Tipo">{{#each tiposItem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+      <button type="button" class="epm-botao" data-action="abrirCatalogo" title="Catálogo do EPM (Umbra'Draxil): dar itens ou importar para a aba Itens"><i class="fa-solid fa-book-open"></i> Catálogo de itens</button>
     </div>
     <section class="epm-painel">
       <header class="epm-painel-titulo"><h3>Moedas</h3></header>

@@ -594,7 +594,7 @@ export function fimDeCombate060(dados) {
 
 export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
-  "rolarNiveisRecursos", "treinoCatalogo", "catalogoItens", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
+  "rolarNiveisRecursos", "treinoCatalogo", "catalogoItens", "catalogoCompleto", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
   "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
   "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
@@ -623,6 +623,7 @@ export const METODOS_060 = {
   acaoRolarNiveisRecursos() { return rolarNiveisRecursos(this.actor); },
   acaoTreinoCatalogo(ev, alvo) { return treinoDoCatalogo(this.actor, alvo.dataset.indice); },
   acaoCatalogoItens() { return catalogoItens(this.actor); },
+  async acaoCatalogoCompleto() { const { abrirCatalogo } = await import("./catalogo-app.mjs"); return abrirCatalogo({ actor: this.actor }); },
   acaoKitInicial() { return kitInicial(this.actor); },
   acaoNovoTalento() { return this.actor.update({ [`${P}.talentos.${novoId()}`]: { nome: "Novo talento", custo: 5, descricao: "", comprado: false, mods: {}, criado: Date.now() } }); },
   async acaoExcluirTalento(ev, alvo) {

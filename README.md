@@ -14,6 +14,22 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.7
+
+- **Briavoterna e Genesis de volta ao catálogo**: o catálogo agora tem as três regiões (646 itens: Umbra'Draxil 373, Briavoterna 177, Genesis 96), com os números revisados na conversa dos itens:
+  - armas novas (Taco, Motosserra, Derringer, Lança-Arpão, Escopeta Automática, Fuzil de Atirador, Rifle Antimaterial, Pistola de Agulhas, Disco de Energia, Lança de Íons, Rifle Criogênico, Martelo Gravitacional, Lâmina Fantasma, Canhão Sônico) e a propriedade **Dupla** nas armas aprovadas;
+  - armaduras novas, os escudos oficiais das duas regiões (saem o Escudo de Aço e o Gerador de Escudo de Energia), Vestimentas, curas e consumíveis com os preços e ações revisados;
+  - Gelo virou Frio e Raio virou Relâmpago (Taser, Bastão de Choque, Mina de Pulso).
+- **Munições novas**: Balas de Chumbo e as pontas especiais de Umbra'Draxil em Flecha e Virote; as balas especiais de Briavoterna nos calibres Pistola, Rifle e .50 (Expansiva, Explosiva e Injetora deixam de ser caixa genérica); cartuchos de escopeta, foguetes, granadas de lançador, arpões e as células e núcleos de Genesis.
+- **Ícones próprios dos itens**: 378 ícones (Umbra'Draxil de Rara para cima; Briavoterna e Genesis inteiros). A imagem do item segue a ordem ícone próprio → arte do Foundry → ícone da categoria, igual no compêndio e no Catálogo de itens. O compêndio de itens ganhou subpastas por região.
+- **Maestria das armas Exóticas**:
+  - libera com **10 pontos** colocados na perícia da arma (Luta ou Pontaria; sem atributo nem "Outros"), ou **15** se a arma for de outra região que não a de origem;
+  - a **arma favorita** libera na hora (e a Arma Favorita do Combatente também libera as Exóticas daquele tipo);
+  - a linha da arma mostra o selo **Maestria Exótica** ou "faltam X pontos em Luta/Pontaria";
+  - efeitos automáticos: Katana fica Leve e ganha Dupla; Besta de Mão perde Recarga Lenta e ganha Dupla; Rapieira passa a crítico 17–20. O resto vai como texto no cartão de ataque.
+- **Arma favorita** (aba Sobre): 1 por personagem (o Mestre aumenta o limite por ficha), primeira escolha livre. Para trocar, o treinamento modelo **Trocar arma favorita** (10 PT, 1 semana): ao concluir, a ficha troca sozinha e avisa no chat. O Mestre troca direto.
+- **Ajustar bônus do arquétipo e da classe** (modo edição, aba Arquétipo e Classe): troque os números que o arquétipo e a classe dão (vazio = livro, 0 desliga), a Vida/Estamina/Mana inicial, o dado e a média de cada arquétipo, e crie **bônus extras** (ex.: Duelista também dá CA ou RD), com condição (sempre, um Estilo, uma Maestria, Fúria ou Histeria ligada).
+
 ## Novidades da 0.8.6
 
 - **Vida, Mana e Estamina automáticas com os seus números**: no modo edição, o painel ganhou:

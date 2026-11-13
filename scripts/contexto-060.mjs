@@ -11,7 +11,7 @@ import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { CATEGORIAS_TREINO, TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import {
   RECURSOS_ARQUETIPO, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, TIPOS_VOTO, TIPOS_PACTO, PATENTES, REGRAS_HIERARQUIA,
-  FAIXAS_NOMEACAO, ROTULOS_BONUS_ALTO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE, listaRolagens
+  FAIXAS_NOMEACAO, ROTULOS_BONUS_ALTO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE, listaRolagens, tabelaRecursos
 } from "./regras-extras.mjs";
 import { niveisArquetipos, trocasBonus } from "./ficha-extras.mjs";
 
@@ -92,7 +92,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   const niveisRec = niveisArquetipos(dados);
   const porNivel = niveisRec.map((nv, idx) => {
     const extras = idx === 0 ? nv.nivel - 1 : nv.nivel;
-    const cfgArq = RECURSOS_ARQUETIPO[nv.arquetipo];
+    const cfgArq = tabelaRecursos(auto.tabela)[nv.arquetipo];
     if (!cfgArq || extras <= 0) return null;
     return {
       arquetipo: nv.arquetipo, label: `${nv.arquetipo[0].toUpperCase()}${nv.arquetipo.slice(1)}`,

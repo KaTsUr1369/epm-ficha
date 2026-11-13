@@ -43,6 +43,8 @@ export const TREINAMENTOS_NOTION = [
     beneficios: "A ação de Mira pode ser feita como Ação Bônus.", mods: [] , especial: "miraRapida" },
   { categoria: "arma", nome: "Versatilidade Armada", tempo: 36, unidade: "horas", pt: 5, requisitos: "Proficiência em armas corpo a corpo e 4 de Destreza ou Força", treinador: false,
     beneficios: "Com armas de dois tipos de dano, usa sempre o maior; pode usar seu maior atributo mesmo que a arma diga outro.", mods: [] , especial: "versatilidade" },
+  { categoria: "arma", nome: "Trocar arma favorita", tempo: 56, unidade: "horas", pt: 10, requisitos: "Ter uma arma favorita", treinador: false,
+    beneficios: "Troca a arma favorita por outra (1 semana de treino, 8 h por dia). Ao concluir, a ficha troca sozinha e avisa no chat.", mods: [], especial: "trocarFavorita" },
   { categoria: "extras", nome: "Delinquente Briguento", tempo: 5, unidade: "dias", pt: 5, requisitos: "8 de Destreza ou Força e 5 de Constituição", treinador: false,
     beneficios: "Quando uma briga começa por sua causa, seu primeiro ataque da cena causa o dobro de dano.", mods: [] , especial: "delinquente" },
   { categoria: "extras", nome: "Apostador Experiente", tempo: 5, unidade: "dias", pt: 5, requisitos: "5 de Intelecto e 3 de Autocontrole", treinador: true,

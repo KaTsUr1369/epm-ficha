@@ -29,9 +29,10 @@ import { conteudoNotion } from "./settings.mjs";
 import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
 import { contexto060 } from "./contexto-060.mjs";
-import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse } from "./regras-extras.mjs";
-import { idClasse, nivelTecPersonagem } from "./ficha-extras.mjs";
-import { PROPRIEDADES_PROTECAO } from "./itens-catalogo.mjs";
+import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
+import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra } from "./ficha-extras.mjs";
+import { PROPRIEDADES_PROTECAO, ITENS_CATALOGO, MAESTRIAS, REGIOES_CATALOGO } from "./itens-catalogo.mjs";
+import { estadoMaestria, aplicarMaestriaNoAtaque, seloMaestria, armasFavoritas, limiteFavoritas } from "./maestria-exotica.mjs";
 import { penalidadeTec, NOMES_REGIAO } from "./tecnologia.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
@@ -171,9 +172,13 @@ export function ataqueDeArma(item, modoId = "") {
     equipado: !!item?.system?.equipped,
     danoExtra: efeitos.filter(e => e.tipo === "danoExtra" && e.formula).map(e => ({ formula: e.formula, tipo: e.tipoDano })),
     curas: efeitos.filter(e => e.tipo === "cura" && e.quando === "acerto" && e.formula).map(e => ({ formula: e.formula, recurso: e.recurso })),
-    modoNome: String(f.modoNome ?? "").trim(), temModos: modos.length > 0
+    modoNome: String(f.modoNome ?? "").trim(), temModos: modos.length > 0,
+    propriedades: Array.isArray(f.propriedades) ? [...f.propriedades] : []
   };
   base.nomeItem = item.name;
+  // Maestria das armas Exóticas: efeitos automáticos quando liberada (Katana Leve + Dupla, Rapieira 17–20…)
+  const estadoMx = estadoMaestria(item, item.parent?.flags?.[FLAG] ?? {});
+  Object.assign(base, aplicarMaestriaNoAtaque(base, estadoMx));
   if (base.temModos) {
     base.modoLabel = base.modoNome || base.tipoDano || "principal";
     base.nome = `${item.name} · ${base.modoLabel}`;
@@ -359,6 +364,7 @@ export function resumoAtaque(at, ficha, cena) {
     danoBase: at.dano ? resolverReferencias(at.dano, ficha).replace(/\+ -/g, "− ") : "",
     danoMult: m.danoMult > 1 ? m.danoMult : 0,
     critTexto: textoCritico(Math.max(2, at.critMargem - int(cena.margem)), at.critMult + int(cena.critMult)),
+    maestriaSelo: seloMaestria(at.maestriaExotica),
     bloqueado: ficha.ataquesGerais.bloqueados.join(", ")
   };
 }
@@ -1118,6 +1124,52 @@ export function montarContexto({
     espacos: int(dados.espacos?.habilidades, 2)
   };
   // Aba opcional Arquétipo e Classe: anotações próprias + as mesmas habilidades das sub-abas
+  // Ajustar os bônus do arquétipo e da classe (modo edição)
+  const rotuloAjuste = alvo => {
+    const [g, id] = String(alvo).split(".");
+    if (g === "pericia") return `Perícia ${ficha.periciaPorId?.[id]?.nome ?? id}`;
+    if (g === "atributo") return ATRIBUTOS[id]?.label ?? id;
+    if (g === "recurso") return `${({ pv: "Vida", pm: "Mana", pe: "Estamina", ps: "Sanidade" })[id] ?? id} máxima`;
+    if (g === "rd") return `RD${id ? ` (${id})` : ""}`;
+    if (g === "dano") return `Dano extra (${({ todos: "todos os ataques", armado: "armado", desarmado: "desarmado", corpo: "corpo a corpo" })[id] ?? id})`;
+    if (g === "defesa") return `Defesa (${id})`;
+    return { acerto: "Acerto", ca: "CA", danoAtaque: "Dano dos ataques", deslocamento: "Deslocamento", testes: "Testes", iniciativa: "Iniciativa" }[g] ?? alvo;
+  };
+  const listaAjustes = origem => (ficha.ajustaveis ?? []).filter(a => a.origem === origem).map(a => ({
+    ...a, rotulo: rotuloAjuste(a.alvo), formula: a.campo === "formula",
+    atual: dados.ajustesBonus?.[a.chave] ?? ""
+  }));
+  // Ajustes salvos de bônus que não estão valendo agora (ex.: Fúria desligada) continuam aparecendo para poder limpar
+  const salvosForaDaLista = origem => Object.entries(dados.ajustesBonus ?? {})
+    .filter(([k, v]) => String(v ?? "").trim() !== "" && !(ficha.ajustaveis ?? []).some(a => a.chave === k))
+    .map(([k, v]) => ({ chave: k, atual: v, fonte: k.replace(/-/g, " "), rotulo: "não está valendo agora", padrao: "—", origem }));
+  const tabRec = tabelaRecursos(dados.recursosAuto?.tabela);
+  const arqsFicha = [...new Set([idArquetipo(dados.arquetipo), idArquetipo(dados.arquetipo2)].filter(a => RECURSOS_ARQUETIPO[a]))];
+  const ajustesArq = {
+    recursos: arqsFicha.map(arq => ({
+      arquetipo: arq, label: `${arq[0].toUpperCase()}${arq.slice(1)}`,
+      linhas: ["pv", "pe", "pm"].map(r => {
+        const livro = RECURSOS_ARQUETIPO[arq][r], salvo = dados.recursosAuto?.tabela?.[arq]?.[r] ?? {};
+        return { id: r, label: { pv: "Vida", pe: "Estamina", pm: "Mana" }[r], livro, inicial: salvo.inicial ?? "", dado: salvo.dado ?? "", media: salvo.media ?? "", atual: tabRec[arq][r] };
+      })
+    })),
+    bonus: listaAjustes("arquetipo")
+  };
+  const ajustesCla = { bonus: listaAjustes("classe"), salvos: salvosForaDaLista("classe") };
+  // Bônus extras criados pela mesa (ex.: Duelista também dá CA)
+  const alvosExtra = [
+    ...alvosModificador(ficha.pericias.map(p => ({ id: p.id, nome: p.nome }))),
+    { id: "rd", label: "Redução de dano (RD)", grupo: "Combate" }, { id: "danoExtra", label: "Dano extra (fórmula) em todos os ataques", grupo: "Combate" }
+  ];
+  const condsExtra = condicoesBonusExtra(dados);
+  const extrasDe = origem => Object.entries(dados.bonusExtras ?? {}).filter(([, b]) => (b?.origem ?? "arquetipo") === origem).map(([id, b]) => ({
+    id, nome: b.nome ?? "", valor: b.valor ?? 0, formula: b.formula ?? "", rdTipo: b.rdTipo ?? "",
+    eRd: b.alvo === "rd", eFormula: b.alvo === "danoExtra", valendo: condicaoBonusExtra(dados, b.condicao),
+    opcoesAlvo: alvosExtra.map(a => ({ ...a, selected: a.id === (b.alvo || "ca") })),
+    opcoesCondicao: condsExtra.map(c => ({ ...c, selected: c.id === (b.condicao || "sempre") }))
+  }));
+  ajustesArq.extras = extrasDe("arquetipo");
+  ajustesCla.extras = extrasDe("classe");
   ctx.arqclasse = {
     subabas: SUBABAS_HABILIDADE.filter(s => SUBABAS_ARQCLASSE.includes(s.id)).map(sub => {
       const atual = (ui.abas?.arqclasse ?? "arquetipo") === sub.id;
@@ -1125,6 +1177,7 @@ export function montarContexto({
       const notas = dados.arqclasse?.[sub.id]?.notas ?? "";
       return {
         ...sub, ...secoesDe(sub), ativa: atual, cls: atual ? "active" : "", eArquetipo: sub.id === "arquetipo", eClasse: sub.id === "classe",
+        ajustes: sub.id === "arquetipo" ? ajustesArq : sub.id === "classe" ? ajustesCla : null,
         nome: nomes.map(n => String(n ?? "").trim()).filter(Boolean).join(" / "),
         editor: editores.arqclasse?.[sub.id] ?? "", texto: temTexto(notas) ? (enriquecidos.arqclasse?.[sub.id] ?? "") : ""
       };
@@ -1303,6 +1356,7 @@ export function montarContexto({
       equipado: !!item.system?.equipped,
       eArma, eConsumivel: item.type === "consumable", ataque,
       eArmadura: item.type === "equipment", armadura: int(f.armadura),
+      maestriaSelo: eArma ? seloMaestria(estadoMaestria(item, dados)) : null,
       formulaUso: f.formula ?? "",
       tecPenal: (() => { try { return penalidadeTec(item, ficha.extras?.tecnologia ?? 1)?.texto ?? ""; } catch { return ""; } })(),
       containerNome: item.system?.container ? (nomes[item.system.container] ?? "") : "",
@@ -1412,6 +1466,22 @@ export function montarContexto({
     ctx.regiaoOrigem = {
       opcoes: [{ id: "", label: "— (usa o nível de tecnologia da ficha)", selected: !origem }, ...Object.entries(NOMES_REGIAO).map(([id, label], i) => ({ id, label: `${label} (nível ${i + 1})`, selected: id === origem }))],
       texto: NOMES_REGIAO[origem] ?? "", nivel: ficha.extras?.tecnologia ?? 1
+    };
+    // Arma favorita: libera a Maestria das Exóticas; 1 por personagem (o Mestre aumenta), primeira escolha livre
+    const lista = armasFavoritas(f);
+    const limite = limiteFavoritas(f);
+    const eGM = !!globalThis.game?.user?.isGM;
+    const temCatalogo = new Set(lista.map(x => x.catalogo).filter(Boolean));
+    const doCatalogo = ITENS_CATALOGO.filter(x => x.categoria === "armas" && !temCatalogo.has(x.id));
+    const proprias = (actor?.items ?? []).filter(i => i.type === "weapon" && !i.flags?.[FLAG]?.catalogo && !lista.some(x => x.nome === i.name));
+    ctx.armasFavoritas = {
+      lista: lista.map(x => ({ ...x, exotica: !!MAESTRIAS[x.nome] })), limite, eGM,
+      podeEscolher: lista.length < limite, cheia: lista.length >= limite,
+      grupos: [
+        ...(proprias.length ? [{ label: "Do inventário", opcoes: [...new Set(proprias.map(i => i.name))].map(n => ({ id: `nome:${n}`, label: n })) }] : []),
+        ...Object.entries(REGIOES_CATALOGO).map(([reg, label]) => ({ label, opcoes: doCatalogo.filter(x => x.regiao === reg).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+          .map(x => ({ id: `catalogo:${x.id}`, label: `${x.nome}${x.arma?.propriedades?.includes("Exótica") ? " (Exótica)" : ""}` })) }))
+      ]
     };
   }
   ctx.voz = { bordao: dados.sobre?.bordao ?? "", musica: dados.sobre?.musica ?? "", musicaNome: dados.sobre?.musicaNome ?? "", link: ctx.musica };

@@ -2,7 +2,7 @@
   <div class="epm-item-linha">
     <img class="epm-item-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{this.id}}" title="Trocar imagem"{{/if}} />
     <button type="button" class="epm-item-nome" data-action="expandirItem" data-item-id="{{this.id}}" aria-expanded="{{#if expandido}}true{{else}}false{{/if}}">
-      <span class="epm-item-titulo">{{this.name}}</span>
+      <span class="epm-item-titulo">{{this.name}}</span>{{#if maestriaSelo}} <span class="epm-tag epm-selo-exotica{{#if maestriaSelo.liberada}} liberada{{/if}}" title="{{this.maestriaSelo.dica}}"><i class="fa-solid fa-{{#if maestriaSelo.liberada}}star{{else}}lock{{/if}}" aria-hidden="true"></i> {{this.maestriaSelo.texto}}</span>{{/if}}
       {{#if eArma}}<span class="epm-item-dentro">{{ataque.periciaNome}} {{epmSinal ataque.acertoTotal}}, crítico {{ataque.critTexto}}</span>{{/if}}
       {{#if pente}}<span class="epm-item-recurso{{#if pente.vazio}} acabou{{/if}}" title="Tiros no pente"><i class="fa-solid fa-gun" aria-hidden="true"></i> {{pente.atual}}/{{pente.max}}</span> {{/if}}{{#if municao}}<span class="epm-item-recurso{{#if municao.acabou}} acabou{{/if}}" title="Munição gasta a cada ataque"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{municao.nome}} ×{{municao.qtd}}</span>{{/if}}
       {{#if cargas}}<span class="epm-item-recurso{{#unless cargas.valor}} acabou{{/unless}}" title="Cargas{{#if cargas.recarga}}: recarregam em {{cargas.recarga}}{{/if}}"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{cargas.valor}}/{{cargas.max}}</span>{{/if}}

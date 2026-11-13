@@ -10,10 +10,10 @@ import {
   ITENS_CATALOGO, CATEGORIAS_CATALOGO, REGIOES_CATALOGO, itemCatalogoPorId, resumoCatalogo, precoEmCobre, precoTexto, moedasTexto,
   dadosItemCatalogo, empilha
 } from "./itens-catalogo.mjs";
-import { imagemPadrao } from "./itens-imagens.mjs";
+import { imagemPadrao, imagemItem } from "./itens-imagens.mjs";
 import { artesSalvas } from "./compendio-itens.mjs";
 
-const imgDe = x => artesSalvas()[x.id] || imagemPadrao(x);
+const imgDe = x => imagemItem(x, artesSalvas());
 
 const P = `flags.${FLAG}`;
 const PASTA_RAIZ = "EPM · Catálogo de itens";

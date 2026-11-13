@@ -1,11 +1,23 @@
 /**
- * Imagens dos itens do catálogo.
+ * Imagens dos itens do catálogo, nesta ordem:
+ * 0) Ícone próprio do item (assets/itens/<id>.svg), quando o id está em itens-icones.mjs.
  * 1) Padrão (sempre existe): um ícone por categoria, que vem no módulo (assets/itens/*.svg).
  * 2) Arte do Foundry: o Mestre, ao montar o compêndio, procura nas pastas de ícones do próprio Foundry
  *    (icons/weapons, icons/consumables…) um arquivo com as palavras do item. Achou, usa; não achou, fica o padrão.
  *    O resultado fica guardado numa configuração do mundo, e o Catálogo de itens usa as mesmas imagens.
  */
+import { ICONES_ITENS } from "./itens-icones.mjs";
+
 const PASTA = "modules/epm-ficha/assets/itens";
+
+/** O item tem ícone próprio no módulo? */
+export const temIconeProprio = x => ICONES_ITENS.has(x?.id);
+
+/** Imagem final do item: ícone próprio → arte do Foundry (artes[id]) → ícone da categoria. Pura. */
+export function imagemItem(x, artes = {}) {
+  if (temIconeProprio(x)) return `${PASTA}/${x.id}.svg`;
+  return artes?.[x.id] || imagemPadrao(x);
+}
 
 /** Ícone do módulo para o item (sem Foundry). */
 export function imagemPadrao(x) {
@@ -155,6 +167,7 @@ export async function procurarArtes(itens) {
   };
   const out = {};
   for (const x of itens) {
+    if (temIconeProprio(x)) continue;
     const regra = regraDeArte(x);
     if (!regra) continue;
     const arq = escolherArquivo(await listar(regra.pasta), x, regra.palavras);

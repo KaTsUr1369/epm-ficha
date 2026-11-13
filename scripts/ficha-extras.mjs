@@ -1,4 +1,5 @@
 import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
+import { ARQUETIPOS, estilosEscolhidos, nivelArquetipo } from "./arquetipos.mjs";
 import { NIVEIS_REGIAO, idRegiao } from "./tecnologia.mjs";
 /**
  * Partes da ficha que vieram na 0.6.0 (raça pronta, Sanidade com estados e insanidades, idade opcional,
@@ -10,12 +11,75 @@ import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
 import { efeitosDosTraumas, dotsDeAcumulos, DANO_ACUMULO_PADRAO, ROTULOS_ACUMULAVEIS } from "./opcionais.mjs";
 import {
-  bonusAtributosAltos, tetoAtributo, maximoRecurso, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel,
+  bonusAtributosAltos, tetoAtributo, maximoRecurso, tabelaRecursos, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel,
   faixaIdade, FAIXAS_IDADE, limiteVotos, TIPOS_PACTO, TAMANHO_EFEITOS, grauNucleo, MARCOS_CORRUPCAO, CONQUISTAS, META_CACADOR
 } from "./regras-extras.mjs";
 
 const n = v => Number(v) || 0;
 const norm = t => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** Lista dos bônus ajustáveis do cálculo em andamento (o cálculo da ficha é síncrono). */
+let coletorAjustes = null;
+export function iniciarAjustes() { coletorAjustes = []; }
+export function terminarAjustes() { const l = coletorAjustes ?? []; coletorAjustes = null; return l; }
+
+/** Chave estável de um bônus ajustável (fonte + alvo), sem pontos (vira caminho de flag). */
+export const chaveAjuste = (fonte, alvo) => `${fonte}@${alvo}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/**
+ * Bônus de classe e arquétipo com o valor trocado pela mesa (flags.ajustesBonus[chave]).
+ * Número para mods e RD; fórmula para dano extra. Vazio = valor do livro. 0 desliga.
+ */
+export function ajustarBonus(d, item, alvo, campo = "valor") {
+  const chave = chaveAjuste(item.fonte, alvo);
+  const padrao = item[campo];
+  const ov = d.ajustesBonus?.[chave];
+  const temOv = ov !== undefined && ov !== null && String(ov).trim() !== "";
+  if (temOv) item[campo] = campo === "formula" ? String(ov).trim() : n(ov);
+  coletorAjustes?.push({ chave, origem: item.origem, fonte: item.fonte, alvo, campo, padrao, valor: item[campo], alterado: temOv && String(item[campo]) !== String(padrao) });
+  return item;
+}
+
+/** Condições que um bônus extra pode exigir (lista para o seletor). */
+export function condicoesBonusExtra(d = {}) {
+  const out = [{ id: "sempre", label: "Sempre" }];
+  for (const [id, e] of Object.entries(ARQUETIPOS.combatente.estilos)) out.push({ id: `estilo:${id}`, label: `Estilo: ${e.nome}`, grupo: "Combatente" });
+  for (const [id, m] of Object.entries(ARQUETIPOS.combatente.maestrias)) out.push({ id: `maestria:${id}`, label: `Maestria: ${m.nome}`, grupo: "Combatente" });
+  out.push({ id: "classe:furia", label: "Fúria ligada (Bárbaro)", grupo: "Classe" });
+  out.push({ id: "classe:histeria", label: "Histeria ligada (Alice)", grupo: "Classe" });
+  return out;
+}
+
+/** O bônus extra vale agora? */
+export function condicaoBonusExtra(d, cond) {
+  const [tipo, id] = String(cond || "sempre").split(":");
+  if (tipo === "sempre") return true;
+  if (tipo === "estilo") return estilosEscolhidos(d).includes(id);
+  if (tipo === "maestria") return nivelArquetipo(d, "combatente") > 0 && d.arquetipoOpcoes?.combatente?.maestria === id;
+  if (tipo === "classe" && id === "furia") return idClasse(d.classe) === "barbaro" && !!d.classeEpm?.furiaAtiva;
+  if (tipo === "classe" && id === "histeria") return idClasse(d.classe) === "alice" && !!d.classeEpm?.histeria;
+  return false;
+}
+
+/** Bônus extras criados pela mesa no arquétipo ou na classe (flags.bonusExtras). */
+function aplicarBonusExtras(d, out) {
+  for (const b of Object.values(d.bonusExtras ?? {})) {
+    if (!b || !condicaoBonusExtra(d, b.condicao)) continue;
+    const fonte = `${b.nome || "Bônus extra"}${b.origem === "classe" ? " (classe)" : " (arquétipo)"}`;
+    if (b.alvo === "rd") { if (n(b.valor)) out.rd.push({ valor: n(b.valor), tipos: String(b.rdTipo ?? "").trim() || "todos os danos", fonte }); continue; }
+    if (b.alvo === "danoExtra") { if (String(b.formula ?? "").trim()) out.extrasAtaque.todos.push({ formula: String(b.formula).trim(), fonte }); continue; }
+    if (b.alvo && n(b.valor)) out.mods.push({ alvo: b.alvo, valor: n(b.valor), fonte });
+  }
+}
+
+function aplicarAjustesBonus(d, out) {
+  for (const m of out.mods) if (m.origem === "classe") ajustarBonus(d, m, m.alvo);
+  for (const r of out.rd) if (r.origem === "classe") ajustarBonus(d, r, `rd.${r.tipos ?? ""}`);
+  for (const [k, l] of Object.entries(out.extrasAtaque)) for (const x of l) if (x.origem === "classe") ajustarBonus(d, x, `dano.${k}`, "formula");
+  out.mods = out.mods.filter(m => m.origem !== "classe" || n(m.valor));
+  out.rd = out.rd.filter(r => r.origem !== "classe" || n(r.valor));
+  for (const k of Object.keys(out.extrasAtaque)) out.extrasAtaque[k] = out.extrasAtaque[k].filter(x => x.origem !== "classe" || (x.formula && x.formula !== "0"));
+}
 
 /** Níveis por arquétipo da ficha ([{ arquetipo, nivel }]). */
 export function niveisArquetipos(d) {
@@ -113,7 +177,8 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
     for (const m of Object.values(t.mods ?? {})) if (m?.alvo && n(m.valor)) out.mods.push({ alvo: m.alvo, valor: n(m.valor), fonte: `Talento: ${t.nome || "sem nome"}` });
   }
 
-  // Classes completas do Notion
+  // Classes completas do Notion (tudo o que entra aqui fica marcado como bônus da classe, ajustável na ficha)
+  const marcaClasse = { mods: out.mods.length, rd: out.rd.length, ...Object.fromEntries(Object.entries(out.extrasAtaque).map(([k, l]) => [k, l.length])) };
   const classe = idClasse(d.classe);
   const comb = nivelDe(d, CLASSES_NOTION[classe]?.arquetipo ?? "combatente");
   const opc = d.classeEpm ?? {};
@@ -172,6 +237,12 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
   if (classe === "barbaro" && comb >= 6) {
     out.classe.protecoes = (opc.protecoes ?? []).slice(0, CLASSES_NOTION.barbaro.protecao.niveis.filter(x => comb >= x).length);
   }
+
+  for (const m of out.mods.slice(marcaClasse.mods)) m.origem = "classe";
+  for (const r of out.rd.slice(marcaClasse.rd)) r.origem = "classe";
+  for (const [k, l] of Object.entries(out.extrasAtaque)) for (const x of l.slice(marcaClasse[k] ?? 0)) x.origem = "classe";
+  aplicarAjustesBonus(d, out);
+  aplicarBonusExtras(d, out);
 
   // Tamanho (modelo da 0.6.0): CA e Furtividade
   const tam = TAMANHO_EFEITOS[d.tamanho || raca.raca?.tamanho];
@@ -362,7 +433,8 @@ export function maximosAutomaticos(d, atributos, raca) {
     out[r] = maximoRecurso(r, {
       raca: n(base[r] ?? cfg.racaBase?.[r]), atributo, niveis,
       rolagens: Object.fromEntries(Object.entries(cfg.rolagens ?? {}).map(([arq, v]) => [arq, v?.[r] ?? []])),
-      usarMedia: !["rolagem", "manual"].includes(cfg.modo), modo: cfg.modo, extraFixo, extraPorNivel, ajuste: Math.trunc(n(cfg.ajuste?.[r]))
+      usarMedia: !["rolagem", "manual"].includes(cfg.modo), modo: cfg.modo, extraFixo, extraPorNivel, ajuste: Math.trunc(n(cfg.ajuste?.[r])),
+      tabela: tabelaRecursos(cfg.tabela)
     });
     out[r].atributo = attr;
   }

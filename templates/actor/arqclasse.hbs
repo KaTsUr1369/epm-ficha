@@ -14,6 +14,47 @@
     </section>
     {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
     {{#if eClasse}}{{> "epm-classe-painel"}}{{/if}}
+    {{#if @root.edicao}}{{#if ajustes}}
+    <section class="epm-painel epm-ajustes-bonus" data-secao="ajustes-{{this.id}}">
+      <header class="epm-painel-titulo"><h3>Ajustar bônus {{#if eArquetipo}}do arquétipo{{else}}da classe{{/if}}</h3></header>
+      <p class="epm-dica">Troque os números que o {{#if eArquetipo}}arquétipo{{else}}a classe{{/if}} dá, se a mesa usa outros. Vazio = valor do livro; 0 desliga o bônus.</p>
+      {{#each ajustes.recursos}}
+      <table class="epm-ajustes-tabela">
+        <thead><tr><th>{{this.label}}</th><th>Inicial</th><th>Dado por nível</th><th>Média</th></tr></thead>
+        <tbody>{{#each linhas}}<tr>
+          <th>{{this.label}}</th>
+          <td><input type="number" name="flags.epm-ficha.recursosAuto.tabela.{{../arquetipo}}.{{this.id}}.inicial" value="{{this.inicial}}" placeholder="{{this.livro.inicial}}" title="Livro: {{this.livro.inicial}}" /></td>
+          <td><input type="text" name="flags.epm-ficha.recursosAuto.tabela.{{../arquetipo}}.{{this.id}}.dado" value="{{this.dado}}" placeholder="{{this.livro.dado}}" title="Livro: {{this.livro.dado}}" /></td>
+          <td><input type="number" name="flags.epm-ficha.recursosAuto.tabela.{{../arquetipo}}.{{this.id}}.media" value="{{this.media}}" placeholder="{{this.livro.media}}" title="Livro: {{this.livro.media}}" /></td>
+        </tr>{{/each}}</tbody>
+      </table>
+      {{/each}}
+      {{#if ajustes.recursos.length}}<p class="epm-dica">Vida, Estamina e Mana usam esta tabela quando "Calcular" está ligado (painel Vida, Mana e Estamina automáticas).</p>{{/if}}
+      {{#if ajustes.bonus.length}}
+      <ul class="epm-ajustes-lista">
+        {{#each ajustes.bonus}}
+        <li><span><strong>{{this.fonte}}</strong> <span class="epm-dica">{{this.rotulo}} · livro: {{this.padrao}}</span></span>
+          <input type="{{#if formula}}text{{else}}number{{/if}}" name="flags.epm-ficha.ajustesBonus.{{this.chave}}" value="{{this.atual}}" placeholder="{{this.padrao}}" aria-label="{{this.fonte}}: {{this.rotulo}}" /></li>
+        {{/each}}
+      </ul>
+      {{else}}{{#unless ajustes.recursos.length}}<p class="epm-vazio">Nenhum bônus automático valendo agora.</p>{{/unless}}{{/if}}
+      <p class="epm-rotulo">Bônus extras {{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="novoBonusExtra" data-origem="{{#if eArquetipo}}arquetipo{{else}}classe{{/if}}" title="Adicionar um bônus que o livro não dá (ex.: Duelista também dá +1 de CA)"><i class="fa-solid fa-plus"></i></button>{{/if}}</p>
+      {{#each ajustes.extras}}
+      <div class="epm-bonus-extra{{#unless valendo}} parado{{/unless}}">
+        <input type="text" class="epm-bonus-extra-nome" name="flags.epm-ficha.bonusExtras.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome (ex.: Duelista)" aria-label="Nome do bônus" />
+        <label class="epm-mini"><span>quando</span><select name="flags.epm-ficha.bonusExtras.{{this.id}}.condicao">{{#each opcoesCondicao}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-mini"><span>em</span><select name="flags.epm-ficha.bonusExtras.{{this.id}}.alvo">{{#each opcoesAlvo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+        {{#if eFormula}}<label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.bonusExtras.{{this.id}}.formula" value="{{this.formula}}" placeholder="1d6" /></label>
+        {{else}}<label class="epm-mini"><span>valor</span><input type="number" name="flags.epm-ficha.bonusExtras.{{this.id}}.valor" value="{{this.valor}}" /></label>{{/if}}
+        {{#if eRd}}<label class="epm-mini"><span>tipos</span><input type="text" name="flags.epm-ficha.bonusExtras.{{this.id}}.rdTipo" value="{{this.rdTipo}}" placeholder="todos os danos" /></label>{{/if}}
+        <span class="epm-dica" title="{{#if valendo}}A condição está valendo agora{{else}}A condição não está valendo agora{{/if}}">{{#if valendo}}valendo{{else}}parado{{/if}}</span>
+        <button type="button" class="epm-icone-botao perigo" data-action="excluirBonusExtra" data-ref="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      {{else}}<p class="epm-dica">Nenhum bônus extra. Use o + para criar, por exemplo, "Duelista: +1 de CA quando o estilo Duelista estiver escolhido".</p>{{/each}}
+      {{#each ajustes.salvos}}<p class="epm-dica"><strong>{{this.fonte}}</strong>: ajuste salvo ({{this.atual}}) para um bônus que não está valendo agora. <input type="text" name="flags.epm-ficha.ajustesBonus.{{this.chave}}" value="{{this.atual}}" style="width:70px" aria-label="Ajuste salvo" /></p>{{/each}}
+      <p class="epm-dica">Só aparecem os bônus que estão valendo agora ({{#if eArquetipo}}ex.: Arma Protetora só com a arma favorita equipada{{else}}ex.: a Fúria aparece com ela ligada{{/if}}). O ajuste continua salvo quando o bônus volta.</p>
+    </section>
+    {{/if}}{{/if}}
     <section class="epm-painel">
       <header class="epm-painel-titulo">
         <h3>Habilidades de {{this.label}}</h3>

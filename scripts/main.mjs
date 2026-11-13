@@ -257,3 +257,14 @@ Hooks.on("preCreateChatMessage", msg => {
     if (ator?.flags?.[FLAG]?.ui?.chatDiscreto) return false;
   } catch (err) { console.warn("EPM | chat discreto", err); }
 });
+
+/* Treinamento "Trocar arma favorita": ao concluir, troca a favorita (só no cliente de quem fez a mudança). */
+Hooks.on("updateActor", (ator, mudancas, opcoes, userId) => {
+  if (userId !== game.user?.id) return;
+  const treinos = mudancas?.flags?.[FLAG]?.treinamentos;
+  if (!treinos) return;
+  for (const [id, t] of Object.entries(treinos)) {
+    if (t?.estado !== "concluido") continue;
+    import("./ficha-060.mjs").then(m => m.aplicarTrocaFavorita(ator, id)).catch(err => console.warn("EPM | troca de arma favorita", err));
+  }
+});

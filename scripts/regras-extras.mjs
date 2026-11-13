@@ -113,6 +113,21 @@ export function idArquetipo(texto) {
  * `rolagens` = { combatente: [8, 3, …], … } (níveis 2+ de cada arquétipo; falta = média)
  */
 /** Lista de rolagens salva como array ou como objeto {0: 8, 1: 3} (campos do formulário) → array. */
+/** Tabela de recursos por arquétipo com os valores trocados pela mesa (flags.recursosAuto.tabela). */
+export function tabelaRecursos(ajustes = {}) {
+  const out = {};
+  for (const [arq, t] of Object.entries(RECURSOS_ARQUETIPO)) {
+    out[arq] = {};
+    for (const r of ["pv", "pe", "pm"]) {
+      const a = ajustes?.[arq]?.[r] ?? {};
+      const num = (v, p) => (v === undefined || v === null || String(v).trim() === "" || !Number.isFinite(Number(v)) ? p : Number(v));
+      const dado = /^\d*d\d+$/i.test(String(a.dado ?? "").trim()) ? String(a.dado).trim().toLowerCase() : t[r].dado;
+      out[arq][r] = { inicial: num(a.inicial, t[r].inicial), dado, media: num(a.media, t[r].media) };
+    }
+  }
+  return out;
+}
+
 export function listaRolagens(v) {
   if (Array.isArray(v)) return v;
   if (!v || typeof v !== "object") return [];
@@ -121,23 +136,23 @@ export function listaRolagens(v) {
   return out;
 }
 
-export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], rolagens = {}, usarMedia = true, extraFixo = 0, extraPorNivel = 0, ajuste = 0, modo = "" } = {}) {
+export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], rolagens = {}, usarMedia = true, extraFixo = 0, extraPorNivel = 0, ajuste = 0, modo = "", tabela = RECURSOS_ARQUETIPO } = {}) {
   const partes = [];
   let total = Number(raca) || 0;
   partes.push({ rotulo: "Raça", valor: total });
-  const validos = niveis.filter(n => RECURSOS_ARQUETIPO[n.arquetipo] && n.nivel > 0);
+  const validos = niveis.filter(n => tabela[n.arquetipo] && n.nivel > 0);
   if (!validos.length) {
     total += atributo;
     partes.push({ rotulo: "Atributo", valor: atributo });
     return { total: total + extraFixo, partes };
   }
   const primeiro = validos[0];
-  const ini = RECURSOS_ARQUETIPO[primeiro.arquetipo][recurso].inicial;
+  const ini = tabela[primeiro.arquetipo][recurso].inicial;
   total += ini + atributo;
   partes.push({ rotulo: `Inicial (${primeiro.arquetipo})`, valor: ini }, { rotulo: "Atributo (nível 1)", valor: atributo });
   let niveisExtras = 0;
   for (const n of validos) {
-    const cfg = RECURSOS_ARQUETIPO[n.arquetipo][recurso];
+    const cfg = tabela[n.arquetipo][recurso];
     const extras = n === primeiro ? n.nivel - 1 : n.nivel;
     const rol = listaRolagens(rolagens?.[n.arquetipo]);
     let soma = 0;

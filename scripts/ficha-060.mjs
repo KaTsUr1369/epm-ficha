@@ -14,7 +14,7 @@ import { RACAS, racaPorId, qtdUnicas, opcoesAmalgama, habilidadePorRef } from ".
 import { insanidadeTemporaria, insanidadePermanente, estadoSanidade, RECUPERACAO_SANIDADE } from "./insanidades.mjs";
 import { TREINAMENTOS_NOTION, KITS_INICIAIS, ARMAS_REGIAO, ARMADURAS_REGIAO, REGIOES, PROPRIEDADES_ARMA, TIPOS_ARMADURA } from "./catalogos.mjs";
 import {
-  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo, listaRolagens
+  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo, listaRolagens, tabelaRecursos
 } from "./regras-extras.mjs";
 import { niveisArquetipos } from "./ficha-extras.mjs";
 import * as mundo from "./mundo.mjs";
@@ -297,7 +297,7 @@ export async function rolarNiveisRecursos(actor) {
   const linhas = [];
   niveis.forEach((n, idx) => {
     const extras = idx === 0 ? n.nivel - 1 : n.nivel;
-    const cfg = RECURSOS_ARQUETIPO[n.arquetipo];
+    const cfg = tabelaRecursos(dados.recursosAuto?.tabela)[n.arquetipo];
     if (!cfg) return;
     for (const r of ["pv", "pe", "pm"]) {
       const atuais = [...listaRolagens(dados.recursosAuto?.rolagens?.[n.arquetipo]?.[r])];
@@ -375,13 +375,52 @@ export async function sincronizarMaximos(actor) {
 export async function treinoDoCatalogo(actor, indice) {
   const e = TREINAMENTOS_NOTION[int(indice)];
   if (!e) return;
+  let troca = null;
+  if (e.especial === "trocarFavorita") {
+    troca = await escolherTrocaFavorita(actor);
+    if (!troca) return;
+  }
   const mods = {};
   for (const m of e.mods ?? []) mods[novoId()] = { alvo: m.alvo, valor: m.valor };
   await actor.update({ [`${P}.treinamentos.${novoId()}`]: {
     nome: e.nome, categoria: e.categoria, tempo: e.tempo, unidade: e.unidade, pt: e.pt, requisitos: e.requisitos,
-    treinador: !!e.treinador, beneficios: e.beneficios, especial: e.especial ?? "", estado: "planejado", horasFeitas: 0, mods, criado: Date.now()
+    treinador: !!e.treinador, beneficios: troca ? `${e.beneficios} Sai: ${troca.saiNome}. Entra: ${troca.nova.nome}.` : e.beneficios,
+    especial: e.especial ?? "", estado: "planejado", horasFeitas: 0, mods, criado: Date.now(), ...(troca ? { trocaFavorita: { sai: troca.sai, nova: troca.nova } } : {})
   } });
   ui.notifications.info(`Treinamento "${e.nome}" adicionado (planejado).`);
+}
+
+/** Pergunta qual favorita sai e qual arma entra (treinamento "Trocar arma favorita"). */
+async function escolherTrocaFavorita(actor) {
+  const { armasFavoritas } = await import("./maestria-exotica.mjs");
+  const { ITENS_CATALOGO, REGIOES_CATALOGO } = await import("./itens-catalogo.mjs");
+  const atuais = armasFavoritas(actor.flags?.[FLAG] ?? {});
+  if (!atuais.length) { ui.notifications.info("Ainda não tem arma favorita: a primeira escolha é livre, na aba Sobre."); return null; }
+  const armas = ITENS_CATALOGO.filter(x => x.categoria === "armas" && !atuais.some(a => a.catalogo === x.id));
+  const grupos = Object.entries(REGIOES_CATALOGO).map(([reg, label]) => `<optgroup label="${escapar(label)}">${armas.filter(x => x.regiao === reg).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(x => `<option value="${escapar(x.id)}">${escapar(x.nome)}</option>`).join("")}</optgroup>`).join("");
+  const r = await formulario("Trocar arma favorita", `${atuais.length > 1 ? `<label class="epm-campo"><span>Sai</span><select name="sai">${atuais.map(a => `<option value="${escapar(a.id)}">${escapar(a.nome)}</option>`).join("")}</select></label>` : `<p>Sai: <strong>${escapar(atuais[0].nome)}</strong></p>`}
+      <label class="epm-campo"><span>Entra</span><select name="nova">${grupos}</select></label>
+      <p class="epm-dica">10 PT, pagos ao começar o treinamento; 1 semana (56 h). Ao concluir, a ficha troca sozinha.</p>`, { botao: "Planejar" });
+  if (!r?.nova) return null;
+  const x = ITENS_CATALOGO.find(i => i.id === r.nova);
+  const sai = atuais.find(a => a.id === r.sai) ?? atuais[0];
+  if (!x) return null;
+  return { sai: sai.id, saiNome: sai.nome, nova: { catalogo: x.id, nome: x.nome } };
+}
+
+/** Ao concluir o treinamento "Trocar arma favorita": troca a favorita e avisa no chat (uma vez só). */
+export async function aplicarTrocaFavorita(actor, idTreino) {
+  const t = actor.flags?.[FLAG]?.treinamentos?.[idTreino];
+  if (!t || t.estado !== "concluido" || t.especial !== "trocarFavorita" || !t.trocaFavorita || t.trocaFavorita.aplicada) return false;
+  const { sai, nova } = t.trocaFavorita;
+  const antiga = actor.flags?.[FLAG]?.armasFavoritas?.[sai];
+  await actor.update({
+    ...(antiga ? { [`${P}.armasFavoritas.-=${sai}`]: null } : {}),
+    [`${P}.armasFavoritas.${novoId()}`]: { catalogo: nova.catalogo ?? "", nome: nova.nome },
+    [`${P}.treinamentos.${idTreino}.trocaFavorita.aplicada`]: true
+  });
+  await notaChat(actor, `<p><strong>${escapar(actor.name)}</strong> trocou a arma favorita: ${antiga ? `<s>${escapar(antiga.nome ?? "")}</s> → ` : ""}<strong>${escapar(nova.nome)}</strong>.</p>`, "#D9775A");
+  return true;
 }
 
 /** Item de arma ou armadura do catálogo das regiões. */

@@ -15,7 +15,7 @@ import {
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
 import { penalidadeTec, efeitosSemPropriedades } from "./tecnologia.mjs";
 import { regra } from "./opcionais.mjs";
-import { especialDoTreino, fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos } from "./ficha-extras.mjs";
+import { especialDoTreino, fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos, ajustarBonus, iniciarAjustes, terminarAjustes } from "./ficha-extras.mjs";
 
 /* -------------------------------------------- */
 /*  Utilitários                                 */
@@ -496,6 +496,7 @@ export function dtDe(d, atributos, periciaPorId) {
 
 export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [], agora = null, opcoes = {} }) {
   const d = dados;
+  iniciarAjustes();
   const st = new Set(statuses);
   const nivel1 = Math.max(0, int(d.nivel, 1));
   const temSegundo = !!String(d.arquetipo2 ?? "").trim();
@@ -744,7 +745,10 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     somar("danoAtaque", pct <= 0.25 ? 20 : pct <= 0.5 ? 15 : pct <= 0.75 ? 10 : 5, "Frenesi");
   }
   // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
-  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora, itens, [...statuses])) somar(m.alvo, m.valor, m.fonte);
+  for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora, itens, [...statuses])) {
+    ajustarBonus(d, Object.assign(m, { origem: "arquetipo" }), m.alvo);
+    if (num(m.valor)) somar(m.alvo, m.valor, m.fonte);
+  }
   // Bônus de cena ligados: CA, testes e deslocamento (acerto e dano entram no ataque; RD nas reduções)
   for (const b of Object.values(d.bonusCena ?? {})) {
     if (!b?.ativo) continue;
@@ -991,7 +995,9 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     reducoes
   };
 
+  const ajustaveis = terminarAjustes();
   return {
+    ajustaveis,
     nivelTotal, atributos, gruposAtributo,
     pontosAtributo: {
       disponivel: disponivelAtributos, gasto: gastoAtributos, restante: disponivelAtributos - gastoAtributos,

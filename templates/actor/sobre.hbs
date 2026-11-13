@@ -33,6 +33,19 @@
         {{#if faixaIdadeTexto}}<div title="{{faixaIdadeDica}}"><dt>Fase de vida</dt><dd>{{faixaIdadeTexto}} <i class="fa-solid fa-circle-info" aria-hidden="true"></i></dd></div>{{/if}}
       </dl>
       {{/if}}
+      <div class="epm-favoritas" data-secao="armas-favoritas">
+        <p class="epm-rotulo" title="A arma favorita libera na hora a Maestria das armas Exóticas. Vale para qualquer cópia da mesma arma.">Arma favorita <span class="epm-dica">({{armasFavoritas.lista.length}} de {{armasFavoritas.limite}})</span></p>
+        <ul class="epm-favoritas-lista">
+          {{#each armasFavoritas.lista}}<li class="epm-tag{{#if exotica}} epm-selo-exotica liberada{{/if}}" title="{{#if exotica}}Exótica: a Maestria fica liberada{{else}}Arma favorita{{/if}}"><i class="fa-solid fa-heart" aria-hidden="true"></i> {{this.nome}}{{#if @root.armasFavoritas.eGM}} <button type="button" class="epm-icone-botao" data-action="removerArmaFavorita" data-ref="{{this.id}}" title="Tirar (só o Mestre; o jogador troca pelo treinamento Trocar arma favorita)"><i class="fa-solid fa-xmark"></i></button>{{/if}}</li>{{else}}<li class="epm-dica">Nenhuma ainda.</li>{{/each}}
+        </ul>
+        {{#if @root.editavel}}{{#if armasFavoritas.podeEscolher}}
+        <div class="epm-favoritas-escolher">
+          <select data-arma-favorita aria-label="Escolher arma favorita"><option value="">Escolher arma…</option>{{#each armasFavoritas.grupos}}<optgroup label="{{this.label}}">{{#each opcoes}}<option value="{{this.id}}">{{this.label}}</option>{{/each}}</optgroup>{{/each}}</select>
+          <button type="button" class="epm-botao epm-botao-mini" data-action="escolherArmaFavorita"><i class="fa-solid fa-heart"></i> Escolher</button>
+        </div>
+        {{else}}{{#unless armasFavoritas.eGM}}<p class="epm-dica">Para trocar, use o treinamento "Trocar arma favorita" (aba Treinamentos, 10 PT, 1 semana).</p>{{/unless}}{{/if}}{{/if}}
+        {{#if armasFavoritas.eGM}}<label class="epm-mini" title="Só o Mestre: quantas armas favoritas este personagem pode ter"><span>limite (Mestre)</span><input type="number" min="1" name="flags.epm-ficha.limiteFavoritas" value="{{armasFavoritas.limite}}" /></label>{{/if}}
+      </div>
     </section>
     <section class="epm-painel epm-imagem-painel epm-aparencia-painel">
       <header class="epm-painel-titulo"><h3>Aparência</h3>{{#if edicao}}{{#if aparencia.imagem}}<button type="button" class="epm-link" data-action="removerImagemSobre" data-campo="imagemAparencia">Remover imagem</button>{{/if}}{{/if}}</header>

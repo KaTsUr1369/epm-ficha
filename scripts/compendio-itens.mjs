@@ -1,21 +1,31 @@
 /**
- * Compêndio "EPM · Itens de Umbra'Draxil": todos os itens do catálogo como itens do Foundry, com imagem,
- * separados em pastas por categoria (e subpastas em Armas, Armaduras e Poções), do mais barato ao mais caro.
+ * Compêndio "EPM · Itens": todos os itens do catálogo (Umbra'Draxil, Briavoterna e Genesis) como itens do Foundry,
+ * com imagem, separados em pastas por categoria e, dentro dela, por região (e Corpo a corpo/Distância, Leves/Médias/Pesadas,
+ * tipo de poção), do mais barato ao mais caro.
  * O Mestre ativo cria e atualiza sozinho quando o catálogo muda (mesmo esquema do compêndio de Arquétipos e Classes).
  */
 import { FLAG, MODULE_ID } from "./config.mjs";
 import { ITENS_CATALOGO, CATEGORIAS_CATALOGO, REGIOES_CATALOGO, dadosItemCatalogo } from "./itens-catalogo.mjs";
-import { procurarArtes } from "./itens-imagens.mjs";
+import { procurarArtes, imagemItem } from "./itens-imagens.mjs";
 import { idFixo } from "./compendio-classes.mjs";
 
 export const NOME_PACOTE_ITENS = "epm-itens-umbra";
 export const ID_PACOTE_ITENS = `world.${NOME_PACOTE_ITENS}`;
-const ROTULO = `EPM · Itens de ${Object.values(REGIOES_CATALOGO).join(", ")}`;
-const FORMATO = 1;
+const ROTULO = "EPM · Itens (Umbra'Draxil, Briavoterna e Genesis)";
+const FORMATO = 2;
 const CHAVE_ARTES = "artesItensCatalogo";
 
-/** Subpasta do item dentro da categoria ("" = direto na categoria). */
+/** Categorias com itens de mais de uma região (essas ganham a região no nome da subpasta). */
+const VARIAS_REGIOES = new Set(CATEGORIAS_CATALOGO.map(c => c.id).filter(id => new Set(ITENS_CATALOGO.filter(x => x.categoria === id).map(x => x.regiao)).size > 1));
+
+/** Subpasta do item dentro da categoria ("" = direto na categoria): região e, quando houver, o tipo. */
 export function subpasta(x) {
+  const tipo = tipoDaSubpasta(x);
+  const regiao = VARIAS_REGIOES.has(x.categoria) ? REGIOES_CATALOGO[x.regiao] ?? "" : "";
+  return [regiao, tipo].filter(Boolean).join(" · ");
+}
+
+function tipoDaSubpasta(x) {
   if (x.categoria === "armas") return x.arma?.pericia === "pontaria" ? "Distância" : "Corpo a corpo";
   if (x.categoria === "armaduras") return { leve: "Leves", media: "Médias", pesada: "Pesadas" }[x.armadura?.tipo] ?? "";
   if (x.categoria === "pocoes") {
@@ -53,7 +63,7 @@ export function documentosItens(artes = {}) {
     const daCategoria = ITENS_CATALOGO.filter(x => x.categoria === c.id).sort((a, b) => a.preco - b.preco || a.nome.localeCompare(b.nome, "pt-BR"));
     daCategoria.forEach((x, i) => {
       const s = subpasta(x);
-      const d = dadosItemCatalogo(x, { qtd: 1, flag: FLAG, img: artes[x.id] ?? "" });
+      const d = dadosItemCatalogo(x, { qtd: 1, flag: FLAG, img: imagemItem(x, artes) });
       itens.push({ ...d, _id: idFixo(`itens:${x.id}`), folder: idPasta[s ? `${c.id}:${s}` : c.id], sort: (i + 1) * 10 });
     });
   }

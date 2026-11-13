@@ -1668,7 +1668,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     ]
   };
   // Estilos que mexem no dano: Arma Leve (rola de novo 1 e 2), Armamento Longo (+1d6 / desarmado +1d4), Arma Pesada (nota)
-  const props = (item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])]] : []).map(p => normalizarTexto(p));
+  const props = (item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])], ...(at.maestriaExotica?.liberada ? at.propriedades ?? [] : [])] : []).map(p => normalizarTexto(p));
   const ePesada = props.some(p => ["pesada", "enorme", "hvy"].includes(p));
   const eLeve = props.some(p => ["leve", "lgt", "light"].includes(p));
   const aDistancia = at.periciaId === "pontaria" || /pontaria/.test(String(at.pericia ?? ""));
@@ -1697,6 +1697,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     base.comDano = base.comDano || !!at.dano;
   }
   if (inspirado) base.notasExtra.push("Inspiração de Tema: vantagem (−1 Inspiração).");
+  if (at.maestriaExotica?.liberada) base.notasExtra.push(`Maestria Exótica (${at.maestriaExotica.motivo}): ${at.maestriaExotica.texto}`);
   const msg = await rolarAtaque(actor, at, { ...base, rotulo: dupla ? `Em dupla com ${dupla.parceiro.name}` : oportunidade ? "Oportunidade" : contra ? "Contra-ataque" : "" });
   const extrasRolar = [
     ...Array.from({ length: extrasComuns }, () => ({ rotulo: "Ataque extra", penalidade: -penalExtra })),

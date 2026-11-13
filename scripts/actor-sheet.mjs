@@ -43,7 +43,7 @@ const TIPO_ABA = "application/x-epm-aba";
 const TIPO_CATEGORIA = "application/x-epm-categoria";
 
 const ACOES_FICHA = [
-  "aba", "irAba", "alternarEdicao", "alternarChatDiscreto", "editarImagem", "imagemItem", "imagemSobre", "removerImagemSobre", "verImagem",
+  "aba", "irAba", "alternarEdicao", "alternarChatDiscreto", "escolherArmaFavorita", "removerArmaFavorita", "novoBonusExtra", "excluirBonusExtra", "editarImagem", "imagemItem", "imagemSobre", "removerImagemSobre", "verImagem",
   "ajustarRecurso", "rolarAtributo", "rolarPericia", "rolarIniciativa", "alternarAtributoPericia", "adicionarPericia", "removerPericia", "sincronizarPericias", "salvarPericiasPadrao",
   "defesa", "alternarAcao", "novoTurno", "exaustao", "descanso",
   "converter", "subirNivel", "moedas", "filtroRaridade",
@@ -939,6 +939,36 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       await this.actor.update({ [r.caminho]: novo });
     }, 350);
     this._ajustesRecurso[id] = { valor: novo, timer };
+  }
+
+  /** Arma favorita: a primeira escolha é livre (até o limite); trocar depois é pelo treinamento ou pelo Mestre. */
+  async acaoEscolherArmaFavorita(ev, alvo) {
+    const sel = alvo.closest(".epm-favoritas")?.querySelector("select[data-arma-favorita]");
+    const v = String(sel?.value ?? "");
+    if (!v) return ui.notifications.info("Escolha uma arma na lista.");
+    const { armasFavoritas, limiteFavoritas } = await import("./maestria-exotica.mjs");
+    const dados = this.actor.flags?.[FLAG] ?? {};
+    if (armasFavoritas(dados).length >= limiteFavoritas(dados) && !game.user.isGM) return ui.notifications.warn("Já tem todas as armas favoritas que pode. Para trocar, use o treinamento Trocar arma favorita.");
+    const { itemCatalogoPorId } = await import("./itens-catalogo.mjs");
+    const [tipo, ...resto] = v.split(":");
+    const ref = resto.join(":");
+    const dadosFav = tipo === "catalogo" ? { catalogo: ref, nome: itemCatalogoPorId(ref)?.nome ?? ref } : { catalogo: "", nome: ref };
+    await this.actor.update({ [`${P}.armasFavoritas.${foundry.utils.randomID()}`]: dadosFav });
+    ui.notifications.info(`${dadosFav.nome} é a arma favorita de ${this.actor.name}.`);
+  }
+
+  acaoRemoverArmaFavorita(ev, alvo) {
+    if (!game.user.isGM) return ui.notifications.warn("Só o Mestre tira a arma favorita. O jogador troca pelo treinamento Trocar arma favorita.");
+    return this.actor.update({ [`${P}.armasFavoritas.-=${alvo.dataset.ref}`]: null });
+  }
+
+  acaoNovoBonusExtra(ev, alvo) {
+    const id = foundry.utils.randomID();
+    return this.actor.update({ [`${P}.bonusExtras.${id}`]: { nome: "", origem: alvo.dataset.origem === "classe" ? "classe" : "arquetipo", condicao: "sempre", alvo: "ca", valor: 1 } });
+  }
+
+  acaoExcluirBonusExtra(ev, alvo) {
+    return this.actor.update({ [`${P}.bonusExtras.-=${alvo.dataset.ref}`]: null });
   }
 
   acaoAlternarChatDiscreto() {

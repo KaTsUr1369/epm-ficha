@@ -3155,3 +3155,25 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-060-ajustes .epm-mini { width: 70px; }
 .epm-060-recursos-cfg.epm-060-ajustes { display: flex; flex-direction: row; flex-wrap: wrap; }
 .epm-060-ajustes .epm-rotulo { flex: 1 0 100%; }
+/* Ajustar bônus do arquétipo e da classe */
+.epm-ajustes-tabela { border-collapse: collapse; margin: 4px 0 8px; width: auto; background: none; border: 0; }
+.epm-ajustes-tabela th, .epm-ajustes-tabela td { padding: 2px 4px; border: 0; background: none; font-size: 12px; text-align: center; }
+.epm-ajustes-tabela tbody th { text-align: left; }
+.application.epm .epm-ajustes-tabela input { width: 70px; height: 24px; text-align: center; }
+.epm-ajustes-lista { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 4px; }
+.epm-ajustes-lista li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.application.epm .epm-ajustes-lista input { width: 90px; flex: none; text-align: center; }
+.epm-bonus-extra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; padding: 6px 0; border-top: 1px solid var(--epm-linha); }
+.application.epm .epm-bonus-extra input.epm-bonus-extra-nome { flex: 1 1 120px; min-width: 100px; width: auto; }
+.application.epm .epm-bonus-extra select { max-width: 165px; }
+.application.epm .epm-bonus-extra .epm-mini input { width: 70px; }
+.epm-bonus-extra.parado { opacity: .65; }
+/* Maestria das armas Exóticas */
+.epm-selo-exotica { font-size: 10.5px; opacity: .85; white-space: nowrap; }
+.epm-selo-exotica.liberada { color: #f0d79a; border-color: #b8923a; opacity: 1; }
+.epm-favoritas { margin-top: 8px; display: grid; gap: 4px; }
+.epm-favoritas-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.epm-favoritas-lista li { display: inline-flex; align-items: center; gap: 4px; }
+.epm-favoritas-escolher { display: flex; gap: 6px; align-items: center; }
+.application.epm .epm-favoritas-escolher select { flex: 1 1 auto; min-width: 0; }
+.application.epm .epm-favoritas .epm-mini input { width: 60px; }

@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.3
+
+- **Borda do token em 3 cores**: **Principal** (anel), **Secundária** (chamas) e **Terciária** (só as runas e o brilho das estrelas). Cada parte tem seu seletor de cor e um botão para voltar à cor original. As partes mantêm o claro e o escuro do desenho. A janela lembra as últimas cores.
+
 ## Novidades da 0.8.2
 
 - **Compêndio "EPM · Itens de Umbra'Draxil"**: os 338 itens do catálogo como itens do Foundry, com imagem, separados em pastas por categoria e do mais barato ao mais caro.

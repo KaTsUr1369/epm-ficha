@@ -2,7 +2,7 @@
  * Enquadrar a imagem do token na borda do EPM (anel de runas com chamas), como num editor de foto de celular:
  * um quadrado sobre a imagem, que aumenta ou diminui arrastando as laterais e os cantos e anda segurando o meio.
  * O que fica dentro do quadrado vai para o círculo de dentro da borda (antes das runas); o resto some (PNG transparente).
- * A cor da borda pode ser trocada. O PNG vai para a pasta "Tokens" dos dados do Foundry.
+ * As 3 partes da borda (anel, chamas e runas) podem mudar de cor. O PNG vai para a pasta "Tokens" dos dados do Foundry.
  */
 import { fvtt, escapar } from "./helpers.mjs";
 
@@ -26,23 +26,73 @@ function carregar(src) {
   });
 }
 
-/** Borda pintada com a cor escolhida (mantém o claro e o escuro de cada parte; preto continua preto). */
-export function bordaColorida(borda, cor) {
-  if (!cor) return borda;
+/** As 3 camadas da borda que podem mudar de cor. */
+export const CAMADAS_BORDA = [
+  { id: "anel", label: "Principal (anel)" },
+  { id: "chamas", label: "Secundária (chamas)" },
+  { id: "runas", label: "Terciária (runas)" }
+];
+
+const hexRgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h ?? "")); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+
+/**
+ * Peso de cada camada num pixel da borda (pura, para teste). As runas (e o brilho das estrelas) são os pixels
+ * claros da faixa do anel; o anel é o azul e o que fica perto do círculo; as chamas são o resto (escuro, de fora).
+ * `rel` = distância ao centro em fração do lado da imagem.
+ */
+export function pesoCamadas(R, G, B, rel) {
+  const L = 0.3 * R + 0.59 * G + 0.11 * B;
+  const naFaixa = rel >= 0.309 && rel <= 0.414;
+  const runa = naFaixa ? Math.min(1, Math.max(0, (L - 55) / 40)) : 0;
+  const anel = (B - R > 10 || rel < 0.375) ? 1 - runa : 0;
+  return { runas: runa, anel, chamas: 1 - runa - anel, L };
+}
+
+/**
+ * Borda com até 3 cores: { anel, chamas, runas } em hex ("" = cor original da camada). Cada camada mantém o claro e
+ * o escuro do desenho (o pixel mais claro da camada fica na cor escolhida; o escuro, numa versão escura dela).
+ * Aceita uma cor só (texto) para pintar tudo, como antes.
+ */
+export function bordaColorida(borda, cores) {
+  if (typeof cores === "string") cores = cores ? { anel: cores, chamas: cores, runas: cores } : {};
+  const rgb = Object.fromEntries(CAMADAS_BORDA.map(c => [c.id, hexRgb(cores?.[c.id])]));
+  if (!Object.values(rgb).some(Boolean)) return borda;
+  const w = borda.naturalWidth || borda.width, h = borda.naturalHeight || borda.height;
   const c = document.createElement("canvas");
-  c.width = borda.naturalWidth || borda.width;
-  c.height = borda.naturalHeight || borda.height;
-  const ctx = c.getContext("2d");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(borda, 0, 0);
-  ctx.globalCompositeOperation = "color";
-  ctx.fillStyle = cor;
-  ctx.fillRect(0, 0, c.width, c.height);
-  // um pouco mais de cor nas partes claras (runas e brilho)
-  ctx.globalCompositeOperation = "soft-light";
-  ctx.fillStyle = cor;
-  ctx.fillRect(0, 0, c.width, c.height);
-  ctx.globalCompositeOperation = "destination-in";
-  ctx.drawImage(borda, 0, 0);
+  const dados = ctx.getImageData(0, 0, w, h);
+  const px = dados.data;
+  const cx = CIRCULO_BORDA.cx * w, cy = CIRCULO_BORDA.cy * h;
+  // 1ª passada: brilho de referência de cada camada (o mais claro dela)
+  const pesos = new Array(w * h);
+  const ref = { anel: 1, chamas: 1, runas: 1 };
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const k = (y * w + x) * 4;
+    if (px[k + 3] < 8) continue;
+    const p = pesoCamadas(px[k], px[k + 1], px[k + 2], Math.hypot(x - cx, y - cy) / w);
+    pesos[y * w + x] = p;
+    for (const id of ["anel", "chamas", "runas"]) if (p[id] > 0.5) ref[id] = Math.max(ref[id], p.L);
+  }
+  // 2ª passada: pinta cada camada que tem cor
+  const BASE = 0.22;
+  for (let i = 0; i < pesos.length; i++) {
+    const p = pesos[i];
+    if (!p) continue;
+    const k = i * 4;
+    const orig = [px[k], px[k + 1], px[k + 2]];
+    const novo = [0, 0, 0];
+    for (const id of ["anel", "chamas", "runas"]) {
+      const w8 = p[id];
+      if (!w8) continue;
+      const cor = rgb[id];
+      const luz = BASE + (1 - BASE) * Math.min(1, p.L / ref[id]);
+      for (let ch = 0; ch < 3; ch++) novo[ch] += w8 * (cor ? cor[ch] * luz : orig[ch]);
+    }
+    px[k] = Math.round(novo[0]); px[k + 1] = Math.round(novo[1]); px[k + 2] = Math.round(novo[2]);
+  }
+  ctx.putImageData(dados, 0, 0);
   return c;
 }
 
@@ -109,11 +159,16 @@ function nomeArquivo(nome) {
   return `${limpo}-${Date.now().toString(36)}.png`;
 }
 
-function corSalva() {
-  try { return localStorage.getItem(CHAVE_COR) || ""; } catch { return ""; }
+function coresSalvas() {
+  try {
+    const t = localStorage.getItem(CHAVE_COR) || "";
+    if (!t) return {};
+    if (t.startsWith("#")) return { anel: t, chamas: t, runas: t };
+    return JSON.parse(t) ?? {};
+  } catch { return {}; }
 }
-function salvarCor(cor) {
-  try { if (cor) localStorage.setItem(CHAVE_COR, cor); else localStorage.removeItem(CHAVE_COR); } catch { /* sem armazenamento */ }
+function salvarCores(cores) {
+  try { localStorage.setItem(CHAVE_COR, JSON.stringify(cores ?? {})); } catch { /* sem armazenamento */ }
 }
 
 const ALCAS = ["n", "s", "l", "o", "nl", "no", "sl", "so"];
@@ -136,8 +191,9 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
   const ladoInicial = Math.min(W, H) * 0.9;
   let recorte = limitarRecorte({ x: (W - ladoInicial) / 2, y: (H - ladoInicial) / 2, lado: ladoInicial }, W, H);
   let comBorda = true;
-  let cor = corSalva();
-  let bordaPintada = bordaColorida(borda, cor);
+  const cores = { anel: "", chamas: "", runas: "", ...coresSalvas() };
+  let bordaPintada = bordaColorida(borda, cores);
+  const PADRAO = { anel: "#1c3a7a", chamas: "#2a2a2a", runas: "#dfe6f2" };
   let previa = null, caixa = null;
 
   const atualizar = () => {
@@ -158,8 +214,10 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
       </div>
       <div class="epm-enquadrar-lado">
         <canvas width="${PREVIA}" height="${PREVIA}" data-previa aria-label="Prévia do token"></canvas>
-        <label class="epm-campo"><span>Cor da borda</span><input type="color" data-cor value="${escapar(cor || "#3a5ca8")}"></label>
-        <label class="epm-check"><input type="checkbox" data-cor-original ${cor ? "" : "checked"}> Cor original</label>
+        <fieldset class="epm-cores-borda"><legend>Cores da borda</legend>
+          ${CAMADAS_BORDA.map(c => `<div class="epm-cor-camada"><label class="epm-campo"><span>${escapar(c.label)}</span><input type="color" data-cor="${c.id}" value="${escapar(cores[c.id] || PADRAO[c.id])}"></label>
+            <button type="button" class="epm-icone-botao" data-cor-original="${c.id}" title="Voltar à cor original desta parte" ${cores[c.id] ? "" : "disabled"}><i class="fa-solid fa-rotate-left"></i></button></div>`).join("")}
+        </fieldset>
         <label class="epm-check"><input type="checkbox" data-borda checked> Com a borda</label>
         <button type="button" class="epm-link" data-tudo>Pegar a imagem toda</button>
       </div>
@@ -197,14 +255,28 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
         recorte = limitarRecorte({ x: recorte.x + (recorte.lado - novo) / 2, y: recorte.y + (recorte.lado - novo) / 2, lado: novo }, W, H);
         atualizar();
       }, { passive: false });
-      const campoCor = el.querySelector("[data-cor]"), original = el.querySelector("[data-cor-original]");
-      const trocarCor = () => {
-        cor = original?.checked ? "" : campoCor?.value ?? "";
-        bordaPintada = bordaColorida(borda, cor);
-        atualizar();
+      let espera = 0;
+      const repintar = () => {
+        cancelAnimationFrame(espera);
+        espera = requestAnimationFrame(() => { bordaPintada = bordaColorida(borda, cores); atualizar(); });
       };
-      campoCor?.addEventListener("input", () => { if (original) original.checked = false; trocarCor(); });
-      original?.addEventListener("change", trocarCor);
+      for (const campo of el.querySelectorAll("input[data-cor]")) {
+        campo.addEventListener("input", () => {
+          cores[campo.dataset.cor] = campo.value;
+          const b = el.querySelector(`[data-cor-original="${campo.dataset.cor}"]`);
+          if (b) b.disabled = false;
+          repintar();
+        });
+      }
+      for (const b of el.querySelectorAll("[data-cor-original]")) {
+        b.addEventListener("click", () => {
+          cores[b.dataset.corOriginal] = "";
+          b.disabled = true;
+          const campo = el.querySelector(`input[data-cor="${b.dataset.corOriginal}"]`);
+          if (campo) campo.value = PADRAO[b.dataset.corOriginal];
+          repintar();
+        });
+      }
       el.querySelector("[data-borda]")?.addEventListener("change", e => { comBorda = e.target.checked; atualizar(); });
       el.querySelector("[data-tudo]")?.addEventListener("click", () => { recorte = limitarRecorte({ x: 0, y: 0, lado: Math.min(W, H) }, W, H); recorte.x = (W - recorte.lado) / 2; recorte.y = (H - recorte.lado) / 2; atualizar(); });
       atualizar();
@@ -212,7 +284,7 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
   });
   if (r === "original") return src;
   if (r !== "ok") return null;
-  salvarCor(cor);
+  salvarCores(cores);
 
   const final = document.createElement("canvas");
   final.width = final.height = TAMANHO_FINAL;

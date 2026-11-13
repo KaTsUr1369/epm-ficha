@@ -115,10 +115,29 @@
     </header>
     {{#if @root.edicao}}
     <div class="epm-060-recursos-cfg">
-      <label class="epm-mini" title="Média: soma o valor fixo da tabela a cada nível. Rolar o dado: rola o dado de cada nível uma vez e guarda."><span>por nível</span><select name="flags.epm-ficha.recursosAuto.modo"><option value="media" {{epmSelected v.recursosAuto.modo "media"}}>Média</option><option value="rolagem" {{epmSelected v.recursosAuto.modo "rolagem"}}>Rolar o dado</option></select></label>
+      <label class="epm-mini" title="Média: soma o valor fixo da tabela a cada nível. Rolar o dado: rola o dado de cada nível uma vez e guarda."><span>por nível</span><select name="flags.epm-ficha.recursosAuto.modo"><option value="media" {{epmSelected v.recursosAuto.modo "media"}}>Média</option><option value="rolagem" {{epmSelected v.recursosAuto.modo "rolagem"}}>Rolar o dado</option><option value="manual" {{epmSelected v.recursosAuto.modo "manual"}}>Digitar os valores</option></select></label>
       {{#each v.recursosAuto.linhas}}<label class="epm-mini"><span>atributo da {{this.label}}</span><select name="flags.epm-ficha.recursosAuto.atributos.{{this.id}}">{{#each opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/each}}
       {{#if v.recursosAuto.ativo}}{{#if (epmEq v.recursosAuto.modo "rolagem")}}<button type="button" class="epm-botao epm-botao-mini" data-action="rolarNiveisRecursos"><i class="fa-solid fa-dice"></i> Rolar níveis que faltam</button>{{/if}}{{/if}}
     </div>
+    {{#if v.recursosAuto.ativo}}
+    {{#unless (epmEq v.recursosAuto.modo "media")}}{{#if v.recursosAuto.temPorNivel}}
+    <div class="epm-060-por-nivel">
+      <p class="epm-dica">Valor do dado em cada nível (sem o atributo, que a ficha soma). Pode digitar os números da sua ficha antiga; vazio = média.</p>
+      {{#each v.recursosAuto.porNivel}}
+      <table class="epm-060-niveis-tabela">
+        <thead><tr><th>{{this.label}}</th>{{#each niveis}}<th>nv {{this.n}}</th>{{/each}}</tr></thead>
+        <tbody>{{#each recursos}}<tr><th title="{{this.dado}} (média {{this.media}})">{{this.label}} <span class="epm-dica">{{this.dado}}</span></th>{{#each valores}}<td><input type="number" min="0" name="flags.epm-ficha.recursosAuto.rolagens.{{../../arquetipo}}.{{../id}}.{{this.i}}" value="{{this.valor}}" placeholder="{{../media}}" aria-label="{{../label}} nível" /></td>{{/each}}</tr>{{/each}}</tbody>
+      </table>
+      {{/each}}
+    </div>
+    {{/if}}{{/unless}}
+    <div class="epm-060-recursos-cfg epm-060-ajustes">
+      <span class="epm-rotulo" title="Soma (ou tira, com número negativo) direto no máximo. Útil para bater com os números de uma ficha antiga.">Ajuste manual</span>
+      <label class="epm-mini"><span>Vida</span><input type="number" name="flags.epm-ficha.recursosAuto.ajuste.pv" value="{{v.recursosAuto.ajuste.pv}}" /></label>
+      <label class="epm-mini"><span>Estamina</span><input type="number" name="flags.epm-ficha.recursosAuto.ajuste.pe" value="{{v.recursosAuto.ajuste.pe}}" /></label>
+      <label class="epm-mini"><span>Mana</span><input type="number" name="flags.epm-ficha.recursosAuto.ajuste.pm" value="{{v.recursosAuto.ajuste.pm}}" /></label>
+    </div>
+    {{/if}}
     {{/if}}
     {{#if v.recursosAuto.ativo}}
     <ul class="epm-060-lista">{{#each v.recursosAuto.linhas}}<li><strong>{{this.label}} máxima: {{#if total}}{{this.total}}{{else}}—{{/if}}</strong> <span class="epm-dica">{{this.partes}}</span></li>{{/each}}</ul>

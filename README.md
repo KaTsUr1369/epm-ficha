@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.6
+
+- **Vida, Mana e Estamina automáticas com os seus números**: no modo edição, o painel ganhou:
+  - opção **Digitar os valores** em "por nível": uma tabela com o valor do dado de cada nível (Vida, Estamina e Mana, por arquétipo). Dá para pôr os números da ficha antiga; vazio = média. No modo "Rolar o dado" a mesma tabela aparece e dá para corrigir qualquer rolagem;
+  - **Ajuste manual** de Vida, Estamina e Mana: soma (ou tira) direto no máximo, para bater exatamente com outra ficha.
+  - O detalhe de cada máximo mostra "valores digitados" e "Ajuste manual".
+
 ## Novidades da 0.8.5
 
 - **Habilidades em várias partes** (ex.: *O Legado do Errante*):

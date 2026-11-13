@@ -3145,3 +3145,13 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-forma-efeito-texto { margin: 2px 0 8px 12px; padding-left: 8px; border-left: 2px solid var(--epm-linha); font-size: 12.5px; }
 .epm-forma-efeito-texto p { margin: 0 0 4px; }
 .epm-forma-efeito-texto ul { margin: 2px 0 4px 18px; padding: 0; }
+/* Vida/Estamina/Mana automáticas: valores por nível e ajuste */
+.epm-060-por-nivel { margin: 6px 0; overflow-x: auto; }
+.epm-060-niveis-tabela { border-collapse: collapse; margin: 4px 0 8px; width: auto; background: none; border: 0; }
+.epm-060-niveis-tabela th, .epm-060-niveis-tabela td { padding: 2px 3px; border: 0; background: none; font-size: 11px; text-align: center; white-space: nowrap; }
+.epm-060-niveis-tabela tbody th { text-align: left; font-weight: 600; }
+.application.epm .epm-060-niveis-tabela input { width: 44px; height: 24px; text-align: center; padding: 0 2px; }
+.epm-060-ajustes { align-items: flex-end; gap: 8px; margin-top: 4px; }
+.epm-060-ajustes .epm-mini { width: 70px; }
+.epm-060-recursos-cfg.epm-060-ajustes { display: flex; flex-direction: row; flex-wrap: wrap; }
+.epm-060-ajustes .epm-rotulo { flex: 1 0 100%; }

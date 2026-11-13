@@ -362,7 +362,7 @@ export function maximosAutomaticos(d, atributos, raca) {
     out[r] = maximoRecurso(r, {
       raca: n(base[r] ?? cfg.racaBase?.[r]), atributo, niveis,
       rolagens: Object.fromEntries(Object.entries(cfg.rolagens ?? {}).map(([arq, v]) => [arq, v?.[r] ?? []])),
-      usarMedia: cfg.modo !== "rolagem", extraFixo, extraPorNivel
+      usarMedia: !["rolagem", "manual"].includes(cfg.modo), modo: cfg.modo, extraFixo, extraPorNivel, ajuste: Math.trunc(n(cfg.ajuste?.[r]))
     });
     out[r].atributo = attr;
   }

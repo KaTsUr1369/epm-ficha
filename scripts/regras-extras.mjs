@@ -112,7 +112,16 @@ export function idArquetipo(texto) {
  * `niveis` = [{ arquetipo: "combatente", nivel: 5 }, { arquetipo: "conjurador", nivel: 2 }]
  * `rolagens` = { combatente: [8, 3, …], … } (níveis 2+ de cada arquétipo; falta = média)
  */
-export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], rolagens = {}, usarMedia = true, extraFixo = 0, extraPorNivel = 0 } = {}) {
+/** Lista de rolagens salva como array ou como objeto {0: 8, 1: 3} (campos do formulário) → array. */
+export function listaRolagens(v) {
+  if (Array.isArray(v)) return v;
+  if (!v || typeof v !== "object") return [];
+  const out = [];
+  for (const [k, x] of Object.entries(v)) if (/^\d+$/.test(k)) out[Number(k)] = x;
+  return out;
+}
+
+export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], rolagens = {}, usarMedia = true, extraFixo = 0, extraPorNivel = 0, ajuste = 0, modo = "" } = {}) {
   const partes = [];
   let total = Number(raca) || 0;
   partes.push({ rotulo: "Raça", valor: total });
@@ -130,7 +139,7 @@ export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], ro
   for (const n of validos) {
     const cfg = RECURSOS_ARQUETIPO[n.arquetipo][recurso];
     const extras = n === primeiro ? n.nivel - 1 : n.nivel;
-    const rol = rolagens?.[n.arquetipo] ?? [];
+    const rol = listaRolagens(rolagens?.[n.arquetipo]);
     let soma = 0;
     for (let i = 0; i < extras; i++) {
       const r = Number(rol[n === primeiro ? i : i]);
@@ -138,12 +147,13 @@ export function maximoRecurso(recurso, { raca = 0, atributo = 0, niveis = [], ro
     }
     if (extras > 0) {
       total += soma + extras * atributo;
-      partes.push({ rotulo: `${extras} nível(is) de ${n.arquetipo} (${usarMedia ? "média" : "rolagem"} + atributo)`, valor: soma + extras * atributo });
+      partes.push({ rotulo: `${extras} nível(is) de ${n.arquetipo} (${usarMedia ? "média" : modo === "manual" ? "valores digitados" : "rolagem"} + atributo)`, valor: soma + extras * atributo });
       niveisExtras += extras;
     }
   }
   if (extraFixo) { total += extraFixo; partes.push({ rotulo: "Outros (raça, únicas)", valor: extraFixo }); }
   if (extraPorNivel) { const v = extraPorNivel * (niveisExtras + 1); total += v; partes.push({ rotulo: "Por nível (raça)", valor: v }); }
+  if (Number(ajuste)) { total += Number(ajuste); partes.push({ rotulo: "Ajuste manual", valor: Number(ajuste) }); }
   return { total, partes };
 }
 

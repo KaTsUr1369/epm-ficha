@@ -8,12 +8,12 @@ import { int, num, normalizarTexto } from "./data.mjs";
 import { racaPorId, TAMANHOS } from "./racas.mjs";
 import { ESTADOS_TOKEN } from "./token-estados.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
-import { trocasBonus } from "./ficha-extras.mjs";
 import { CATEGORIAS_TREINO, TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import {
   RECURSOS_ARQUETIPO, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, TIPOS_VOTO, TIPOS_PACTO, PATENTES, REGRAS_HIERARQUIA,
-  FAIXAS_NOMEACAO, ROTULOS_BONUS_ALTO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE
+  FAIXAS_NOMEACAO, ROTULOS_BONUS_ALTO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE, listaRolagens
 } from "./regras-extras.mjs";
+import { niveisArquetipos, trocasBonus } from "./ficha-extras.mjs";
 
 export const TIPOS_INSANIDADE = { fobia: "Fobia", compulsao: "Compulsão", paranoia: "Paranoia", alucinacao: "Alucinação", mania: "Mania", outro: "Outro" };
 export const INTENSIDADES_INSANIDADE = {
@@ -88,8 +88,28 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
 
   /* Máximos automáticos */
   const auto = dados.recursosAuto ?? {};
+  // Valores de cada nível (rolados ou digitados à mão), por arquétipo e recurso
+  const niveisRec = niveisArquetipos(dados);
+  const porNivel = niveisRec.map((nv, idx) => {
+    const extras = idx === 0 ? nv.nivel - 1 : nv.nivel;
+    const cfgArq = RECURSOS_ARQUETIPO[nv.arquetipo];
+    if (!cfgArq || extras <= 0) return null;
+    return {
+      arquetipo: nv.arquetipo, label: `${nv.arquetipo[0].toUpperCase()}${nv.arquetipo.slice(1)}`,
+      niveis: Array.from({ length: extras }, (_, i) => ({ n: (idx === 0 ? 2 : 1) + i })),
+      recursos: ["pv", "pe", "pm"].map(r => {
+        const lista = listaRolagens(auto.rolagens?.[nv.arquetipo]?.[r]);
+        return {
+          id: r, label: RECURSOS[r].abrev ?? r.toUpperCase(), dado: cfgArq[r].dado, media: cfgArq[r].media,
+          valores: Array.from({ length: extras }, (_, i) => ({ i, valor: Number(lista[i]) > 0 ? Number(lista[i]) : "" }))
+        };
+      })
+    };
+  }).filter(Boolean);
   v.recursosAuto = {
-    ativo: !!auto.ativo, modo: auto.modo === "rolagem" ? "rolagem" : "media",
+    ativo: !!auto.ativo, modo: ["rolagem", "manual"].includes(auto.modo) ? auto.modo : "media",
+    porNivel, temPorNivel: porNivel.length > 0,
+    ajuste: { pv: int(auto.ajuste?.pv), pe: int(auto.ajuste?.pe), pm: int(auto.ajuste?.pm) },
     linhas: ["pv", "pe", "pm"].map(r => {
       const calc = ex.recursosAuto?.[r];
       const attr = auto.atributos?.[r] ?? ATRIBUTO_RECURSO_PADRAO[r];

@@ -14,7 +14,7 @@ import { RACAS, racaPorId, qtdUnicas, opcoesAmalgama, habilidadePorRef } from ".
 import { insanidadeTemporaria, insanidadePermanente, estadoSanidade, RECUPERACAO_SANIDADE } from "./insanidades.mjs";
 import { TREINAMENTOS_NOTION, KITS_INICIAIS, ARMAS_REGIAO, ARMADURAS_REGIAO, REGIOES, PROPRIEDADES_ARMA, TIPOS_ARMADURA } from "./catalogos.mjs";
 import {
-  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo
+  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo, listaRolagens
 } from "./regras-extras.mjs";
 import { niveisArquetipos } from "./ficha-extras.mjs";
 import * as mundo from "./mundo.mjs";
@@ -300,7 +300,7 @@ export async function rolarNiveisRecursos(actor) {
     const cfg = RECURSOS_ARQUETIPO[n.arquetipo];
     if (!cfg) return;
     for (const r of ["pv", "pe", "pm"]) {
-      const atuais = [...(dados.recursosAuto?.rolagens?.[n.arquetipo]?.[r] ?? [])];
+      const atuais = [...listaRolagens(dados.recursosAuto?.rolagens?.[n.arquetipo]?.[r])];
       const faltam = Math.max(0, extras - atuais.length);
       for (let i = 0; i < faltam; i++) {
         const faces = int(cfg[r].dado.split("d")[1], 6);

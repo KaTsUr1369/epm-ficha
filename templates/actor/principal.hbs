@@ -112,8 +112,8 @@
     </div>
 
 {{#*inline "linhaPericia"}}
-        <li data-pericia-id="{{this.id}}" {{#if @root.edicao}}draggable="true"{{/if}} class="epm-pericia{{#if acimaLimite}} acima{{/if}}{{#if favorita}} favorita{{/if}}">
-          {{#if @root.edicao}}
+        <li data-pericia-id="{{this.id}}" {{#if editar}}draggable="true"{{/if}} class="epm-pericia{{#if acimaLimite}} acima{{/if}}{{#if favorita}} favorita{{/if}}{{#if soLeitura}} so-leitura{{/if}}">
+          {{#if editar}}
           <span class="epm-pericia-mover"><button type="button" class="epm-icone-botao" data-action="moverPericia" data-pericia="{{this.id}}" data-dir="-1" title="Subir" {{#if primeira}}disabled{{/if}}><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="epm-icone-botao" data-action="moverPericia" data-pericia="{{this.id}}" data-dir="1" title="Descer" {{#if ultima}}disabled{{/if}}><i class="fa-solid fa-chevron-down"></i></button></span>
           <button type="button" class="epm-icone-botao perigo" data-action="removerPericia" data-pericia="{{this.id}}" title="Remover {{this.nome}}"><i class="fa-solid fa-xmark"></i></button>
           <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da perícia" />

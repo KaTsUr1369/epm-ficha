@@ -766,8 +766,11 @@ export function montarContexto({
   ctx.periciasTemFavoritas = ctx.pericias.some(p => p.favorita);
   // Testes de Resistência (Fortitude, Reflexos, Vontade) numa caixa própria
   ctx.resistenciasPericia = ctx.pericias.filter(p => PERICIAS_RESISTENCIA.includes(p.id));
-  // Reflexos também aparece na lista de perícias (fora do modo edição, para não duplicar os campos)
-  ctx.pericias = ctx.pericias.filter(p => !PERICIAS_RESISTENCIA.includes(p.id) || (p.id === "reflexos" && !edicao));
+  // Reflexos aparece nos dois lugares. No modo edição os campos ficam na lista de perícias
+  // e a caixa de resistências mostra Reflexos só para leitura (sem campos repetidos no formulário).
+  ctx.pericias = ctx.pericias.filter(p => !PERICIAS_RESISTENCIA.includes(p.id) || p.id === "reflexos");
+  for (const p of ctx.pericias) p.editar = !!edicao;
+  ctx.resistenciasPericia = ctx.resistenciasPericia.map(p => (p.id === "reflexos" && edicao ? { ...p, editar: false, soLeitura: true } : { ...p, editar: !!edicao }));
   for (const l of [ctx.resistenciasPericia, ctx.pericias]) l.forEach((p, i) => { p.primeira = i === 0; p.ultima = i === l.length - 1; });
   ctx.pontosLista = [
     { id: "pev", sigla: "PEv", nome: "Evolução", valor: ficha.pontos.pev, dica: "Pontos de Evolução: combates (5 × ND), encontros e recompensas" },

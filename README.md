@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.5
+
+- Reflexos agora aparece na lista de Perícias também no modo edição (é ali que se editam nome, pontos e atributos). Nos Testes de Resistência ele continua visível, só para leitura, enquanto a ficha está em edição.
+
 ## Novidades da 0.7.4
 
 - **Reflexos na lista de perícias:** além da caixa de Testes de Resistência, Reflexos aparece na lista de perícias (no modo edição ele fica só na caixa, para não duplicar os campos).

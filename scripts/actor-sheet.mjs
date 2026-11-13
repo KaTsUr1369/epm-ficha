@@ -2051,6 +2051,48 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       botao.title = fechado ? "Abrir" : "Recolher";
       botao.setAttribute("aria-expanded", String(!fechado));
     }
+    this._ligarRecolherCartoes(recolhidos);
+  }
+
+  /**
+   * Cartões das listas (bênçãos, companheiros, criaturas, relações, facções, receitas): a seta no título
+   * recolhe o cartão e deixa só a linha do nome. O título pode estar dentro de outros blocos;
+   * o caminho até ele fica visível (epm-rec-caminho) e o resto some.
+   */
+  _ligarRecolherCartoes(recolhidos) {
+    const CARTOES = [
+      ["article.epm-bencao[data-bencao]", ":scope > header.epm-bencao-topo", "bencao"],
+      ["article.epm-companheiro[data-companheiro]", ":scope > .epm-comp-topo", "companheiro"],
+      ["article.epm-criatura[data-criatura]", ":scope .epm-criatura-topo", "criatura"],
+      ["article.epm-relacao[data-relacao]", ":scope .epm-relacao-topo-texto", "relacao"],
+      ["article.epm-faccao[data-faccao]", ":scope .epm-relacao-topo-texto", "faccao"],
+      ["article.epm-receita[data-receita]", ":scope > header.epm-receita-topo", "receita"]
+    ];
+    for (const [sel, selCabeca, tipo] of CARTOES) {
+      for (const cartao of this.element.querySelectorAll(sel)) {
+        const cabeca = cartao.querySelector(selCabeca);
+        if (!cabeca) continue;
+        const aba = cartao.closest(".epm-aba")?.dataset.tab ?? "";
+        const chave = `${aba}|${tipo}:${cartao.dataset[tipo]}|`;
+        const fechado = recolhidos.has(chave);
+        cartao.classList.add("epm-rec-cartao", "epm-rec-caminho");
+        cartao.classList.toggle("recolhido", fechado);
+        cabeca.classList.add("epm-rec-cabeca");
+        for (let el = cabeca.parentElement; el && el !== cartao; el = el.parentElement) el.classList.add("epm-rec-caminho");
+        let botao = cabeca.querySelector(":scope > .epm-recolher");
+        if (!botao) {
+          botao = document.createElement("button");
+          botao.type = "button";
+          botao.className = "epm-recolher";
+          botao.dataset.action = "recolherPainel";
+          botao.innerHTML = '<i class="fa-solid fa-chevron-up" aria-hidden="true"></i>';
+          cabeca.append(botao);
+        }
+        botao.dataset.chave = chave;
+        botao.title = fechado ? "Abrir" : "Recolher";
+        botao.setAttribute("aria-expanded", String(!fechado));
+      }
+    }
   }
 
   async acaoRecolherPainel(ev, alvo) {
@@ -2060,7 +2102,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const recolhidos = this._lerRecolhidos();
     const fechar = !recolhidos.has(chave);
     if (fechar) recolhidos.add(chave); else recolhidos.delete(chave);
-    const bloco = alvo.closest(".epm-recolhivel");
+    const bloco = alvo.closest(".epm-rec-cartao, .epm-recolhivel");
     bloco?.classList.toggle("recolhido", fechar);
     alvo.title = fechar ? "Abrir" : "Recolher";
     alvo.setAttribute("aria-expanded", String(!fechar));

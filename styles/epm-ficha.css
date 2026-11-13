@@ -2996,3 +2996,11 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-sel-linha .epm-selecionar { margin-right: 2px; }
 .epm-sel-linha .epm-selecionar input { accent-color: var(--epm-latao); }
 .epm-inventario-topo { margin-bottom: 10px; }
+
+/* Cartões recolhíveis (bênçãos, companheiros, criaturas, relações, facções, receitas) */
+.epm-rec-cartao.recolhido > :not(.epm-rec-caminho, .epm-rec-cabeca),
+.epm-rec-cartao.recolhido .epm-rec-caminho > :not(.epm-rec-caminho, .epm-rec-cabeca) { display: none !important; }
+.epm-rec-cartao.recolhido { align-self: start; padding-top: 6px; padding-bottom: 6px; }
+.epm-rec-cartao.recolhido .epm-rec-caminho { margin: 0; padding-top: 0; padding-bottom: 0; }
+.epm-rec-cabeca > .epm-recolher { margin-left: auto; }
+.epm-rec-cartao.recolhido .epm-rec-cabeca > .epm-recolher i { transform: rotate(180deg); }

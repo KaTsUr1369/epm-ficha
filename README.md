@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.7
+
+- Os cartões das listas agora recolhem com a seta (para cima / para baixo) no título, como os treinamentos: bênçãos e maldições, companheiros, criaturas do bestiário, relações, facções e receitas. Recolhido, fica só a linha do nome; a ficha lembra quais estão fechados.
+
 ## Novidades da 0.7.6
 
 - **Selecionar vários** em todas as abas com listas. O botão **Selecionar** no topo da aba põe uma caixinha em cada linha e uma barra de ações. Shift + clique marca um intervalo, e **Marcar todos** pega tudo o que está visível.

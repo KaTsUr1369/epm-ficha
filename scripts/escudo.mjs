@@ -177,6 +177,8 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     raiz.querySelectorAll("[data-marcar]").forEach(cx => cx.addEventListener("change", () => {
       if (cx.checked) this._marcados.add(cx.dataset.marcar); else this._marcados.delete(cx.dataset.marcar);
+      // Marcar fichas muda o "Dar para" da aba Itens para os marcados
+      this._ui.alvoItem = "";
       this.render();
     }));
     raiz.querySelectorAll("[data-iniciativa]").forEach(inp => inp.addEventListener("change", async () => {
@@ -340,9 +342,10 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
   _marcarTodos(ev, alvo) {
     const lista = alvo.dataset.de === "combate" ? (game.combat?.turns ?? []).map(t => t.actor?.uuid) : this._grupo().map(a => a.uuid);
     for (const u of lista.filter(Boolean)) this._marcados.add(u);
+    this._ui.alvoItem = "";
     this.render();
   }
-  _limparMarcados() { this._marcados.clear(); this.render(); }
+  _limparMarcados() { this._marcados.clear(); this._ui.alvoItem = ""; this.render(); }
 
   async _darPontos() {
     const v = { pev: int(this._valor("[data-dar=pev]")), pt: int(this._valor("[data-dar=pt]")), ph: int(this._valor("[data-dar=ph]")) };
@@ -393,50 +396,62 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* ---------- Itens e moedas ---------- */
 
+  /**
+   * Para quem vão itens, transformações e moedas: o que está escolhido em "Dar para".
+   * "Os marcados" (padrão quando há fichas marcadas) entrega para todas as fichas marcadas.
+   */
+  _destinosItem() {
+    const valor = this._valor("[data-destino-item]") || this._ui.alvoItem;
+    if (valor === "__marcados" || (!valor && this._marcados.size)) {
+      return [...this._marcados].map(u => fromUuidSync(u)).filter(a => a?.documentName === "Actor" && a.isOwner);
+    }
+    const a = game.actors.get(valor);
+    return a ? [a] : [];
+  }
+
   async _darItem(ev, alvo) {
-    const destino = game.actors.get(this._valor("[data-destino-item]") || this._ui.alvoItem);
+    const destinos = this._destinosItem();
     const item = fromUuidSync(alvo.dataset.uuid);
-    if (!destino || !item) return ui.notifications.warn("Escolha para quem dar.");
+    if (!destinos.length || !item) return ui.notifications.warn("Escolha para quem dar.");
     const dados = item.toObject();
     delete dados._id;
-    await destino.createEmbeddedDocuments("Item", [dados]);
-    ui.notifications.info(`${item.name} foi para ${destino.name}.`);
+    for (const destino of destinos) await destino.createEmbeddedDocuments("Item", [structuredClone(dados)]);
+    ui.notifications.info(`${item.name} foi para ${destinos.map(d => d.name).join(", ")}.`);
   }
 
   async _darTransformacao(ev, alvo) {
-    const destino = game.actors.get(this._valor("[data-destino-item]") || this._ui.alvoItem);
+    const destinos = this._destinosItem();
     const t = TRANSFORMACOES_PRONTAS.find(x => x.id === alvo.dataset.id);
-    if (!destino || !t) return ui.notifications.warn("Escolha para quem dar.");
+    if (!destinos.length || !t) return ui.notifications.warn("Escolha para quem dar.");
     const { mods, ...resto } = t;
     delete resto.id;
     const novoId = () => foundry.utils.randomID();
-    await destino.update({ [`${P}.transformacoes.${novoId()}`]: {
-      ...resto, img: "", trocarToken: false, criado: Date.now(),
-      mods: Object.fromEntries(mods.map(m => [novoId(), { ...m }]))
-    } });
-    ui.notifications.info(`${t.nome} foi para ${destino.name} (aba Habilidades → Transformações).`);
+    for (const destino of destinos) {
+      await destino.update({ [`${P}.transformacoes.${novoId()}`]: {
+        ...resto, img: "", trocarToken: false, criado: Date.now(),
+        mods: Object.fromEntries(mods.map(m => [novoId(), { ...m }]))
+      } });
+    }
+    ui.notifications.info(`${t.nome} foi para ${destinos.map(d => d.name).join(", ")} (aba Habilidades → Transformações).`);
   }
 
   async _abrirCatalogo() {
     const { abrirCatalogo } = await import("./catalogo-app.mjs");
-    return abrirCatalogo({ destino: this._valor("[data-destino-item]") || this._ui.alvoItem || "" });
+    return abrirCatalogo({ destino: this._destinosItem()[0]?.id ?? "" });
   }
 
   async _darMoedas() {
-    const destino = game.actors.get(this._valor("[data-destino-item]") || this._ui.alvoItem);
-    if (!destino) return ui.notifications.warn("Escolha para quem dar.");
-    const atual = destino.flags?.[FLAG]?.moedas ?? {};
-    const u = {};
-    const partes = [];
-    for (const m of MOEDAS) {
-      const v = int(this._valor(`[data-moeda="${m.id}"]`));
-      if (!v) continue;
-      u[`${P}.moedas.${m.id}`] = Math.max(0, int(atual[m.id]) + v);
-      partes.push(`${v} ${m.abrev}`);
+    const destinos = this._destinosItem();
+    if (!destinos.length) return ui.notifications.warn("Escolha para quem dar.");
+    const valores = MOEDAS.map(m => [m, int(this._valor(`[data-moeda="${m.id}"]`))]).filter(([, v]) => v);
+    if (!valores.length) return ui.notifications.warn("Escreva quantas moedas.");
+    for (const destino of destinos) {
+      const atual = destino.flags?.[FLAG]?.moedas ?? {};
+      const u = {};
+      for (const [m, v] of valores) u[`${P}.moedas.${m.id}`] = Math.max(0, int(atual[m.id]) + v);
+      await destino.update(u);
     }
-    if (!partes.length) return ui.notifications.warn("Escreva quantas moedas.");
-    await destino.update(u);
-    ui.notifications.info(`${destino.name} recebeu ${partes.join(", ")}.`);
+    ui.notifications.info(`${destinos.map(d => d.name).join(", ")} recebeu ${valores.map(([m, v]) => `${v} ${m.abrev}`).join(", ")}.`);
   }
 
   /* ---------- Testes ---------- */

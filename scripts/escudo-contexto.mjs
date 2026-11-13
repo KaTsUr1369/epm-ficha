@@ -118,7 +118,13 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
   ctx.buscaItem = ui.buscaItem ?? "";
   ctx.tiposItem = [{ id: "", label: "Todos", selected: !tipo }, ...Object.entries(TIPOS_ITEM).filter(([id]) => !["spell", "feat"].includes(id))
     .map(([id, label]) => ({ id, label, selected: id === tipo }))];
-  ctx.destinos = grupo.map(a => ({ id: a.id, label: a.name, selected: a.id === ui.alvoItem }));
+  // Com fichas marcadas, o padrão é dar para os marcados (antes ia sempre para a primeira ficha do grupo)
+  const marcadosItem = [...(ui.marcados ?? [])].map(u => globalThis.fromUuidSync?.(u)).filter(a => a?.documentName === "Actor" || a?.flags);
+  const paraMarcados = marcadosItem.length && (!ui.alvoItem || ui.alvoItem === "__marcados");
+  ctx.destinos = [
+    ...(marcadosItem.length ? [{ id: "__marcados", label: `Os marcados (${marcadosItem.length}): ${marcadosItem.map(a => a.name).join(", ")}`, selected: paraMarcados }] : []),
+    ...grupo.map(a => ({ id: a.id, label: a.name, selected: !paraMarcados && a.id === ui.alvoItem }))
+  ];
   ctx.moedas = MOEDAS.map(m => ({ id: m.id, label: m.label, abrev: m.abrev, img: m.img }));
 
   /* Testes do grupo */

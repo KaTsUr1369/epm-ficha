@@ -22,6 +22,7 @@
     <div class="epm-linha-identidade">
       <label class="epm-campo"><span>Raça</span><input type="text" name="flags.epm-ficha.raca" value="{{dados.raca}}" /></label>
       <label class="epm-campo"><span>Arquétipo</span><input type="text" name="flags.epm-ficha.arquetipo" value="{{dados.arquetipo}}" list="epm-arquetipos-{{actor.id}}" /></label>
+      <button type="button" class="epm-icone-botao" data-action="abrirCompendioClasses" title="Compêndio de Arquétipos e Classes (arraste um para a ficha)"><i class="fa-solid fa-book-atlas"></i></button>
       {{#if classePainel.temArquetipo}}
       <label class="epm-campo"><span>Classe</span><select data-escolher-classe aria-label="Classe" title="Só as classes do arquétipo">
         <option value="">— Escolher —</option>

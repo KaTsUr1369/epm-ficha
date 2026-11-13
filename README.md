@@ -14,6 +14,15 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.9
+
+- **Compêndio "EPM · Arquétipos e Classes"**, no formato do D&D 5e: cada **Arquétipo** é um item **Classe**, cada **Classe** pronta é uma **Subclasse** do arquétipo dela, e cada habilidade é um **Talento** ligado por nível (como os avanços do D&D). Fica na aba Compêndios do mundo; o Mestre cria e atualiza sozinho quando o módulo muda.
+  - Arrastar um **Arquétipo** para a ficha define o arquétipo (pergunta se é o principal ou o segundo) e cria as habilidades já liberadas.
+  - Arrastar uma **Classe** escolhe a classe (e o arquétipo dela, se a ficha ainda não tiver um) e cria as habilidades liberadas na sub-aba Classe.
+  - Arrastar uma **habilidade** do compêndio põe só ela, sem custo de PH e sem repetir.
+  - O nível continua sendo o da ficha EPM. Botão do livro ao lado do Arquétipo (modo edição) abre o compêndio.
+- **Escudo do Mestre → Itens:** com fichas marcadas, "Dar para" passa a ser **Os marcados** e itens, transformações, moedas e o catálogo vão para todas as fichas marcadas. Antes ia sempre para a primeira ficha do grupo.
+
 ## Novidades da 0.7.8
 
 - **Catálogo de itens de Umbra'Draxil** (338 itens): botão **Catálogo de itens** no Inventário e no Escudo do Mestre → Itens. Busca sem acento, filtro por categoria, quantidade, total em moedas, **pagar com as moedas da ficha** e, para o Mestre, **dar** para um personagem ou **importar para o mundo** (pasta "EPM · Catálogo de itens").

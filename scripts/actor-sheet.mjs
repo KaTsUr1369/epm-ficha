@@ -61,7 +61,7 @@ const ACOES_FICHA = [
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
   "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila",
   // 0.5.4
-  "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao",
+  "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao", "abrirCompendioClasses",
   "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
   "adicionarHabilidadeArq", "escolherClasse", "trocarClasse", "classeLivre", "adicionarHabilidadeClasse", "caminhoClasse", "alternarEstilo", "alternarUtensilio", "recuperarMana", "cacadorNatural",
   "novoCompanheiro", "excluirCompanheiro", "imagemCompanheiro", "ajustarCompanheiro", "novoAtaqueCompanheiro", "excluirAtaqueCompanheiro",
@@ -766,6 +766,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       }
       return;
     }
+    // Compêndio "EPM · Arquétipos e Classes": Classe (D&D) = Arquétipo, Subclasse = Classe, Talento = habilidade
+    const doCompendio = item.flags?.[FLAG]?.compendio;
+    if (doCompendio === "arquetipo") return X.definirArquetipo(this.actor, item.flags[FLAG].arquetipoId);
+    if (doCompendio === "classe") return X.definirClassePorItem(this.actor, item.flags[FLAG].classeId);
+    if (doCompendio === "habilidade") return X.adicionarHabilidadeDoCompendio(this.actor, item);
     if (TIPOS_IGNORADOS.includes(item.type)) {
       return ui.notifications.warn(`Itens do tipo "${item.type}" não são usados na ficha EPM.`);
     }
@@ -1570,6 +1575,14 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       if (rotulo) rotulo.innerHTML = rotulo.dataset.aba ? Sel.textoQtd(rotulo.dataset.aba, qtd) : `<strong>${qtd}</strong> selecionada${qtd === 1 ? "" : "s"}`;
       for (const b of barra.querySelectorAll('[data-action="selecaoAcao"], [data-action="selecaoLimpar"]')) b.disabled = !qtd;
     }
+  }
+
+  async acaoAbrirCompendioClasses() {
+    const { ID_PACOTE, sincronizarCompendio } = await import("./compendio-classes.mjs");
+    let pacote = game.packs.get(ID_PACOTE);
+    if (!pacote && game.user.isGM) pacote = await sincronizarCompendio({ forcar: true });
+    if (!pacote) return ui.notifications.warn("O compêndio de Arquétipos e Classes aparece quando o Mestre entrar no mundo.");
+    return pacote.render(true);
   }
 
   /** Liga ou desliga a seleção de vários numa aba (Habilidades, Magias, Inventário, Bênçãos…). */

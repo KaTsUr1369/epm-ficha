@@ -9,7 +9,7 @@ import {
 } from "./config.mjs";
 import { num, int, novoId, formaPadrao } from "./data.mjs";
 import {
-  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, degrau, efeitoMaestria, bonusAutomato
+  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato
 } from "./arquetipos.mjs";
 import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas } from "./regras-extras.mjs";
 import { idClasse } from "./ficha-extras.mjs";
@@ -167,7 +167,7 @@ export function turnoTransformacao(dados) {
 /*  Arquétipos modelo                           */
 /* -------------------------------------------- */
 
-function dadosHabilidadeArquetipo(arqId, h) {
+export function dadosHabilidadeArquetipo(arqId, h) {
   const a = ARQUETIPOS[arqId];
   const forma = formaPadrao(0, "Passiva");
   forma.acao = "passiva";
@@ -195,7 +195,7 @@ export function classeDaFicha(dados = {}) {
   return { id, def, nivel, caminhos };
 }
 
-function dadosHabilidadeClasse(classeId, h) {
+export function dadosHabilidadeClasse(classeId, h) {
   const c = CLASSES_NOTION[classeId];
   const forma = formaPadrao(0, "Passiva");
   forma.acao = "passiva";
@@ -259,6 +259,69 @@ export async function escolherClasse(actor, id) {
   await tirarHabilidadesDeOutraClasse(actor, id);
   await actor.update({ [`${P}.classe`]: def.nome, [`${P}.classeLivre`]: false, [`${P}.classeDispensadas`]: [], [`${P}.classeEpm.caminhos`]: [] });
   await adicionarHabilidadesClasse(actor, "", { automatico: true });
+}
+
+/**
+ * Arquétipo arrastado do compêndio (item Classe do D&D): vira o arquétipo principal ou o segundo.
+ * Depois cria as habilidades de arquétipo já liberadas no nível da ficha.
+ */
+export async function definirArquetipo(actor, arqId) {
+  const a = ARQUETIPOS[arqId];
+  if (!a || !actor?.isOwner) return;
+  const dados = actor.flags?.[FLAG] ?? {};
+  const um = idArquetipoNome(dados.arquetipo), dois = idArquetipoNome(dados.arquetipo2);
+  if (um === arqId || dois === arqId) return ui.notifications.info(`${actor.name} já tem o arquétipo ${a.nome}.`);
+  let campo = "arquetipo";
+  if (String(dados.arquetipo ?? "").trim()) {
+    const r = await fvtt.DialogV2.wait({
+      window: { title: `Arquétipo: ${a.nome}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+      content: `<p>${escapar(actor.name)} já é <strong>${escapar(dados.arquetipo)}</strong>${dois ? ` e <strong>${escapar(dados.arquetipo2)}</strong>` : ""}. Onde entra ${escapar(a.nome)}?</p>`,
+      buttons: [
+        { action: "arquetipo2", label: dois ? "Trocar o segundo" : "Segundo arquétipo", icon: "fa-solid fa-plus", default: true },
+        { action: "arquetipo", label: "Trocar o principal", icon: "fa-solid fa-right-left" },
+        { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+      ]
+    });
+    if (r !== "arquetipo" && r !== "arquetipo2") return;
+    campo = r;
+  }
+  await actor.update({ [`${P}.${campo}`]: a.nome });
+  ui.notifications.info(`${actor.name}: arquétipo ${a.nome}${campo === "arquetipo2" ? " (segundo)" : ""}.`);
+  const nivel = nivelArquetipo(actor.flags?.[FLAG] ?? {}, arqId);
+  if (a.habilidades.some(h => h.nivel <= nivel)) await adicionarHabilidadesArquetipo(actor, arqId);
+}
+
+/** Classe arrastada do compêndio (item Subclasse do D&D). Sem o arquétipo dela na ficha, define antes. */
+export async function definirClassePorItem(actor, classeId) {
+  const def = CLASSES_NOTION[classeId];
+  if (!def || !actor?.isOwner) return;
+  const dados = actor.flags?.[FLAG] ?? {};
+  const arqId = def.arquetipo ?? "combatente";
+  const tem = arquetiposDoPersonagem(dados).some(a => a.id === arqId);
+  if (!tem) {
+    if (String(dados.arquetipo ?? "").trim()) {
+      return ui.notifications.warn(`${def.nome} é uma classe de ${ARQUETIPOS[arqId]?.nome ?? arqId}. Arraste esse arquétipo do compêndio primeiro.`);
+    }
+    await actor.update({ [`${P}.arquetipo`]: ARQUETIPOS[arqId]?.nome ?? arqId });
+  }
+  return escolherClasse(actor, classeId);
+}
+
+/** Habilidade de arquétipo ou de classe arrastada do compêndio: entra sem custo (é da classe), sem repetir. */
+export async function adicionarHabilidadeDoCompendio(actor, item) {
+  if (!actor?.isOwner) return;
+  const f = item.flags?.[FLAG] ?? {};
+  const ja = actor.items.find(i => (f.classeRef && i.flags?.[FLAG]?.classeRef === f.classeRef) || (f.arquetipoRef && i.flags?.[FLAG]?.arquetipoRef === f.arquetipoRef));
+  if (ja) return ui.notifications.info(`${actor.name} já tem ${item.name}.`);
+  const data = item.toObject();
+  for (const k of ["_id", "folder", "sort", "ownership", "_stats"]) delete data[k];
+  delete data.flags[FLAG].compendio;
+  if (f.classeRef) {
+    const dispensadas = (actor.flags?.[FLAG]?.classeDispensadas ?? []).filter(r => r !== f.classeRef);
+    await actor.update({ [`${P}.classeDispensadas`]: dispensadas });
+  }
+  await actor.createEmbeddedDocuments("Item", [data]);
+  ui.notifications.info(`${item.name} entrou na sub-aba ${f.classeRef ? "Classe" : "Arquétipo"}.`);
 }
 
 /** Volta para a escolha de classe (ou para uma classe escrita à mão, com `livre`). */

@@ -2990,3 +2990,9 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-treino.recolhido, .epm-criacao.recolhido { padding-bottom: 6px; }
 .epm-treino-topo > .epm-recolher { margin-left: auto; }
 .epm-treino.epm-recolhivel.recolhido, .epm-criacao.epm-recolhivel.recolhido { align-self: stretch; }
+
+/* ---------- Seleção de vários nas outras abas (0.7.6) ---------- */
+.epm-sel-linha.selecionado { outline: 1px solid var(--epm-latao); outline-offset: -1px; background: rgba(211, 168, 94, 0.08); }
+.epm-sel-linha .epm-selecionar { margin-right: 2px; }
+.epm-sel-linha .epm-selecionar input { accent-color: var(--epm-latao); }
+.epm-inventario-topo { margin-bottom: 10px; }

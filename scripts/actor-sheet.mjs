@@ -34,6 +34,7 @@ import * as Auto from "./automacoes.mjs";
 import * as Vinc from "./vinculos.mjs";
 import * as Oficina from "./oficina.mjs";
 import * as Opc from "./opcionais-acoes.mjs";
+import * as Sel from "./selecao.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -354,6 +355,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (options.isFirstRender || options.parts?.includes("condicoes")) this._filtrarCondicoes();
     if (options.isFirstRender || options.parts?.includes("bencaos")) this._filtrarCatalogo();
     try { this._ligarRecolher(); } catch (err) { console.error("EPM | Falha ao preparar os painéis recolhíveis", err); }
+    try { Sel.decorar(this); } catch (err) { console.error("EPM | Falha na seleção de vários", err); }
     if (this._focarTemp) {
       this._focarTemp = false;
       const campo = this.element.querySelector('[data-recurso-valor^="temp"]');
@@ -445,6 +447,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (alvo.dataset?.tagCampo) { ev.stopPropagation(); return this._adicionarTag(alvo); }
     if (alvo.dataset?.idiomaInput) { ev.stopPropagation(); return this._adicionarIdioma(alvo); }
     if (alvo.dataset?.selecionarPoder) { ev.stopPropagation(); return this._marcarPoder(alvo.dataset.selecionarPoder, alvo.checked); }
+    if (alvo.dataset?.selecionar) { ev.stopPropagation(); return this._marcarPoder(alvo.dataset.selecionar, alvo.checked); }
     if (alvo.dataset?.buscaCondicao || alvo.dataset?.buscaCatalogo || alvo.dataset?.novoEfeito || alvo.dataset?.buscaBestiario) { ev.stopPropagation(); return; }
     // Brilho e hex da Personalização: os próprios campos tratam (e param o evento) — não parar aqui.
   }
@@ -1557,28 +1560,39 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (marcado) this._selecao.ids.add(id);
     else this._selecao.ids.delete(id);
     const raiz = this.element;
-    for (const li of raiz.querySelectorAll(`.epm-poder[data-item-id="${id}"]`)) li.classList.toggle("selecionado", marcado);
-    for (const cx of raiz.querySelectorAll(`[data-selecionar-poder="${id}"]`)) cx.checked = marcado;
-    const qtd = [...this._selecao.ids].filter(x => this.actor.items.get(x)).length;
+    const css = CSS.escape(id);
+    for (const li of raiz.querySelectorAll(`.epm-poder[data-item-id="${css}"], [data-epm-sel-id="${css}"]`)) li.classList.toggle("selecionado", marcado);
+    for (const cx of raiz.querySelectorAll(`[data-selecionar-poder="${css}"], [data-selecionar="${css}"]`)) cx.checked = marcado;
+    const aba = this._selecao.aba;
+    const qtd = Sel.idsValidos(this.actor, aba, this._selecao.ids).length;
     for (const barra of raiz.querySelectorAll(".epm-selecao-barra")) {
       const rotulo = barra.querySelector(".epm-selecao-qtd");
-      if (rotulo) rotulo.innerHTML = `<strong>${qtd}</strong> selecionada${qtd === 1 ? "" : "s"}`;
+      if (rotulo) rotulo.innerHTML = rotulo.dataset.aba ? Sel.textoQtd(rotulo.dataset.aba, qtd) : `<strong>${qtd}</strong> selecionada${qtd === 1 ? "" : "s"}`;
       for (const b of barra.querySelectorAll('[data-action="selecaoAcao"], [data-action="selecaoLimpar"]')) b.disabled = !qtd;
     }
   }
 
+  /** Liga ou desliga a seleção de vários numa aba (Habilidades, Magias, Inventário, Bênçãos…). */
   acaoSelecionarPoderes(ev, alvo) {
-    const aba = alvo.dataset.aba === "magias" ? "magias" : "habilidades";
-    if (this._selecao.aba === aba) this._selecao = { aba: null, ids: new Set() };
+    const aba = alvo.dataset.aba || "habilidades";
+    const antes = this._selecao.aba;
+    if (antes === aba) this._selecao = { aba: null, ids: new Set() };
     else this._selecao = { aba, ids: new Set() };
-    this.render({ parts: ["habilidades", "magias", "arqclasse"] });
+    this._ultimaCaixa = null;
+    const partes = new Set([aba, antes].filter(Boolean));
+    if (Sel.ABAS_PODERES.includes(aba) || Sel.ABAS_PODERES.includes(antes)) ["habilidades", "magias", "arqclasse"].forEach(p => partes.add(p));
+    this.render({ parts: [...partes].filter(p => p in this.constructor.PARTS) });
   }
 
   acaoSelecaoTudo(ev, alvo) {
     const aba = this._selecao.aba;
     if (!aba) return;
-    const secao = this.element.querySelector(`.epm-${aba} .tab.active[data-group="${aba}"]`) ?? this.element.querySelector(`.epm-${aba}`);
-    for (const li of secao?.querySelectorAll("[data-item-id].epm-poder") ?? []) this._selecao.ids.add(li.dataset.itemId);
+    if (Sel.ABAS_PODERES.includes(aba)) {
+      const secao = this.element.querySelector(`.epm-${aba} .tab.active[data-group="${aba}"]`) ?? this.element.querySelector(`.epm-${aba}`);
+      for (const li of secao?.querySelectorAll("[data-item-id].epm-poder") ?? []) this._selecao.ids.add(li.dataset.itemId);
+    } else {
+      for (const id of Sel.idsVisiveis(this, aba)) this._selecao.ids.add(id);
+    }
     this.render({ parts: [aba] });
   }
 
@@ -1588,11 +1602,14 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   async acaoSelecaoAcao(ev, alvo) {
-    const ids = [...this._selecao.ids].filter(id => this.actor.items.get(id));
+    const aba = this._selecao.aba ?? "habilidades";
+    const ids = Sel.idsValidos(this.actor, aba, this._selecao.ids);
     const op = alvo.dataset.op;
-    await X.acaoEmMassa(this.actor, ids, op);
-    if (op === "apagar") this._selecao.ids.clear();
-    this.render({ parts: [this._selecao.aba ?? "habilidades"] });
+    if (Sel.ABAS_PODERES.includes(aba)) {
+      await X.acaoEmMassa(this.actor, ids, op);
+      if (op === "apagar") this._selecao.ids.clear();
+    } else if (await Sel.executar(this, aba, op, ids)) this._selecao.ids.clear();
+    this.render({ parts: [aba] });
   }
 
   /* ---------- Transformações ---------- */

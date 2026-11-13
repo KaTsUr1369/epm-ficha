@@ -14,6 +14,16 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.7.6
+
+- **Selecionar vários** em todas as abas com listas. O botão **Selecionar** no topo da aba põe uma caixinha em cada linha e uma barra de ações. Shift + clique marca um intervalo, e **Marcar todos** pega tudo o que está visível.
+  - **Inventário:** Usar (consumíveis e itens com cargas), Equipar/tirar, Favoritar, No chat, Mochila (guardar numa mochila ou tirar). No modo edição também tem Raridade, Duplicar e Apagar (os itens de dentro de uma mochila apagada voltam para o inventário).
+  - **Bênçãos e maldições:** Usar, Ligar/desligar, Recarregar, Encerrar, No chat e, no modo edição, Apagar.
+  - **Companheiros:** Recuperar tudo (enche PV, PM e PE) e, no modo edição, Apagar.
+  - **Bestiário** (modo edição): +1 encontro, +1 derrota, Tirar do bestiário.
+  - **Relações e facções, Produção** (modo edição) e **Treinamentos e projetos de criação:** Apagar.
+  - **Habilidades e Magias** continuam com a seleção que já tinham (Usar, Favoritar, No chat, Raridade, Mover/Círculo, Passiva, Duplicar, Apagar).
+
 ## Novidades da 0.7.5
 
 - Reflexos agora aparece na lista de Perícias também no modo edição (é ali que se editam nome, pontos e atributos). Nos Testes de Resistência ele continua visível, só para leitura, enquanto a ficha está em edição.

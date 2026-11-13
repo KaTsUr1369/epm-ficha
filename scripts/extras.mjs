@@ -29,7 +29,7 @@ const nota = (actor, html, cor = "") => ChatMessage.create({
 const limitarAf = v => Math.max(AFINIDADE.min, Math.min(AFINIDADE.max, int(v)));
 
 /** Opções de um DialogV2 simples (devolve o objeto do callback ou null). */
-async function dialogo({ titulo, content, ok = "Confirmar", icone = "fa-solid fa-check", callback, render }) {
+export async function dialogo({ titulo, content, ok = "Confirmar", icone = "fa-solid fa-check", callback, render }) {
   const r = await fvtt.DialogV2.wait({
     window: { title: titulo }, classes: ["epm-dialogo"], rejectClose: false, modal: true, content, render,
     buttons: [

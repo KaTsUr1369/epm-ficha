@@ -3,7 +3,7 @@
  * defesas, descanso, moedas e progressão. A matemática pura fica em data.mjs.
  */
 import {
-  FLAG, CAMINHO, ACOES, CUSTO_RECURSOS, RARIDADES_PODER, RARIDADES_ITEM, REQUISITOS, MOEDAS, REGRAS,
+  FLAG, CAMINHO, USOS_FORMA, ACOES, CUSTO_RECURSOS, RARIDADES_PODER, RARIDADES_ITEM, REQUISITOS, MOEDAS, REGRAS,
   custoNivel, ORIGENS_HABILIDADE, CIRCULOS, MELHORIAS, RECURSOS, TIPOS_TESTE, CONDICOES, COMBINACOES,
   EXAUSTAO, EXAUSTAO_MAX, TREINO, UNIDADES_TEMPO, MINIJOGOS, PT_POR_ACERTOS, GATILHOS_BONUS
 } from "./config.mjs";
@@ -88,7 +88,7 @@ export function notaResistencia(ficha) {
 export function poderesDoAtor(actor) {
   return actor.items
     .filter(i => i.type === "feat" || i.type === "spell")
-    .map(i => ({ tipo: i.type === "spell" ? "magia" : "habilidade", raridade: lerPoder(i).raridade }));
+    .map(i => { const p = lerPoder(i); return { tipo: p.tipo, raridade: p.raridade, foraDoLimite: p.foraDoLimite }; });
 }
 
 /* -------------------------------------------- */
@@ -380,6 +380,15 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
   }
   const avisos = [];
   const nome = `${item.name}${forma && p.formas.length > 1 ? ` (${forma.nome})` : ""}`;
+  // "Uso: uma vez por combate" (ou cena, descanso, dia): a forma fica gasta até voltar
+  const chaveUso = forma && forma.uso && forma.uso !== "livre" ? `${item.id}_${forma.id}` : "";
+  if (chaveUso && actor.flags?.[FLAG]?.usosFormas?.[chaveUso]) {
+    if (automatico) return null;
+    const quando = (USOS_FORMA[forma.uso] ?? "").replace(/^1× /, "");
+    if (!game.user.isGM) return ui.notifications.warn(`${nome} já foi usada (${quando}).`);
+    if (!(await confirmar("Uso já gasto", `<p><strong>${escapar(nome)}</strong> já foi usada (${escapar(quando)}).</p><p>Usar mesmo assim?</p>`))) return null;
+    avisos.push("Usada de novo com a liberação do Mestre.");
+  }
   const av = forma ? avaliarForma(forma, ficha, { raridade: p.raridade, melhorias: p.melhorias, dadosRolagem: rolagem, poder }) : null;
   if (av?.bloqueada) {
     if (!game.user.isGM) return ui.notifications.warn(`${nome} está bloqueada por: ${av.motivos.join(", ")}.`);
@@ -445,6 +454,10 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     const base = updates["system.attributes.hp.value"] ?? ficha.recursos.pv.value;
     updates["system.attributes.hp.value"] = Math.max(0, base - pvPerdidos);
   }
+  if (chaveUso) {
+    updates[`${P}.usosFormas.${chaveUso}`] = forma.uso;
+    avisos.push(`${USOS_FORMA[forma.uso]}: volta ${{ combate: "no fim do combate", cena: "no fim da cena (combate) ou descanso", curto: "no descanso curto", longo: "no descanso longo", dia: "no descanso longo" }[forma.uso]}.`);
+  }
   if (eSustentada(forma)) {
     updates[`${P}.sustentadas.${item.id}`] = { nome, recurso: forma.porTurno.recurso, valor: forma.porTurno.valor, forma: forma.id };
     avisos.push(`Sustentada: ${forma.porTurno.valor} ${CUSTO_RECURSOS[forma.porTurno.recurso]?.sigla ?? ""} no começo de cada turno até encerrar.`);
@@ -461,8 +474,8 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
   }
   if (automatico) avisos.unshift(`Ativada sozinha: ${(GATILHOS_BONUS[automatico] ?? GATILHOS_BONUS.dano).replace(/ \(automático\)$/, "").toLowerCase()}.`);
   const fichaCartao = conj ? { ...ficha, cd: { ...ficha.cd, valor: conj.cd } } : ficha;
-  const msg = await cartaoPoder(actor, item, p, forma, { avisos, ficha: fichaCartao, rolagem, custo });
-  if (forma?.bonus?.opcoes?.length) await escolherBonusSituacional(actor, item, forma, { nome });
+  const msg = await cartaoPoder(actor, item, p, forma, { avisos, ficha: fichaCartao, rolagem, custo, automatico: !!automatico });
+  if (forma?.bonus?.opcoes?.length) await escolherBonusSituacional(actor, item, forma, { nome, automatico: !!automatico });
   if (sobrecarga) await testeSobrecarga(actor);
   return msg;
 }
@@ -504,7 +517,8 @@ async function testeSobrecarga(actor) {
  * Escolhe (ou rola) uma das opções de bônus da forma e grava como Bônus de cena ligado.
  * Um bônus por habilidade: usar de novo troca o anterior.
  */
-export async function escolherBonusSituacional(actor, item, forma, { nome = item.name } = {}) {
+export async function escolherBonusSituacional(actor, item, forma, { nome = item.name, automatico = false } = {}) {
+  const flagsAuto = automatico ? { flags: { [FLAG]: { automatico: true } } } : {};
   const opcoes = forma.bonus.opcoes;
   const n = opcoes.length;
   let escolhida = null;
@@ -518,7 +532,7 @@ export async function escolherBonusSituacional(actor, item, forma, { nome = item
     await aplicarBonusSituacional(actor, item, opcoes, nome);
     const nivel = nivelHabilidade(item);
     await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
+      speaker: ChatMessage.getSpeaker({ actor }), ...flagsAuto,
       content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>${nivel > 1 ? ` (nível ${nivel})` : ""}: ${escapar(opcoes.map(o => o.texto).join("; "))} pela cena.</p><p class="epm-dica">Já está somado na ficha (aba Combate → Bônus de cena). Some no fim do combate.</p></div>`
     });
     return opcoes;
@@ -537,7 +551,7 @@ export async function escolherBonusSituacional(actor, item, forma, { nome = item
   if (!escolhida) return null;
   await aplicarBonusSituacional(actor, item, escolhida, nome);
   await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
+    speaker: ChatMessage.getSpeaker({ actor }), ...flagsAuto,
     content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>: ${escapar(escolhida.texto)} pela cena${rolagemTexto ? ` <em>(${rolagemTexto})</em>` : ""}.</p><p class="epm-dica">Já está somado na ficha (aba Combate → Bônus de cena). Some no fim do combate.</p></div>`
   });
   return escolhida;
@@ -617,6 +631,13 @@ export async function alternarHabilidade(actor, item) {
   return habilidadeAtiva(actor, actor.items.get(item.id));
 }
 
+/** Libera as formas "1× por …" que voltam neste momento (fim do combate, descanso curto ou longo). */
+export function liberarUsosFormas(flagsAtor, periodos) {
+  const up = {};
+  for (const [k, v] of Object.entries(flagsAtor?.usosFormas ?? {})) if (periodos.includes(v)) up[`${P}.usosFormas.-=${k}`] = null;
+  return up;
+}
+
 /** Remove os bônus "pela cena" (fim do combate ou descanso). */
 export function limparBonusDaCena(dados) {
   const up = {};
@@ -624,7 +645,7 @@ export function limparBonusDaCena(dados) {
   return up;
 }
 
-async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, custo = null }) {
+async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, custo = null, automatico = false }) {
   const r = RARIDADES_PODER[p.raridade];
   const linhas = [];
   const botoes = [];
@@ -636,6 +657,7 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
     for (const [campo, rotulo] of [["alcance", "Alcance"], ["area", "Área"], ["alvo", "Alvo"], ["duracao", "Duração"]]) {
       if (forma[campo]) linhas.push({ rotulo, valor: forma[campo] });
     }
+    if (forma.uso && forma.uso !== "livre") linhas.push({ rotulo: "Uso", valor: USOS_FORMA[forma.uso] });
     const per = ficha.periciaPorId[forma.teste.pericia];
     if (forma.teste.tipo === "resistencia") {
       linhas.push({ rotulo: "Resistência", valor: `${per?.nome ?? "teste do alvo"} contra DT ${ficha.cd.valor}` });
@@ -689,7 +711,7 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
     circuloLabel: p.tipo === "magia" ? (CIRCULOS.find(c => c.nivel === p.circulo)?.label ?? `${p.circulo}º Círculo`) : "",
     formaNome: forma && p.formas.length > 1 ? forma.nome : "",
     linhas, botoes, requisitos, texto, avisos
-  }, { tipo: "poder", itemUuid: item.uuid, formaId: forma?.id ?? null });
+  }, { tipo: "poder", itemUuid: item.uuid, formaId: forma?.id ?? null, ...(automatico ? { automatico: true } : {}) });
 }
 
 /* -------------------------------------------- */
@@ -1065,7 +1087,7 @@ export async function descanso(actor, tipo) {
     ]
   });
   if (!escolha || typeof escolha !== "object") return;
-  const updates = { ...limparBonusDaCena(actor.flags?.[FLAG]) };
+  const updates = { ...limparBonusDaCena(actor.flags?.[FLAG]), ...liberarUsosFormas(actor.flags?.[FLAG], longo ? ["combate", "cena", "curto", "longo", "dia"] : ["combate", "cena", "curto"]) };
   const feitos = [];
   let ganhoPv = 0;
   for (const id of ["pv", "pm", "pe", "ps"]) {
@@ -1461,6 +1483,10 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     margemPadrao = Math.max(2, margemPadrao - cena.margem);
     notas.push(`Bônus de cena: margem de ameaça −${cena.margem} (crítico ${margemPadrao}–20)`);
   }
+  if (cena.critMult) {
+    multPadrao += cena.critMult;
+    notas.push(`Bônus de cena: multiplicador de crítico +${cena.critMult} (×${multPadrao})`);
+  }
   const acoesLivres = ["bonus", "movimento"].filter(a => !dados.acoes?.[a] && !ficha.bloqueios.acoes?.[a]?.length);
   const chk = (nome, rotulo, { desabilitado = false, dica = "" } = {}) =>
     `<label class="epm-check"${dica ? ` title="${escapar(dica)}"` : ""}><input type="checkbox" name="${nome}" ${desabilitado ? "disabled" : ""}> ${rotulo}</label>`;
@@ -1754,7 +1780,8 @@ export async function rolarAtaque(actor, at, {
   // Sem o diálogo (margem não veio), a margem dos bônus de cena entra aqui
   const margemCena = margem === undefined || margem === null || margem === "" ? cena.margem : 0;
   const margemFinal = limitar(int(margem, at.critMargem) - int(margemBonus) - margemCena, 2, 20);
-  const multFinal = Math.max(2, int(mult, at.critMult));
+  const multCena = mult === undefined || mult === null || mult === "" ? cena.critMult ?? 0 : 0;
+  const multFinal = Math.max(2, int(mult, at.critMult) + int(multCena));
   const natural = atk.dice[0]?.total ?? 0;
   const critico = natural >= margemFinal;
   // Ativação condicional "ao acertar um crítico" (depois do cartão do ataque)
@@ -2235,7 +2262,7 @@ export async function fimDeCombate(combate) {
     if (dados.classeEpm?.furiaAtiva) updates[`${P}.classeEpm.furiaAtiva`] = false;
     if (dados.usos?.projetoAgil) updates[`${P}.usos.projetoAgil`] = false;
     if (dados.usos?.pacotes && Object.keys(dados.usos.pacotes).length) updates[`${P}.usos.-=pacotes`] = null;
-    Object.assign(updates, limparBonusDaCena(dados));
+    Object.assign(updates, limparBonusDaCena(dados), liberarUsosFormas(actor.flags?.[FLAG], ["combate", "cena"]));
     for (const [id, b] of Object.entries(dados.bencaos ?? {})) {
       if (!b || typeof b !== "object") continue;
       if (automacaoDe(b).frequencia === "combate" && b.usado) updates[`${P}.bencaos.${id}.usado`] = false;
@@ -2246,7 +2273,7 @@ export async function fimDeCombate(combate) {
     if (Object.keys(updates).length) await actor.update(updates);
     if (perda) {
       await ChatMessage.create({
-        speaker: falar(actor),
+        speaker: falar(actor), flags: { [FLAG]: { automatico: true } },
         content: `<div class="epm-chat epm-chat-nota" style="--cor: #B48CE0"><p>Fim do combate: −${perda} PS (${escapar(ficha.especiais.psFimCombate.fontes.join(", "))}).</p></div>`
       });
     }

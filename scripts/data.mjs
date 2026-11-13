@@ -6,7 +6,7 @@ import { ATRIBUTO_RECURSO_PADRAO } from "./regras-extras.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { modsDeArquetipo } from "./arquetipos.mjs";
 import {
-  FLAG, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, PERICIAS_RESISTENCIA, RECURSOS, REGRAS, custoNivel,
+  FLAG, USOS_FORMA, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, PERICIAS_RESISTENCIA, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
   MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
   TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO, TIPOS_SEM_NIVEL,
@@ -1115,6 +1115,7 @@ export function normalizarForma(id, fo = {}) {
     },
     dano: { formula: String(fo.dano?.formula ?? "").trim(), tipo: fo.dano?.tipo ?? "" },
     efeito: fo.efeito ?? "",
+    uso: USOS_FORMA[fo.uso] ? fo.uso : "livre",
     requisitos: Object.fromEntries(Object.keys(REQUISITOS).map(k => [k, !!fo.requisitos?.[k]])),
     bonus: normalizarBonusSituacional(fo.bonus)
   };
@@ -1164,7 +1165,7 @@ export function lerPoder(item) {
     .map(([id, m]) => ({ id, ...m }))
     .sort((a, b) => num(a.data) - num(b.data));
   return {
-    tipo, raridade, passiva: !!f.passiva, origem: f.origem ?? "", favorito: !!f.favorito,
+    tipo, raridade, passiva: !!f.passiva, alternavel: !!f.alternavel, foraDoLimite: !!f.foraDoLimite, tipoHab: String(f.tipoHab ?? "").trim(), tema: String(f.tema ?? "").trim(), origem: f.origem ?? "", favorito: !!f.favorito,
     transformacao: f.transformacao ?? "", arquetipoRef: f.arquetipoRef ?? "", classeRef: f.classeRef ?? "",
     circulo: tipo === "magia" ? limitar(int(item?.system?.level, 0), 0, 9) : null,
     formas, melhorias,
@@ -1240,7 +1241,7 @@ export const nivelHabilidade = item => Math.max(1, Math.min(50, int(item?.flags?
  * Junta opções de bônus situacional num Bônus de cena (pura, para teste). `nivel` multiplica as opções "por nível".
  */
 export function montarBonusCena(opcoes, nivel = 1, extra = {}) {
-  const b = { ativo: true, acerto: 0, dano: "", ca: 0, rd: 0, rdTipo: "", testes: 0, deslocamento: 0, margem: 0, cena: true, ...extra };
+  const b = { ativo: true, acerto: 0, dano: "", ca: 0, rd: 0, rdTipo: "", testes: 0, deslocamento: 0, margem: 0, critMult: 0, cena: true, ...extra };
   const danos = [];
   for (const o of opcoes) {
     const vezes = o.porNivel ? Math.max(1, int(nivel, 1)) : 1;
@@ -1265,6 +1266,8 @@ export function contarRaridades(poderes) {
   const zero = () => Object.fromEntries(Object.keys(RARIDADES_PODER).map(r => [r, 0]));
   const out = { habilidade: zero(), magia: zero(), total: zero() };
   for (const p of poderes) {
+    // Habilidades marcadas "não conta no limite" (ex.: as únicas) ficam fora da contagem
+    if (p.foraDoLimite) continue;
     out[p.tipo][p.raridade] += 1;
     out.total[p.raridade] += 1;
   }
@@ -1614,6 +1617,7 @@ export function bonusCenaAtivos(dados) {
   return {
     acerto: ativos.reduce((s, b) => s + int(b.acerto), 0),
     margem: ativos.reduce((s, b) => s + int(b.margem), 0),
+    critMult: ativos.reduce((s, b) => s + int(b.critMult), 0),
     dano: ativos.map(b => String(b.dano ?? "").trim()).filter(Boolean),
     danoFontes: ativos.filter(b => String(b.dano ?? "").trim()).map(b => ({ formula: String(b.dano).trim(), fonte: b.nome || "Bônus" })),
     acertoFontes: ativos.filter(b => int(b.acerto)).map(b => ({ valor: int(b.acerto), fonte: b.nome || "Bônus" })),

@@ -11,7 +11,11 @@
         <label class="epm-campo"><span>Origem</span><select name="flags.epm-ficha.origem"><option value="">Sem origem</option>{{#each opcoesOrigem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         {{/if}}
         <label class="epm-campo" title="Elemento da magia ou habilidade (Notion). Na árvore elemental, o elemento evoluído ignora a imunidade ao anterior."><span>Elemento</span><input type="text" name="flags.epm-ficha.elemento" value="{{elemento}}" list="epm-poder-elementos" placeholder="Fogo, Água, Raio…" /><datalist id="epm-poder-elementos">{{#each elementos}}<option value="{{this}}"></option>{{/each}}</datalist></label>
+        <label class="epm-campo" title="Ex.: Ofensiva / Especial"><span>Tipo</span><input type="text" name="flags.epm-ficha.tipoHab" value="{{dados.tipoHab}}" placeholder="Ofensiva, Suporte…" /></label>
+        <label class="epm-campo" title="Do que a habilidade fala (aparece na descrição)"><span>Tema</span><input type="text" name="flags.epm-ficha.tema" value="{{dados.tema}}" placeholder="Liberdade, estratégia…" /></label>
         <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.passiva" {{epmChecked dados.passiva}} /> Passiva</label>
+        <label class="epm-check" title="Não conta no limite da raridade (ex.: as 2 habilidades únicas do personagem)"><input type="checkbox" name="flags.epm-ficha.foraDoLimite" {{epmChecked dados.foraDoLimite}} /> Não conta no limite</label>
+        {{#unless (epmEq dados.tipo "magia")}}<label class="epm-check" title="Mostra um interruptor Ativa/Inativa na lista de habilidades (para posturas, auras, modos que ficam ligados)"><input type="checkbox" name="flags.epm-ficha.alternavel" {{epmChecked dados.alternavel}} /> Liga/desliga</label>{{/unless}}
       </div>
       <div class="epm-linha-identidade epm-nivel-hab">
         <label class="epm-campo" title="Nível da habilidade. Opções de bônus marcadas como 'por nível' multiplicam por ele."><span>Nível</span><input type="number" min="1" max="50" name="flags.epm-ficha.nivelHab" value="{{nivelHab.nivel}}" /></label>
@@ -57,6 +61,7 @@
         <label class="epm-campo"><span>Área</span><input type="text" name="flags.epm-ficha.formas.{{this.id}}.area" value="{{this.area}}" placeholder="cone de 6 m…" /></label>
         <label class="epm-campo"><span>Alvo</span><input type="text" name="flags.epm-ficha.formas.{{this.id}}.alvo" value="{{this.alvo}}" placeholder="1 criatura…" /></label>
         <label class="epm-campo"><span>Duração</span><input type="text" name="flags.epm-ficha.formas.{{this.id}}.duracao" value="{{this.duracao}}" placeholder="instantânea…" /></label>
+        <label class="epm-campo" title="Quantas vezes pode usar esta forma. Gasta, ela volta no momento escolhido (o Mestre pode liberar antes)."><span>Uso</span><select name="flags.epm-ficha.formas.{{this.id}}.uso">{{#each opcoesUso}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         <label class="epm-campo"><span>Teste</span><select name="flags.epm-ficha.formas.{{this.id}}.teste.tipo">{{#each opcoesTeste}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         <label class="epm-campo"><span>Perícia do teste</span><select name="flags.epm-ficha.formas.{{this.id}}.teste.pericia"><option value="">Nenhuma</option>{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
         <div class="epm-campo"><span>DT da resistência</span><span class="epm-cd{{#unless resistencia}} fraca{{/unless}}" title="Calculada: {{@root.cdFormula}}">{{#if @root.cd}}{{@root.cd.valor}} ({{@root.cdFormula}}){{else}}{{@root.cdFormula}}{{/if}}</span></div>

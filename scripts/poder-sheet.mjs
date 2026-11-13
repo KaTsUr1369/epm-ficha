@@ -5,7 +5,7 @@
 import { FLAG, CAMINHO } from "./config.mjs";
 import { lerPoder, formaPadrao, novoId, int } from "./data.mjs";
 import { lerAtor, dadosRolagemEPM, montarContextoPoder } from "./context.mjs";
-import { enriquecer, editorHTML, escapar } from "./helpers.mjs";
+import { enriquecer, editorHTML, ligarTextoRico, escapar } from "./helpers.mjs";
 import { listaPericias } from "./settings.mjs";
 import * as M from "./mecanicas.mjs";
 import { escolherImagem } from "./imagens.mjs";
@@ -36,6 +36,7 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
   /** O editor acompanha a cor da ficha do dono. */
   async _onRender(context, options) {
     await super._onRender(context, options);
+    ligarTextoRico(this);
     const pers = this.item.actor?.flags?.[FLAG]?.personalizacao;
     if (pers?.cor) aplicarPaleta(this.element, pers.cor, pers.brilho);
   }

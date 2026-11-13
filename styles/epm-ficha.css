@@ -3110,15 +3110,38 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-ataque-dano, .epm-ataque-acerto, .epm-atributo-total, .epm-pericia-total { cursor: help; }
 
 /* Interruptor ativa/inativa das habilidades */
-.epm-interruptor { flex: none; display: inline-flex; align-items: center; gap: 5px; width: auto; height: 26px; padding: 0 6px; margin: 0; border: 1px solid var(--epm-borda, #4a4030); border-radius: 13px; background: transparent; color: inherit; font-size: 11px; line-height: 1; cursor: pointer; }
-.epm-interruptor:disabled { cursor: default; opacity: .7; }
-.epm-interruptor-trilho { position: relative; width: 26px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.15); transition: background .15s; }
-.epm-interruptor-bola { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #cfc6b4; transition: left .15s, background .15s; }
-.epm-interruptor.ligado { border-color: #6fbf73; color: #a8e0aa; }
-.epm-interruptor.ligado .epm-interruptor-trilho { background: #3f8a44; }
-.epm-interruptor.ligado .epm-interruptor-bola { left: 14px; background: #fff; }
-.epm-interruptor-texto { min-width: 38px; text-align: left; }
+.epm-chave-hab { flex: none; display: inline-flex; align-items: center; gap: 5px; width: auto; height: 26px; padding: 0 6px; margin: 0; border: 1px solid var(--epm-borda, #4a4030); border-radius: 13px; background: transparent; color: inherit; font-size: 11px; line-height: 1; cursor: pointer; }
+.epm-chave-hab:disabled { cursor: default; opacity: .7; }
+.epm-chave-hab-trilho { position: relative; width: 26px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.15); transition: background .15s; }
+.epm-chave-hab-bola { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #cfc6b4; transition: left .15s, background .15s; }
+.epm-chave-hab.ligado { border-color: #6fbf73; color: #a8e0aa; }
+.epm-chave-hab.ligado .epm-chave-hab-trilho { background: #3f8a44; }
+.epm-chave-hab.ligado .epm-chave-hab-bola { left: 14px; background: #fff; }
+.epm-chave-hab-texto { min-width: 38px; text-align: left; }
 .epm-poder.ativa > .epm-poder-linha { box-shadow: inset 3px 0 0 #6fbf73; }
 .epm-mochila-organizar { display: flex; align-items: center; gap: 6px; margin: 2px 0 4px; font-size: 12px; }
 .epm-mochila-organizar select { width: auto; height: 24px; font-size: 12px; }
 .epm-mochila-organizar .epm-dica { margin: 0; }
+
+/* Bônus de cena no modo edição: nome numa linha, campos em grade embaixo (nada espremido) */
+.application.epm .epm-bonus input.epm-bonus-nome { flex: 1 1 0; min-width: 0; width: auto; }
+.epm-bonus-campos { flex: 1 0 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.epm-bonus-campos .epm-mini.largo { grid-column: span 2; }
+.application.epm .epm-bonus .epm-bonus-campos .epm-mini { width: auto; min-width: 0; }
+.application.epm .epm-bonus .epm-bonus-campos input { width: 100%; }
+/* Ataque personalizado no modo edição: perícia e dano com espaço */
+.application.epm .epm-ataque-campos .epm-mini:has(select) { flex: 0 1 120px; }
+.application.epm .epm-ataque-campos .epm-mini:has(input[name$=".dano"]) { flex: 1 1 150px; }
+/* Nome de perícia comprido quebra a linha em vez de cortar */
+.epm-pericia .epm-pericia-nome { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; text-overflow: clip; }
+/* Resumo dos bônus do item quebra a linha em vez de cortar */
+.epm-item .epm-item-efeitos { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Editor de item: "Quando" do efeito de cura mostra o texto inteiro */
+.application.epm select[name$=".quando"] { min-width: 165px; }
+
+/* Toggle "Chat só do que eu clicar", logo abaixo do Editar */
+.application.epm .epm-modo-edicao.epm-chat-discreto { top: 42px; height: 22px; font-size: 11px; }
+.epm-uso-forma.gasto { color: var(--epm-erro, #d2544a); text-decoration: line-through; }
+.epm-forma-efeito-texto { margin: 2px 0 8px 12px; padding-left: 8px; border-left: 2px solid var(--epm-linha); font-size: 12.5px; }
+.epm-forma-efeito-texto p { margin: 0 0 4px; }
+.epm-forma-efeito-texto ul { margin: 2px 0 4px 18px; padding: 0; }

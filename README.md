@@ -14,6 +14,28 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.5
+
+- **Habilidades em várias partes** (ex.: *O Legado do Errante*):
+  - botão **Colar texto** nas abas Habilidades e Magias: cole o texto (nome, Tipo, Tema, abertura e partes numeradas com Custo, Ação, Duração, Uso, Alcance, Alvo, Área) e a ficha monta a habilidade com uma forma por parte;
+  - campos **Tipo** e **Tema** no editor;
+  - **Uso** por forma (1× por combate, cena, descanso curto, descanso longo ou dia): depois de usada fica marcada "(usada)" e volta sozinha no fim do combate ou no descanso (o Mestre pode liberar antes);
+  - ao abrir a habilidade na ficha, o efeito de cada parte aparece embaixo dela;
+  - *O Legado do Errante* entrou no compêndio, em "Habilidades de exemplo".
+- **Não conta no limite**: marque no editor as habilidades que ficam fora do limite da raridade (ex.: as 2 únicas).
+- **Interruptor Ativa/Inativa** só aparece nas habilidades com **Liga/desliga** marcado no editor.
+- **Chat só do que eu clicar**: toggle pequeno no topo da ficha, abaixo do Editar. Ligado, o que a ficha faz sozinha (gatilhos, automações, avisos de fim de combate) não vai para o chat; ataques, itens e habilidades usadas e rolagens continuam. Pedidos de teste com botão continuam aparecendo.
+- **Textos sempre abertos**: Sobre, Anotações, descrições de itens e habilidades já abrem prontos para escrever (sem o botão de editar), com a barra de formatação. Salvar o texto não redesenha mais a janela, então a tela não pisca.
+- **Mudar a categoria de um item**: seletor "categoria" no topo do editor do item (Arma, Consumível, Armadura, Escudo, Vestimenta, Acessório, Ferramenta, Loot, Mochila) e opção **Categoria** na seleção de vários itens (modo edição).
+- **Bônus de cena**: o nome não fica mais espremido; novos campos **margem** (de ameaça) e **×crítico** (soma no multiplicador). Bônus situacional de habilidade também ganhou **Multiplicador de crítico**. A linha do ataque mostra o crítico já com os bônus de cena.
+- **Painéis recolhidos são lembrados** mesmo quando o título tem contador ou estado (nível, sanidade…), e as mochilas fechadas também ficam fechadas na próxima vez.
+- **Correções**:
+  - o interruptor dos Bônus de cena e das Bênçãos tinha ficado com a aparência errada na 0.8.4;
+  - fórmulas com atributo negativo mostravam "− -2" (agora "+ 2") e o detalhe do dano mostrava "−-2";
+  - nomes de perícia compridos e o resumo de bônus dos itens não são mais cortados;
+  - perícia e dano do ataque personalizado no modo edição ficaram mais largos;
+  - o "Quando" dos efeitos de cura no editor do item mostra o texto inteiro.
+
 ## Novidades da 0.8.4
 
 - **De onde vem cada valor**: passe o mouse no dano ou no acerto de um ataque, no dano de uma habilidade ou magia e no total de atributos e perícias para ver cada parte e a fonte dela.

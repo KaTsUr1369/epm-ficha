@@ -8,7 +8,7 @@
       {{#if cargas}}<span class="epm-item-recurso{{#unless cargas.valor}} acabou{{/unless}}" title="Cargas{{#if cargas.recarga}}: recarregam em {{cargas.recarga}}{{/if}}"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{cargas.valor}}/{{cargas.max}}</span>{{/if}}
       {{#with (lookup @root.novas.durabilidade this.id) as |du|}}{{#if du.gasto}}<span class="epm-durabilidade{{#if du.quebrado}} quebrado{{/if}}" title="Durabilidade {{du.valor}} de 100{{#if du.quebrado}}: Quebrado, sem efeitos até consertar{{/if}}"><span class="epm-durabilidade-barra"><span style="width: {{du.valor}}%; background: {{du.cor}}"></span></span>{{#if du.quebrado}}Quebrado{{else}}{{du.valor}}{{/if}}</span>{{/if}}{{/with}}
       {{#if tecPenal}}<span class="epm-item-tec" title="{{tecPenal}}"><i class="fa-solid fa-microchip" aria-hidden="true"></i> {{tecPenal}}</span>{{/if}}
-      {{#if resumoEfeitos.length}}<span class="epm-item-efeitos{{#unless efeitosAtivos}} inativos{{/unless}}" title="{{#if efeitosAtivos}}Bônus valendo{{else}}{{this.dicaAtivo}}{{/if}}">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
+      {{#if resumoEfeitos.length}}<span class="epm-item-efeitos{{#unless efeitosAtivos}} inativos{{/unless}}" title="{{epmJoin resumoEfeitos " · "}}&#10;{{#if efeitosAtivos}}Bônus valendo{{else}}{{this.dicaAtivo}}{{/if}}">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
     </button>
     <span class="epm-raridade" title="Raridade">{{this.raridadeLabel}}</span>
     {{#if eArma}}

@@ -19,8 +19,9 @@ export const CONDICOES_RECUPERAVEIS = ["epm-atordoado", "epm-paralisado", "epm-d
 const NOMES = { "epm-atordoado": "Atordoado", "epm-paralisado": "Paralisado", "epm-dominado": "Dominado", ...ROTULOS_ACUMULAVEIS };
 export const SANIDADE_DEPOIS_DO_TRAUMA = 20;
 
+// Mensagens automáticas: somem do chat se a ficha estiver com "Chat só do que eu clicar"
 const nota = (ator, html, cor = "#A47DDB") => ChatMessage.create({
-  speaker: ChatMessage.getSpeaker({ actor: ator }), content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:${cor}">${html}</div>`
+  speaker: ChatMessage.getSpeaker({ actor: ator }), flags: { [FLAG]: { automatico: true } }, content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:${cor}">${html}</div>`
 });
 
 /** Este cliente é o responsável pelo ator? (primeiro dono jogador conectado ou o Mestre ativo) */
@@ -174,7 +175,7 @@ export async function resolverPedido(ator, botao) {
     await dano.evaluate();
     const perda = calcularPerda(estadoAtor(ator).ficha, "ps", dano.total);
     await ator.update(perda.updates);
-    return dano.toMessage({ speaker: ChatMessage.getSpeaker({ actor: ator }), flavor: `<span class="epm-flavor"><strong>Aura de Horror${p.extra?.criatura ? ` (${escapar(p.extra.criatura)})` : ""}</strong><em>Falhou (${roll.total}): −${dano.total} de Sanidade${perda.doTemp ? `, ${perda.doTemp} da temporária` : ""}</em></span>` });
+    return dano.toMessage({ speaker: ChatMessage.getSpeaker({ actor: ator }), flags: { [FLAG]: { automatico: true } }, flavor: `<span class="epm-flavor"><strong>Aura de Horror${p.extra?.criatura ? ` (${escapar(p.extra.criatura)})` : ""}</strong><em>Falhou (${roll.total}): −${dano.total} de Sanidade${perda.doTemp ? `, ${perda.doTemp} da temporária` : ""}</em></span>` });
   }
   if (passou) await nota(ator, `<p><strong>${escapar(ator.name)}</strong> passou (${roll.total} contra DT ${p.dt}).</p>`, "#4E9A5B");
 }
@@ -302,6 +303,6 @@ export async function vozInterna(combate) {
       try { if (!a.statuses?.has("epm-confuso")) await a.toggleStatusEffect("epm-confuso", { active: true }); } catch (err) { console.warn("EPM |", err); }
       await a.update({ [`${P}.vozConfuso`]: combate.id });
     }
-    await r.toMessage({ speaker: ChatMessage.getSpeaker({ actor: a }), flavor: `<span class="epm-flavor"><strong>Voz interna</strong><em>${confuso ? "Com 1: Confuso no primeiro turno" : "Sem efeito neste combate"}</em></span>` });
+    await r.toMessage({ speaker: ChatMessage.getSpeaker({ actor: a }), flags: { [FLAG]: { automatico: true } }, flavor: `<span class="epm-flavor"><strong>Voz interna</strong><em>${confuso ? "Com 1: Confuso no primeiro turno" : "Sem efeito neste combate"}</em></span>` });
   }
 }

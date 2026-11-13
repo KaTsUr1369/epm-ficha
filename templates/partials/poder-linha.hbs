@@ -7,17 +7,19 @@
       <div class="epm-poder-meta">
         <span class="epm-raridade">{{this.raridadeLabel}}</span>
         {{#if origemLabel}}<span class="epm-tag">{{this.origemLabel}}</span>{{/if}}
+        {{#if foraDoLimite}}<span class="epm-tag epm-tag-ok" title="Não conta no limite de habilidades/magias da raridade">Fora do limite</span>{{/if}}
+        {{#if tipoHab}}<span class="epm-tag" title="{{#if tema}}Tema: {{this.tema}}{{/if}}">{{this.tipoHab}}</span>{{/if}}
         {{#if nivelHab}}<span class="epm-tag" title="Nível da habilidade">Nv {{this.nivelHab}}</span>{{/if}}
         {{#if gatilho}}<span class="epm-tag epm-tag-gatilho" title="Ativação condicional: entra sozinha, uma vez por cena"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{this.gatilho}}</span>{{/if}}
         {{#if elemento}}<span class="epm-tag epm-tag-elemento"><i class="fa-solid fa-fire-flame-curved" aria-hidden="true"></i> {{this.elemento}}</span>{{/if}}
         {{#if passiva}}<span class="epm-tag">Passiva</span>{{/if}}
-        {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{this.motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{this.nome}}</strong> {{/if}}{{this.acaoLabel}}, {{this.custoTexto}}{{#if resistencia}}, DT {{@root.ficha.cd.valor}}{{/if}}</span>{{/each}}
+        {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{this.motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{this.nome}}</strong> {{/if}}{{this.acaoLabel}}, {{this.custoTexto}}{{#if resistencia}}, DT {{@root.ficha.cd.valor}}{{/if}}{{#if usoLabel}}, <span class="epm-uso-forma{{#if usoGasto}} gasto{{/if}}" title="{{#if usoGasto}}Já usada; volta conforme o limite{{else}}Disponível{{/if}}">{{this.usoLabel}}{{#if usoGasto}} (usada){{/if}}</span>{{/if}}</span>{{/each}}
         {{#unless nFormas}}{{#unless passiva}}<span class="epm-tag fraca">sem formas</span>{{/unless}}{{/unless}}
         {{#if alertas.length}}<span class="epm-alerta" title="{{this.alertasTexto}}"><i class="fa-solid fa-triangle-exclamation" aria-label="Acima dos limites da raridade"></i></span>{{/if}}
       </div>
     </div>
     <button type="button" class="epm-botao epm-usar{{#if bloqueada}} bloqueado{{/if}}" data-action="usarPoder" data-item-id="{{this.id}}" title="{{#if bloqueada}}Bloqueada por: {{this.motivosTexto}}{{else}}Usar{{#if variasFormas}} (você escolhe a forma){{/if}}{{/if}}">{{#if bloqueada}}<i class="fa-solid fa-lock" aria-hidden="true"></i> Bloqueada{{else}}Usar{{/if}}</button>
-    {{#if (epmEq tipo "habilidade")}}<button type="button" class="epm-interruptor{{#if ativa}} ligado{{/if}}" role="switch" aria-checked="{{#if ativa}}true{{else}}false{{/if}}" data-action="alternarHabilidade" data-item-id="{{this.id}}" title="{{#if ativa}}Ativa: clique para desligar (tira o bônus de cena e a sustentação){{else}}Desligada: clique para ativar{{#unless passiva}} (usa a habilidade e paga o custo){{/unless}}{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}><span class="epm-interruptor-trilho"><span class="epm-interruptor-bola"></span></span><span class="epm-interruptor-texto">{{#if ativa}}Ativa{{else}}Inativa{{/if}}</span></button>{{/if}}
+    {{#if alternavel}}<button type="button" class="epm-chave-hab{{#if ativa}} ligado{{/if}}" role="switch" aria-checked="{{#if ativa}}true{{else}}false{{/if}}" data-action="alternarHabilidade" data-item-id="{{this.id}}" title="{{#if ativa}}Ativa: clique para desligar (tira o bônus de cena e a sustentação){{else}}Desligada: clique para ativar{{#unless passiva}} (usa a habilidade e paga o custo){{/unless}}{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}><span class="epm-chave-hab-trilho"><span class="epm-chave-hab-bola"></span></span><span class="epm-chave-hab-texto">{{#if ativa}}Ativa{{else}}Inativa{{/if}}</span></button>{{/if}}
     {{#if (epmEq tipo "magia")}}{{#unless bloqueada}}<button type="button" class="epm-icone-botao epm-conjunta" data-action="magiaConjunta" data-item-id="{{this.id}}" title="Magia conjunta: lançar junto com outro conjurador (dividem a Mana; CD maior + 2)"><i class="fa-solid fa-people-arrows"></i></button>{{/unless}}{{/if}}
     <div class="epm-item-controles">
       <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{this.id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
@@ -40,8 +42,11 @@
       {{#if resistencia}}<span class="epm-tag" title="{{@root.ficha.cd.formula}}">DT {{@root.ficha.cd.valor}}</span>{{/if}}
       {{#if dano}}<span class="epm-tag epm-tag-dano" data-tooltip="{{this.danoDica}}" data-tooltip-class="epm-dica-tooltip">{{this.dano}}</span>{{/if}}
       {{#if requisitos.length}}<span class="epm-tag fraca">{{epmJoin requisitos}}</span>{{/if}}
+      {{#if duracao}}<span class="epm-tag" title="Duração">{{this.duracao}}</span>{{/if}}
+      {{#if usoLabel}}<span class="epm-tag epm-uso-forma{{#if usoGasto}} gasto{{/if}}">{{this.usoLabel}}{{#if usoGasto}} (usada){{/if}}</span>{{/if}}
       {{#if bloqueada}}<span class="epm-bloqueio">bloqueada por {{this.motivosTexto}}</span>{{/if}}
     </div>
+    {{#if efeito}}<div class="epm-forma-efeito-texto">{{{this.efeito}}}</div>{{/if}}
     {{/each}}
     {{#each alertas}}<p class="epm-aviso">{{this}}</p>{{/each}}
     {{#unless descricao}}{{#unless nFormas}}<p class="epm-vazio">Sem descrição nem formas.</p>{{/unless}}{{/unless}}

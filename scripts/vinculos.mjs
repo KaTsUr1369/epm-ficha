@@ -19,7 +19,7 @@ const P = `flags.${FLAG}`;
 const M = () => import("./mecanicas.mjs");
 const X = () => import("./extras.mjs");
 const falar = a => ChatMessage.getSpeaker({ actor: a });
-const nota = (ator, html, cor = "#A47DDB", extra = {}) => ChatMessage.create({ speaker: ator ? falar(ator) : undefined, content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:${cor}">${html}</div>`, ...extra });
+const nota = (ator, html, cor = "#A47DDB", extra = {}) => ChatMessage.create({ speaker: ator ? falar(ator) : undefined, flags: { [FLAG]: { automatico: true } }, content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:${cor}">${html}</div>`, ...extra });
 const porUuid = uuid => { try { const d = uuid ? fromUuidSync(uuid) : null; return d?.documentName === "Actor" ? d : null; } catch { return null; } };
 
 /* -------------------------------------------- */
@@ -170,7 +170,7 @@ export async function interagirAncora(ator, aid) {
   await roll.evaluate();
   const r = calcularRecuperacao(estadoAtor(ator).ficha, "ps", roll.total, { fonte: `âncora: ${a.nome}` });
   await ator.update({ ...r.updates, [`${P}.ancoras.${aid}.usada`]: true });
-  await roll.toMessage({ speaker: falar(ator), flavor: `<span class="epm-flavor"><strong>Âncora: ${escapar(a.nome || TIPOS_ANCORA[a.tipo])}</strong><em>${escapar(r.texto || "Sanidade")}</em></span>` });
+  await roll.toMessage({ speaker: falar(ator), flags: { [FLAG]: { automatico: true } }, flavor: `<span class="epm-flavor"><strong>Âncora: ${escapar(a.nome || TIPOS_ANCORA[a.tipo])}</strong><em>${escapar(r.texto || "Sanidade")}</em></span>` });
 }
 
 /** Perdida (só o Mestre): −20 de Sanidade e o espaço fica livre. */

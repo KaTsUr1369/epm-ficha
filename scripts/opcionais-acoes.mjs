@@ -171,7 +171,7 @@ export async function aplicarFaseChefe(ator, fase, n) {
     .map(t => CONDICOES.find(c => c.id === t || c.slug === t || c.label.toLowerCase() === t.toLowerCase())).filter(Boolean);
   for (const c of conds) { try { if (!ator.statuses?.has(c.id)) await ator.toggleStatusEffect(c.id, { active: true }); } catch (err) { console.warn("EPM |", err); } }
   if (conds.length) feito.push(`ficou ${conds.map(c => c.label).join(", ")}`);
-  return cartao(ator, `<p><i class="fa-solid fa-crown" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> entra na <strong>fase ${n}</strong> (Vida ≤ ${fase.limiar}%).</p>${fase.texto ? `<p>${escapar(fase.texto)}</p>` : ""}${feito.length ? `<p class="epm-dica">${escapar(feito.join("; "))}.</p>` : ""}`, "#D2544A");
+  return cartao(ator, `<p><i class="fa-solid fa-crown" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> entra na <strong>fase ${n}</strong> (Vida ≤ ${fase.limiar}%).</p>${fase.texto ? `<p>${escapar(fase.texto)}</p>` : ""}${feito.length ? `<p class="epm-dica">${escapar(feito.join("; "))}.</p>` : ""}`, "#D2544A", { flags: { [FLAG]: { automatico: true } } });
 }
 
 /** updateActor (Mestre ativo): a Vida cruzou um limiar para baixo → a fase entra, uma vez por combate. */

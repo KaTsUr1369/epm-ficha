@@ -15,7 +15,7 @@ import { montarContexto, lerAtor, visualDaFicha } from "./context.mjs";
 import * as X from "./extras.mjs";
 import * as PJ from "./projetos.mjs";
 import * as PR from "./producao.mjs";
-import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar } from "./helpers.mjs";
+import { fvtt, enriquecer, editorHTML, dadosDeArraste, escapar, ligarTextoRico } from "./helpers.mjs";
 import { ajustes, listaPericias, salvarListaPericias, lerMundo } from "./settings.mjs";
 import * as mundo from "./mundo.mjs";
 import { NOMES_ACOES_060, METODOS_060 } from "./ficha-060.mjs";
@@ -43,14 +43,14 @@ const TIPO_ABA = "application/x-epm-aba";
 const TIPO_CATEGORIA = "application/x-epm-categoria";
 
 const ACOES_FICHA = [
-  "aba", "irAba", "alternarEdicao", "editarImagem", "imagemItem", "imagemSobre", "removerImagemSobre", "verImagem",
+  "aba", "irAba", "alternarEdicao", "alternarChatDiscreto", "editarImagem", "imagemItem", "imagemSobre", "removerImagemSobre", "verImagem",
   "ajustarRecurso", "rolarAtributo", "rolarPericia", "rolarIniciativa", "alternarAtributoPericia", "adicionarPericia", "removerPericia", "sincronizarPericias", "salvarPericiasPadrao",
   "defesa", "alternarAcao", "novoTurno", "exaustao", "descanso",
   "converter", "subirNivel", "moedas", "filtroRaridade",
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
   "usarItem", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
   "abrirMochila", "tirarDaMochila", "moverItemPara", "moverNaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
-  "novoPoder", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
+  "novoPoder", "poderDeTexto", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
   "alternarCondicao", "soAtivas", "aplicarCombinacao", "removerCombinacao", "removerTag", "removerIdioma",
   "novaBencao", "excluirBencao", "adicionarMod", "removerMod", "abrirCatalogo", "tipoCatalogo", "adicionarDoCatalogo",
@@ -135,7 +135,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this._condicoesUi = { busca: "", soAtivas: false, abertas: null };
     this._bencaosUi = { aberto: false, busca: "", tipo: "bencao" };
     this._relacoesAbertas = new Set();
+    // Mochilas fechadas ficam lembradas (setting do cliente, junto com os painéis recolhidos)
     this._mochilasFechadas = new Set();
+    try {
+      for (const k of game.settings.get(MODULE_ID, "paineisRecolhidos") ?? []) if (String(k).startsWith("mochila|")) this._mochilasFechadas.add(String(k).slice(8));
+    } catch { /* setting ainda não registrada */ }
     this._arrasto = null;
     this._selecao = { aba: null, ids: new Set() };
     this._barrasAntes = null;
@@ -424,6 +428,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   _ligarEventos() {
     const raiz = this.element;
+    ligarTextoRico(this, () => this.actor);
     raiz.addEventListener("change", ev => this._onMudancaLocal(ev), { capture: true });
     raiz.addEventListener("keydown", ev => this._onTeclaLocal(ev), { capture: true });
     raiz.addEventListener("input", ev => this._onDigitar(ev), { capture: true });
@@ -936,6 +941,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this._ajustesRecurso[id] = { valor: novo, timer };
   }
 
+  acaoAlternarChatDiscreto() {
+    const atual = !!this.actor.flags?.[FLAG]?.ui?.chatDiscreto;
+    return this.actor.update({ [`${P}.ui.chatDiscreto`]: !atual });
+  }
+
   acaoAlternarEdicao() {
     if (!this.isEditable) return;
     this._modoEdicao = !this._modoEdicao;
@@ -1150,8 +1160,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   acaoAbrirMochila(ev, alvo) {
     const id = alvo.dataset.itemId;
-    if (this._mochilasFechadas.has(id)) this._mochilasFechadas.delete(id);
-    else this._mochilasFechadas.add(id);
+    const fechar = !this._mochilasFechadas.has(id);
+    if (fechar) this._mochilasFechadas.add(id); else this._mochilasFechadas.delete(id);
+    const recolhidos = this._lerRecolhidos();
+    if (fechar) recolhidos.add(`mochila|${id}`); else recolhidos.delete(`mochila|${id}`);
+    game.settings.set(MODULE_ID, "paineisRecolhidos", [...recolhidos]).catch(err => console.warn("EPM |", err));
     this.render({ parts: ["inventario"] });
   }
 
@@ -1228,6 +1241,32 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoDanoArma(ev, alvo) {
     const item = this._item(alvo);
     if (item) return M.danoDeArma(this.actor, item);
+  }
+
+  /** Cria uma habilidade (ou magia) a partir de um texto colado (habilidade-texto.mjs). */
+  async acaoPoderDeTexto(ev, alvo) {
+    const tipo = alvo.dataset.tipo === "magia" ? "magia" : "habilidade";
+    const { dadosHabilidadeTexto, lerHabilidadeTexto } = await import("./habilidade-texto.mjs");
+    const r = await X.dialogo({
+      titulo: tipo === "magia" ? "Magia a partir de texto" : "Habilidade a partir de texto", ok: "Criar", icone: "fa-solid fa-paste",
+      content: `<p class="epm-dica">Primeira linha: o nome. Depois, se tiver, <strong>Tipo:</strong> e <strong>Tema:</strong> e o texto de abertura. Cada parte numerada (<em>1. Nome</em>) vira uma forma; as linhas <strong>Custo</strong>, <strong>Ação</strong>, <strong>Duração</strong>, <strong>Uso</strong>, <strong>Alcance</strong>, <strong>Alvo</strong> e <strong>Área</strong> logo abaixo dela são lidas, e o resto vira o efeito.</p><textarea name="texto" rows="16" style="width:100%;font-family:inherit" placeholder="O Legado do Errante&#10;Tipo: Ofensiva / Especial&#10;…&#10;1. A Fortuna do Estrategista&#10;Custo: 5 PE&#10;Ação: Ação Bônus&#10;…"></textarea>`,
+      callback: el => ({ texto: el.texto?.value ?? "" })
+    });
+    if (!r?.texto?.trim()) return;
+    const dados = dadosHabilidadeTexto(r.texto);
+    if (tipo === "magia") {
+      dados.type = "spell";
+      dados.system.level = Math.min(6, Math.max(0, int(this._abas.magias, 0)));
+    } else {
+      const sub = SUBABAS_HABILIDADE.find(s => s.id === this._abas.habilidades);
+      if (sub?.origem) dados.flags[FLAG].origem = sub.origem;
+    }
+    const lida = lerHabilidadeTexto(r.texto);
+    const [item] = await this.actor.createEmbeddedDocuments("Item", [dados]);
+    if (item) {
+      ui.notifications.info(`${item.name}: ${lida.formas.length} forma(s) criada(s). Confira custo e raridade no editor.`);
+      abrirEditorPoder(item);
+    }
   }
 
   async acaoNovoPoder(ev, alvo) {
@@ -2097,7 +2136,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const bloco = cabeca.parentElement;
     const aba = cabeca.closest(".epm-aba")?.dataset.tab ?? "";
     const id = bloco.dataset.secao ?? bloco.dataset.categoria ?? cabeca.dataset.categoriaId ?? "";
-    const titulo = cabeca.querySelector("h3, h4")?.textContent.trim().replace(/\s+/g, " ") ?? "";
+    // Só o texto fixo do título: contadores, etiquetas e o que vem depois de ":" mudam com o tempo (nível, estado…)
+    const h = cabeca.querySelector("h3, h4")?.cloneNode(true);
+    h?.querySelectorAll(".epm-contador, .epm-tag, .epm-dica").forEach(e => e.remove());
+    const titulo = (h?.textContent ?? "").split(":")[0].trim().replace(/\s+/g, " ");
     return `${aba}|${id}|${titulo}`;
   }
 

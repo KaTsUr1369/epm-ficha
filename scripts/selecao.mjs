@@ -39,6 +39,7 @@ export const ABAS_SELECAO = {
       { op: "chat", label: "No chat", icone: "fa-solid fa-comment" },
       { op: "mochila", label: "Mover para", icone: "fa-solid fa-right-left", dica: "Guardar numa mochila ou tirar das mochilas" },
       { op: "raridade", label: "Raridade", icone: "fa-solid fa-gem", quando: "edicao" },
+      { op: "categoria", label: "Categoria", icone: "fa-solid fa-tags", quando: "edicao", dica: "Muda o tipo dos itens marcados (ex.: Loot → Ferramenta)" },
       { op: "duplicar", label: "Duplicar", icone: "fa-solid fa-clone", quando: "edicao" },
       { op: "apagar", label: "Apagar", icone: "fa-solid fa-trash", quando: "edicao", perigo: true }
     ]
@@ -266,6 +267,17 @@ export async function executar(sheet, aba, op, ids) {
         if (!r) return false;
         const mover = itens.filter(i => !eMochila(i));
         await actor.updateEmbeddedDocuments("Item", mover.map(i => ({ _id: i.id, "system.container": r.destino || null })));
+        return false;
+      }
+      case "categoria": {
+        const { CATEGORIAS_TROCA, mudarCategoriaItem } = await import("./categoria-item.mjs");
+        const r = await dialogo({
+          titulo: "Mudar categoria", ok: "Mudar", icone: "fa-solid fa-tags",
+          content: `<p class="epm-dica">${itens.length} item(ns). Nome, imagem, quantidade, peso, preço, descrição e os dados do EPM ficam; campos só do tipo antigo no D&amp;D se perdem.</p><label class="epm-campo"><span>Categoria</span><select name="categoria">${CATEGORIAS_TROCA.map(c => `<option value="${c.id}">${c.label}</option>`).join("")}</select></label>`,
+          callback: el => ({ categoria: el.categoria?.value })
+        });
+        if (!r?.categoria) return false;
+        for (const it of itens) await mudarCategoriaItem(it, r.categoria, { confirmarPerda: false });
         return false;
       }
       case "raridade": {

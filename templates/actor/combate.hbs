@@ -204,17 +204,23 @@
           </label>
           {{#if @root.edicao}}
           <input type="text" class="epm-bonus-nome" name="flags.epm-ficha.bonusCena.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome do bônus" aria-label="Nome" />
-          <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
-          <label class="epm-mini"><span>dano</span><input type="text" name="flags.epm-ficha.bonusCena.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8" /></label>
-          <label class="epm-mini"><span>CA</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.ca" value="{{this.ca}}" /></label>
-          <label class="epm-mini"><span>RD</span><input type="number" min="0" name="flags.epm-ficha.bonusCena.{{this.id}}.rd" value="{{this.rd}}" /></label>
           <button type="button" class="epm-icone-botao perigo" data-action="excluirBonusCena" data-ref="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+          <div class="epm-bonus-campos">
+            <label class="epm-mini"><span>acerto</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.acerto" value="{{this.acerto}}" /></label>
+            <label class="epm-mini largo"><span>dano</span><input type="text" name="flags.epm-ficha.bonusCena.{{this.id}}.dano" value="{{this.dano}}" placeholder="1d8" /></label>
+            <label class="epm-mini"><span>CA</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.ca" value="{{this.ca}}" /></label>
+            <label class="epm-mini"><span>RD</span><input type="number" min="0" name="flags.epm-ficha.bonusCena.{{this.id}}.rd" value="{{this.rd}}" /></label>
+            <label class="epm-mini" title="Quanto a margem de ameaça diminui (1 = crítico em 19–20)"><span>margem</span><input type="number" min="0" name="flags.epm-ficha.bonusCena.{{this.id}}.margem" value="{{this.margem}}" /></label>
+            <label class="epm-mini" title="Quanto soma no multiplicador de crítico (1 = ×2 vira ×3)"><span>×crítico</span><input type="number" min="0" name="flags.epm-ficha.bonusCena.{{this.id}}.critMult" value="{{this.critMult}}" /></label>
+          </div>
           {{else}}
           <span class="epm-bonus-nome">{{#if nome}}{{this.nome}}{{else}}Bônus sem nome{{/if}}</span>
           {{#if acerto}}<span class="epm-tag">{{epmSinal acerto}} acerto</span>{{/if}}
           {{#if dano}}<span class="epm-tag epm-tag-dano">+{{this.dano}} dano</span>{{/if}}
           {{#if ca}}<span class="epm-tag">{{epmSinal ca}} CA</span>{{/if}}
           {{#if rd}}<span class="epm-tag epm-chip-rd">RD {{this.rd}}{{#if rdTipo}} ({{this.rdTipo}}){{/if}}</span>{{/if}}
+          {{#if margem}}<span class="epm-tag" title="Margem de ameaça">−{{this.margem}} margem</span>{{/if}}
+          {{#if critMult}}<span class="epm-tag" title="Multiplicador de crítico">+{{this.critMult}} ×crítico</span>{{/if}}
           {{#if testes}}<span class="epm-tag">{{epmSinal testes}} testes</span>{{/if}}
           {{#if deslocamento}}<span class="epm-tag">+{{this.deslocamento}} m</span>{{/if}}
           {{#if cena}}<span class="epm-tag fraca" title="Some no fim do combate ou no descanso">pela cena</span>{{/if}}

@@ -3,6 +3,9 @@
   <button type="button" class="epm-modo-edicao{{#if edicao}} ativo{{/if}}" data-action="alternarEdicao" aria-pressed="{{#if edicao}}true{{else}}false{{/if}}" title="{{#if edicao}}Sair do modo edição{{else}}Entrar no modo edição para mudar atributos, máximos e detalhes{{/if}}">
     <span class="epm-modo-trilho" aria-hidden="true"></span><span>{{#if edicao}}Editando{{else}}Editar{{/if}}</span>
   </button>
+  <button type="button" class="epm-modo-edicao epm-chat-discreto{{#if chatDiscreto}} ativo{{/if}}" data-action="alternarChatDiscreto" aria-pressed="{{#if chatDiscreto}}true{{else}}false{{/if}}" title="{{#if chatDiscreto}}Chat só do que você clicar: o que a ficha faz sozinha (gatilhos, automações, avisos de fim de combate) não vai para o chat. Clique para mostrar tudo.{{else}}Clique para mandar ao chat só o que você clicar (ataques, itens e habilidades usadas, rolagens). O que a ficha faz sozinha deixa de aparecer.{{/if}}">
+    <span class="epm-modo-trilho" aria-hidden="true"></span><span><i class="fa-solid fa-comment{{#if chatDiscreto}}-slash{{/if}}" aria-hidden="true"></i> {{#if chatDiscreto}}Só cliques{{else}}Chat{{/if}}</span>
+  </button>
   {{/if}}
   <div class="epm-astrolabio" title="Anéis: Vida, Mana, Estamina e Sanidade (de fora para dentro)">
     <svg class="epm-aneis" viewBox="0 0 150 150" aria-hidden="true">

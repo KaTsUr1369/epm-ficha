@@ -220,6 +220,16 @@ export const COR_VIDA_TEMP = "#E8C547";
 /** Cores das barras temporárias: Vida amarela, Estamina verde, Mana roxa, Sanidade cinza. */
 export const CORES_TEMP = { pv: COR_VIDA_TEMP, pe: "#5FBF6A", pm: "#9B6BE0", ps: "#A3A9AE" };
 
+/** Limite de uso de cada forma de uma habilidade ("Uso: uma vez por combate"). */
+export const USOS_FORMA = {
+  livre:   "Sem limite",
+  combate: "1× por combate",
+  cena:    "1× por cena",
+  curto:   "1× por descanso curto",
+  longo:   "1× por descanso longo",
+  dia:     "1× por dia"
+};
+
 export const RECARGAS = {
   nenhuma: "Sem recarga automática",
   curto:   "Descanso curto",
@@ -644,7 +654,8 @@ export const TIPOS_BONUS_SITUACIONAL = {
   acerto: { label: "Acerto", texto: v => `+${v} no teste de ataque` },
   testes: { label: "Testes", texto: v => `+${v} em todos os testes` },
   deslocamento: { label: "Deslocamento", texto: v => `+${v} m de deslocamento` },
-  margem: { label: "Margem de ameaça", texto: v => `−${v} na margem de ameaça (crítico mais fácil)` }
+  margem: { label: "Margem de ameaça", texto: v => `−${v} na margem de ameaça (crítico mais fácil)` },
+  critMult: { label: "Multiplicador de crítico", texto: v => `+${v} no multiplicador de crítico` }
 };
 /**
  * Quando o bônus da habilidade entra (ativação condicional). Os automáticos disparam sozinhos uma vez por cena,

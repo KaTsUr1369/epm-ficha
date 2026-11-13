@@ -47,7 +47,7 @@ export async function enriquecer(html, { relativeTo, rollData, secrets = false }
  * HTML de um editor de texto rico (ProseMirror) ligado a um campo do formulário.
  * Usa o construtor oficial do Foundry; se não existir, cai para <textarea>.
  */
-export function editorHTML({ name, value = "", enriched = "", documentUUID, toggled = true, compact = false, height }) {
+export function editorHTML({ name, value = "", enriched = "", documentUUID, toggled = false, compact = false, height }) {
   const PM = foundry.applications?.elements?.HTMLProseMirrorElement;
   if (PM?.create) {
     try {
@@ -64,6 +64,29 @@ export function editorHTML({ name, value = "", enriched = "", documentUUID, togg
     }
   }
   return `<textarea class="epm-texto-simples" name="${escapar(name)}" rows="6">${escapar(value)}</textarea>`;
+}
+
+/**
+ * Textos ricos sempre abertos: ao mudar, salva só aquele campo, sem redesenhar a janela
+ * (o redesenho recriava o editor, piscava a tela e tirava o cursor do lugar).
+ * Liga uma vez por janela; o elemento raiz de uma ApplicationV2 sobrevive aos redesenhos.
+ */
+export function ligarTextoRico(app, documento = () => app.document) {
+  const raiz = app.element;
+  if (!raiz || raiz.dataset.epmTextoRico) return;
+  raiz.dataset.epmTextoRico = "1";
+  raiz.addEventListener("change", ev => {
+    const el = ev.target?.closest?.("prose-mirror");
+    if (!el) return;
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+    const nome = el.name || el.getAttribute("name");
+    const doc = documento();
+    if (!nome || !doc?.isOwner) return;
+    const valor = el.value ?? "";
+    if (foundry.utils.getProperty(doc, nome) === valor) return;
+    doc.update({ [nome]: valor }, { render: false, epmTextoRico: true }).catch(err => console.warn("EPM | Falha ao salvar o texto", err));
+  }, { capture: true });
 }
 
 /** Lê os dados de arrastar-e-soltar de um evento. */

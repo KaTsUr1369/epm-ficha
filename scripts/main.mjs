@@ -245,3 +245,15 @@ Hooks.on("updateCombat", (combate, mudancas) => {
 
 /** Botões só do Mestre nos cartões (encerrar enquete). */
 Hooks.on("renderChatMessageHTML", mundo.ocultarBotoesDeMestre);
+
+
+/* Chat só do que eu clicar: mensagens automáticas da ficha (gatilhos, automações, avisos do fim do combate…)
+   não são criadas quando a ficha de quem fala está com a opção ligada. Pedidos de teste com botão continuam. */
+Hooks.on("preCreateChatMessage", msg => {
+  try {
+    const f = msg.flags?.[FLAG] ?? {};
+    if (!f.automatico || f.pedido) return;
+    const ator = ChatMessage.getSpeakerActor?.(msg.speaker) ?? game.actors?.get(msg.speaker?.actor);
+    if (ator?.flags?.[FLAG]?.ui?.chatDiscreto) return false;
+  } catch (err) { console.warn("EPM | chat discreto", err); }
+});

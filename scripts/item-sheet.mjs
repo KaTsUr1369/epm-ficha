@@ -8,9 +8,10 @@ import { novoId, int } from "./data.mjs";
 import { lerAtor, montarContextoItem, listaPropriedades } from "./context.mjs";
 
 const listaPropriedadesItem = item => listaPropriedades(item.flags?.["epm-ficha"] ?? {});
-import { enriquecer, editorHTML } from "./helpers.mjs";
+import { enriquecer, editorHTML, ligarTextoRico } from "./helpers.mjs";
 import { moverMoedasMochila, recarregarArma } from "./mecanicas.mjs";
 import { listaPericias } from "./settings.mjs";
+import { opcoesCategoria, mudarCategoriaItem } from "./categoria-item.mjs";
 import { escolherImagem } from "./imagens.mjs";
 import { aplicarPaleta } from "./personalizacao.mjs";
 
@@ -40,6 +41,12 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
+    ligarTextoRico(this);
+    this.element.querySelector("select[data-mudar-categoria]")?.addEventListener("change", ev => {
+      ev.stopPropagation();
+      const sel = ev.currentTarget;
+      mudarCategoriaItem(this.item, sel.value).then(r => { if (!r) this.render(); });
+    });
     const pers = this.item.actor?.flags?.[FLAG]?.personalizacao;
     if (pers?.cor) aplicarPaleta(this.element, pers.cor, pers.brilho);
   }
@@ -56,7 +63,7 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         enriched: await enriquecer(descricao, { relativeTo: item, secrets: item.isOwner })
       })
     };
-    return Object.assign(base, montarContextoItem({ item, ficha, editores, editavel: this.isEditable }));
+    return Object.assign(base, montarContextoItem({ item, ficha, editores, editavel: this.isEditable }), { opcoesCategoria: opcoesCategoria(item) });
   }
 
   /** Quantidades e campos numéricos chegam como texto; garante números e não deixa moedas negativas. */

@@ -7,7 +7,7 @@
     </div>
     <div class="epm-aba-acoes">
       <button type="button" class="epm-botao{{#if selecao.habilidades}} ativo{{/if}}" data-action="selecionarPoderes" data-aba="habilidades" aria-pressed="{{#if selecao.habilidades}}true{{else}}false{{/if}}" title="Marcar várias para usar, favoritar, mover ou apagar de uma vez"><i class="fa-solid fa-list-check" aria-hidden="true"></i> {{#if selecao.habilidades}}Sair da seleção{{else}}Selecionar{{/if}}</button>
-      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="habilidade" title="Cria na sub-aba aberta"><i class="fa-solid fa-plus"></i> Nova habilidade</button>{{/if}}
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novoPoder" data-tipo="habilidade" title="Cria na sub-aba aberta"><i class="fa-solid fa-plus"></i> Nova habilidade</button><button type="button" class="epm-botao" data-action="poderDeTexto" data-tipo="habilidade" title="Cole o texto de uma habilidade (nome, Tipo, Tema, partes numeradas com Custo, Ação, Duração, Uso…) e a ficha monta tudo"><i class="fa-solid fa-paste"></i> Colar texto</button>{{/if}}
     </div>
   </header>
   {{#if temSustentadas}}<div class="epm-sustentadas" aria-label="Sustentadas"><span class="epm-rotulo"><i class="fa-solid fa-hourglass-start" aria-hidden="true"></i> Sustentando</span>{{#each sustentadas}}<span class="epm-tag epm-sustentada">{{this.nome}} · {{this.custoTexto}}{{#if editavel}} <button type="button" class="epm-icone-botao" data-action="encerrarSustentada" data-sustentada="{{this.id}}" title="Encerrar (para de gastar)"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{/each}}</div>{{/if}}

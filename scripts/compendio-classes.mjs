@@ -13,6 +13,7 @@ import { CLASSES_NOTION, habilidadesDaClasse, RECURSOS_ARQUETIPO } from "./regra
 import { dadosHabilidadeArquetipo, dadosHabilidadeClasse } from "./extras.mjs";
 import { escapar } from "./helpers.mjs";
 import { formaPadrao } from "./data.mjs";
+import { dadosHabilidadeTexto } from "./habilidade-texto.mjs";
 
 export const NOME_PACOTE = "epm-arquetipos-classes";
 export const ID_PACOTE = `world.${NOME_PACOTE}`;
@@ -62,6 +63,54 @@ function concessoes(lista, prefixo) {
 function formaExemplo(nome, extra) {
   return { ...formaPadrao(0, nome), ...extra };
 }
+/** Habilidade em várias partes, montada pelo mesmo leitor do botão "Colar texto". */
+export const TEXTO_LEGADO_ERRANTE = `O Legado do Errante
+Tipo: Ofensiva / Especial
+Tema: Liberdade, estratégia, superação e conquista.
+
+Aquele que deseja deixar sua marca no mundo não aceita caminhos impostos nem se curva diante de quem parece invencível. Ele encontra oportunidades onde outros enxergam derrotas e transforma cada confronto em mais um capítulo de seu legado.
+1. A Fortuna do Estrategista
+Custo: 5 PE
+Ação: Ação Bônus
+
+Escolha uma criatura que possa ver a até 18 metros. Até o início do seu próximo turno, você recebe +3 em um teste de ataque, manobra ou resistência diretamente relacionado a ela. Você deve escolher o teste antes de realizá-lo.
+
+O benefício se aplica a apenas um teste por ativação.
+2. Desafio aos Imortais
+Custo: 10 PE
+Ação: Ação Padrão
+Duração: 3 rodadas
+
+Escolha uma criatura que possa ver a até 18 metros e declare seu desafio. Enquanto o efeito durar:
+- Seu primeiro ataque bem-sucedido contra ela em cada rodada causa +5 de dano.
+- Se ela possuir mais PV máximos que você, esse bônus aumenta para +8 de dano.
+- Uma vez por rodada, quando essa criatura causar dano a você, seu próximo ataque contra ela causa +10 de dano adicional, substituindo o bônus normal desta habilidade naquela rodada.
+O desafio termina antecipadamente se você ficar inconsciente ou abandonar deliberadamente o confronto para atacar outra criatura.
+3. Além dos Próprios Limites
+Custo: 10 PE
+Ação: Ação Bônus
+Uso: Uma vez por combate
+Duração: 2 rodadas
+
+Você força seu corpo a superar aquilo que deveria ser capaz de suportar. Durante a duração, recebe +2 em testes de ataque e manobra, aumenta seu deslocamento em 3 metros e causa +5 de dano no primeiro ataque bem-sucedido de cada rodada.
+
+Quando o efeito termina, você sofre 5 pontos de dano direto, que não podem ser reduzidos por Resistência a Dano.
+4. A Canção que Sobrevive aos Séculos
+Custo: 15 PE
+Ação: Ação Padrão
+Uso: Uma vez por combate
+
+Escolha uma criatura que possa ver a até 18 metros e execute um ataque decisivo contra ela. Você recebe +3 no teste de ataque e, se acertar, causa +15 de dano.
+
+Se o alvo possuir mais PV máximos que você, esse ataque também ignora 5 pontos de Resistência a Dano.
+
+O golpe representa sua recusa em ser apenas mais um nome esquecido: mesmo diante de um adversário superior, você luta para deixar uma marca que sobreviva ao confronto.`;
+
+function legadoDoErrante() {
+  const d = dadosHabilidadeTexto(TEXTO_LEGADO_ERRANTE, { id: t => idFixo(`exemplo:legado-errante:${t}`), extra: { compendio: "exemplo", raridade: "rara", origem: "" } });
+  return { _id: idFixo("exemplo:legado-errante"), ...d, img: "icons/svg/sword.svg" };
+}
+
 export const HABILIDADES_EXEMPLO = [
   {
     _id: idFixo("exemplo:instinto-assassino"), name: "Instinto Assassino", type: "feat", img: "icons/svg/terror.svg",
@@ -73,7 +122,8 @@ export const HABILIDADES_EXEMPLO = [
         bonus: { gatilho: "dano", escolha: "todas", opcoes: { [idFixo("exemplo:instinto-assassino:margem")]: { tipo: "margem", valor: 1, porNivel: true, tipoDano: "", criado: 1 } } }
       }) }
     } }
-  }
+  },
+  legadoDoErrante()
 ];
 
 /** Texto curto (dica ao passar o mouse no compêndio): a descrição sem HTML, cortada. */

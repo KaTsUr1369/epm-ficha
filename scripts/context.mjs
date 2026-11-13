@@ -4,7 +4,7 @@
  * O que depende do Foundry (lista de idiomas, outros atores) chega já resolvido pela ficha.
  */
 import {
-  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
+  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, USOS_FORMA, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, itemNaCategoria, eVestimenta, TIPOS_VESTIMENTA, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
   AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, ESCOLHAS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, PERICIAS_RESISTENCIA, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
@@ -250,10 +250,14 @@ export function modsDoAtaque(at, ficha) {
 
 /** Texto do dano para mostrar: tira os "+ 0" (atributo zerado, bônus vazio) e arruma os sinais. */
 export function limparFormulaTexto(f) {
-  return String(f ?? "")
-    .replace(/\s*\+\s*0(?![\d.d])(\[[^\]]*\])?/g, "")
-    .replace(/^\s*0\s*\+\s*/, "")
-    .replace(/\s*\+\s*/g, " + ").replace(/\+ -/g, "− ").replace(/\s+/g, " ").trim();
+  let t = String(f ?? "").replace(/−/g, "-");
+  // Sinais seguidos ("- -2", "+ -2"): junta num só
+  for (let i = 0; i < 3; i++) t = t.replace(/-\s*-/g, "+").replace(/\+\s*-/g, "-").replace(/-\s*\+/g, "-").replace(/\+\s*\+/g, "+");
+  t = t.replace(/\s*([+-])\s*0(?![\d.d])(\[[^\]]*\])?(?=\s*[+-]|\s*$)/g, "")
+    .replace(/^\s*0\s*\+\s*/, "");
+  // Espaço em volta dos operadores (o "-" do começo fica colado no número)
+  t = t.replace(/(\S)\s*\+\s*/g, "$1 + ").replace(/([^\s(+*/-])\s*-\s*/g, "$1 − ").replace(/\s+/g, " ").trim();
+  return t.replace(/^\+\s*/, "").replace(/^-/, "−");
 }
 
 /** Separa uma fórmula nos termos de primeiro nível ("2d10 + @atr.forca - 1" → ["2d10", "+@atr.forca", "-1"]). */
@@ -288,8 +292,8 @@ export function linhasDaFormula(formula, fonte, ficha, { rotuloRef = n => n } = 
   for (const termo of termosFormula(formula)) {
     const ref = termo.match(/@([\w.]+)/);
     const valor = limparFormulaTexto(resolverReferencias(termo, ficha));
-    if (!valor || /^-?0(\[[^\]]*\])?$/.test(valor)) continue;
-    linhas.push({ valor: /^[-−]/.test(valor) ? valor.replace(/^-/, "−") : `+${valor}`, fonte: ref ? rotuloRef(nomeReferencia(ref[1], ficha)) : fonte });
+    if (!valor || /^[-−]?0(\[[^\]]*\])?$/.test(valor)) continue;
+    linhas.push({ valor: /^−/.test(valor) ? valor : `+${valor}`, fonte: ref ? rotuloRef(nomeReferencia(ref[1], ficha)) : fonte });
   }
   if (linhas[0]) linhas[0].valor = linhas[0].valor.replace(/^\+/, "");
   return linhas;
@@ -354,7 +358,7 @@ export function resumoAtaque(at, ficha, cena) {
     acertoDica: (() => { try { return detalharAcerto(at, ficha, cena); } catch (err) { console.warn("EPM |", err); return "Bônus de acerto"; } })(),
     danoBase: at.dano ? resolverReferencias(at.dano, ficha).replace(/\+ -/g, "− ") : "",
     danoMult: m.danoMult > 1 ? m.danoMult : 0,
-    critTexto: textoCritico(at.critMargem, at.critMult),
+    critTexto: textoCritico(Math.max(2, at.critMargem - int(cena.margem)), at.critMult + int(cena.critMult)),
     bloqueado: ficha.ataquesGerais.bloqueados.join(", ")
   };
 }
@@ -1022,7 +1026,8 @@ export function montarContexto({
   ctx.ataques.vazio = !ctx.ataques.armas.length && !ctx.ataques.custom.length;
   ctx.bonusCena = Object.entries(dados.bonusCena ?? {}).filter(([, b]) => b).map(([id, b]) => ({
     id, nome: b.nome ?? "", ativo: !!b.ativo, acerto: int(b.acerto), dano: b.dano ?? "", criado: num(b.criado),
-    ca: int(b.ca), rd: int(b.rd), rdTipo: b.rdTipo ?? "", testes: int(b.testes), deslocamento: num(b.deslocamento), cena: !!b.cena
+    ca: int(b.ca), rd: int(b.rd), rdTipo: b.rdTipo ?? "", testes: int(b.testes), deslocamento: num(b.deslocamento), cena: !!b.cena,
+    margem: int(b.margem), critMult: int(b.critMult)
   })).sort((a, b) => a.criado - b.criado);
   /* ---------- CA ---------- */
   const caF = ficha.ca;
@@ -1044,6 +1049,9 @@ export function montarContexto({
         id: fo.id, nome: fo.nome, acao: fo.acao, acaoLabel: ACOES[fo.acao]?.curto ?? fo.acao,
         custoTexto: textoCusto(fo, av.custo.extra), bloqueada: av.bloqueada, motivosTexto: av.motivos.join(", "),
         semRecurso: av.semRecurso, excedeDano: av.excedeDano, excedeEfeitos: av.excedeEfeitos,
+        usoLabel: fo.uso && fo.uso !== "livre" ? USOS_FORMA[fo.uso] : "",
+        duracao: fo.duracao, efeito: fo.efeito ?? "",
+        usoGasto: !!(fo.uso && fo.uso !== "livre" && dados.usosFormas?.[`${item.id}_${fo.id}`]),
         dano: fo.dano.formula ? limparFormulaTexto(resolverReferencias(fo.dano.formula, ficha)) : "",
         danoDica: fo.dano.formula ? dicaHtml(`Dano (${fo.dano.formula})`, linhasDaFormula(fo.dano.formula, item.name, ficha)) : "",
         resistencia: fo.teste.tipo === "resistencia",
@@ -1063,6 +1071,8 @@ export function montarContexto({
       passiva: p.passiva, favorito: p.favorito, origem: p.origem, origemLabel: tNome ? `Transformação: ${tNome}` : (ORIGENS_HABILIDADE[p.origem] ?? ""), circulo: p.circulo,
       transformacao: tVinculo, arquetipoRef: p.arquetipoRef, classeRef: p.classeRef,
       nivelHab: int(item.flags?.[FLAG]?.nivelHab, 1) > 1 ? int(item.flags[FLAG].nivelHab) : 0,
+      alternavel: p.tipo === "habilidade" && !!item.flags?.[FLAG]?.alternavel,
+      tipoHab: p.tipoHab, tema: p.tema, foraDoLimite: p.foraDoLimite,
       ativa: !!item.flags?.[FLAG]?.ativa || !!dados.sustentadas?.[item.id] || Object.values(dados.bonusCena ?? {}).some(b => b?.ativo && b.origem === item.id),
       gatilho: (() => { const g = p.formas.find(f => f.bonus?.gatilho && f.bonus.gatilho !== "uso" && f.bonus.opcoes?.length)?.bonus.gatilho; return g ? GATILHOS_BONUS[g].replace(/ \(automático\)$/, "") : ""; })(),
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
@@ -1638,6 +1648,7 @@ export function montarContexto({
     ctx.v060 = null;
   }
   ctx.tituloAtivo = ficha.extras?.titulos?.ativo?.nome ?? "";
+  ctx.chatDiscreto = !!dados.ui?.chatDiscreto;
 
   /* ---------- Novas mecânicas ---------- */
   try {
@@ -1722,6 +1733,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
     ultima: i === p.formas.length - 1,
     resistencia: fo.teste.tipo === "resistencia",
     opcoesAcao: Object.entries(ACOES).map(([id, a]) => ({ id, label: a.label, selected: id === fo.acao })),
+    opcoesUso: Object.entries(USOS_FORMA).map(([id, label]) => ({ id, label, selected: id === (fo.uso ?? "livre") })),
     opcoesCusto: Object.entries(CUSTO_RECURSOS).map(([id, c]) => ({ id, label: c.label, selected: id === fo.custo.recurso })),
     opcoesPorTurno: Object.entries(CUSTO_RECURSOS).map(([id, c]) => ({ id, label: c.label, selected: id === (fo.porTurno?.recurso ?? "nenhum") })),
     porTurnoValor: fo.porTurno?.valor ?? 0,
@@ -1824,18 +1836,6 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
       opcoesPericia: [{ id: "", nome: "Igual à arma", selected: !m.pericia }, ...pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === m.pericia }))]
     })) : [],
     eArmadura: tipo === "equipment", armadura: int(f.armadura),
-    opcoesEquip: tipo === "equipment" ? (() => {
-      const atual = String(item.system?.type?.value ?? "");
-      const naoArmadura = ["shield", ...TIPOS_VESTIMENTA];
-      const protecao = naoArmadura.includes(atual) || !atual ? "light" : atual;
-      const acessorio = ["trinket", "ring", "rod", "wand"].includes(atual) ? atual : "trinket";
-      return [
-        { id: protecao, label: "Armadura", selected: !naoArmadura.includes(atual) },
-        { id: "shield", label: "Escudo", selected: atual === "shield" },
-        { id: "clothing", label: "Vestimenta", selected: atual === "clothing" },
-        { id: acessorio, label: "Acessório", selected: atual === acessorio && atual !== "clothing" && naoArmadura.includes(atual) && atual !== "shield" }
-      ];
-    })() : [],
     eConsumivel: tipo === "consumable", formulaUso: f.formula ?? "",
     eMochila, efeitos, temEfeitos: efeitos.length > 0,
     tiposEfeitoItem: Object.entries(TIPOS_EFEITO_ITEM).map(([id, t]) => ({ id, label: t.label, dica: t.dica ?? "" })),

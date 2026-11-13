@@ -116,7 +116,7 @@
           {{#if editar}}
           <span class="epm-pericia-mover"><button type="button" class="epm-icone-botao" data-action="moverPericia" data-pericia="{{this.id}}" data-dir="-1" title="Subir" {{#if primeira}}disabled{{/if}}><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="epm-icone-botao" data-action="moverPericia" data-pericia="{{this.id}}" data-dir="1" title="Descer" {{#if ultima}}disabled{{/if}}><i class="fa-solid fa-chevron-down"></i></button></span>
           <button type="button" class="epm-icone-botao perigo" data-action="removerPericia" data-pericia="{{this.id}}" title="Remover {{this.nome}}"><i class="fa-solid fa-xmark"></i></button>
-          <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da perícia" />
+          <input type="text" class="epm-pericia-nome-input" name="flags.epm-ficha.pericias.{{this.id}}.nome" value="{{this.nome}}" title="{{this.nome}}" aria-label="Nome da perícia" />
           <label class="epm-mini"><span>pontos</span><input type="number" class="epm-pericia-pontos" name="flags.epm-ficha.pericias.{{this.id}}.pontos" value="{{this.pontos}}" min="0" {{#if acimaLimite}}title="Acima do limite do seu nível"{{/if}} /></label>
           <label class="epm-mini"><span>outros</span><input type="number" name="flags.epm-ficha.pericias.{{this.id}}.outros" value="{{this.outros}}" /></label>
           <span class="epm-pericia-total" data-tooltip="{{this.dica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal total}}</span>

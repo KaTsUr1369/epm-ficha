@@ -4,7 +4,7 @@
     <div class="epm-item-editor-titulo">
       <input type="text" name="name" value="{{item.name}}" class="epm-item-editor-nome" aria-label="Nome" {{#unless editavel}}disabled{{/unless}} />
       <div class="epm-item-editor-sub">
-        <span class="epm-tag">{{item.tipoLabel}}</span>
+        {{#if editavel}}<label class="epm-mini" title="Muda o tipo do item (ex.: Loot → Ferramenta)"><span>categoria</span><select data-mudar-categoria aria-label="Categoria do item">{{#each opcoesCategoria}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{else}}<span class="epm-tag">{{item.tipoLabel}}</span>{{/if}}
         <label class="epm-mini"><span>raridade</span><select name="flags.epm-ficha.raridade">{{#each opcoesRaridade}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         {{#if equipavel}}<label class="epm-check"><input type="checkbox" name="system.equipped" {{#if equipado}}checked{{/if}} /> Equipado</label>{{/if}}
       </div>
@@ -17,7 +17,6 @@
       <label class="epm-campo"><span>Quantidade</span><input type="number" min="0" name="system.quantity" value="{{this.quantidade}}" /></label>
       <label class="epm-campo"><span>Peso (cada)</span><input type="number" min="0" step="any" name="system.weight.value" value="{{this.peso}}" /></label>
       <label class="epm-campo"><span>Preço</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.preco.valor" value="{{preco.valor}}" /><select name="flags.epm-ficha.preco.moeda">{{#each preco.moedas}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
-      {{#if eArmadura}}<label class="epm-campo" title="Em qual categoria do inventário o item fica (vestimentas e acessórios não contam como proteção)"><span>Categoria</span><select name="system.type.value">{{#each opcoesEquip}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
       {{#if eArmadura}}<label class="epm-campo" title="Soma em Armaduras e escudos, na CA, quando equipado"><span>CA de armadura ou escudo</span><input type="number" name="flags.epm-ficha.armadura" value="{{this.armadura}}" /></label>{{/if}}
       {{#if duravel}}<label class="epm-campo" title="0 a 100. Falha crítica com a arma ou crítico sofrido tiram 10; em 0 fica Quebrado e perde os efeitos até ser consertado"><span>Durabilidade</span><input type="number" min="0" max="100" name="flags.epm-ficha.durabilidade" value="{{durabilidade}}" /></label>{{/if}}
       {{#if eConsumivel}}<label class="epm-campo largo"><span>Rolagem ao usar</span><input type="text" name="flags.epm-ficha.formula" value="{{this.formulaUso}}" placeholder="2d4 + 2" /></label>{{/if}}

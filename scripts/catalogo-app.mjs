@@ -10,6 +10,10 @@ import {
   ITENS_CATALOGO, CATEGORIAS_CATALOGO, REGIOES_CATALOGO, itemCatalogoPorId, resumoCatalogo, precoEmCobre, precoTexto, moedasTexto,
   dadosItemCatalogo, empilha
 } from "./itens-catalogo.mjs";
+import { imagemPadrao } from "./itens-imagens.mjs";
+import { artesSalvas } from "./compendio-itens.mjs";
+
+const imgDe = x => artesSalvas()[x.id] || imagemPadrao(x);
 
 const P = `flags.${FLAG}`;
 const PASTA_RAIZ = "EPM · Catálogo de itens";
@@ -32,8 +36,8 @@ export async function adicionarDoCatalogo(actor, escolhas, { pagar = false } = {
   for (const { x, qtd } of lista) {
     const existente = empilha(x) ? actor.items.find(i => i.flags?.[FLAG]?.catalogo === x.id) : null;
     if (existente) somar.push({ _id: existente.id, "system.quantity": int(existente.system?.quantity, 1) + qtd * (x.pacote || 1) });
-    else if (["weapon", "equipment", "container", "tool"].includes(x.tipo)) for (let i = 0; i < qtd; i++) criar.push(dadosItemCatalogo(x, { qtd: 1, flag: FLAG }));
-    else criar.push(dadosItemCatalogo(x, { qtd, flag: FLAG }));
+    else if (["weapon", "equipment", "container", "tool"].includes(x.tipo)) for (let i = 0; i < qtd; i++) criar.push(dadosItemCatalogo(x, { qtd: 1, flag: FLAG, img: imgDe(x) }));
+    else criar.push(dadosItemCatalogo(x, { qtd, flag: FLAG, img: imgDe(x) }));
   }
   if (Object.keys(upd).length) await actor.update(upd);
   if (somar.length) await actor.updateEmbeddedDocuments("Item", somar);
@@ -62,7 +66,7 @@ export async function importarParaOMundo(ids = null) {
       ?? await Pasta.create({ name: c.label, type: "Item", folder: raiz.id });
   }
   const jaTem = new Set(game.items.filter(i => i.flags?.[FLAG]?.catalogo).map(i => i.flags[FLAG].catalogo));
-  const docs = lista.filter(x => !jaTem.has(x.id)).map(x => ({ ...dadosItemCatalogo(x, { qtd: 1, flag: FLAG }), folder: pastas[x.categoria]?.id }));
+  const docs = lista.filter(x => !jaTem.has(x.id)).map(x => ({ ...dadosItemCatalogo(x, { qtd: 1, flag: FLAG, img: imgDe(x) }), folder: pastas[x.categoria]?.id }));
   if (!docs.length) return ui.notifications.info("Esses itens já estão no mundo.");
   for (let i = 0; i < docs.length; i += 100) await Item.createDocuments(docs.slice(i, i + 100));
   ui.notifications.info(`${docs.length} item(ns) importado(s) para a pasta "${PASTA_RAIZ}".`);
@@ -101,7 +105,7 @@ function criarClasse() {
           return `<li class="epm-cat-linha${variasRegioes ? "" : " sem-regiao"}" data-id="${x.id}" data-regiao="${x.regiao}" data-texto="${escapar(texto)}">
             <input type="checkbox" class="epm-cat-marca" aria-label="Marcar ${escapar(x.nome)}">
             <input type="number" class="epm-cat-qtd" min="1" value="1" aria-label="Quantidade" title="Quantidade${x.pacote > 1 ? ` (cada uma vem com ${x.pacote})` : ""}">
-            <span class="epm-cat-nome" style="--cor:${r.cor}" title="${escapar(r.label)}">${escapar(x.nome)}${x.pacote > 1 ? ` <small>×${x.pacote}</small>` : ""}</span>
+            <span class="epm-cat-nome" style="--cor:${r.cor}" title="${escapar(r.label)}"><img class="epm-cat-img" src="${escapar(imgDe(x))}" alt="" loading="lazy">${escapar(x.nome)}${x.pacote > 1 ? ` <small>×${x.pacote}</small>` : ""}</span>
             <span class="epm-cat-resumo">${escapar(resumoCatalogo(x))}</span>
             ${variasRegioes ? `<span class="epm-cat-regiao" title="Nível de tecnologia">${escapar(REGIOES_CATALOGO[x.regiao] ?? "")}</span>` : ""}
             <span class="epm-cat-preco" data-cobre="${precoEmCobre(x)}">${escapar(precoTexto(x))}</span>

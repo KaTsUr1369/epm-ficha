@@ -1,7 +1,8 @@
 /**
- * Enquadrar a imagem do token na borda do EPM (anel de runas com chamas).
- * O jogador arrasta e dá zoom na imagem; ela fica só dentro do círculo antes das runas e a borda vai por cima.
- * Tudo que fica fora da borda (e das chamas) sai transparente. O PNG vai para a pasta "Tokens" dos dados do Foundry.
+ * Enquadrar a imagem do token na borda do EPM (anel de runas com chamas), como num editor de foto de celular:
+ * um quadrado sobre a imagem, que aumenta ou diminui arrastando as laterais e os cantos e anda segurando o meio.
+ * O que fica dentro do quadrado vai para o círculo de dentro da borda (antes das runas); o resto some (PNG transparente).
+ * A cor da borda pode ser trocada. O PNG vai para a pasta "Tokens" dos dados do Foundry.
  */
 import { fvtt, escapar } from "./helpers.mjs";
 
@@ -10,7 +11,10 @@ export const BORDA_TOKEN = "modules/epm-ficha/assets/token-borda.png";
 /** Círculo de dentro da borda (antes das runas), em fração do tamanho da imagem da borda (medido no PNG de 256 px). */
 export const CIRCULO_BORDA = { cx: 0.5035, cy: 0.4993, r: 0.305 };
 const TAMANHO_FINAL = 512;
-const TAMANHO_PREVIA = 300;
+const PALCO = 340;
+const PREVIA = 150;
+const MIN_LADO = 24;
+const CHAVE_COR = "epm-cor-borda-token";
 
 function carregar(src) {
   return new Promise((resolve, reject) => {
@@ -22,29 +26,79 @@ function carregar(src) {
   });
 }
 
+/** Borda pintada com a cor escolhida (mantém o claro e o escuro de cada parte; preto continua preto). */
+export function bordaColorida(borda, cor) {
+  if (!cor) return borda;
+  const c = document.createElement("canvas");
+  c.width = borda.naturalWidth || borda.width;
+  c.height = borda.naturalHeight || borda.height;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(borda, 0, 0);
+  ctx.globalCompositeOperation = "color";
+  ctx.fillStyle = cor;
+  ctx.fillRect(0, 0, c.width, c.height);
+  // um pouco mais de cor nas partes claras (runas e brilho)
+  ctx.globalCompositeOperation = "soft-light";
+  ctx.fillStyle = cor;
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.globalCompositeOperation = "destination-in";
+  ctx.drawImage(borda, 0, 0);
+  return c;
+}
+
 /**
- * Desenha o token num canvas de lado `lado`. `vista` = { zoom, dx, dy } em frações do lado (dx/dy deslocam o centro
- * da imagem a partir do centro do círculo).
+ * Desenha o token num canvas de lado `lado`. `recorte` = { x, y, lado } em pixels da imagem original:
+ * esse quadrado ocupa o círculo de dentro da borda.
  */
-export function desenharToken(ctx, lado, img, borda, vista, { comBorda = true } = {}) {
+export function desenharToken(ctx, lado, img, borda, recorte, { comBorda = true } = {}) {
   ctx.clearRect(0, 0, lado, lado);
   const c = comBorda ? CIRCULO_BORDA : { cx: 0.5, cy: 0.5, r: 0.5 };
   const cx = c.cx * lado, cy = c.cy * lado, r = c.r * lado;
-  // tamanho base: a imagem cobre o círculo (lado menor = diâmetro), depois o zoom
-  const base = (2 * r) / Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
-  const s = base * vista.zoom;
-  const w = (img.naturalWidth || img.width) * s, h = (img.naturalHeight || img.height) * s;
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.closePath();
   ctx.clip();
-  ctx.drawImage(img, cx - w / 2 + vista.dx * lado, cy - h / 2 + vista.dy * lado, w, h);
+  ctx.drawImage(img, recorte.x, recorte.y, recorte.lado, recorte.lado, cx - r, cy - r, 2 * r, 2 * r);
   ctx.restore();
   if (comBorda && borda) ctx.drawImage(borda, 0, 0, lado, lado);
 }
 
-/** Pede a criação da pasta Tokens (o Mestre cria ao entrar; jogadores podem não ter permissão). */
+/** Ajusta o quadrado para caber na imagem (pura, para teste). */
+export function limitarRecorte(q, largura, altura) {
+  const ladoMax = Math.min(largura, altura);
+  const lado = Math.max(Math.min(MIN_LADO, ladoMax), Math.min(ladoMax, q.lado));
+  return { lado, x: Math.min(Math.max(0, q.x), largura - lado), y: Math.min(Math.max(0, q.y), altura - lado) };
+}
+
+/**
+ * Arrasto de uma alça do quadrado. `alca` = "meio" ou combinação de n/s/l/o (norte, sul, leste, oeste);
+ * `dx`, `dy` em pixels da imagem. O lado oposto fica parado e o quadrado continua quadrado (pura, para teste).
+ */
+export function arrastarRecorte(inicio, alca, dx, dy, largura, altura) {
+  if (alca === "meio") return limitarRecorte({ ...inicio, x: inicio.x + dx, y: inicio.y + dy }, largura, altura);
+  const leste = alca.includes("l"), oeste = alca.includes("o"), norte = alca.includes("n"), sul = alca.includes("s");
+  const dh = leste ? dx : oeste ? -dx : 0;
+  const dv = sul ? dy : norte ? -dy : 0;
+  const delta = (leste || oeste) && (norte || sul) ? (Math.abs(dh) > Math.abs(dv) ? dh : dv) : (dh || dv);
+  const ladoMax = Math.min(largura, altura);
+  // fixa o ponto oposto (canto ou meio do lado oposto)
+  const fixoX = leste ? inicio.x : oeste ? inicio.x + inicio.lado : inicio.x + inicio.lado / 2;
+  const fixoY = sul ? inicio.y : norte ? inicio.y + inicio.lado : inicio.y + inicio.lado / 2;
+  let lado = Math.max(MIN_LADO, Math.min(ladoMax, inicio.lado + delta));
+  // não deixa passar da borda da imagem pelo lado que cresce
+  if (leste) lado = Math.min(lado, largura - fixoX);
+  if (oeste) lado = Math.min(lado, fixoX);
+  if (sul) lado = Math.min(lado, altura - fixoY);
+  if (norte) lado = Math.min(lado, fixoY);
+  if (!leste && !oeste) lado = Math.min(lado, 2 * Math.min(fixoX, largura - fixoX));
+  if (!norte && !sul) lado = Math.min(lado, 2 * Math.min(fixoY, altura - fixoY));
+  const x = leste ? fixoX : oeste ? fixoX - lado : fixoX - lado / 2;
+  const y = sul ? fixoY : norte ? fixoY - lado : fixoY - lado / 2;
+  return limitarRecorte({ x, y, lado }, largura, altura);
+}
+
+/** O Mestre cria a pasta Tokens ao entrar (jogadores podem não ter permissão para criar pastas). */
 export async function prepararPastaTokens() {
   if (!game.user?.isGM) return;
   try { await fvtt.FilePicker.createDirectory("data", PASTA_TOKENS, {}); } catch { /* já existe */ }
@@ -55,9 +109,18 @@ function nomeArquivo(nome) {
   return `${limpo}-${Date.now().toString(36)}.png`;
 }
 
+function corSalva() {
+  try { return localStorage.getItem(CHAVE_COR) || ""; } catch { return ""; }
+}
+function salvarCor(cor) {
+  try { if (cor) localStorage.setItem(CHAVE_COR, cor); else localStorage.removeItem(CHAVE_COR); } catch { /* sem armazenamento */ }
+}
+
+const ALCAS = ["n", "s", "l", "o", "nl", "no", "sl", "so"];
+
 /**
  * Abre o enquadramento para a imagem `src`. Devolve o caminho do PNG salvo em Tokens/ (ou null se cancelar).
- * Sem permissão de enviar arquivos, devolve a imagem original.
+ * "Sem enquadrar" (ou sem permissão de enviar arquivos) devolve a imagem original.
  */
 export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar o token" } = {}) {
   if (!src) return null;
@@ -67,22 +130,40 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
     ui.notifications.warn("Não deu para abrir a imagem para enquadrar. Ficou a imagem original.");
     return src;
   }
-  const vista = { zoom: 1, dx: 0, dy: 0 };
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const escala = Math.min(PALCO / W, PALCO / H);
+  const vw = Math.round(W * escala), vh = Math.round(H * escala);
+  const ladoInicial = Math.min(W, H) * 0.9;
+  let recorte = limitarRecorte({ x: (W - ladoInicial) / 2, y: (H - ladoInicial) / 2, lado: ladoInicial }, W, H);
   let comBorda = true;
-  let canvas = null;
-  const redesenhar = () => { if (canvas) desenharToken(canvas.getContext("2d"), TAMANHO_PREVIA, img, borda, vista, { comBorda }); };
+  let cor = corSalva();
+  let bordaPintada = bordaColorida(borda, cor);
+  let previa = null, caixa = null;
+
+  const atualizar = () => {
+    if (caixa) Object.assign(caixa.style, { left: `${recorte.x * escala}px`, top: `${recorte.y * escala}px`, width: `${recorte.lado * escala}px`, height: `${recorte.lado * escala}px` });
+    if (previa) desenharToken(previa.getContext("2d"), PREVIA, img, bordaPintada, recorte, { comBorda });
+  };
 
   const r = await fvtt.DialogV2.wait({
     window: { title: titulo, icon: "fa-solid fa-crop-simple" }, classes: ["epm-dialogo", "epm-enquadrar"], rejectClose: false, modal: true,
-    position: { width: 380 },
+    position: { width: 560 },
     content: `<div class="epm-enquadrar-corpo">
-      <canvas width="${TAMANHO_PREVIA}" height="${TAMANHO_PREVIA}" data-previa title="Arraste para mover; roda do mouse para zoom" aria-label="Prévia do token"></canvas>
-      <label class="epm-campo"><span>Zoom</span><input type="range" min="0.5" max="4" step="0.01" value="1" data-zoom></label>
-      <div class="epm-enquadrar-linha">
-        <label class="epm-check"><input type="checkbox" data-borda checked> Com a borda do EPM</label>
-        <button type="button" class="epm-link" data-centralizar>Centralizar</button>
+      <div class="epm-recorte-palco" style="width:${vw}px;height:${vh}px">
+        <img src="${escapar(src)}" alt="" draggable="false">
+        <div class="epm-recorte-caixa" data-alca="meio" title="Segure no meio para arrastar; puxe as laterais ou os cantos para mudar o tamanho">
+          ${ALCAS.map(a => `<span class="epm-recorte-alca alca-${a}" data-alca="${a}"></span>`).join("")}
+          <span class="epm-recorte-circulo"></span>
+        </div>
       </div>
-      <p class="epm-dica">Arraste a imagem e use a roda do mouse (ou o zoom) até o rosto ficar dentro do círculo. O que fica fora da borda some. O PNG vai para a pasta <strong>${escapar(PASTA_TOKENS)}</strong> do Foundry.</p>
+      <div class="epm-enquadrar-lado">
+        <canvas width="${PREVIA}" height="${PREVIA}" data-previa aria-label="Prévia do token"></canvas>
+        <label class="epm-campo"><span>Cor da borda</span><input type="color" data-cor value="${escapar(cor || "#3a5ca8")}"></label>
+        <label class="epm-check"><input type="checkbox" data-cor-original ${cor ? "" : "checked"}> Cor original</label>
+        <label class="epm-check"><input type="checkbox" data-borda checked> Com a borda</label>
+        <button type="button" class="epm-link" data-tudo>Pegar a imagem toda</button>
+      </div>
+      <p class="epm-dica">O que fica dentro do quadrado vai para o círculo do token (o círculo tracejado mostra o que aparece). Segure no meio para arrastar e puxe as laterais ou os cantos para aumentar ou diminuir. O PNG vai para a pasta <strong>${escapar(PASTA_TOKENS)}</strong>.</p>
     </div>`,
     buttons: [
       { action: "ok", label: "Usar no token", icon: "fa-solid fa-check", default: true, callback: () => "ok" },
@@ -92,38 +173,50 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
     render: (ev, dlg) => {
       const raiz = dlg?.element ?? ev?.target?.element ?? ev?.target;
       const el = raiz?.querySelector ? raiz : document;
-      canvas = el.querySelector("[data-previa]");
-      const zoom = el.querySelector("[data-zoom]");
-      if (!canvas) return;
+      previa = el.querySelector("[data-previa]");
+      caixa = el.querySelector(".epm-recorte-caixa");
+      if (!caixa) return;
       let arrasto = null;
-      canvas.addEventListener("pointerdown", e => { arrasto = { x: e.clientX, y: e.clientY, dx: vista.dx, dy: vista.dy }; canvas.setPointerCapture?.(e.pointerId); });
-      canvas.addEventListener("pointermove", e => {
+      caixa.addEventListener("pointerdown", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        arrasto = { alca: e.target.dataset.alca || "meio", x: e.clientX, y: e.clientY, inicio: { ...recorte } };
+        caixa.setPointerCapture?.(e.pointerId);
+      });
+      caixa.addEventListener("pointermove", e => {
         if (!arrasto) return;
-        vista.dx = arrasto.dx + (e.clientX - arrasto.x) / TAMANHO_PREVIA;
-        vista.dy = arrasto.dy + (e.clientY - arrasto.y) / TAMANHO_PREVIA;
-        redesenhar();
+        recorte = arrastarRecorte(arrasto.inicio, arrasto.alca, (e.clientX - arrasto.x) / escala, (e.clientY - arrasto.y) / escala, W, H);
+        atualizar();
       });
       const soltar = () => { arrasto = null; };
-      canvas.addEventListener("pointerup", soltar);
-      canvas.addEventListener("pointercancel", soltar);
-      canvas.addEventListener("wheel", e => {
+      caixa.addEventListener("pointerup", soltar);
+      caixa.addEventListener("pointercancel", soltar);
+      el.querySelector(".epm-recorte-palco")?.addEventListener("wheel", e => {
         e.preventDefault();
-        vista.zoom = Math.min(4, Math.max(0.5, vista.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08)));
-        if (zoom) zoom.value = String(vista.zoom);
-        redesenhar();
+        const novo = recorte.lado * (e.deltaY < 0 ? 0.94 : 1 / 0.94);
+        recorte = limitarRecorte({ x: recorte.x + (recorte.lado - novo) / 2, y: recorte.y + (recorte.lado - novo) / 2, lado: novo }, W, H);
+        atualizar();
       }, { passive: false });
-      zoom?.addEventListener("input", () => { vista.zoom = Number(zoom.value) || 1; redesenhar(); });
-      el.querySelector("[data-borda]")?.addEventListener("change", e => { comBorda = e.target.checked; redesenhar(); });
-      el.querySelector("[data-centralizar]")?.addEventListener("click", () => { Object.assign(vista, { zoom: 1, dx: 0, dy: 0 }); if (zoom) zoom.value = "1"; redesenhar(); });
-      redesenhar();
+      const campoCor = el.querySelector("[data-cor]"), original = el.querySelector("[data-cor-original]");
+      const trocarCor = () => {
+        cor = original?.checked ? "" : campoCor?.value ?? "";
+        bordaPintada = bordaColorida(borda, cor);
+        atualizar();
+      };
+      campoCor?.addEventListener("input", () => { if (original) original.checked = false; trocarCor(); });
+      original?.addEventListener("change", trocarCor);
+      el.querySelector("[data-borda]")?.addEventListener("change", e => { comBorda = e.target.checked; atualizar(); });
+      el.querySelector("[data-tudo]")?.addEventListener("click", () => { recorte = limitarRecorte({ x: 0, y: 0, lado: Math.min(W, H) }, W, H); recorte.x = (W - recorte.lado) / 2; recorte.y = (H - recorte.lado) / 2; atualizar(); });
+      atualizar();
     }
   });
   if (r === "original") return src;
   if (r !== "ok") return null;
+  salvarCor(cor);
 
   const final = document.createElement("canvas");
   final.width = final.height = TAMANHO_FINAL;
-  desenharToken(final.getContext("2d"), TAMANHO_FINAL, img, borda, vista, { comBorda });
+  desenharToken(final.getContext("2d"), TAMANHO_FINAL, img, bordaPintada, recorte, { comBorda });
   let blob;
   try { blob = await new Promise((res, rej) => final.toBlob(b => (b ? res(b) : rej(new Error("toBlob vazio"))), "image/png")); } catch (err) {
     console.warn("EPM |", err);

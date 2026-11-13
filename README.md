@@ -14,6 +14,18 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.2
+
+- **Compêndio "EPM · Itens de Umbra'Draxil"**: os 338 itens do catálogo como itens do Foundry, com imagem, separados em pastas por categoria e do mais barato ao mais caro.
+  - Subpastas: Armas (Corpo a corpo, Distância), Armaduras (Leves, Médias, Pesadas) e Poções (Vida, Mana, Estamina, Sanidade e coragem, Proteção, Resistência, Outras).
+  - O Mestre cria e atualiza o compêndio sozinho ao entrar no mundo. É só arrastar os itens para as fichas.
+  - Imagens: o módulo procura nas pastas de ícones do próprio Foundry uma imagem com o nome do item (espada, machado, poção vermelha…). Quando não acha, usa o ícone da categoria que vem com o módulo. O Catálogo de itens usa as mesmas imagens.
+- **Enquadrar o token como editor de foto**:
+  - um quadrado sobre a imagem, que aumenta ou diminui puxando as laterais e os cantos e anda segurando o meio;
+  - o que fica dentro dele vai para o círculo da borda;
+  - prévia ao lado;
+  - **cor da borda** (ou a cor original). A ficha lembra a última cor escolhida.
+
 ## Novidades da 0.8.1
 
 - **Enquadrar o token na borda do EPM** (anel de runas com chamas). Ao escolher a imagem de um estado do token (Normal, Insano, Machucado, Morrendo, Morto) ou de uma transformação, abre o enquadramento:

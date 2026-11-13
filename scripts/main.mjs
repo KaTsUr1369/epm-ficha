@@ -27,6 +27,7 @@ import { sincronizarMaximos, sincronizarVisao, ajustarAtualPorBonus } from "./fi
 import { agendarTokenEstado, botaoHudToken } from "./token-estados.mjs";
 import { ligarGanchosNovas, prepararNovas } from "./novas.mjs";
 import { registrarCompendioClasses, sincronizarCompendio } from "./compendio-classes.mjs";
+import { registrarCompendioItens } from "./compendio-itens.mjs";
 
 ligarGanchosNovas();
 
@@ -35,6 +36,7 @@ const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 Hooks.once("init", () => {
   registrarAjustes();
   registrarCompendioClasses();
+  registrarCompendioItens();
   // Marcador de turno EPM em volta do token de quem está na vez (quando a configuração do combate não define outra imagem)
   if (CONFIG.Combat && ajustes().marcadorTurnoEpm !== false) CONFIG.Combat.fallbackTurnMarker = `modules/${MODULE_ID}/assets/marcador-turno.webp`;
   registrarHelpers(Handlebars);

@@ -10,6 +10,7 @@
  * Só dados e contas puras (sem Foundry no topo). Preço em PO (1 PO = 10 PP = 100 PC), peso em kg.
  */
 import { ARMAS_REGIAO, ARMADURAS_REGIAO, lerCritico } from "./catalogos.mjs";
+import { imagemPadrao } from "./itens-imagens.mjs";
 
 export const REGIOES_CATALOGO = { umbra: "Umbra'Draxil" };
 
@@ -696,7 +697,7 @@ export function moedasTexto(c) {
  * Dados de criação do item (Item.create / createEmbeddedDocuments). `qtd` = quantas unidades do catálogo
  * (cada uma com `pacote` peças). `flag` é o id do módulo nas flags.
  */
-export function dadosItemCatalogo(x, { qtd = 1, flag = "epm-ficha" } = {}) {
+export function dadosItemCatalogo(x, { qtd = 1, flag = "epm-ficha", img = "" } = {}) {
   const f = { raridade: x.raridade, catalogo: x.id, regiao: x.regiao, preco: precoEmCobre(x) };
   const efeitos = {};
   (x.efeitos ?? []).forEach((e, i) => { efeitos[idAleatorio()] = { ...e, criado: Date.now() + i }; });
@@ -719,7 +720,7 @@ export function dadosItemCatalogo(x, { qtd = 1, flag = "epm-ficha" } = {}) {
     weight: { value: Number(x.peso) || 0, units: "kg" },
     price: precoDnd5e(x)
   };
-  const doc = { name: x.nome, type: x.tipo, system, flags: { [flag]: f } };
+  const doc = { name: x.nome, type: x.tipo, img: img || imagemPadrao(x), system, flags: { [flag]: f } };
 
   if (x.tipo === "weapon") {
     const a = x.arma;
@@ -729,14 +730,12 @@ export function dadosItemCatalogo(x, { qtd = 1, flag = "epm-ficha" } = {}) {
     });
     if (a.desarmado) { f.contaDesarmado = true; f.desarmadoBonus = "desarmado"; }
     if (x.maestria) f.maestria = { ...x.maestria };
-    doc.img = a.pericia === "pontaria" ? "icons/svg/target.svg" : "icons/svg/sword.svg";
     system.quantity = Math.max(1, qtd) * (x.pacote || 1);
   } else if (x.tipo === "equipment") {
     if (x.armadura) {
       f.armadura = x.armadura.defesa;
       if (x.armadura.tipo !== "escudo") f.tipoArmadura = x.armadura.tipo;
       if (x.armadura.estaminaPorTurno) f.estaminaPorTurno = x.armadura.estaminaPorTurno;
-      doc.img = "icons/svg/shield.svg";
     }
     if (x.propriedades?.length) f.propriedades = [...x.propriedades];
     const t = TIPO_EQUIP_DND5E[x.sub];
@@ -749,7 +748,6 @@ export function dadosItemCatalogo(x, { qtd = 1, flag = "epm-ficha" } = {}) {
     if (x.removeCondicoes?.length) f.removeCondicoes = [...x.removeCondicoes];
     if (x.aplicaCondicoes?.length) f.aplicaCondicoes = [...x.aplicaCondicoes];
     if (x.bonusUso) f.bonusUso = { ...x.bonusUso };
-    if (x.sub === "poison") doc.img = "icons/svg/poison.svg";
     system.quantity = Math.max(1, qtd) * (x.pacote || 1);
   } else if (x.tipo === "container") {
     system.capacity = { weight: { value: Number(x.capacidade) || 0, units: "kg" } };

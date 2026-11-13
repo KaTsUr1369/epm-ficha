@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256">
+<!-- Ícone: Font Awesome Free (kit-medical), CC BY 4.0, https://fontawesome.com/license/free -->
+<defs><radialGradient id="g" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#2E6B4E"/><stop offset="1" stop-color="#121a19"/></radialGradient></defs>
+<rect x="2" y="2" width="96" height="96" rx="14" fill="url(#g)" stroke="#d3a85e" stroke-width="2.5"/>
+<path d="M64 64C28.7 64 0 92.7 0 128L0 384c0 35.3 28.7 64 64 64l16 0 0-384-16 0zm64 0l0 384 256 0 0-384-256 0zM448 448c35.3 0 64-28.7 64-64l0-256c0-35.3-28.7-64-64-64l-16 0 0 384 16 0zM224 184c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16l0 40 40 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-40 0 0 40c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-40-40 0c-8.8 0-16-7.2-16-16l0-32c0-8.8 7.2-16 16-16l40 0 0-40z" fill="#f1e6cf" transform="translate(20.00 20.00) scale(0.11719)"/>
+</svg>

@@ -20,7 +20,7 @@ const nota = (ator, html, cor = "#A47DDB") => ChatMessage.create({ speaker: fala
 
 export const TIPOS_DURAVEIS = ["weapon", "equipment", "tool"];
 export const PERDA_CRITICO = 10;
-export const CONSERTO = { dt: 12, horas: 1, recupera: 25 };
+export const CONSERTO = { dt: 12, minutos: 10, recupera: 50 };
 
 /** Durabilidade do item (100 se nunca mudou) ou null se o tipo não tem durabilidade. */
 export function durabilidadeDe(item) {
@@ -54,9 +54,7 @@ export async function consertarItem(ator, item) {
   if (atual >= 100) return ui.notifications.info(`${item.name} está inteiro.`);
   const ferramentas = ator.items.filter(i => i.type === "tool" && i.id !== item.id && !quebrado(i));
   if (!ferramentas.length) return ui.notifications.warn(`Para consertar precisa de um item da categoria ${CATEGORIAS_ITEM.find(c => c.id === "ferramentas")?.label ?? "Ferramentas"} no inventário.`);
-  const { horasLivres, estadoAtor, rolarTeste } = await M();
-  const livres = horasLivres(ator);
-  if (livres < CONSERTO.horas) return ui.notifications.warn(`Consertar gasta ${CONSERTO.horas} h e restam ${livres} h hoje.`);
+  const { estadoAtor, rolarTeste } = await M();
   const { ficha } = estadoAtor(ator);
   // Teste de Ofício (com a especialidade que o personagem tiver); sem Ofício na ficha, escolhe outra perícia
   const oficios = ficha.pericias.filter(p => /^oficio/.test(p.id) || /^of[ií]cio/i.test(p.nome));
@@ -64,7 +62,7 @@ export async function consertarItem(ator, item) {
   const sugestao = pericias.slice().sort((a, b) => b.testeTotal - a.testeTotal)[0]?.id;
   const r = await fvtt.DialogV2.wait({
     window: { title: `Consertar: ${item.name}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
-    content: `<p>Durabilidade ${atual} de 100. Gasta <strong>${CONSERTO.horas} h</strong> (restam ${livres} h hoje) e pede um teste de <strong>Ofício DT ${CONSERTO.dt}</strong>. O sucesso recupera ${CONSERTO.recupera}.</p>
+    content: `<p>Durabilidade ${atual} de 100. Leva <strong>${CONSERTO.minutos} minutos</strong> e pede um teste de <strong>Ofício DT ${CONSERTO.dt}</strong>. O sucesso recupera ${CONSERTO.recupera}.</p>
       <div class="epm-dialogo-linha">
         <label class="epm-campo"><span>Ferramenta</span><select name="ferramenta">${ferramentas.map(f => `<option value="${f.id}">${escapar(f.name)}</option>`).join("")}</select></label>
         <label class="epm-campo"><span>${oficios.length ? "Ofício" : "Perícia (sem Ofício na ficha)"}</span><select name="pericia">${pericias.map(p => `<option value="${escapar(p.id)}" ${p.id === sugestao ? "selected" : ""}>${escapar(p.nome)} (${p.testeTotal >= 0 ? "+" : ""}${p.testeTotal})</option>`).join("")}</select></label>
@@ -76,7 +74,6 @@ export async function consertarItem(ator, item) {
   });
   if (!r || typeof r !== "object") return;
   const per = ficha.periciaPorId[r.pericia];
-  await ator.update({ [`${P}.treinoDia.horas`]: TREINO.horasDia - livres + CONSERTO.horas });
   const roll = await rolarTeste(ator, {
     rotulo: `Consertar ${item.name} (${per?.nome ?? "perícia"} DT ${CONSERTO.dt})`, bonus: per?.testeTotal ?? 0,
     desvantagens: [...ficha.desvantagens.testes, ...(per?.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(per?.vantagem ?? [])], penalidades: per?.testeFontes ?? []
@@ -86,9 +83,9 @@ export async function consertarItem(ator, item) {
   if (roll.total >= CONSERTO.dt) {
     const novo = Math.min(100, atual + CONSERTO.recupera);
     await item.update({ [`${P}.durabilidade`]: novo });
-    return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> consertou <strong>${escapar(item.name)}</strong> com ${escapar(ferr)} (1 h): durabilidade ${atual} → <strong>${novo}</strong>.</p>`, "#7A8C99");
+    return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> consertou <strong>${escapar(item.name)}</strong> com ${escapar(ferr)} (${CONSERTO.minutos} min): durabilidade ${atual} → <strong>${novo}</strong>.</p>`, "#7A8C99");
   }
-  return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> tentou consertar <strong>${escapar(item.name)}</strong> (1 h), mas não conseguiu (${roll.total} contra DT ${CONSERTO.dt}).</p>`, "#7A8C99");
+  return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> tentou consertar <strong>${escapar(item.name)}</strong> (${CONSERTO.minutos} min), mas não conseguiu (${roll.total} contra DT ${CONSERTO.dt}).</p>`, "#7A8C99");
 }
 
 /* -------------------------------------------- */
@@ -322,6 +319,12 @@ export function avaliarRequisitos(texto, ficha, dados, ignorarId = "") {
     }
     const num = Number(n.match(/(\d+)/)?.[1]);
     if (!Number.isFinite(num)) { out.manuais.push(parte); continue; }
+    if (/nivel de tecnologia|tecnologia nivel/.test(n)) {
+      const tem = Number(ficha?.extras?.tecnologia) || 1;
+      if (tem >= num) out.cumpridos.push(`nível de tecnologia ${tem} (precisa ${num})`);
+      else out.faltas.push(`nível de tecnologia ${num} (tem ${tem})`);
+      continue;
+    }
     const attrs = atributos.filter(a => new RegExp(`\\b(${norm(a.label)}|${norm(a.abrev)})\\b`).test(n));
     if (attrs.length) {
       const bom = attrs.find(a => a.total >= num);

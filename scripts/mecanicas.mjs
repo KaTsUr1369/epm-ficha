@@ -28,6 +28,7 @@ import { regra, bonusMaestria, subirNivelDano } from "./opcionais.mjs";
 import { htmlAtividades, lerAtividade, fimDaReza, fazerAtividade, falhaCritica, fimDesprevenidoDaFalha } from "./opcionais-acoes.mjs";
 import { recarregarAncoras } from "./vinculos.mjs";
 import { gastarDurabilidade, armaduraEquipada, PERDA_CRITICO, quebrado } from "./oficina.mjs";
+import { penalidadeTec, DT_COMPLEXO } from "./tecnologia.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -226,7 +227,31 @@ export async function cartaoItem(actor, item, { avisos = [], linhas = [] } = {})
 }
 
 /** Consumível: gasta 1 unidade e aplica as curas e recuperações configuradas no item. */
+/**
+ * Item complexo 2 níveis de tecnologia acima: antes do primeiro uso, teste de Tecnologia DT 20.
+ * Passou, o personagem aprendeu a usar aquele item (fica marcado nele); falhou, não usa desta vez.
+ */
+export async function liberarComplexo(actor, item, ficha = null) {
+  if (item.flags?.[FLAG]?.tecEntendido) return true;
+  ficha ??= estadoAtor(actor).ficha;
+  const per = ficha.periciaPorId?.tecnologia;
+  const roll = await rolarTeste(actor, {
+    rotulo: `Entender ${item.name} (Tecnologia DT ${DT_COMPLEXO})`, bonus: per?.testeTotal ?? 0,
+    desvantagens: [...ficha.desvantagens.testes, ...(per?.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(per?.vantagem ?? [])], penalidades: per?.testeFontes ?? []
+  });
+  if (!roll) return false;
+  if (roll.total >= DT_COMPLEXO) {
+    await item.update({ [`flags.${FLAG}.tecEntendido`]: true });
+    ui.notifications.info(`${actor.name} entendeu como usar ${item.name}.`);
+    return true;
+  }
+  ui.notifications.warn(`${actor.name} não entendeu como usar ${item.name} (${roll.total} contra DT ${DT_COMPLEXO}). Pode tentar de novo.`);
+  return false;
+}
+
 export async function usarItem(actor, item) {
+  const tecUso = penalidadeTec(item, estadoAtor(actor).ficha.extras?.tecnologia ?? 1);
+  if (tecUso?.complexo && !(await liberarComplexo(actor, item))) return null;
   const qtd = num(item.system?.quantity, 1);
   const cargas = item.flags?.[FLAG]?.cargas;
   const avisos = [];
@@ -285,6 +310,7 @@ export async function usarItem(actor, item) {
     await actor.update(upd);
     avisos.push(`${b.texto || "Bônus"} pela cena (aba Combate → Bônus de cena).`);
   }
+  if (tecUso && !tecUso.protecao) avisos.push(`${tecUso.fonte}: os testes com o item têm desvantagem${tecUso.penal ? ` e ${tecUso.penal}` : ""}.`);
   return cartaoItem(actor, item, { avisos });
 }
 
@@ -1316,12 +1342,11 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const per = ficha.periciaPorId[at.periciaId];
   const m = modsDoAtaque(at, ficha);
   const acerto = (per?.total ?? 0) + at.bonusAcerto + cena.acerto + m.acerto;
-  // Familiaridade tecnológica (0.6.0): equipamento acima do nível do personagem dá desvantagem
+  // Níveis de tecnologia (item 23): arma acima do nível do personagem dá desvantagem; 2 acima, −5 e, se complexa, Tecnologia DT 20
   const itemTec = tipo === "arma" ? actor.items.get(String(ref).split(":")[0]) : null;
-  const fTec = itemTec?.flags?.[FLAG] ?? {};
-  const nivelTec = int(fTec.nivelTec) || ({ umbra: 1, briavoterna: 2, genesis: 3 }[fTec.regiao] ?? 0);
-  const tecAcima = nivelTec > (ficha.extras?.tecnologia ?? 1);
-  const desv = tecAcima ? [...ficha.desvantagens.ataques, `tecnologia ${nivelTec} acima da sua (${ficha.extras?.tecnologia ?? 1})`] : ficha.desvantagens.ataques;
+  const tec = itemTec ? penalidadeTec(itemTec, ficha.extras?.tecnologia ?? 1) : null;
+  if (tec?.complexo && !(await liberarComplexo(actor, itemTec, ficha))) return null;
+  const desv = tec ? [...ficha.desvantagens.ataques, tec.fonte] : ficha.desvantagens.ataques;
   const vant = ficha.vantagens.ataques;
   const padrao = desv.length && !vant.length ? "desvantagem" : vant.length && !desv.length ? "vantagem" : "normal";
   const radio = (valor, rotulo) => `<label class="epm-check"><input type="radio" name="modo" value="${valor}" ${valor === padrao ? "checked" : ""}> ${rotulo}</label>`;
@@ -1332,7 +1357,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (m.danoMult > 1) notas.push(`Dano ×${m.danoMult} (${ficha.ataquesGerais.danoMult.fontes.join(", ")})`);
   if (ficha.desvantagens.dano.length) notas.push(`Dano com desvantagem (${ficha.desvantagens.dano.join(", ")})`);
   if (ficha.extras?.titulos?.ativo?.contraTipo) notas.push(`Título ${ficha.extras.titulos.ativo.nome}: +2 no acerto contra ${ficha.extras.titulos.ativo.contraTipo} (some no bônus externo)`);
-  if (tecAcima) notas.push("Tecnologia desconhecida: um 1 natural trava a arma. Tecnologia DT 20 permite um uso sem penalidade");
+  if (tec) notas.push(tec.texto);
   if (itemTec && quebrado(itemTec)) notas.push("Arma quebrada: sem os bônus e efeitos dela até ser consertada");
 
   // Arquétipos, munição e cargas
@@ -1540,6 +1565,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (escolha.duelista) bonusFontes.push({ valor: ARQUETIPOS.combatente.estilos.duelista.acertoIsolado, fonte: "Duelista" });
   if (estilos.includes("dupla") && armasEquipadas >= 2) bonusFontes.push({ valor: ARQUETIPOS.combatente.estilos.dupla.acerto, fonte: "Arma Dupla" });
   if (escolha.presa) bonusFontes.push({ valor: ARQUETIPOS.combatente.cacador.acerto, fonte: `Presa (${presa})` });
+  if (tec?.penal) bonusFontes.push({ valor: tec.penal, fonte: tec.fonte });
   const base = {
     ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador, margemBonus: escolha.atirador ? ARQUETIPOS.combatente.estilos.atirador.margem : 0,
     maestria: favorita && ef && ["destrutivo", "alongado"].includes(ef.id) ? ef : null,

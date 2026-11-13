@@ -200,7 +200,12 @@ export async function verificarAncoras({ itemDe = null, itemId = "", morto = nul
       if (a.tipo === "objeto" && itemDe?.uuid === ator.uuid && a.ref === itemId) motivo = `${a.nome} saiu do inventário.`;
       if (a.tipo === "pessoa" && morto) { const rel = ator.flags[FLAG].relacoes?.[a.ref]; if (rel?.uuid && rel.uuid === morto.uuid) motivo = `${morto.name} está Morto.`; }
       if (a.tipo === "juramento" && juramento && a.ref === juramento) motivo = "O juramento foi quebrado.";
-      if (motivo) await perderAncora(ator, aid, motivo);
+      // A ficha detecta e o Mestre confirma
+      if (motivo) {
+        const { confirmar } = await import("./mecanicas.mjs");
+        const ok = await confirmar("Âncora perdida?", `<p>${escapar(ator.name)}: a âncora <strong>${escapar(a.nome || "sem nome")}</strong> parece perdida. ${escapar(motivo)}</p><p>Marcar como Perdida (−20 de Sanidade e libera o espaço)?</p>`);
+        if (ok) await perderAncora(ator, aid, motivo);
+      }
     }
   }
 }

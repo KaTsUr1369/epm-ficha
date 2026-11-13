@@ -47,7 +47,14 @@ export async function falhaCritica(ator, at) {
   await r.evaluate();
   const linha = TABELA_FALHA[r.total - 1] ?? TABELA_FALHA[0];
   let feito = "";
-  if (ator.isOwner) {
+  // A ficha pergunta antes de aplicar (patch: "Com a regra ligada, a ficha pergunta antes de aplicar o resultado")
+  let aplicar = ator.isOwner && linha.id !== "aliado";
+  if (aplicar) {
+    const { confirmar } = await M();
+    aplicar = await confirmar("Falha crítica", `<p>1d4 = <strong>${r.total}</strong>: ${escapar(linha.texto)}</p><p>Aplicar agora na ficha de ${escapar(ator.name)}?</p>`);
+    if (!aplicar) feito = "Não aplicado (a ficha perguntou e a resposta foi não).";
+  }
+  if (aplicar) {
     if (linha.id === "cai") {
       const item = at?.tipo === "arma" ? ator.items.get(at.id) : null;
       if (item?.system?.equipped) { await item.update({ "system.equipped": false }); feito = `${item.name} foi desequipada.`; }

@@ -30,7 +30,8 @@ import { regrasLigadas, danoAcumulos } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse } from "./regras-extras.mjs";
-import { idClasse } from "./ficha-extras.mjs";
+import { idClasse, nivelTecPersonagem } from "./ficha-extras.mjs";
+import { penalidadeTec, NOMES_REGIAO } from "./tecnologia.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { PROPRIEDADES_ARMA, REGIOES, TIPOS_ARMADURA, CATEGORIAS_TREINO } from "./catalogos.mjs";
 
@@ -74,7 +75,7 @@ export function lerAtor(actor, listaPericias) {
   const hp = { value: num(hpDerivado.value), max: num(hpDerivado.max), maxFonte: hpFonte.max ?? "", temp: num(hpDerivado.temp) };
   const statuses = actor?.statuses ? [...actor.statuses] : [];
   let itens = [];
-  try { itens = efeitosDeItens(actor?.items?.contents ?? actor?.items ?? []); } catch { itens = []; }
+  try { itens = efeitosDeItens(actor?.items?.contents ?? actor?.items ?? [], { nivelTec: nivelTecPersonagem(bruto) }); } catch { itens = []; }
   const agora = Number(globalThis.game?.time?.worldTime) || 0;
   const ficha = calcularFicha({ dados, hp, statuses, modsAE: bruto.mods, itens, agora, opcoes: { idade: lerConteudoNotion("idade"), regras: regrasLigadas(), danoAcumulos: danoAcumulos() } });
   return { dados, ficha, hp };
@@ -1170,6 +1171,7 @@ export function montarContexto({
       eArma, eConsumivel: item.type === "consumable", ataque,
       eArmadura: item.type === "equipment", armadura: int(f.armadura),
       formulaUso: f.formula ?? "",
+      tecPenal: (() => { try { return penalidadeTec(item, ficha.extras?.tecnologia ?? 1)?.texto ?? ""; } catch { return ""; } })(),
       containerNome: item.system?.container ? (nomes[item.system.container] ?? "") : "",
       expandido: expandidos.has(item.id),
       descricao: enriquecidos.itens?.[item.id] ?? "",
@@ -1254,6 +1256,15 @@ export function montarContexto({
     ctx.faixaIdadeOpcoes = [{ id: "", label: "Automática (pela idade e raça)", selected: !escolhida }, ...FAIXAS_IDADE.map(f => ({ id: f.id, label: f.label, dica: f.efeitos.join(" "), selected: f.id === escolhida?.id }))];
     ctx.faixaIdadeDica = (escolhida ?? auto)?.efeitos?.join(" ") ?? "";
     ctx.faixaIdadeTexto = escolhida ? escolhida.label : (auto?.label ? `${auto.label} (automática)` : "");
+  }
+  {
+    // Região de origem (item 23): define o nível de tecnologia que o personagem domina
+    const f = actor?.flags?.[FLAG] ?? {};
+    const origem = String(f.regiaoOrigem ?? "");
+    ctx.regiaoOrigem = {
+      opcoes: [{ id: "", label: "— (usa o nível de tecnologia da ficha)", selected: !origem }, ...Object.entries(NOMES_REGIAO).map(([id, label], i) => ({ id, label: `${label} (nível ${i + 1})`, selected: id === origem }))],
+      texto: NOMES_REGIAO[origem] ?? "", nivel: ficha.extras?.tecnologia ?? 1
+    };
   }
   ctx.voz = { bordao: dados.sobre?.bordao ?? "", musica: dados.sobre?.musica ?? "", musicaNome: dados.sobre?.musicaNome ?? "", link: ctx.musica };
   ctx.voz.vazia = !ctx.bordao && !ctx.musica;
@@ -1697,9 +1708,10 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     };
   }
   // 0.6.0: propriedades, região e tecnologia, tipo de armadura, Estamina por turno, título e melhorias (base)
-  if (eArma || tipo === "equipment") {
+  if (eArma || ["equipment", "consumable", "tool"].includes(tipo)) {
     const props = listaPropriedades(f);
     ctx.notion060 = {
+      eUso: ["consumable", "tool"].includes(tipo), complexo: !!f.complexo, tecEntendido: !!f.tecEntendido,
       propriedadesTexto: props.join(", "), propriedades: props.map(n => ({ nome: n, texto: PROPRIEDADES_ARMA[n] ?? "" })),
       sugestoesPropriedade: Object.keys(PROPRIEDADES_ARMA),
       regioes: [{ id: "", label: "—", selected: !f.regiao }, ...Object.entries(REGIOES).map(([id, label]) => ({ id, label, selected: id === f.regiao }))],

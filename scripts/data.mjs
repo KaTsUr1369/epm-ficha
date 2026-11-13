@@ -13,6 +13,7 @@ import {
   TIPOS_BONUS_SITUACIONAL, GATILHOS_BONUS
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
+import { penalidadeTec, efeitosSemPropriedades } from "./tecnologia.mjs";
 import { especialDoTreino, fontesDaFicha, aposAtributos, maximosAutomaticos, movimentosESentidos } from "./ficha-extras.mjs";
 
 /* -------------------------------------------- */
@@ -355,19 +356,27 @@ export function itemAtivo(item) {
 }
 
 /** Fontes de bônus passivos dos itens ativos (para calcularFicha). */
-export function efeitosDeItens(itens = []) {
+export function efeitosDeItens(itens = [], { nivelTec = 0 } = {}) {
   const out = [];
   for (const item of itens) {
     let efeitos;
     let armadura = 0;
     let arma = false;
+    let nomeTec = item?.name;
     try {
       if (!itemAtivo(item)) continue;
       efeitos = lerEfeitosItem(item).filter(e => !["cura", "danoExtra"].includes(e.tipo));
       if (item.type === "equipment") armadura = int(item.flags?.[FLAG]?.armadura);
       arma = item.type === "weapon";
+      // Níveis de tecnologia: proteção acima do nível do personagem perde CA e as propriedades especiais
+      const tec = nivelTec ? penalidadeTec(item, nivelTec) : null;
+      if (tec?.protecao) {
+        efeitos = efeitosSemPropriedades(efeitos);
+        if (armadura) armadura = Math.max(0, armadura + tec.ca);
+      }
+      if (tec?.protecao) nomeTec = `${item.name} (tecnologia ${tec.ca})`;
     } catch { continue; }
-    if (efeitos.length || armadura || arma || /escudo/i.test(item.name ?? "")) out.push({ id: item.id, nome: item.name, efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "",
+    if (efeitos.length || armadura || arma || /escudo/i.test(item.name ?? "")) out.push({ id: item.id, nome: nomeTec, efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "",
       escudo: /escudo/i.test(String(item.flags?.[FLAG]?.tipoArma ?? "")) || /escudo/i.test(item.name ?? "") || item.system?.type?.value === "shield" });
   }
   return out;

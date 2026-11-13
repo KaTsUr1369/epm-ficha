@@ -160,7 +160,15 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
   v.turno = { convertida: dados.acoes?.convertida ?? "", padraoLivre: !dados.acoes?.padrao, completaLivre: !dados.acoes?.padrao && !dados.acoes?.movimento };
 
   /* Tecnologia */
-  v.tecnologia = { nivel: ex.tecnologia ?? 1, base: Math.max(1, int(dados.tecnologia, 1)), opcoes: sel([[1, "1 (Umbra'Draxil)"], [2, "2 (Briavoterna)"], [3, "3 (Genesis)"]], Math.max(1, int(dados.tecnologia, 1))) };
+  {
+    const bruto = dados;
+    const temOrigem = !!String(bruto.regiaoOrigem ?? "");
+    v.tecnologia = {
+      nivel: ex.tecnologia ?? 1, temOrigem, base: Math.max(1, int(dados.tecnologia, 1)),
+      opcoes: sel([[1, "1 (Umbra'Draxil)"], [2, "2 (Briavoterna)"], [3, "3 (Genesis)"]], Math.max(1, int(dados.tecnologia, 1))),
+      adaptacao: sel([["", "Automática (treinos)"], ["0", "Sem adaptação"], ["2", "Adaptado ao nível 2"], ["3", "Adaptado ao nível 3"]], String(bruto.adaptacaoTec ?? ""))
+    };
+  }
 
   /* Votos e pactos */
   v.votos = {

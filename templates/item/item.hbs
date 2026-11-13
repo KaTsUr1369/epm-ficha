@@ -88,14 +88,16 @@
 
   {{#if notion060}}
   <section class="epm-painel epm-060-item-notion">
-    <header class="epm-painel-titulo"><h3>Notion</h3><span class="epm-dica">Propriedades, região e tecnologia</span></header>
+    <header class="epm-painel-titulo"><h3>{{#if notion060.eUso}}Tecnologia{{else}}Notion{{/if}}</h3><span class="epm-dica">{{#if notion060.eUso}}Região, nível e complexidade{{else}}Propriedades, região e tecnologia{{/if}}</span></header>
     <div class="epm-item-editor-campos">
-      <label class="epm-campo largo" title="Separe por vírgula. A ficha mostra o que cada uma faz."><span>Propriedades</span><input type="text" name="flags.epm-ficha.propriedadesTexto" value="{{notion060.propriedadesTexto}}" list="epm-item-sug-prop" placeholder="Acuidade, Pesada, Duas mãos" /><datalist id="epm-item-sug-prop">{{#each notion060.sugestoesPropriedade}}<option value="{{this}}"></option>{{/each}}</datalist></label>
+      {{#unless notion060.eUso}}<label class="epm-campo largo" title="Separe por vírgula. A ficha mostra o que cada uma faz."><span>Propriedades</span><input type="text" name="flags.epm-ficha.propriedadesTexto" value="{{notion060.propriedadesTexto}}" list="epm-item-sug-prop" placeholder="Acuidade, Pesada, Duas mãos" /><datalist id="epm-item-sug-prop">{{#each notion060.sugestoesPropriedade}}<option value="{{this}}"></option>{{/each}}</datalist></label>{{/unless}}
       <label class="epm-campo"><span>Região</span><select name="flags.epm-ficha.regiao">{{#each notion060.regioes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
-      <label class="epm-campo" title="1 Umbra'Draxil, 2 Briavoterna, 3 Genesis. Acima do nível do personagem: desvantagem e 1 natural trava a arma. 0 = sem tecnologia."><span>Nível de tecnologia</span><input type="number" min="0" max="3" name="flags.epm-ficha.nivelTec" value="{{notion060.nivelTec}}" /></label>
+      <label class="epm-campo" title="1 Umbra'Draxil, 2 Briavoterna, 3 Genesis (vem da região se ficar 0). Acima do nível do personagem: arma ou item de usar com desvantagem (2 acima: −5); armadura ou escudo com −2/−5 na CA e sem as propriedades especiais. 0 = sem tecnologia."><span>Nível de tecnologia</span><input type="number" min="0" max="3" name="flags.epm-ficha.nivelTec" value="{{notion060.nivelTec}}" /></label>
+      {{#unless notion060.eArmadura}}<label class="epm-check" title="2 níveis acima do personagem: antes do primeiro uso, teste de Tecnologia DT 20"><input type="checkbox" name="flags.epm-ficha.complexo" {{epmChecked notion060.complexo}} /> Complexo{{#if notion060.tecEntendido}} <span class="epm-dica">(o dono já entendeu)</span>{{/if}}</label>{{/unless}}
       {{#if notion060.eArmadura}}
       <label class="epm-campo"><span>Tipo de armadura</span><select name="flags.epm-ficha.tipoArmadura">{{#each notion060.tiposArmadura}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <label class="epm-campo" title="Descontada no Novo turno com a armadura equipada (armaduras de Genesis)"><span>Estamina por turno</span><input type="number" min="0" name="flags.epm-ficha.estaminaPorTurno" value="{{notion060.estaminaPorTurno}}" /></label>
+      {{else if notion060.eUso}}
       {{else}}
       <label class="epm-campo" title="Título da arma (ganho por feitos)"><span>Título da arma</span><input type="text" name="flags.epm-ficha.titulo" value="{{notion060.titulo}}" placeholder="A que Partiu o Céu" /></label>
       {{/if}}

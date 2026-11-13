@@ -58,8 +58,10 @@ export const TREINAMENTOS_NOTION = [
     beneficios: "Uma vez por sessão, relembra os detalhes de uma cena (o Mestre descreve).", mods: [], especial: "memoriaTreinada" },
   { categoria: "mental", nome: "Meditação de Núcleo", tempo: 48, unidade: "horas", pt: 5, requisitos: "4 de Núcleo", treinador: false, modelo: true,
     beneficios: "O descanso curto também recupera 1d6 PM.", mods: [], especial: "meditacaoNucleo" },
-  { categoria: "outros", nome: "Familiaridade Tecnológica", tempo: 5, unidade: "dias", pt: 5, requisitos: "Ter usado equipamento da região", treinador: true, modelo: true,
-    beneficios: "Sobe 1 nível de tecnologia (Umbra'Draxil 1 → Briavoterna 2 → Genesis 3): o equipamento daquele nível deixa de dar desvantagem.", mods: [], especial: "familiaridade" }
+  { categoria: "outros", nome: "Adaptação tecnológica: nível 2", tempo: 48, unidade: "horas", pt: 5, requisitos: "", treinador: false, modelo: true,
+    beneficios: "Passa a dominar a tecnologia de Briavoterna (nível 2): armas, itens e proteções de lá deixam de ter penalidade.", mods: [], especial: "adaptacao2" },
+  { categoria: "outros", nome: "Adaptação tecnológica: nível 3", tempo: 56, unidade: "horas", pt: 10, requisitos: "nível de tecnologia 2", treinador: false, modelo: true,
+    beneficios: "Passa a dominar a tecnologia de Genesis (nível 3). Precisa já dominar o nível 2 (origem em Briavoterna ou a adaptação ao nível 2).", mods: [], especial: "adaptacao3" }
 ];
 
 /* -------------------------------------------- */

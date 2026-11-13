@@ -23,11 +23,13 @@
       {{#if edicao}}
       <div class="epm-campos-grade">
         {{#each camposSobre}}<label class="epm-campo"><span>{{this.label}}</span><input type="text" name="flags.epm-ficha.sobre.{{this.id}}" value="{{this.valor}}" {{#if dica}}placeholder="{{this.dica}}"{{/if}} /></label>{{/each}}
+        <label class="epm-campo" title="Nível de tecnologia: Umbra'Draxil 1, Briavoterna 2, Genesis 3. Armas, itens e proteções de nível acima têm penalidade (adaptação na aba Treinamentos)."><span>Região de origem</span><select name="flags.epm-ficha.regiaoOrigem">{{#each regiaoOrigem.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         <label class="epm-campo" title="Fase de vida na raça (geração). Automática: pela idade e pela raça. Escolha à mão quando a idade em anos não diz a fase (ex.: 3 anos e adulto, 900 e criança)."><span>Fase de vida (geração)</span><select name="flags.epm-ficha.faixaIdade">{{#each faixaIdadeOpcoes}}<option value="{{this.id}}" {{#if dica}}title="{{this.dica}}"{{/if}} {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       </div>
       {{else}}
       <dl class="epm-campos-grade epm-campos-texto">
         {{#each camposSobre}}<div><dt>{{this.label}}</dt><dd>{{#if valor}}{{this.valor}}{{else}}—{{/if}}</dd></div>{{/each}}
+        {{#if regiaoOrigem.texto}}<div title="Domina a tecnologia até o nível {{regiaoOrigem.nivel}}"><dt>Região de origem</dt><dd>{{regiaoOrigem.texto}} · tecnologia {{regiaoOrigem.nivel}}</dd></div>{{/if}}
         {{#if faixaIdadeTexto}}<div title="{{faixaIdadeDica}}"><dt>Fase de vida</dt><dd>{{faixaIdadeTexto}} <i class="fa-solid fa-circle-info" aria-hidden="true"></i></dd></div>{{/if}}
       </dl>
       {{/if}}

@@ -14,6 +14,23 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.0
+
+Patch das novas mecânicas (documento do Projeto `EPM/patch-novas-mecanicas.md`). Os itens 1 a 22 e 24 já estavam na 0.7.x; esta versão traz a Parte 3 e os ajustes em que o texto do patch mudou.
+
+- **Níveis de tecnologia** (Umbra'Draxil 1, Briavoterna 2, Genesis 3):
+  - Aba **Sobre**: campo **Região de origem**. Ele define o nível de tecnologia que o personagem domina (sem ele, vale o campo antigo "tecnologia" do painel).
+  - Editor de item: **Região** e **Nível de tecnologia** também em consumíveis e ferramentas, e a caixinha **Complexo**.
+  - A ficha compara o item com o personagem e aplica a penalidade sozinha:
+    - arma ou item de usar 1 nível acima: desvantagem;
+    - 2 níveis acima: desvantagem e −5. Se for complexo, pede um teste de Tecnologia DT 20 antes de usar. Passou, o personagem entende aquele item e não pede mais.
+    - armadura ou escudo 1 ou 2 níveis acima: −2 ou −5 na CA e sem as propriedades especiais (as penalidades continuam valendo).
+  - A linha do item mostra a penalidade.
+  - Treinamentos modelo: **Adaptação tecnológica: nível 2** (5 PT, 48 h) e **nível 3** (10 PT, 56 h; pede nível de tecnologia 2). Concluir uma adaptação tira a penalidade daquele nível. O Mestre pode dar ou tirar a adaptação na mão (painel da ficha, modo edição).
+- **Falha crítica com tabela:** a ficha pergunta antes de aplicar o resultado.
+- **Âncoras:** quando a ficha detecta que uma âncora se perdeu, o Mestre confirma antes de tirar a Sanidade.
+- **Conserto:** leva 10 minutos (não gasta horas de treino) e o sucesso recupera 50 de durabilidade.
+
 ## Novidades da 0.7.9
 
 - **Compêndio "EPM · Arquétipos e Classes"**, no formato do D&D 5e: cada **Arquétipo** é um item **Classe**, cada **Classe** pronta é uma **Subclasse** do arquétipo dela, e cada habilidade é um **Talento** ligado por nível (como os avanços do D&D). Fica na aba Compêndios do mundo; o Mestre cria e atualiza sozinho quando o módulo muda.

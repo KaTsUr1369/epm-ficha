@@ -3028,3 +3028,6 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-cat-destino select { min-width: 160px; }
 .application.epm-catalogo .epm-cat-filtros > select, .application.epm-catalogo .epm-cat-filtros > label { flex: 0 0 auto; width: auto; }
 .application.epm-catalogo .epm-cat-filtros > .epm-busca { flex: 1 1 220px; width: auto; min-width: 180px; }
+
+/* Níveis de tecnologia (item 23) */
+.epm-item-tec { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #E8A15A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }

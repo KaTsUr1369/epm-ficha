@@ -153,7 +153,8 @@
     <button type="button" class="epm-botao epm-botao-sutil" data-action="nocaoVitalidade" {{#unless @root.editavel}}disabled{{/unless}} title="5 PE: diz como estão os alvos marcados (Intocado, Ferido, Machucado, No Limite)"><i class="fa-solid fa-heart-pulse"></i> Noção de Vitalidade</button>
   </div>
   <div class="epm-060-corpo">
-    <label class="epm-mini" title="Nível de tecnologia que o personagem domina. Equipamento acima dá desvantagem e um 1 natural trava a arma."><span>tecnologia</span>{{#if @root.edicao}}<select name="flags.epm-ficha.tecnologia">{{#each v.tecnologia.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{else}}<strong>{{v.tecnologia.nivel}}</strong>{{/if}}</label>
+    <label class="epm-mini" title="Nível de tecnologia que o personagem domina (região de origem na aba Sobre + adaptações). Armas e itens acima: desvantagem (2 acima: −5); proteções acima: −2/−5 na CA e sem propriedades."><span>tecnologia</span>{{#if (epmAnd @root.edicao (epmNot v.tecnologia.temOrigem))}}<select name="flags.epm-ficha.tecnologia">{{#each v.tecnologia.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{else}}<strong>{{v.tecnologia.nivel}}</strong>{{/if}}</label>
+    {{#if @root.isGM}}{{#if @root.edicao}}<label class="epm-mini" title="Só o Mestre: dá ou tira a adaptação tecnológica na mão"><span>adaptação</span><select name="flags.epm-ficha.adaptacaoTec">{{#each v.tecnologia.adaptacao}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}{{/if}}
   </div>
 </section>
 {{#if v.classe}}

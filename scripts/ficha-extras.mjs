@@ -1,4 +1,5 @@
 import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
+import { NIVEIS_REGIAO, idRegiao } from "./tecnologia.mjs";
 /**
  * Partes da ficha que vieram na 0.6.0 (raça pronta, Sanidade com estados e insanidades, idade opcional,
  * classes do Notion, votos, pactos, talentos, atributos acima de 4, teto de atributo e máximos automáticos).
@@ -194,7 +195,8 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
   out.meditacaoNucleo = temEspecial("meditacaoNucleo");
   out.memoriaTreinada = temEspecial("memoriaTreinada");
   out.especiaisTreino = [...espSet];
-  out.tecnologia = Math.max(1, Math.min(3, Math.floor(n(d.tecnologia) || 1) + concluidos.filter(t => especialDoTreino(t) === "familiaridade").length));
+  out.tecnologia = nivelTecPersonagem(d);
+  out.regiaoOrigem = idRegiao(d.regiaoOrigem);
 
   // Títulos: conquistas (contadas pela ficha) e títulos ganhos; só o ativo dá bônus
   const cont = d.conquistas ?? {};
@@ -317,9 +319,28 @@ export function trocasBonus(d) {
 const trocasAtivas = d => trocasBonus(d).mapa;
 
 /** Efeito especial de um treino: o gravado nele ou, para treinos antigos, o do catálogo do Notion pelo nome. */
+/**
+ * Nível de tecnologia que o personagem domina (1 a 3): a região de origem (aba Sobre; sem ela, o campo antigo
+ * "tecnologia"), mais as adaptações concluídas. O Mestre pode forçar: adaptacaoTec "0" = sem adaptação, "2"/"3" = adaptado.
+ */
+export function nivelTecPersonagem(d = {}) {
+  const origem = NIVEIS_REGIAO[idRegiao(d.regiaoOrigem)];
+  const base = origem ?? Math.max(1, Math.floor(Number(d.tecnologia) || 1));
+  const forcado = String(d.adaptacaoTec ?? "");
+  if (forcado === "0") return Math.min(3, base);
+  if (forcado === "2" || forcado === "3") return Math.min(3, Math.max(base, Number(forcado)));
+  const concluidos = Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido");
+  let nivel = base + concluidos.filter(t => especialDoTreino(t) === "familiaridade").length;
+  const feitos = new Set(concluidos.map(especialDoTreino));
+  if (feitos.has("adaptacao2")) nivel = Math.max(nivel, 2);
+  if (feitos.has("adaptacao3") && nivel >= 2) nivel = Math.max(nivel, 3);
+  return Math.max(1, Math.min(3, nivel));
+}
+
 export function especialDoTreino(t) {
   if (t?.especial) return t.especial;
   const nome = norm(t?.nome);
+  if (nome.includes("familiaridade tecnologica")) return "familiaridade";
   return TREINAMENTOS_NOTION.find(x => norm(x.nome) === nome)?.especial ?? "";
 }
 const especiaisConcluidos = d => new Set(Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido").map(especialDoTreino).filter(Boolean));

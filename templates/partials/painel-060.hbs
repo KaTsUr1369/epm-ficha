@@ -11,7 +11,7 @@
       {{#each v.tokens.estados}}
       <figure class="epm-token-estado{{#unless img}} vazia{{/unless}}" title="{{this.dica}}">
         <button type="button" class="epm-token-img" data-action="imagemTokenEstado" data-estado="{{this.id}}" {{#unless @root.editavel}}disabled{{/unless}}>{{#if img}}<img src="{{this.img}}" alt="" />{{else}}<i class="fa-solid fa-image"></i>{{/if}}</button>
-        <figcaption>{{this.label}}{{#if img}}{{#if @root.editavel}} <button type="button" class="epm-icone-botao perigo" data-action="limparTokenEstado" data-estado="{{this.id}}" title="Tirar a imagem"><i class="fa-solid fa-xmark"></i></button>{{/if}}{{/if}}</figcaption>
+        <figcaption>{{this.label}}{{#if img}}{{#if @root.editavel}} <button type="button" class="epm-icone-botao" data-action="enquadrarTokenEstado" data-estado="{{this.id}}" title="Enquadrar de novo na borda"><i class="fa-solid fa-crop-simple"></i></button> <button type="button" class="epm-icone-botao perigo" data-action="limparTokenEstado" data-estado="{{this.id}}" title="Tirar a imagem"><i class="fa-solid fa-xmark"></i></button>{{/if}}{{/if}}</figcaption>
       </figure>
       {{/each}}
       {{#each v.tokens.transformacoes}}

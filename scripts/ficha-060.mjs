@@ -596,7 +596,7 @@ export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
   "rolarNiveisRecursos", "treinoCatalogo", "catalogoItens", "catalogoCompleto", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
   "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
-  "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
+  "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
   "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias"
@@ -662,11 +662,25 @@ export const METODOS_060 = {
   async acaoImagemTokenEstado(ev, alvo) {
     const { escolherImagem } = await import("./imagens.mjs");
     const e = alvo.dataset.estado;
-    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.tokensEstado?.[e] ?? "", titulo: "Imagem do token" });
-    if (caminho) await this.actor.update({ [`${P}.tokensEstado.${e}`]: caminho });
+    const original = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.tokensOriginal?.[e] ?? this.actor.flags?.[FLAG]?.tokensEstado?.[e] ?? "", titulo: "Imagem do token" });
+    if (!original) return;
+    return this._enquadrarTokenEstado(e, original);
+  },
+  /** Enquadra na borda do EPM e guarda o PNG (pasta Tokens) e a imagem original (para enquadrar de novo). */
+  async _enquadrarTokenEstado(e, original) {
+    const { enquadrarToken } = await import("./enquadrar-token.mjs");
+    const rotulo = alvoRotuloEstado(e);
+    const caminho = await enquadrarToken(original, { nome: `${this.actor.name}-${e}`, titulo: `Enquadrar o token: ${rotulo}` });
+    if (!caminho) return;
+    await this.actor.update({ [`${P}.tokensEstado.${e}`]: caminho, [`${P}.tokensOriginal.${e}`]: original });
+  },
+  async acaoEnquadrarTokenEstado(ev, alvo) {
+    const e = alvo.dataset.estado;
+    const original = this.actor.flags?.[FLAG]?.tokensOriginal?.[e] ?? this.actor.flags?.[FLAG]?.tokensEstado?.[e];
+    if (original) return this._enquadrarTokenEstado(e, original);
   },
   async acaoLimparTokenEstado(ev, alvo) {
-    await this.actor.update({ [`${P}.tokensEstado.-=${alvo.dataset.estado}`]: null });
+    await this.actor.update({ [`${P}.tokensEstado.-=${alvo.dataset.estado}`]: null, [`${P}.tokensOriginal.-=${alvo.dataset.estado}`]: null });
   },
   async acaoEscolherTokenEstado() {
     const { escolherTokenEstado } = await import("./token-estados.mjs");
@@ -859,3 +873,8 @@ export async function testeTraicao(actor, relId) {
 }
 
 export { PROPRIEDADES_ARMA };
+
+/** Nome do estado do token para o título do enquadramento. */
+function alvoRotuloEstado(e) {
+  return ({ normal: "Normal", insano: "Insano", machucado: "Machucado", morrendo: "Morrendo", morto: "Morto" })[e] ?? e;
+}

@@ -3031,3 +3031,10 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 
 /* Níveis de tecnologia (item 23) */
 .epm-item-tec { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #E8A15A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* Enquadrar o token na borda */
+.epm-enquadrar-corpo { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.epm-enquadrar-corpo canvas[data-previa] { align-self: center; width: 300px; height: 300px; cursor: grab; touch-action: none; border-radius: 8px;
+  background: repeating-conic-gradient(#2a3534 0% 25%, #1d2726 0% 50%) 50% / 20px 20px; }
+.epm-enquadrar-corpo canvas[data-previa]:active { cursor: grabbing; }
+.epm-enquadrar-linha { display: flex; justify-content: space-between; align-items: center; gap: 8px; }

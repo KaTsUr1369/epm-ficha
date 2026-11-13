@@ -14,6 +14,15 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.1
+
+- **Enquadrar o token na borda do EPM** (anel de runas com chamas). Ao escolher a imagem de um estado do token (Normal, Insano, Machucado, Morrendo, Morto) ou de uma transformação, abre o enquadramento:
+  - arraste a imagem e use a roda do mouse (ou o zoom) até ela ficar no círculo de dentro, antes das runas;
+  - o que fica fora da borda e das chamas sai transparente;
+  - o PNG (512 px) é salvo na pasta **Tokens** dos dados do Foundry.
+- O botão de recorte ao lado da imagem enquadra de novo a partir da imagem original. "Sem enquadrar" usa a imagem como veio, e dá para desligar a borda.
+- Salvar o token precisa da permissão "Enviar arquivos" (o Mestre libera para os jogadores).
+
 ## Novidades da 0.8.0
 
 Patch das novas mecânicas (documento do Projeto `EPM/patch-novas-mecanicas.md`). Os itens 1 a 22 e 24 já estavam na 0.7.x; esta versão traz a Parte 3 e os ajustes em que o texto do patch mudou.

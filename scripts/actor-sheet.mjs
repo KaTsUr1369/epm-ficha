@@ -1647,7 +1647,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async acaoImagemTransformacao(ev, alvo) {
     const id = alvo.dataset.transformacao;
     const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.transformacoes?.[id]?.img ?? "", titulo: "Imagem da transformação" });
-    if (caminho) await this.actor.update({ [`${P}.transformacoes.${id}.img`]: caminho });
+    if (!caminho) return;
+    // A imagem da transformação pode virar o token: oferece o enquadramento na borda (ou "Sem enquadrar")
+    const { enquadrarToken } = await import("./enquadrar-token.mjs");
+    const final = await enquadrarToken(caminho, { nome: `${this.actor.name}-${this.actor.flags?.[FLAG]?.transformacoes?.[id]?.nome || "transformacao"}`, titulo: "Enquadrar a transformação" });
+    if (final) await this.actor.update({ [`${P}.transformacoes.${id}.img`]: final });
   }
 
   async acaoAdicionarModTransf(ev, alvo) {

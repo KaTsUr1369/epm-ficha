@@ -10,6 +10,7 @@ import { EPMPoderSheet, abrirEditorPoder } from "./poder-sheet.mjs";
 import { EPMItemSheet, abrirEditorItem } from "./item-sheet.mjs";
 import * as mecanicas from "./mecanicas.mjs";
 import { prepararPastaImagens } from "./imagens.mjs";
+import { prepararPastaTokens } from "./enquadrar-token.mjs";
 import { relacaoMultipla } from "./relacoes.mjs";
 import { PainelGrupo, abrirPainelGrupo, atualizarPainelGrupo, botaoNoDiretorio } from "./grupo.mjs";
 import { EscudoMestre, abrirEscudo, atualizarEscudo, botaoEscudo } from "./escudo.mjs";
@@ -71,6 +72,7 @@ Hooks.once("ready", () => {
   prepararNovas();
   mecanicas.integrarIniciativa(EPMActorSheet);
   prepararPastaImagens();
+  prepararPastaTokens();
   verificarFichaPadrao();
   migrarListaPericiasMundo().then(() => migrarReflexosMundo()).then(() => migrarVontadeAutocontrole()).catch(err => console.warn("EPM | Migração da lista de perícias", err));
   console.log(`${MODULE_ID} | Ficha Escolhidos pelo Multiverso pronta`);

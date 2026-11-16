@@ -30,6 +30,7 @@ import { registrarCompendioClasses, sincronizarCompendio } from "./compendio-cla
 import { registrarCompendioItens } from "./compendio-itens.mjs";
 import { registrarDicasCompendio } from "./compendio-dicas.mjs";
 import { registrarPolyglot } from "./polyglot-epm.mjs";
+import { registrarTiposNpc } from "./tipos-npc.mjs";
 registrarPolyglot();
 // Fichas e itens antigos recebem as mudanças das versões novas (Mestre ativo, ao abrir o mundo)
 Hooks.once("ready", () => { import("./migracoes-mundo.mjs").then(m => m.migrarMundo()).catch(err => console.warn("EPM | migração do mundo", err)); });
@@ -73,6 +74,7 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("setup", () => registrarCondicoes());
+registrarTiposNpc();
 
 Hooks.once("ready", () => {
   mecanicas.registrarChat();

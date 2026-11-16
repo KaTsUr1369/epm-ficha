@@ -1,0 +1,225 @@
+<section class="tab epm-aba epm-npc-aba {{cls.npc}}" data-group="primary" data-tab="npc">
+{{#if npcFicha}}
+  <section class="epm-painel epm-npc-tipo">
+    <header class="epm-painel-titulo"><h3><i class="{{npcFicha.icone}}" aria-hidden="true"></i> Tipo de ficha: {{npcFicha.tipoLabel}}</h3><span class="epm-tag">Só o Mestre vê esta aba</span></header>
+    <div class="epm-npc-tipos" role="group" aria-label="Tipo de ficha">
+      {{#each npcFicha.tipos}}<button type="button" class="epm-botao{{#if sel}} epm-botao-forte{{/if}}" data-action="npcTipo" data-tipo="{{this.id}}" aria-pressed="{{#if sel}}true{{else}}false{{/if}}">{{this.label}}</button>{{/each}}
+    </div>
+    <p class="epm-dica">{{npcFicha.resumo}} O tipo escolhe as abas que aparecem; dá para mostrar ou esconder cada uma em Personalizar (modo edição).</p>
+    <div class="epm-npc-grade">
+      <label class="epm-campo curto"><span>ND</span><input type="number" min="0" step="0.25" name="flags.epm-ficha.npc.nd" value="{{npcFicha.nd}}" /></label>
+      <div class="epm-campo curto"><span>PEv ao derrotar</span><strong class="epm-npc-valor">{{npcFicha.pev}}</strong></div>
+      {{#if npcFicha.eCriatura}}
+      <label class="epm-campo"><span>Categoria</span><input type="text" name="flags.epm-ficha.npc.categoria" value="{{npcFicha.categoria}}" placeholder="Besta, Morto-vivo, Construto…" /></label>
+      <label class="epm-campo curto"><span>Tamanho</span><select name="flags.epm-ficha.npc.tamanho"><option value="">—</option>{{#each npcFicha.tamanhos}}<option value="{{this.v}}" {{#if sel}}selected{{/if}}>{{this.v}}</option>{{/each}}</select></label>
+      <label class="epm-campo"><span>Habitat</span><input type="text" name="flags.epm-ficha.npc.habitat" value="{{npcFicha.habitat}}" placeholder="Cavernas vulcânicas de Umbra'Draxil" /></label>
+      {{else}}
+      <label class="epm-campo"><span>Função</span><input type="text" name="flags.epm-ficha.npc.funcao" value="{{npcFicha.funcao}}" placeholder="Guarda, mercadora, treinadora…" /></label>
+      <label class="epm-campo curto"><span>Disposição com o grupo</span><select name="flags.epm-ficha.npc.disposicao"><option value="">—</option>{{#each npcFicha.disposicoes}}<option value="{{this.v}}" {{#if sel}}selected{{/if}}>{{this.v}}</option>{{/each}}</select></label>
+      {{/if}}
+    </div>
+    <div class="epm-linha-campos epm-npc-vida">
+      <label class="epm-campo"><span>Vida por fórmula</span><input type="text" name="flags.epm-ficha.npc.vidaFormula" value="{{npcFicha.vidaFormula}}" placeholder="4d8 + 6" /></label>
+      <button type="button" class="epm-botao" data-action="npcRolarVida" title="Rola e põe na Vida atual e máxima desta ficha"><i class="fa-solid fa-dice" aria-hidden="true"></i> Rolar Vida</button>
+      <button type="button" class="epm-botao" data-action="npcRolarVidaTokens" title="Uma Vida diferente para cada token selecionado desta criatura (tokens não vinculados)"><i class="fa-solid fa-users" aria-hidden="true"></i> Rolar nos tokens selecionados</button>
+    </div>
+    {{#if npcFicha.abasOcultas.length}}<p class="epm-dica">Escondidas por este tipo: {{epmJoin npcFicha.abasOcultas}}.</p>{{/if}}
+  </section>
+
+  {{#if npcFicha.comInterpretacao}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-masks-theater" aria-hidden="true"></i> Interpretação rápida</h3></header>
+    <label class="epm-campo"><span>Jeito</span><input type="text" name="flags.epm-ficha.npc.interp.jeito" value="{{npcFicha.interp.jeito}}" placeholder="Fala olhando para o portão, nunca para quem pergunta." /></label>
+    <label class="epm-campo"><span>O que quer</span><input type="text" name="flags.epm-ficha.npc.interp.quer" value="{{npcFicha.interp.quer}}" placeholder="Terminar o turno sem problema." /></label>
+    <label class="epm-campo"><span>O que sabe</span><input type="text" name="flags.epm-ficha.npc.interp.sabe" value="{{npcFicha.interp.sabe}}" placeholder="Um rumor, uma pista, um segredo pequeno." /></label>
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.eImportante}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-handshake" aria-hidden="true"></i> Serviços</h3><button type="button" class="epm-link" data-action="npcNovo" data-lista="servicos"><i class="fa-solid fa-plus" aria-hidden="true"></i> Serviço</button></header>
+    <p class="epm-dica">Treinos, lojas e serviços com preço. Para treinar com o NPC, o jogador cria o treinamento com treinador e preço por hora (as horas são pagas das moedas dele).</p>
+    {{#unless npcFicha.servicos.length}}<p class="epm-vazio">Nenhum serviço.</p>{{/unless}}
+    {{#each npcFicha.servicos}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.servicos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Treinadora: Controle de Núcleo I" aria-label="Serviço" />
+      <input type="text" name="flags.epm-ficha.npc.servicos.{{this.id}}.detalhes" value="{{this.detalhes}}" placeholder="10 PT · 48 h · req. Núcleo 4" aria-label="Detalhes" />
+      <input type="text" class="curto" name="flags.epm-ficha.npc.servicos.{{this.id}}.preco" value="{{this.preco}}" placeholder="5 PO/h" aria-label="Preço" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="servicos" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.eCriatura}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Defesas, sentidos e comportamento</h3></header>
+    <p class="epm-dica">Resistências, vulnerabilidades e imunidades a dano ficam na aba Combate (entram no cálculo). Aqui vão as notas do bloco de estatísticas.</p>
+    <div class="epm-npc-grade">
+      <label class="epm-campo"><span>Deslocamentos</span><input type="text" name="flags.epm-ficha.npc.defesas.deslocamentos" value="{{npcFicha.defesas.deslocamentos}}" placeholder="Andar 9 m, escalar 6 m" /></label>
+      <label class="epm-campo"><span>RD</span><input type="text" name="flags.epm-ficha.npc.defesas.rd" value="{{npcFicha.defesas.rd}}" placeholder="2 contra Cortante" /></label>
+      <label class="epm-campo"><span>Imune a condições</span><input type="text" name="flags.epm-ficha.npc.defesas.imunesCondicoes" value="{{npcFicha.defesas.imunesCondicoes}}" placeholder="Em Chamas, Envenenado" /></label>
+      <label class="epm-campo"><span>Sentidos</span><input type="text" name="flags.epm-ficha.npc.defesas.sentidos" value="{{npcFicha.defesas.sentidos}}" placeholder="Sentido sísmico 9 m" /></label>
+    </div>
+    <label class="epm-campo"><span>Tática</span><input type="text" name="flags.epm-ficha.npc.tatica" value="{{npcFicha.tatica}}" placeholder="Cerca quem faz barulho; foge da luz forte." /></label>
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.comMoral}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-person-running" aria-hidden="true"></i> Moral</h3>{{#if npcFicha.moral.avisado}}<span class="epm-tag">já perguntou neste combate</span>{{/if}}</header>
+    <div class="epm-linha-campos">
+      <label class="epm-campo curto"><span>Pergunta com Vida ≤ %</span><input type="number" min="0" max="99" name="flags.epm-ficha.npc.moral.pct" value="{{npcFicha.moral.pct}}" /></label>
+      <label class="epm-campo"><span>Observação</span><input type="text" name="flags.epm-ficha.npc.moral.texto" value="{{npcFicha.moral.texto}}" placeholder="Menos dentro da toca." /></label>
+    </div>
+    <p class="epm-dica">Quando a Vida passa do limite, vai um cartão só para o Mestre: foge (aplica Fugindo), rende-se ou continua lutando. Uma vez por combate; 0 desliga.</p>
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.eElite}}
+  <section class="epm-painel epm-npc-elite">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-star" aria-hidden="true"></i> Traços de elite</h3></header>
+    <div class="epm-npc-contadores">
+      <div class="epm-npc-contador">
+        <strong>Tenacidade</strong>
+        <span class="epm-npc-marcas">{{#each npcFicha.tenacidade.marcas}}<i class="fa-{{#if cheio}}solid{{else}}regular{{/if}} fa-circle" aria-hidden="true"></i>{{/each}}</span>
+        <label class="epm-mini"><span>por combate</span><input type="number" min="0" max="10" name="flags.epm-ficha.npc.tenacidade.max" value="{{npcFicha.tenacidade.max}}" /></label>
+        <button type="button" class="epm-botao epm-botao-mini" data-action="npcContador" data-campo="tenacidade" title="Recusa uma condição">Usar</button>
+        <button type="button" class="epm-link" data-action="npcZerar" data-campo="tenacidade">Recarregar</button>
+      </div>
+      <div class="epm-npc-contador">
+        <strong>Ações Lendárias</strong>
+        <span class="epm-npc-valor">{{npcFicha.lendarias}}</span>
+        <button type="button" class="epm-seta" data-action="npcAcaoEspecial" data-acao="lendaria" data-delta="-1" aria-label="Menos uma"><i class="fa-solid fa-minus"></i></button>
+        <button type="button" class="epm-seta" data-action="npcAcaoEspecial" data-acao="lendaria" data-delta="1" aria-label="Mais uma"><i class="fa-solid fa-plus"></i></button>
+        <span class="epm-dica">por rodada (marcadas em Combate → Ações)</span>
+      </div>
+    </div>
+    <h4 class="epm-npc-sub">Recargas <button type="button" class="epm-link" data-action="npcNovo" data-lista="recargas"><i class="fa-solid fa-plus" aria-hidden="true"></i> Recarga</button> <button type="button" class="epm-link" data-action="npcRolarRecargas">Rolar agora</button></h4>
+    <p class="epm-dica">Usar marca como gasta. No começo do turno dele no combate a ficha rola 1d6 e recarrega com o valor mínimo ou mais. No fim do combate tudo volta pronto.</p>
+    {{#each npcFicha.recargas}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.recargas.{{this.id}}.nome" value="{{this.nome}}" placeholder="Canhão de Rebites" aria-label="Ação" />
+      <label class="epm-mini"><span>recarga</span><input type="number" min="2" max="6" name="flags.epm-ficha.npc.recargas.{{this.id}}.min" value="{{this.min}}" />–6</label>
+      <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.npc.recargas.{{this.id}}.pronta" {{#if pronta}}checked{{/if}} /> pronta</label>
+      <button type="button" class="epm-botao epm-botao-mini" data-action="npcRecarga" data-id="{{this.id}}" {{#unless pronta}}disabled{{/unless}}>Usar</button>
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="recargas" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <h4 class="epm-npc-sub">Lacaios <button type="button" class="epm-link" data-action="npcNovo" data-lista="lacaios"><i class="fa-solid fa-plus" aria-hidden="true"></i> Lacaio</button></h4>
+    {{#each npcFicha.lacaios}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.lacaios.{{this.id}}.nome" value="{{this.nome}}" placeholder="Drone de Reparo (Monstro ND 2)" aria-label="Lacaio" />
+      <input type="text" class="curto" name="flags.epm-ficha.npc.lacaios.{{this.id}}.qtd" value="{{this.qtd}}" placeholder="1d4" aria-label="Quantidade" />
+      <input type="text" name="flags.epm-ficha.npc.lacaios.{{this.id}}.nota" value="{{this.nota}}" placeholder="Quando aparecem" aria-label="Nota" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="lacaios" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    {{#unless npcFicha.eChefe}}<p class="epm-dica">Limiar de Vida (ex.: Superaquecimento a 50%): marque "É chefe" com uma fase só no painel Chefe da aba Combate (regra opcional "Chefes com fases"). A Aura de Horror fica no mesmo lugar.</p>{{/unless}}
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.eChefe}}
+  <section class="epm-painel epm-npc-chefe">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-crown" aria-hidden="true"></i> Chefe</h3></header>
+    {{#if npcFicha.regraChefes}}
+    <p class="epm-dica">{{#if npcFicha.chefeAtivo}}As fases (limiar de Vida, efeitos e texto) e a Aura de Horror ficam na aba Combate.{{else}}Marque "É chefe" no painel Chefe da aba Combate para usar as fases.{{/if}}</p>
+    {{else}}
+    <p class="epm-aviso">As fases precisam da regra opcional "Chefes com fases" (Escudo do Mestre → Regras opcionais).</p>
+    {{/if}}
+    <div class="epm-npc-contadores">
+      <div class="epm-npc-contador">
+        <strong>Resistência Lendária</strong>
+        <span class="epm-npc-marcas">{{#each npcFicha.resistLendaria.marcas}}<i class="fa-{{#if cheio}}solid{{else}}regular{{/if}} fa-circle" aria-hidden="true"></i>{{/each}}</span>
+        <label class="epm-mini"><span>por dia</span><input type="number" min="0" max="10" name="flags.epm-ficha.npc.resistLendaria.max" value="{{npcFicha.resistLendaria.max}}" /></label>
+        <button type="button" class="epm-botao epm-botao-mini" data-action="npcContador" data-campo="resistLendaria" title="Falhou num teste: escolhe passar">Usar</button>
+        <button type="button" class="epm-link" data-action="npcZerar" data-campo="resistLendaria">Recarregar</button>
+      </div>
+      <div class="epm-npc-contador">
+        <strong>Míticas</strong><span class="epm-npc-valor">{{npcFicha.miticas}}</span>
+        <button type="button" class="epm-seta" data-action="npcAcaoEspecial" data-acao="mitica" data-delta="-1" aria-label="Menos uma"><i class="fa-solid fa-minus"></i></button>
+        <button type="button" class="epm-seta" data-action="npcAcaoEspecial" data-acao="mitica" data-delta="1" aria-label="Mais uma"><i class="fa-solid fa-plus"></i></button>
+        <strong>Arcaicas</strong><span class="epm-npc-valor">{{npcFicha.arcaicas}}</span>
+        <button type="button" class="epm-seta" data-action="npcAcaoEspecial" data-acao="arcaica" data-delta="-1" aria-label="Menos uma"><i class="fa-solid fa-minus"></i></button>
+        <button type="button" class="epm-seta" data-action="npcAcaoEspecial" data-acao="arcaica" data-delta="1" aria-label="Mais uma"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
+    <p class="epm-dica">Resistência Lendária volta no descanso longo. Lendárias, Míticas e Arcaicas são marcadas em Combate → Ações; as fases podem dar mais.</p>
+
+    <h4 class="epm-npc-sub">Ações de Covil
+      <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.npc.covil.ativo" {{#if npcFicha.covil.ativo}}checked{{/if}} /> rolar sozinho a cada rodada</label>
+      <button type="button" class="epm-link" data-action="npcNovo" data-lista="covil.entradas"><i class="fa-solid fa-plus" aria-hidden="true"></i> Entrada</button>
+      <button type="button" class="epm-link" data-action="npcCovil"><i class="fa-solid fa-dice" aria-hidden="true"></i> Rolar</button></h4>
+    {{#each npcFicha.covil.entradas}}
+    <div class="epm-npc-linha">
+      <span class="epm-npc-num">{{this.n}}</span>
+      <input type="text" name="flags.epm-ficha.npc.covil.entradas.{{this.id}}.texto" value="{{this.texto}}" placeholder="Pilares desabam: área de 6 m, Acrobacia DT 18 ou 4d10 Contundente e Caído." aria-label="Ação de Covil" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="covil.entradas" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+
+    <h4 class="epm-npc-sub">Vitória alternativa</h4>
+    <div class="epm-linha-campos">
+      <label class="epm-campo"><span>Como vencer sem zerar a Vida</span><input type="text" name="flags.epm-ficha.npc.vitoria.texto" value="{{npcFicha.vitoria.texto}}" placeholder="Selar o Núcleo: 3 sucessos de Arcanismo DT 25 antes de 3 falhas." /></label>
+      <label class="epm-campo curto"><span>Meta</span><input type="number" min="1" max="10" name="flags.epm-ficha.npc.vitoria.meta" value="{{npcFicha.vitoria.meta}}" /></label>
+    </div>
+    <div class="epm-npc-contadores">
+      <div class="epm-npc-contador"><strong>Sucessos</strong><span class="epm-npc-valor">{{npcFicha.vitoria.sucessos}} / {{npcFicha.vitoria.meta}}</span>
+        <button type="button" class="epm-seta" data-action="npcVitoria" data-campo="sucessos" data-delta="-1" aria-label="Menos um"><i class="fa-solid fa-minus"></i></button>
+        <button type="button" class="epm-seta" data-action="npcVitoria" data-campo="sucessos" data-delta="1" aria-label="Mais um"><i class="fa-solid fa-plus"></i></button></div>
+      <div class="epm-npc-contador"><strong>Falhas</strong><span class="epm-npc-valor">{{npcFicha.vitoria.falhas}} / {{npcFicha.vitoria.meta}}</span>
+        <button type="button" class="epm-seta" data-action="npcVitoria" data-campo="falhas" data-delta="-1" aria-label="Menos uma"><i class="fa-solid fa-minus"></i></button>
+        <button type="button" class="epm-seta" data-action="npcVitoria" data-campo="falhas" data-delta="1" aria-label="Mais uma"><i class="fa-solid fa-plus"></i></button></div>
+    </div>
+
+    <label class="epm-campo"><span>Recompensas</span><textarea name="flags.epm-ficha.npc.recompensas" rows="2" placeholder="Feito e título, item lendário, bênção para quem der o golpe final…">{{npcFicha.recompensas}}</textarea></label>
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.eCriatura}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-book-open" aria-hidden="true"></i> Conhecimento</h3>
+      <button type="button" class="epm-link" data-action="npcNovo" data-lista="conhecimento.niveis"><i class="fa-solid fa-plus" aria-hidden="true"></i> DT</button>
+      <button type="button" class="epm-botao epm-botao-mini" data-action="npcRevelar"><i class="fa-solid fa-eye" aria-hidden="true"></i> Revelar</button></header>
+    <label class="epm-campo curto"><span>Perícia</span><input type="text" name="flags.epm-ficha.npc.conhecimento.pericia" value="{{npcFicha.conhecimento.pericia}}" /></label>
+    <p class="epm-dica">"Revelar" pede o total do teste e manda para o chat o que foi descoberto até aquela DT.</p>
+    {{#each npcFicha.conhecimento.niveis}}
+    <div class="epm-npc-linha">
+      <label class="epm-mini"><span>DT</span><input type="number" min="1" name="flags.epm-ficha.npc.conhecimento.niveis.{{this.id}}.dt" value="{{this.dt}}" /></label>
+      <input type="text" name="flags.epm-ficha.npc.conhecimento.niveis.{{this.id}}.revela" value="{{this.revela}}" placeholder="O que esse resultado revela" aria-label="Revela" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="conhecimento.niveis" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if npcFicha.comLoot}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i> Loot e materiais</h3>
+      <button type="button" class="epm-link" data-action="npcNovo" data-lista="loot"><i class="fa-solid fa-plus" aria-hidden="true"></i> Item</button>
+      <button type="button" class="epm-botao epm-botao-mini" data-action="npcSaquear"><i class="fa-solid fa-dice" aria-hidden="true"></i> Saquear</button></header>
+    <label class="epm-campo curto"><span>Moedas</span><input type="text" name="flags.epm-ficha.npc.moedasLoot" value="{{npcFicha.moedasLoot}}" placeholder="2d6 PP" /></label>
+    {{#each npcFicha.loot}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.loot.{{this.id}}.nome" value="{{this.nome}}" placeholder="Glândula de Brasa" aria-label="Item" />
+      <label class="epm-mini"><span>qtd.</span><input type="text" name="flags.epm-ficha.npc.loot.{{this.id}}.qtd" value="{{this.qtd}}" /></label>
+      <label class="epm-mini"><span>chance %</span><input type="number" min="0" max="100" name="flags.epm-ficha.npc.loot.{{this.id}}.chance" value="{{this.chance}}" /></label>
+      <input type="text" name="flags.epm-ficha.npc.loot.{{this.id}}.uso" value="{{this.uso}}" placeholder="Uso sugerido" aria-label="Uso" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="loot" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <p class="epm-dica">"Saquear" rola a chance e a quantidade de cada item e as moedas e manda o resultado para o chat.</p>
+  </section>
+  {{/if}}
+
+  <section class="epm-painel epm-npc-notas">
+    <header class="epm-painel-titulo"><h3><i class="fa-solid fa-lock" aria-hidden="true"></i> Notas do Mestre</h3></header>
+    <div class="epm-npc-grade">
+      <label class="epm-campo"><span>{{#if npcFicha.eCriatura}}Motivação{{else}}Agenda{{/if}}</span><textarea rows="2" name="flags.epm-ficha.npc.notas.agenda">{{npcFicha.notas.agenda}}</textarea></label>
+      <label class="epm-campo"><span>Segredo</span><textarea rows="2" name="flags.epm-ficha.npc.notas.segredo">{{npcFicha.notas.segredo}}</textarea></label>
+      <label class="epm-campo"><span>Ganchos</span><textarea rows="2" name="flags.epm-ficha.npc.notas.ganchos">{{npcFicha.notas.ganchos}}</textarea></label>
+      <label class="epm-campo"><span>Se morrer / se fugir</span><textarea rows="2" name="flags.epm-ficha.npc.notas.seMorrer">{{npcFicha.notas.seMorrer}}</textarea></label>
+    </div>
+  </section>
+{{/if}}
+</section>

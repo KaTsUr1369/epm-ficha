@@ -14,6 +14,17 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.10
+
+- **Tipos de ficha de NPC**: fichas de NPC (atores "npc") ganham a aba **Mestre** (só o Mestre vê) com o tipo de ficha: **NPC Importante**, **NPC Comum**, **Monstro**, **Monstro Forte** e **Chefe**. Cada tipo mostra só as abas que fazem sentido (dá para mostrar ou esconder cada uma em Personalizar).
+- **Todos**: ND com os PEv ao derrotar (5 × ND), Vida por fórmula com "Rolar Vida" (na ficha ou um valor diferente para cada token selecionado) e Notas do Mestre (agenda, segredo, ganchos, se morrer).
+- **NPC Importante**: Serviços (treinos, loja, serviços com preço), função, disposição e interpretação rápida.
+- **NPC Comum**: interpretação em três linhas (jeito, o que quer, o que sabe), moral e loot.
+- **Monstro**: categoria, tamanho, habitat, deslocamentos, RD, imunidade a condições, sentidos e tática; **Conhecimento** por DT ("Revelar" pede o total do teste e manda o que foi descoberto para o chat); **Loot e materiais** com chance e quantidade ("Saquear" rola tudo).
+- **Moral**: quando a Vida passa do limite (padrão 25%), cartão só para o Mestre: foge (aplica Fugindo), rende-se ou continua lutando. Uma vez por combate.
+- **Monstro Forte**: Tenacidade (recusa condições, volta no fim do combate), Ações Lendárias por rodada, **Recargas 5–6** (roladas sozinhas no começo do turno dele no combate) e lacaios.
+- **Chefe**: liga as fases da regra "Chefes com fases" sozinho, Resistência Lendária (volta no descanso longo), Míticas e Arcaicas, **Ações de Covil** com tabela (rolagem sozinha a cada rodada, se ligada), **vitória alternativa** com sucessos e falhas, e recompensas.
+
 ## Novidades da 0.8.9
 
 - **Hydrakariel 100% automático**: botão de ligar/desligar a passiva (regeneração, resistências e reações), Corpo adaptável (resistência ao tipo de dano sofrido até o seu próximo turno, menos Arcaico), Sobrevivência da Hidra (fica com 1 PV e rola 15d12 Venenoso, 1× por combate), Regeneração de Cabeças (golpe de 100+ pede a escolha), Devoradora (pergunta o dano e cura ¼ até 50), Veneno Primordial (30 por turno no alvo por 3 turnos), Corrosão (−5 de CA no alvo por 2 turnos), Guardiã (barreira de 150 até o seu turno), Renascimento (metade da Vida e encerra condições negativas). Quem já tinha o cajado recebe a versão nova sozinho.

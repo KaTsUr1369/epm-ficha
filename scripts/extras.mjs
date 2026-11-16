@@ -905,6 +905,10 @@ export async function resistirDoCartao(defensor, { pericia, dt, rotulo = "" }) {
 export async function cliqueChatExtra(acao, actor, botao) {
   const { cliqueChatNovas } = await import("./novas.mjs");
   if (await cliqueChatNovas(acao, actor, botao)) return true;
+  if (String(acao).startsWith("npc")) {
+    const { cliqueChatNpc } = await import("./tipos-npc.mjs");
+    if (await cliqueChatNpc(acao, botao)) return true;
+  }
   if (["votar", "encerrarEnquete", "sanidadeCartao", "condicaoAlvo"].includes(acao)) {
     const { cliqueChat060 } = await import("./mundo.mjs");
     if (await cliqueChat060(acao, actor, botao)) return true;

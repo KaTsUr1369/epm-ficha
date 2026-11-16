@@ -35,6 +35,7 @@ import * as Vinc from "./vinculos.mjs";
 import * as Oficina from "./oficina.mjs";
 import * as Opc from "./opcionais-acoes.mjs";
 import * as Sel from "./selecao.mjs";
+import * as Npc from "./tipos-npc.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -83,7 +84,10 @@ const ACOES_FICHA = [
   "gatilhoTrauma", "darTrauma", "apagarTrauma", "criarTecnica", "aprovarTecnica", "apagarFeito",
   "alternarChefe", "novaFaseChefe", "apagarFaseChefe", "zerarVistosAura",
   "novaCriacao", "trabalharCriacao", "testarCriacao", "apagarCriacao", "removerMaterial", "tirarModeloCriacao",
-  "consertarItem", "purificarMaldicao", "transferirMaldicao"
+  "consertarItem", "purificarMaldicao", "transferirMaldicao",
+  // 0.8.10: tipos de ficha de NPC
+  "npcTipo", "npcNovo", "npcApagar", "npcRolarVida", "npcRolarVidaTokens", "npcSaquear", "npcRevelar",
+  "npcContador", "npcZerar", "npcRecarga", "npcRolarRecargas", "npcCovil", "npcVitoria", "npcAcaoEspecial"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -158,6 +162,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     header: { template: `${CAMINHO}/actor/header.hbs` },
     nav: { template: `${CAMINHO}/actor/nav.hbs` },
     principal: { template: `${CAMINHO}/actor/principal.hbs`, scrollable: [""] },
+    npc: { template: `${CAMINHO}/actor/npc.hbs`, scrollable: [""] },
     combate: { template: `${CAMINHO}/actor/combate.hbs`, scrollable: [""] },
     inventario: { template: `${CAMINHO}/actor/inventario.hbs`, scrollable: [""] },
     habilidades: { template: `${CAMINHO}/actor/habilidades.hbs`, scrollable: [""] },
@@ -1576,6 +1581,26 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return this.actor.update({ [`${P}.feitos.-=${alvo.dataset.feito}`]: null });
   }
   acaoAlternarChefe() { return Opc.alternarChefe(this.actor); }
+  /* 0.8.10: tipos de ficha de NPC (só o Mestre) */
+  acaoNpcTipo(ev, alvo) { if (game.user.isGM) return Npc.aplicarTipo(this.actor, alvo.dataset.tipo); }
+  acaoNpcNovo(ev, alvo) { if (game.user.isGM) return Npc.novoNaLista(this.actor, alvo.dataset.lista); }
+  acaoNpcApagar(ev, alvo) { if (game.user.isGM) return Npc.apagarDaLista(this.actor, alvo.dataset.lista, alvo.dataset.id); }
+  acaoNpcRolarVida() { return Npc.rolarVida(this.actor); }
+  acaoNpcRolarVidaTokens() { return Npc.rolarVida(this.actor, { tokens: true }); }
+  acaoNpcSaquear() { return Npc.saquear(this.actor); }
+  acaoNpcRevelar() { return Npc.revelarConhecimento(this.actor); }
+  acaoNpcContador(ev, alvo) { return Npc.usarContador(this.actor, alvo.dataset.campo); }
+  acaoNpcZerar(ev, alvo) { return Npc.zerarContador(this.actor, alvo.dataset.campo); }
+  acaoNpcRecarga(ev, alvo) { return Npc.usarRecarga(this.actor, alvo.dataset.id); }
+  acaoNpcRolarRecargas() { return Npc.rolarRecargas(this.actor); }
+  acaoNpcCovil() { return Npc.rolarCovil(this.actor); }
+  acaoNpcVitoria(ev, alvo) { return Npc.marcarVitoria(this.actor, alvo.dataset.campo, int(alvo.dataset.delta, 1)); }
+  acaoNpcAcaoEspecial(ev, alvo) {
+    const id = alvo.dataset.acao;
+    if (!["lendaria", "mitica", "arcaica"].includes(id) || !game.user.isGM) return;
+    const max = Math.max(0, int(this.actor.flags?.[FLAG]?.acoes?.[id]?.max) + int(alvo.dataset.delta));
+    return this.actor.update({ [`${P}.acoes.${id}.max`]: max, [`${P}.acoes.${id}.value`]: max });
+  }
   acaoNovaFaseChefe() { return Opc.novaFaseChefe(this.actor); }
   acaoApagarFaseChefe(ev, alvo) { return Opc.apagarFaseChefe(this.actor, alvo.dataset.fase); }
   acaoZerarVistosAura() { return this.actor.update({ [`${P}.aura.vistos`]: [] }); }
@@ -2125,7 +2150,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (!aba || aba.id === "principal" || aba.soEdicao) return;
     const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
     if (aba.opcional) return this.actor.update({ [`${P}.personalizacao.abasExtras.${id}`]: !pers.abasExtras?.[id] });
-    return this.actor.update({ [`${P}.personalizacao.abasOcultas.${id}`]: !pers.abasOcultas?.[id] });
+    return this.actor.update({ [`${P}.personalizacao.abasOcultas.${id}`]: !Npc.abaOcultaNpc(this.actor, this.actor.flags?.[FLAG] ?? {}, id) });
   }
 
   async acaoFavoritarPericia(ev, alvo) {

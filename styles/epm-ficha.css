@@ -3230,3 +3230,23 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 /* Treinos com escolha (Aura de Proteção: RD ou CA) */
 .epm-escolha-treino { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
 .application.epm .epm-escolha-treino .epm-botao { width: auto; flex: 0 0 auto; padding: 2px 10px; }
+
+/* -------------------------------------------- */
+/*  0.8.10: tipos de ficha de NPC (aba Mestre)   */
+/* -------------------------------------------- */
+.epm-npc-aba { display: flex; flex-direction: column; gap: 10px; }
+.epm-npc-aba .epm-painel { display: flex; flex-direction: column; gap: 6px; }
+.epm-npc-tipos { display: flex; flex-wrap: wrap; gap: 6px; }
+.epm-npc-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 10px; align-items: end; }
+.epm-npc-valor { font-size: 15px; font-weight: 700; color: var(--epm-latao, #C9A35A); padding: 2px 4px; }
+.epm-npc-vida { align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.epm-npc-vida .epm-campo { flex: 1 1 160px; }
+.epm-npc-linha { display: flex; align-items: center; gap: 6px; }
+.epm-npc-linha > input[type="text"] { flex: 1 1 auto; min-width: 0; }
+.epm-npc-linha > input.curto { flex: 0 0 80px; }
+.epm-npc-num { flex: 0 0 22px; text-align: center; font-weight: 700; color: var(--epm-suave); }
+.epm-npc-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0 2px; font-size: 13px; }
+.epm-npc-contadores { display: flex; flex-wrap: wrap; gap: 8px; }
+.epm-npc-contador { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 6px 8px; border: 1px solid var(--epm-linha); border-radius: 6px; }
+.epm-npc-marcas { display: inline-flex; gap: 3px; color: #E58A2A; }
+.epm-npc-notas { border-style: dashed; }

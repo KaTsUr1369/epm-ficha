@@ -1312,6 +1312,7 @@ export async function descanso(actor, tipo) {
   if (!longo && ficha.recuperacao.semDescansoCurto.length) {
     return ui.notifications.warn(`Sem descanso curto: ${ficha.recuperacao.semDescansoCurto.join(", ")}.`);
   }
+  if (longo && actor?.type === "npc") import("./tipos-npc.mjs").then(m => m.descansoNpc(actor, "longo")).catch(err => console.warn("EPM | descanso (NPC)", err));
   const metadeCurto = !longo ? ficha.recuperacao.descansoCurtoMetade : [];
   const linha = (nome, r, marcado) => {
     const bloqueio = r.semRecuperar.length ? ` <em class="epm-dica">(não recupera: ${escapar(r.semRecuperar.join(", "))})</em>` : "";

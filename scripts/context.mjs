@@ -31,6 +31,7 @@ const estadoMorteAtor = actor => { try { const e = estadoMorteBase(actor); retur
 import { conteudoNotion } from "./settings.mjs";
 import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
+import { contextoNpc, abaOcultaNpc, eAtorNpc } from "./tipos-npc.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
 import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse, escolhasTreinoAtivas, especialDoTreino, armaSintonizada } from "./ficha-extras.mjs";
@@ -775,12 +776,13 @@ export function montarContexto({
   const isGM = !!usuario.isGM;
   const ordemAbas = ordenarPorLista(ABAS.map(a => a.id), dados.ui?.ordemAbas);
   const abasExtras = dados.personalizacao?.abasExtras ?? {};
-  const abasOcultas = dados.personalizacao?.abasOcultas ?? {};
   const temConteudo = chave => Object.values(dados[chave] ?? {}).some(Boolean);
-  const podeOcultar = a => a.id !== "principal" && !a.soEdicao && !a.opcional;
-  const abaLigada = a => (a.opcional ? !!abasExtras[a.id] : !(podeOcultar(a) && abasOcultas[a.id]));
+  const podeOcultar = a => a.id !== "principal" && !a.soEdicao && !a.opcional && !a.soNpc;
+  const brutoFlags = actor?.flags?.[FLAG] ?? {};
+  const abaLigada = a => (a.opcional ? !!abasExtras[a.id] : !(podeOcultar(a) && abaOcultaNpc(actor, brutoFlags, a.id)));
+  const abaPermitida = a => !a.soNpc || (eAtorNpc(actor) && isGM);
   const abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id))
-    .filter(a => a && (!a.soEdicao || edicao) && abaLigada(a) && (!a.seConteudo || edicao || temConteudo(a.seConteudo)))
+    .filter(a => a && abaPermitida(a) && (!a.soEdicao || edicao) && abaLigada(a) && (!a.seConteudo || edicao || temConteudo(a.seConteudo)))
     .map(a => ({ ...a, soEdicao: a.soEdicao || (!!a.seConteudo && !temConteudo(a.seConteudo)) }));
   let abaAtual = ui.limitado ? "sobre" : (ui.abas?.primary ?? "principal");
   if (!abasVisiveis.some(a => a.id === abaAtual)) abaAtual = ui.limitado ? "sobre" : "principal";
@@ -800,6 +802,12 @@ export function montarContexto({
     arquetiposSugeridos: ARQUETIPOS_SUGERIDOS
   };
 
+  /* ---------- 0.8.10: tipo de ficha do NPC (aba do Mestre) ---------- */
+  try {
+    ctx.npcFicha = contextoNpc({ actor, bruto: brutoFlags, isGM, abaOculta: id => abaOcultaNpc(actor, brutoFlags, id) });
+    if (ctx.npcFicha) ctx.npcFicha.regraChefes = !!regrasLigadas()?.chefes;
+  } catch (err) { console.warn("EPM | ficha do NPC", err); ctx.npcFicha = null; }
+
   /* ---------- Personalização (cor da ficha) ---------- */
   const cor = normalizarHex(dados.personalizacao?.cor, COR_PADRAO);
   const brilho = limitar(int(dados.personalizacao?.brilho, BRILHO_PADRAO), 0, 100);
@@ -810,7 +818,7 @@ export function montarContexto({
     marcadorX: arredondar(50 + Math.cos((pos.angulo - 90) * Math.PI / 180) * pos.raio * 50, 2),
     marcadorY: arredondar(50 + Math.sin((pos.angulo - 90) * Math.PI / 180) * pos.raio * 50, 2),
     prontas: CORES_PRONTAS.map(c => ({ ...c, ativa: normalizarHex(c.cor) === cor })),
-    abas: ordemAbas.map((id, i, lista) => {
+    abas: ordemAbas.filter(id => abaPermitida(ABAS.find(x => x.id === id) ?? {})).map((id, i, lista) => {
       const a = ABAS.find(x => x.id === id);
       return { id, label: a.titulo && a.opcional ? a.titulo : a.label, icone: a.icone, primeira: i === 0, ultima: i === lista.length - 1,
         opcional: !!a.opcional, ligada: abaLigada(a), alternavel: !!a.opcional || podeOcultar(a),

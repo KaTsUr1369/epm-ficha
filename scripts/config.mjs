@@ -472,6 +472,7 @@ export const OPCOES_REVELAR = [
 
 export const ABAS = [
   { id: "principal",   label: "Principal",   icone: "fa-solid fa-user" },
+  { id: "npc",         label: "Mestre",      titulo: "Ficha do Mestre: tipo de NPC, ND, comportamento, loot, elite e chefe", icone: "fa-solid fa-mask", soNpc: true },
   { id: "combate",     label: "Combate",     icone: "fa-solid fa-crosshairs" },
   { id: "inventario",  label: "Inventário",  icone: "fa-solid fa-sack-dollar" },
   { id: "habilidades", label: "Habilidades", icone: "fa-solid fa-hand-sparkles" },

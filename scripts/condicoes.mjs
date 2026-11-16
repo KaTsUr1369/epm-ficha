@@ -85,9 +85,9 @@ const LISTA = [
   ["invisivel", "Invisível", "basicas", "Não pode ser visto sem meios especiais.", "Não pode ser visto sem meios especiais.", {}],
   ["voando", "Voando", "basicas", "Está no ar.", "Está no ar.", {}],
   // 0.6.0: efeitos da árvore elemental (Ar e Sombra); reaproveitam ícones parecidos
-  ["flutuando", "Flutuando", "elementos", "Erguido por correntes de ar.", "Fica no ar sem controle: deslocamento 0 até o fim do próximo turno e desvantagem em ataques corpo a corpo.", { deslocamentoMult: 0, avisos: ["Flutuando: desvantagem em ataques corpo a corpo"] }, "voando"],
+  ["flutuando", "Flutuando", "elementos", "A criatura saiu do chão.", "A criatura sai do chão; para se mover, gasta uma Ação Padrão.", { avisos: ["Flutuando: para se mover, gasta a Ação Padrão"] }, "voando"],
   ["bebado", "Bêbado", "basicas", "Sob efeito de bebida.", "Penalidades definidas pelo Mestre. Com o Estilo de Combate Bêbado, vira +5 Acerto, +2 Esquiva e +2 CA. Depois de 2 horas fica Exausto e Desequilibrado.", { avisos: ["Bêbado: depois de 2 horas, Exausto e Desequilibrado"] }, "confuso"],
-  ["assustado", "Assustado", "medo", "Sombras tomam a mente.", "Desvantagem no próximo teste ou ataque.", { avisos: ["Assustado: desvantagem no próximo teste ou ataque"] }, "medo-absoluto"],
+  ["assustado", "Assustado", "medo", "Sombras tomam a mente.", "Desvantagem no próximo Teste de Ataque. Termina depois desse ataque ou no fim do próximo turno da criatura.", { desvAtaques: true, avisos: ["Assustado: sai depois do próximo ataque"] }, "medo-absoluto"],
   ["concentrado", "Concentrado", "basicas", "Mantendo uma habilidade ou magia que exige concentração.", "Mantendo uma habilidade ou magia que exige concentração. Cada dano sofrido (mesmo na vida temporária) pede Vontade DT 15; se falhar, a concentração acaba.", {}],
   ["lesionado", "Lesionado", "basicas", "Machucado num treino.", "−2 nos testes de Força, Destreza e Constituição. Sai no próximo descanso longo.", { atributos: { forca: -2, destreza: -2, constituicao: -2 } }],
   ["recuperado", "Recuperado", "basicas", "Acabou de se livrar de um efeito forte.", "Imune à condição que acabou de sair (Atordoado, Paralisado ou Dominado) até o fim do próximo turno.", {}],
@@ -273,11 +273,11 @@ const LISTA = [
 
   /* ---------------- Elementos ---------------- */
   ["molhado", "Molhado", "elementos", "O corpo ou equipamento do personagem está completamente encharcado ou coberto por água.",
-    "Recebe o dobro de dano elétrico.", { vulneravel: ["Elétrico"] }],
+    "O próximo acerto de Relâmpago contra a criatura causa o dobro de dano, e o Molhado termina.", { vulneravel: ["Relâmpago"] }],
   ["eletrizado", "Eletrizado", "elementos", "O organismo está carregado de energia elétrica, causando interferência no funcionamento muscular e nervoso.",
     "Sofre −5 em testes de Destreza e não pode realizar Reações.", { atributos: { destreza: -5 }, bloqueiaAcoes: ["reacao"] }],
   ["aterramento", "Aterramento", "elementos", "O personagem está conectado a uma superfície que permite a dissipação segura de cargas elétricas.",
-    "Não recebe a vulnerabilidade elétrica de Molhado e impede que a eletricidade conduzida pelo seu corpo alcance outras criaturas.", { anulaVulnerabilidade: ["Elétrico"] }],
+    "Não recebe a vulnerabilidade elétrica de Molhado e impede que a eletricidade conduzida pelo seu corpo alcance outras criaturas.", { anulaVulnerabilidade: ["Relâmpago"] }],
   ["enregelado", "Enregelado", "elementos", "O corpo está sendo afetado por frio intenso, comprometendo sua mobilidade e funcionamento muscular.",
     "Fica Lento e sofre −5 em testes de Destreza.", { implica: ["epm-lento"], atributos: { destreza: -5 } }],
   ["congelado", "Congelado", "elementos", "O corpo foi completamente envolvido ou endurecido pelo gelo, impedindo seu funcionamento normal.",

@@ -492,6 +492,7 @@ export const ABAS = [
   { id: "condicoes",   label: "Condições",   icone: "fa-solid fa-heart-pulse" },
   { id: "bencaos",     label: "Bênçãos",     icone: "fa-solid fa-yin-yang" },
   { id: "relacoes",    label: "Relações",    icone: "fa-solid fa-people-arrows" },
+  { id: "almas",       label: "Almas",       titulo: "Ressonância de Alma: almas registradas, Conversa, Troca de lugar, Ritual do Vazio e Guardião", icone: "fa-solid fa-ghost", almas: true },
   { id: "companheiros", label: "Companheiros", icone: "fa-solid fa-paw", seConteudo: "companheiros" },
   { id: "bestiario",   label: "Bestiário",   icone: "fa-solid fa-dragon" },
   { id: "producao",    label: "Produção",    titulo: "Produção: forja, alquimia, rituais e encantamento", icone: "fa-solid fa-hammer", seConteudo: "receitas" },
@@ -609,42 +610,46 @@ export const CORES_NO = ["#2B4440", "#3A3355", "#4A2F33", "#4A4128", "#26404F", 
  * Tipos de dano do RPG (20 + Corrupção), em grupos. "aliases" são nomes antigos ou alternativos
  * que continuam valendo nas fichas (ex.: uma resistência a "Corte" vale para dano Cortante).
  */
+/** Naturezas do dano (página "Tipos de Danos" do Notion). Nos efeitos dá para escolher a natureza inteira ("dano natural"). */
 export const GRUPOS_DANO = {
-  fisicos: "Físicos", elementais: "Elementais", misticos: "Energéticos e místicos", mentais: "Mentais", biologicos: "Biológicos",
-  regionais: "Regionais (Notion)"
+  fisicos: "Físico", naturais: "Natural", magicos: "Mágico", tecnologicos: "Tecnológico"
 };
 export const TIPOS_DANO = [
   { id: "contundente", label: "Contundente", grupo: "fisicos", aliases: ["impacto", "concussao", "esmagamento", "contusao"], desc: "Impactos, golpes, esmagamentos e colisões." },
   { id: "cortante", label: "Cortante", grupo: "fisicos", aliases: ["corte"], desc: "Lâminas, garras e objetos capazes de cortar." },
   { id: "perfurante", label: "Perfurante", grupo: "fisicos", aliases: ["perfuracao"], desc: "Ataques que atravessam ou perfuram o alvo." },
-  { id: "fogo", label: "Fogo", grupo: "elementais", aliases: [], desc: "Chamas, combustão e calor extremo." },
-  { id: "agua", label: "Água", grupo: "elementais", aliases: [], desc: "Jatos, ondas e impactos de água." },
-  { id: "ar", label: "Ar", grupo: "elementais", aliases: ["vento"], desc: "Correntes de vento, rajadas e lâminas de ar." },
-  { id: "terra", label: "Terra", grupo: "elementais", aliases: [], desc: "Rochas, minerais, areia e movimentos do solo." },
-  { id: "gelo", label: "Gelo", grupo: "elementais", aliases: ["frio"], desc: "Congelamento, cristais de gelo e temperaturas extremamente baixas." },
-  { id: "raio", label: "Raio", grupo: "elementais", aliases: ["eletrico", "eletricidade", "relampago"], desc: "Descargas elétricas e fenômenos eletromagnéticos." },
-  { id: "acido", label: "Ácido", grupo: "elementais", aliases: [], desc: "Substâncias corrosivas que deterioram materiais e tecidos." },
-  { id: "sonoro", label: "Sonoro", grupo: "elementais", aliases: ["trovao", "som", "trovejante"], desc: "Ondas sonoras, vibrações e frequências destrutivas." },
-  { id: "forca", label: "Força", grupo: "misticos", aliases: ["magico"], desc: "Energia mágica concentrada, impactos arcanos e energia pura." },
-  { id: "radiante", label: "Radiante", grupo: "misticos", aliases: ["sagrado", "radiante (sagrado)"], desc: "Energia divina, santidade e poderes sagrados." },
-  { id: "luz", label: "Luz", grupo: "misticos", aliases: [], desc: "Energia luminosa concentrada, feixes de luz e radiação luminosa." },
-  { id: "necrotico", label: "Necrótico", grupo: "misticos", aliases: [], desc: "Morte, decomposição, corrupção e drenagem de energia vital." },
-  { id: "sombra", label: "Sombra", grupo: "misticos", aliases: ["trevas", "escuridao", "obscuro"], desc: "Trevas, escuridão sobrenatural e energias sombrias." },
-  { id: "espiritual", label: "Espiritual", grupo: "misticos", aliases: ["alma"], desc: "Afeta diretamente a alma e a essência espiritual de um ser." },
-  { id: "temporal", label: "Temporal", grupo: "misticos", aliases: ["tempo"], desc: "Manipulação do tempo, envelhecimento acelerado e distorções temporais." },
-  { id: "corrupcao", label: "Corrupção", grupo: "misticos", aliases: [], desc: "Corrupção. Não tem níveis." },
-  { id: "psiquico", label: "Psíquico", grupo: "mentais", aliases: ["mental"], desc: "Ataques mentais, manipulação da mente e destruição cognitiva." },
-  { id: "venenoso", label: "Venenoso", grupo: "biologicos", aliases: ["veneno", "venoso"], desc: "Toxinas e venenos que prejudicam o organismo." },
-  // Não oficiais (Notion): só aparecem no seletor quando o Mestre liga "Tipos de dano do Notion" no Escudo.
-  { id: "queda", label: "Queda", grupo: "fisicos", aliases: [], extra: true, desc: "Dano de queda (Notion)." },
-  { id: "balistico", label: "Balístico", grupo: "regionais", aliases: ["balistica"], extra: true, desc: "Projéteis de armas de fogo (Briavoterna)." },
-  { id: "explosivo", label: "Explosivo", grupo: "regionais", aliases: ["explosao"], extra: true, desc: "Explosões e estilhaços (granadas, foguetes)." },
-  { id: "energiaCortante", label: "Energia cortante", grupo: "regionais", aliases: ["energia (cortante)"], extra: true, desc: "Lâminas de energia (Genesis)." },
-  { id: "energiaBalistica", label: "Energia balística", grupo: "regionais", aliases: ["energia (balistica)"], extra: true, desc: "Disparos de energia (Genesis)." },
-  { id: "energiaExplosiva", label: "Energia explosiva", grupo: "regionais", aliases: ["energia (explosiva)"], extra: true, desc: "Explosões de energia (Genesis)." },
-  { id: "energiaPerfurante", label: "Energia perfurante", grupo: "regionais", aliases: ["energia (perfurante)"], extra: true, desc: "Feixes perfurantes de energia (Genesis)." },
-  { id: "sangue", label: "Sangue", grupo: "regionais", aliases: [], extra: true, desc: "Armas e magias feitas do próprio sangue (Atirador Arcano)." }
+  { id: "fogo", label: "Fogo", grupo: "naturais", aliases: [], desc: "Chamas, combustão e calor extremo." },
+  { id: "gelo", label: "Frio", grupo: "naturais", aliases: ["gelo", "gelido", "congelante"], desc: "Congelamento, cristais de gelo e temperaturas extremamente baixas." },
+  { id: "raio", label: "Relâmpago", grupo: "naturais", aliases: ["raio", "eletrico", "eletricidade", "relampago"], desc: "Descargas elétricas e fenômenos eletromagnéticos." },
+  { id: "acido", label: "Ácido", grupo: "naturais", aliases: [], desc: "Substâncias corrosivas que deterioram materiais e tecidos." },
+  { id: "sonoro", label: "Sonoro", grupo: "naturais", aliases: ["trovao", "som", "trovejante"], desc: "Ondas sonoras, vibrações e frequências destrutivas." },
+  { id: "venenoso", label: "Venenoso", grupo: "naturais", aliases: ["veneno", "venoso"], desc: "Toxinas e venenos que prejudicam o organismo." },
+  { id: "agua", label: "Água", grupo: "naturais", aliases: [], desc: "Jatos, ondas e impactos de água." },
+  { id: "ar", label: "Ar", grupo: "naturais", aliases: ["vento"], desc: "Correntes de vento, rajadas e lâminas de ar." },
+  { id: "terra", label: "Terra", grupo: "naturais", aliases: [], desc: "Rochas, minerais, areia e movimentos do solo." },
+  { id: "forca", label: "Força", grupo: "magicos", aliases: ["pressao", "gravidade", "arcano"], desc: "Energia mágica concentrada, impactos arcanos, pressão e gravidade." },
+  { id: "radiante", label: "Radiante", grupo: "magicos", aliases: ["sagrado", "radiante (sagrado)", "luz"], desc: "Energia divina, luz concentrada e poderes sagrados." },
+  { id: "necrotico", label: "Necrótico", grupo: "magicos", aliases: ["sangue"], desc: "Morte, decomposição, sangue, corrupção e drenagem de energia vital." },
+  { id: "psiquico", label: "Psíquico", grupo: "magicos", aliases: ["mental"], desc: "Ataques mentais, manipulação da mente e destruição cognitiva." },
+  { id: "sombra", label: "Sombra", grupo: "magicos", aliases: ["trevas", "escuridao", "obscuro"], desc: "Trevas, escuridão sobrenatural e energias sombrias." },
+  // Fora da lista do Notion, mantidos porque já aparecem em habilidades e itens
+  { id: "espiritual", label: "Espiritual", grupo: "magicos", aliases: ["alma"], desc: "Afeta diretamente a alma e a essência espiritual de um ser." },
+  { id: "temporal", label: "Temporal", grupo: "magicos", aliases: ["tempo"], desc: "Manipulação do tempo, envelhecimento acelerado e distorções temporais." },
+  { id: "corrupcao", label: "Corrupção", grupo: "magicos", aliases: [], desc: "Corrupção. Não tem níveis." },
+  { id: "balistico", label: "Balístico", grupo: "tecnologicos", aliases: ["balistica"], desc: "Projéteis de armas de fogo (Briavoterna)." },
+  { id: "explosivo", label: "Explosivo", grupo: "tecnologicos", aliases: ["explosao"], desc: "Explosões e estilhaços (granadas, foguetes)." },
+  { id: "energiaCortante", label: "Energia cortante", grupo: "tecnologicos", aliases: ["energia (cortante)"], desc: "Lâminas de energia (Genesis)." },
+  { id: "energiaBalistica", label: "Energia balística", grupo: "tecnologicos", aliases: ["energia (balistica)"], desc: "Disparos de energia (Genesis)." },
+  { id: "energiaExplosiva", label: "Energia explosiva", grupo: "tecnologicos", aliases: ["energia (explosiva)"], desc: "Explosões de energia (Genesis)." },
+  { id: "energiaPerfurante", label: "Energia perfurante", grupo: "tecnologicos", aliases: ["energia (perfurante)"], desc: "Feixes perfurantes de energia (Genesis)." },
+  // Não oficial (Notion): só aparece no seletor quando o Mestre liga "Tipos de dano do Notion" no Escudo.
+  { id: "queda", label: "Queda", grupo: "fisicos", aliases: [], extra: true, desc: "Dano de queda (Notion)." }
 ];
+/** Nomes antigos que viram os novos (migração de fichas e itens). */
+export const TIPOS_DANO_ANTIGOS = {
+  "Elétrico": "Relâmpago", "Eletrico": "Relâmpago", "Raio": "Relâmpago", "Gélido": "Frio", "Gelo": "Frio", "Trovejante": "Sonoro", "Som": "Sonoro",
+  "Pressão": "Força", "Gravidade": "Força", "Arcano": "Força", "Sangue": "Necrótico", "Luz": "Radiante"
+};
 
 /**
  * Níveis de dano (hierarquia). Resistência, imunidade e RD têm um nível (padrão Natural) e só valem
@@ -710,9 +715,9 @@ export const TIPOS_SEM_NIVEL = ["corrupcao"];
 
 /** Sugestões dos campos de tipo de dano: os tipos e os grupos (o nível é escolhido nos botões do seletor). */
 export const SUGESTOES = {
-  dano: [...TIPOS_DANO.filter(t => !t.extra).map(t => t.label), ...Object.entries(GRUPOS_DANO).filter(([id]) => id !== "regionais").map(([, l]) => l)],
+  dano: [...TIPOS_DANO.filter(t => !t.extra).map(t => t.label), ...Object.values(GRUPOS_DANO).map(l => `Dano ${l.toLowerCase()}`)],
   /** Tipos do Notion (não oficiais): entram nas sugestões quando o Mestre liga no Escudo. */
-  danoExtra: [...TIPOS_DANO.filter(t => t.extra).map(t => t.label), GRUPOS_DANO.regionais]
+  danoExtra: TIPOS_DANO.filter(t => t.extra).map(t => t.label)
 };
 
 /** Tipos de arma sugeridos (Arma Favorita do Combatente vale para um tipo). Dá para escrever outro. */

@@ -76,7 +76,7 @@ export function contextoNpc({ actor, bruto = {}, isGM = false, abaOculta = () =>
     funcao: n.funcao ?? "", disposicao: n.disposicao ?? "", categoria: n.categoria ?? "", tamanho: n.tamanho ?? "", habitat: n.habitat ?? "",
     disposicoes: DISPOSICOES.map(d => ({ v: d, sel: d === n.disposicao })),
     tamanhos: TAMANHOS.map(d => ({ v: d, sel: d === n.tamanho })),
-    vidaFormula: n.vidaFormula ?? "",
+    vidaFormula: n.vidaFormula ?? "", referencia: n.referencia?.nivel ? n.referencia : null,
     interp: { jeito: n.interp?.jeito ?? "", quer: n.interp?.quer ?? "", sabe: n.interp?.sabe ?? "" },
     moral: { pct: Math.max(0, Math.min(99, int(n.moral?.pct, tipo === "chefe" ? 0 : 25))), texto: n.moral?.texto ?? "", avisado: !!n.moral?.avisado },
     defesas: {

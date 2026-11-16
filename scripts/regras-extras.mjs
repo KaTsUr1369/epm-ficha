@@ -88,7 +88,7 @@ export const tetoAtributo = nivelArquetipo => degrau(TETO_ATRIBUTO, Math.max(1, 
 
 /** inicial e dado por nível acima do 1º (média entre parênteses no Notion). */
 export const RECURSOS_ARQUETIPO = {
-  combatente: { pv: { inicial: 20, dado: "1d10", media: 6 }, pe: { inicial: 16, dado: "1d8", media: 5 }, pm: { inicial: 12, dado: "1d6", media: 4 } },
+  combatente: { pv: { inicial: 26, dado: "1d10", media: 6 }, pe: { inicial: 21, dado: "1d8", media: 5 }, pm: { inicial: 16, dado: "1d6", media: 4 } },
   conjurador: { pv: { inicial: 12, dado: "1d6", media: 4 }, pe: { inicial: 12, dado: "1d6", media: 4 }, pm: { inicial: 24, dado: "1d12", media: 7 } },
   artifice:   { pv: { inicial: 12, dado: "1d6", media: 4 }, pe: { inicial: 20, dado: "1d10", media: 6 }, pm: { inicial: 16, dado: "1d8", media: 5 } }
 };

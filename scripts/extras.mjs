@@ -905,6 +905,10 @@ export async function resistirDoCartao(defensor, { pericia, dt, rotulo = "" }) {
 export async function cliqueChatExtra(acao, actor, botao) {
   const { cliqueChatNovas } = await import("./novas.mjs");
   if (await cliqueChatNovas(acao, actor, botao)) return true;
+  if (String(acao).startsWith("alma")) {
+    const { cliqueChatAlma } = await import("./ressonancia.mjs");
+    if (await cliqueChatAlma(acao, actor, botao)) return true;
+  }
   if (String(acao).startsWith("npc")) {
     const { cliqueChatNpc } = await import("./tipos-npc.mjs");
     if (await cliqueChatNpc(acao, botao)) return true;
@@ -980,7 +984,9 @@ export async function cliqueChatExtra(acao, actor, botao) {
   if (acao === "destrutivo" || acao === "alongado") {
     const e = efeitoMaestria(acao, nivelArquetipo(dados, "combatente"), dados);
     if (!e) { ui.notifications.warn("Maestria indisponível."); return true; }
+    if (e.custo && dados.usos?.maestriaTurno) { ui.notifications.warn("Maestria com custo em PE: só 1 vez por turno."); return true; }
     if (!(await gastar(actor, "pe", e.custo, e.nome))) return true;
+    if (e.custo) await actor.update({ [`flags.${FLAG}.usos.maestriaTurno`]: true });
     cliqueChatExtra.usados.add(chave);
     await cartaoDanoExtra(actor, {
       titulo: e.nome, valor: e.dano, alvos: botao.dataset.alvos ?? "", tipoDano: botao.dataset.tipoDano ?? "",

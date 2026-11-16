@@ -221,6 +221,7 @@
             <label class="epm-mini" title="Soma em todos os testes"><span>testes</span><input type="number" name="flags.epm-ficha.bonusCena.{{this.id}}.testes" value="{{this.testes}}" /></label>
             <label class="epm-mini" title="Metros a mais (ou a menos) de deslocamento"><span>desloc. (m)</span><input type="number" step="1.5" name="flags.epm-ficha.bonusCena.{{this.id}}.deslocamento" value="{{this.deslocamento}}" /></label>
             <label class="epm-mini largo" title="Desvantagem enquanto estiver ligado"><span>desvantagem</span><select name="flags.epm-ficha.bonusCena.{{this.id}}.desvantagem">{{#each opcoesDesvantagem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+            <label class="epm-mini largo" title="De onde vem o bônus. Bônus de habilidade entram no Teto de Bônus."><span>origem</span><select name="flags.epm-ficha.bonusCena.{{this.id}}.origemTipo">{{#each opcoesOrigem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
             <label class="epm-check epm-bonus-debuff" title="Debuff: os números entram como penalidade (acerto 2 = −2 no acerto, dano 1d4 = −1d4, desloc. 3 = −3 m). A RD não vale no debuff."><input type="checkbox" name="flags.epm-ficha.bonusCena.{{this.id}}.debuff" {{epmChecked debuff}} /> Debuff</label>
           </div>
           {{else}}

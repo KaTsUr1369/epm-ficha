@@ -389,7 +389,7 @@ export function efeitosDeItens(itens = [], { nivelTec = 0 } = {}) {
       }
       if (tec?.protecao) nomeTec = `${item.name} (tecnologia ${tec.ca})`;
     } catch { continue; }
-    if (efeitos.length || armadura || arma || /escudo/i.test(item.name ?? "")) out.push({ id: item.id, nome: nomeTec, efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "",
+    if (efeitos.length || armadura || arma || /escudo/i.test(item.name ?? "")) out.push({ id: item.id, nome: nomeTec, poder: ["feat", "spell"].includes(item.type), efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "",
       escudo: /escudo/i.test(String(item.flags?.[FLAG]?.tipoArma ?? "")) || /escudo/i.test(item.name ?? "") || item.system?.type?.value === "shield" });
   }
   return out;
@@ -495,6 +495,31 @@ export function dtDe(d, atributos, periciaPorId) {
     pericia, periciaNome, valorPericia: valorPer,
     formula: `${CD.base} + ${atributoNome} ${valorAtr} + ${periciaNome} ${valorPer}`
   };
+}
+
+/** Teto de Bônus das habilidades num mesmo teste, pelo nível total (+5 / +8 / +12 / +15). */
+export function tetoDeBonus(nivel) {
+  const n = int(nivel);
+  return n <= 10 ? 5 : n <= 30 ? 8 : n <= 50 ? 12 : 15;
+}
+/** De onde vem um bônus de cena: o campo origemTipo; sem ele, item se veio de um item que não é habilidade, senão habilidade. */
+export function origemBonusCena(b, itens = []) {
+  if (b?.origemTipo) return b.origemTipo;
+  const it = b?.origem ? itens.find(x => x.id === b.origem) : null;
+  return it && !it.poder ? "item" : "habilidade";
+}
+
+/**
+ * Corte do Teto num ataque: junta as habilidades que já estão na perícia e no acerto com as do momento da rolagem
+ * (bônus de cena, Duelista, Certeiro…) e devolve quanto tirar além do que a perícia já cortou.
+ */
+export function corteTetoAtaque(ficha, periciaId, { extraPos = 0, extraNeg = 0 } = {}) {
+  const t = ficha?.teto;
+  if (!t?.valor) return 0;
+  const base = t.habs([`pericia.${periciaId}`, "pericias"]);
+  const tudo = t.habs([`pericia.${periciaId}`, "pericias", "acerto"]);
+  const aj = (p, n) => -Math.max(0, p - t.valor) + Math.max(0, -n - t.valor);
+  return aj(tudo.pos + extraPos, tudo.neg + extraNeg) - aj(base.pos, base.neg);
 }
 
 export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, itens = [], agora = null, opcoes = {} }) {
@@ -726,12 +751,14 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
 
   /* ---------- Modificadores numéricos ---------- */
   const mods = {};
-  const somar = (alvo, valor, fonte) => {
+  // origem "habilidade" (arquétipo, classe, habilidades e magias, bônus de cena de habilidade) entra no Teto de Bônus
+  const somar = (alvo, valor, fonte, origem = "") => {
     const v = num(valor);
     if (!alvo || !v) return;
-    mods[alvo] ??= { total: 0, fontes: [] };
+    mods[alvo] ??= { total: 0, fontes: [], hab: 0, habNeg: 0 };
     mods[alvo].total += v;
-    mods[alvo].fontes.push({ fonte, valor: v });
+    mods[alvo].fontes.push({ fonte, valor: v, ...(origem ? { origem } : {}) });
+    if (origem === "habilidade") { if (v > 0) mods[alvo].hab += v; else mods[alvo].habNeg += v; }
   };
   for (const x of bencaos) {
     const fonte = x.b.nome || (x.tipo === "maldicao" ? "Maldição" : "Bênção");
@@ -745,10 +772,10 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     const corredor = especialDoTreino(t) === "corredor";
     for (const m of Object.values(t.mods ?? {})) somar(m?.alvo, corredor && m?.alvo === "deslocamento" ? numBonus("treino.corredor") : m?.valor, `Treinamento: ${t.nome || "sem nome"}`);
   }
-  for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome);
+  for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome, fonteItem.poder ? "habilidade" : "item");
   // Transformação ativa (sub-aba Transformações)
   const tAtiva = d.transformacao?.ativa ? d.transformacoes?.[d.transformacao.ativa] : null;
-  if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`);
+  if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`, "habilidade");
   // Frenesi: quanto mais ferido, mais dano (+5 até 100% de Vida, +10 até 75%, +15 até 50%, +20 até 25%)
   if (tAtiva?.frenesi && num(hp.max) > 0) {
     const pct = num(hp.value) / num(hp.max);
@@ -757,18 +784,27 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
   for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora, itens, [...statuses])) {
     ajustarBonus(d, Object.assign(m, { origem: "arquetipo" }), m.alvo);
-    if (num(m.valor)) somar(m.alvo, m.valor, m.fonte);
+    if (num(m.valor)) somar(m.alvo, m.valor, m.fonte, "habilidade");
   }
   // Bônus de cena ligados: CA, testes e deslocamento (acerto e dano entram no ataque; RD nas reduções)
   for (const b of Object.values(d.bonusCena ?? {})) {
     if (!b?.ativo) continue;
     for (const chave of ["ca", "testes", "deslocamento"]) {
       const v = b.debuff ? -Math.abs(num(b[chave])) : num(b[chave]);
-      if (v) somar(chave, v, b.nome || "Bônus de cena");
+      if (v) somar(chave, v, b.nome || "Bônus de cena", origemBonusCena(b, itens));
     }
   }
   lerModsAE(modsAE, somar);
-  for (const m of extrasFicha.mods) somar(m.alvo, m.valor, m.fonte);
+  for (const m of extrasFicha.mods) somar(m.alvo, m.valor, m.fonte, ["classe", "arquetipo", "habilidade"].includes(m.origem) ? "habilidade" : "");
+  /* ---------- Teto de Bônus (habilidades) ---------- */
+  const tetoValor = opcoes.tetoBonus === false || opcoes.regras?.tetoBonus === false ? 0 : tetoDeBonus(nivelTotal);
+  const ajusteTeto = (alvos, extraPos = 0, extraNeg = 0) => {
+    if (!tetoValor) return 0;
+    const pos = alvos.reduce((s, a) => s + (mods[a]?.hab ?? 0), 0) + extraPos;
+    const neg = alvos.reduce((s, a) => s + (mods[a]?.habNeg ?? 0), 0) + extraNeg;
+    return -Math.max(0, pos - tetoValor) + Math.max(0, -neg - tetoValor);
+  };
+  const fonteTeto = v => ({ fonte: `Teto de Bônus +${tetoValor}: ${Math.abs(v)} ${v < 0 ? "de bônus" : "de penalidade"} cortado${Math.abs(v) === 1 ? "" : "s"}`, valor: v, teto: true });
   const mod = alvo => mods[alvo]?.total ?? 0;
   const fontes = alvo => mods[alvo]?.fontes ?? [];
 
@@ -808,10 +844,12 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     id, label, atributos: Object.values(atributos).filter(a => a.grupo === id)
   }));
   const disponivelAtributos = REGRAS.atributosIniciais;
-  const disponivelAumento = Math.floor(nivelTotal / 2);
+  // Aumento de Status: 1 em todo nível par de cada arquétipo, e 2 no nível 50
+  const asDoArquetipo = n => Math.floor(Math.max(0, n) / 2) + (n >= 50 ? 1 : 0);
+  const disponivelAumento = asDoArquetipo(nivel1) + asDoArquetipo(nivel2);
   const avisosAtributos = [];
   if (gastoAtributos > disponivelAtributos) avisosAtributos.push(`A base soma ${gastoAtributos}; o limite é ${disponivelAtributos}.`);
-  if (gastoAumento > disponivelAumento) avisosAtributos.push(`Aumentos somam ${gastoAumento}; no nível ${nivelTotal} são ${disponivelAumento} (1 por nível par).`);
+  if (gastoAumento > disponivelAumento) avisosAtributos.push(`Aumentos somam ${gastoAumento}; no nível ${nivelTotal} são ${disponivelAumento} (1 por nível par, 2 no nível 50).`);
   avisosAtributos.push(...posAtr.avisos);
   {
     const bases = Object.values(atributos).map(a => a.base);
@@ -833,7 +871,9 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     const outros = int(p.outros);
     gastoPericias += pontos;
     const valorAtributo = atrs.reduce((s, a) => s + atributos[a].total, 0);
-    const m = mod(`pericia.${id}`) + mod("pericias");
+    const ajBase = ajusteTeto([`pericia.${id}`, "pericias"]);
+    const m = mod(`pericia.${id}`) + mod("pericias") + ajBase;
+    const ajTeste = ajusteTeto([`pericia.${id}`, "pericias", "testes"]) - ajBase;
     // Penalidades dos atributos: cada fonte conta uma vez só (a mais severa entre os atributos da perícia)
     const porFonte = new Map();
     for (const a of atrs) {
@@ -844,8 +884,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     }
     const penalAtrs = [...porFonte.entries()].map(([fonte, valor]) => ({ fonte, valor }));
     const penalProprio = penalPericia[id] ?? [];
-    const testeFontes = [...fontesTestes, ...penalAtrs, ...penalProprio];
-    const testeMod = penalTestesTotal + somaLista(penalAtrs) + somaLista(penalProprio);
+    const testeFontes = [...fontesTestes, ...penalAtrs, ...penalProprio, ...(ajTeste ? [fonteTeto(ajTeste)] : [])];
+    const testeMod = penalTestesTotal + somaLista(penalAtrs) + somaLista(penalProprio) + ajTeste;
     const total = pontos + valorAtributo + outros + m;
     return {
       id, nome: p.nome || id, atributos: atrs,
@@ -858,7 +898,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       total, testeMod, testeFontes, testeTotal: total + testeMod,
       desvantagem: [...(desv.pericias[id] ?? [])], vantagem: [...(vant.pericias[id] ?? [])],
       bloqueada: [...(bloqueios.pericias[id] ?? [])],
-      acimaLimite: pontos > limitePericia, fontes: [...fontes(`pericia.${id}`), ...fontes("pericias")]
+      acimaLimite: pontos > limitePericia, fontes: [...fontes(`pericia.${id}`), ...fontes("pericias"), ...(ajBase ? [fonteTeto(ajBase)] : [])]
     };
   }).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const periciaPorId = Object.fromEntries(pericias.map(p => [p.id, p]));
@@ -900,6 +940,13 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       recursos[id].fontes = [...recursos[id].fontes, { fonte: `${ATRIBUTOS[attr]?.label ?? attr} (bônus × nível ${Math.max(1, nivelTotal)})`, valor }];
     }
   }
+  // Ressonância de Alma (troca de lugar): a Vida, a Mana e a Estamina continuam as do corpo
+  const maxCorpo = d.ressonancia?.troca?.alma ? d.ressonancia.troca.backup?.maximos : null;
+  if (maxCorpo) for (const id of ["pv", "pm", "pe"]) {
+    if (maxCorpo[id] === undefined || !recursos[id]) continue;
+    recursos[id].max = num(maxCorpo[id]) + recursos[id].mod;
+    recursos[id].fontes = [...recursos[id].fontes, { fonte: "Troca de lugar (máximo do corpo)", valor: 0 }];
+  }
   for (const r of Object.values(recursos)) {
     r.pct = r.max > 0 ? limitar(r.value / r.max, 0, 1) : 0;
     r.maxDiferente = r.max !== num(r.id === "pv" ? hp.maxFonte : r.maxFonte);
@@ -918,6 +965,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     bonus: int(d.ca?.bonus) + int(d.ca?.armadura), mod: mod("ca"), fontes: [...fontes("ca"), ...penal.defesa], penal: somaLista(penal.defesa)
   };
   ca.armadura = ca.armaduraItens;  // só armaduras e escudos equipados
+  ca.teto = ajusteTeto(["ca"]);
+  if (ca.teto) { ca.mod += ca.teto; ca.fontes = [...ca.fontes, fonteTeto(ca.teto)]; }
   ca.total = ca.base + ca.atributoValor + ca.armadura + ca.bonus + ca.mod + ca.penal;
 
   // Deslocamento
@@ -946,7 +995,8 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   // Defesas
   const defesas = Object.entries(DEFESAS).map(([id, def]) => {
     const per = periciaPorId[def.pericia];
-    const m = mod(`defesa.${id}`);
+    const ajD = ajusteTeto(["ca", `defesa.${id}`, `pericia.${def.pericia}`, "pericias"]) - ajusteTeto(["ca"]) - ajusteTeto([`pericia.${def.pericia}`, "pericias"]);
+    const m = mod(`defesa.${id}`) + ajD;
     const bonus = per?.bonusProprio ?? 0;
     return {
       id, ...def, mod: m, periciaNome: per?.nome ?? def.pericia, periciaBonus: bonus,
@@ -1034,6 +1084,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     },
     desvantagens, vantagens, bloqueios, recuperacao, dots, turnoEfeitos, vulneraveis, avisos, especiais,
     ataquesGerais, tags, bencaos, defesas, iniciativa, acoes, pontos, progressao, mods,
+    teto: { valor: tetoValor, habs: alvos => ({ pos: alvos.reduce((s, a) => s + (mods[a]?.hab ?? 0), 0), neg: alvos.reduce((s, a) => s + (mods[a]?.habNeg ?? 0), 0) }) },
     extras: {
       raca: extrasFicha.raca, sanidade: extrasFicha.sanidade, idade: extrasFicha.idade ?? null, classe: extrasFicha.classe,
       votos: extrasFicha.votos, pactos: extrasFicha.pactos, altos: posAtr.altos, teto: posAtr.teto, recursosAuto, corpo,
@@ -1546,11 +1597,16 @@ export function moedaPorId(id) {
 const NIVEL_POR_NOME = new Map(NIVEIS_DANO.map(n => [normalizarTexto(n.label), n]));
 const TIPO_POR_NOME = new Map();
 for (const t of TIPOS_DANO) for (const nome of [t.id, t.label, ...t.aliases]) TIPO_POR_NOME.set(normalizarTexto(nome), t);
-const GRUPO_POR_NOME = new Map(Object.entries(GRUPOS_DANO).flatMap(([id, label]) => {
-  const n = normalizarTexto(label);
-  // Aceita também o singular ("físico não mágico" = grupo Físicos, nível Natural)
-  return [[n, id], [id, id], [n.replace(/s$/, ""), id], [id.replace(/s$/, ""), id]];
-}));
+// Naturezas: "dano físico", "dano natural", "dano mágico", "dano tecnológico" (o nome sozinho "Natural"/"Mágico" é o nível)
+const GRUPO_POR_NOME = new Map([
+  ["fisico", "fisicos"], ["fisicos", "fisicos"], ["tecnologico", "tecnologicos"], ["tecnologicos", "tecnologicos"],
+  ["naturais", "naturais"], ["magicos", "magicos"],
+  // grupos antigos (até a 0.8.12)
+  ["elementais", "naturais"], ["elemental", "naturais"], ["biologicos", "naturais"], ["mentais", "magicos"], ["misticos", "magicos"],
+  ["energeticos e misticos", "magicos"], ["regionais", "tecnologicos"], ["regionais notion", "tecnologicos"]
+]);
+const RE_NATUREZA = /\b(?:danos?|natureza)\s+(fisicos?|naturais|natural|magicos?|tecnologicos?)\b/g;
+const NATUREZA_ID = { fisico: "fisicos", fisicos: "fisicos", natural: "naturais", naturais: "naturais", magico: "magicos", magicos: "magicos", tecnologico: "tecnologicos", tecnologicos: "tecnologicos" };
 
 /**
  * Lê um texto de tipo de dano: "Fogo", "Fogo (Mágico)", "Cortante, Perfurante", "Elementais (Verdadeiro)", "todos os danos".
@@ -1561,6 +1617,8 @@ export function lerTipoDano(texto) {
   let mult = null;
   // "não mágico" (textos de raça) = nível Natural; "×3"/"x3" = multiplicador da vulnerabilidade
   let resto = normalizarTexto(texto).replace(/\bnao[ -]magicos?\b/g, " natural ");
+  const gruposNatureza = [];
+  resto = resto.replace(RE_NATUREZA, (_, g) => { gruposNatureza.push(NATUREZA_ID[g]); return " , "; });
   resto = resto.replace(/(^|[\s(,;])[x×]\s*([23])(?=$|[\s),;])/g, (_, a, n) => { mult = Number(n); return `${a} `; });
   for (const [nome, n] of NIVEL_POR_NOME) {
     const re = new RegExp(`(^|[\\s(,;/-])${nome}($|[\\s),;/-])`);
@@ -1569,7 +1627,7 @@ export function lerTipoDano(texto) {
   // "Radiante (Sagrado)" e parênteses vazios
   const partes = resto.replace(/[()]/g, ",").split(/[,;/]| e /).map(t => t.replace(/\b(dano|de)\b/g, "").trim()).filter(Boolean);
   const tipos = new Set();
-  const grupos = new Set();
+  const grupos = new Set(gruposNatureza);
   let todos = false;
   for (const p of partes) {
     if (p.startsWith("todo") || p === "qualquer") { todos = true; continue; }
@@ -1587,7 +1645,7 @@ export function lerTipoDano(texto) {
 /** Nome bonito de um tipo de dano ("Fogo (Mágico)"). */
 export function rotuloTipoDano(texto) {
   const l = lerTipoDano(texto);
-  const nomes = [...l.tipos].map(id => TIPOS_DANO.find(t => t.id === id)?.label ?? id);
+  const nomes = [...[...l.tipos].map(id => TIPOS_DANO.find(t => t.id === id)?.label ?? id), ...[...l.grupos].map(g => `dano ${String(GRUPOS_DANO[g] ?? g).toLowerCase()}`)];
   const base = l.todos && !nomes.length ? "" : nomes.join(", ");
   const com = l.nivelExplicito ? `${base}${base ? " " : ""}(${l.nivelLabel})` : base;
   return l.mult ? `${com} ×${l.mult}` : com;

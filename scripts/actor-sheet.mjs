@@ -25,6 +25,7 @@ import { abrirEditorPoder } from "./poder-sheet.mjs";
 import { escolherImagem, verImagem } from "./imagens.mjs";
 import { catalogoIdiomas, polyglotAtivo, adicionarIdioma, removerIdioma, migrarIdiomas } from "./idiomas.mjs";
 import { dadosDoParceiro, dialogoConectar, relacaoMultipla, conectar } from "./relacoes.mjs";
+import * as RES from "./ressonancia.mjs";
 import { aplicarPaleta, ligarPersonalizacao } from "./personalizacao.mjs";
 import { CATALOGO, entradaCatalogo, dadosNovaEntrada } from "./bencaos.mjs";
 import { jogarMinijogo } from "./minijogos.mjs";
@@ -88,7 +89,11 @@ const ACOES_FICHA = [
   // 0.8.10: tipos de ficha de NPC
   "npcTipo", "npcNovo", "npcApagar", "npcRolarVida", "npcRolarVidaTokens", "npcSaquear", "npcRevelar",
   "npcContador", "npcZerar", "npcRecarga", "npcRolarRecargas", "npcCovil", "npcVitoria", "npcAcaoEspecial",
-  "npcAfinidade", "npcComprar", "npcDuplicar", "npcFase", "npcEntregar", "npcVariacao"
+  "npcAfinidade", "npcComprar", "npcDuplicar", "npcFase", "npcEntregar", "npcVariacao", "npcPreencherNivel",
+  // Ressonância de Alma
+  "almaNova", "almaRevelar", "almaExcluir", "almaImagem", "almaConversar", "almaTrocar", "almaEncerrarTroca",
+  "almaManifestar", "almaEncerrarManifestacao", "almaCalar", "almaRitual", "almaMemorias", "almaAprovar", "almaRecusar",
+  "almaCancelarRitual", "almaRestaurar", "almaRemoverBonus", "almaGuardiao", "almaDispensar", "almaRecarregar", "almaAbrirFicha"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -191,6 +196,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     condicoes: { template: `${CAMINHO}/actor/condicoes.hbs`, scrollable: [""] },
     bencaos: { template: `${CAMINHO}/actor/bencaos.hbs`, scrollable: [""] },
     relacoes: { template: `${CAMINHO}/actor/relacoes.hbs`, scrollable: [""] },
+    almas: { template: `${CAMINHO}/actor/almas.hbs`, scrollable: [""] },
     companheiros: { template: `${CAMINHO}/actor/companheiros.hbs`, scrollable: [""] },
     bestiario: { template: `${CAMINHO}/actor/bestiario.hbs`, scrollable: [""] },
     producao: { template: `${CAMINHO}/actor/producao.hbs`, scrollable: [""] },
@@ -1610,6 +1616,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoNpcNovo(ev, alvo) { if (game.user.isGM) return Npc.novoNaLista(this.actor, alvo.dataset.lista); }
   acaoNpcApagar(ev, alvo) { if (game.user.isGM) return Npc.apagarDaLista(this.actor, alvo.dataset.lista, alvo.dataset.id); }
   acaoNpcRolarVida() { return Npc.rolarVida(this.actor); }
+  async acaoNpcPreencherNivel() { return (await import("./inimigos-nivel.mjs")).preencherPeloNivel(this.actor); }
   acaoNpcRolarVidaTokens() { return Npc.rolarVida(this.actor, { tokens: true }); }
   acaoNpcSaquear() { return Npc.saquear(this.actor); }
   acaoNpcRevelar() { return Npc.revelarConhecimento(this.actor); }
@@ -2125,7 +2132,34 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (item) return M.recarregarArma(this.actor, item);
   }
   acaoEncerrarSustentada(ev, alvo) { return M.encerrarSustentada(this.actor, alvo.dataset.sustentada); }
-  acaoRessonancia() { return X.ressonanciaDeAlma(this.actor); }
+  acaoRessonancia() { return this._mudarAba("primary", "almas"); }
+
+  /* ---------- Ressonância de Alma ---------- */
+  acaoAlmaNova() { return RES.novaAlma(this.actor); }
+  acaoAlmaRevelar(ev, alvo) { return RES.revelarAlma(this.actor, alvo.dataset.alma); }
+  acaoAlmaExcluir(ev, alvo) { return RES.excluirAlma(this.actor, alvo.dataset.alma); }
+  acaoAlmaImagem(ev, alvo) { return RES.imagemAlma(this.actor, alvo.dataset.alma); }
+  acaoAlmaConversar(ev, alvo) { return RES.conversar(this.actor, alvo.dataset.alma); }
+  acaoAlmaTrocar(ev, alvo) { return RES.trocarDeLugar(this.actor, alvo.dataset.alma); }
+  acaoAlmaEncerrarTroca() { return RES.pedirEncerrarTroca(this.actor); }
+  acaoAlmaManifestar() { return RES.manifestacaoDoMestre(this.actor); }
+  acaoAlmaEncerrarManifestacao() { return game.user.isGM ? RES.encerrarManifestacao(this.actor, { aviso: true }) : null; }
+  acaoAlmaCalar() { return RES.calar(this.actor); }
+  acaoAlmaRitual() { return RES.iniciarRitual(this.actor); }
+  acaoAlmaMemorias() { return RES.escolherMemorias(this.actor); }
+  acaoAlmaAprovar() { return RES.aprovarRitual(this.actor); }
+  acaoAlmaRecusar() { return RES.recusarMemorias(this.actor); }
+  acaoAlmaCancelarRitual() { return RES.cancelarRitual(this.actor); }
+  acaoAlmaRestaurar(ev, alvo) { return RES.restaurarMemoria(this.actor, alvo.dataset.id); }
+  acaoAlmaRemoverBonus(ev, alvo) { return RES.removerBonus(this.actor, alvo.dataset.id); }
+  acaoAlmaGuardiao(ev, alvo) { return RES.invocarGuardiao(this.actor, alvo.dataset.alma); }
+  acaoAlmaDispensar(ev, alvo) { return RES.dispensarGuardiao(this.actor, alvo.dataset.alma); }
+  acaoAlmaRecarregar() { return RES.recarregarUsos(this.actor); }
+  async acaoAlmaAbrirFicha(ev, alvo) {
+    const a = alvo.dataset.uuid ? await fromUuid(alvo.dataset.uuid) : null;
+    if (a?.testUserPermission?.(game.user, "OBSERVER") || game.user.isGM) a?.sheet?.render(true);
+    else ui.notifications.warn("Você não tem acesso a essa ficha.");
+  }
   acaoPularHoras() { return X.pularHoras(this.actor); }
 
   acaoTocarMusica(ev, alvo) {

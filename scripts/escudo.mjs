@@ -24,7 +24,7 @@ let pendente = null;
 const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
-  "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo",
+  "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "rolarTestes", "rolarLivre", "abrirItem",
   "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
   "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo"
@@ -367,6 +367,11 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     const partes = [["pev", "PEv"], ["pt", "PT"], ["ph", "PH"]].filter(([k]) => v[k]).map(([k, r]) => `${v[k] > 0 ? "+" : ""}${v[k]} ${r}`);
     return ChatMessage.create({ content: `<div class="epm-chat epm-chat-nota"><p><strong>O Mestre deu</strong> ${partes.join(", ")} para ${atores.map(a => escapar(a.name)).join(", ")}${motivo ? ` (${escapar(motivo)})` : ""}.</p></div>` });
+  }
+
+  async _recarregarRessonancia() {
+    const { recarregarTodos } = await import("./ressonancia.mjs");
+    await recarregarTodos();
   }
 
   async _descansoGrupo(ev, alvo) {

@@ -1,4 +1,5 @@
 import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
+import { bonusDaRessonancia } from "./ressonancia.mjs";
 import { ARQUETIPOS, estilosEscolhidos, nivelArquetipo, valorPessoal } from "./arquetipos.mjs";
 import { NIVEIS_REGIAO, idRegiao } from "./tecnologia.mjs";
 /**
@@ -127,6 +128,11 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
   if (raca.desl) out.mods.push({ alvo: "deslocamento", valor: raca.desl, fonte: `Raça: ${raca.raca?.nome ?? ""}` });
   if (raca.ca) out.mods.push({ alvo: "ca", valor: raca.ca, fonte: `Raça: ${raca.raca?.nome ?? ""}` });
   if (raca.rd) out.rd.push({ valor: raca.rd, tipos: "todos os danos", fonte: `Raça: ${raca.raca?.nome ?? ""}` });
+  // Ressonância de Alma: bônus permanentes dos Rituais do Vazio
+  const resso = bonusDaRessonancia(d);
+  out.mods.push(...resso.mods);
+  out.vantagensPericia.push(...resso.vantagensPericia);
+  out.vantagemTestes = [...(out.vantagemTestes ?? []), ...resso.vantagemTestes];
 
   // Sanidade: estado e insanidades ativas
   const ps = d.recursos?.ps ?? {};

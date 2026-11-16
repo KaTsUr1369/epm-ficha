@@ -78,11 +78,11 @@ export const ARQUETIPOS = {
       defensivo: { nome: "Combate Defensivo", texto: "Usando Escudo ou Armadura: +2 Defesa (Bloqueio) e +1 CA.", defesa: 2, ca: 1 },
       pesada:    { nome: "Combate com Arma Pesada", texto: "Crítico com arma Pesada ou maior: pode fazer +1 ataque, uma vez por turno." },
       leve:      { nome: "Combate com Arma Leve", texto: "Com arma Leve ou menor, 1 ou 2 num dado de dano: rola aquele dado de novo." },
-      duelista:  { nome: "Duelista",  texto: "Enfrentando um inimigo isoladamente: +5 Acerto.", acertoIsolado: 5 },
-      bebado:    { nome: "Bêbado", texto: "Com a condição Bêbado, as penalidades viram +5 Acerto, +2 Esquiva e +2 CA. Ainda fica Exausto e Desequilibrado depois de 2 horas.", acerto: 5, esquiva: 2, ca: 2 },
-      atirador:  { nome: "Atirador",  texto: "Atacando com arma à distância, pode abrir mão do modificador de dano para aumentar a margem de crítico em 2.", margem: 2 },
+      duelista:  { nome: "Duelista",  texto: "Enfrentando um inimigo isoladamente: +3 Acerto.", acertoIsolado: 3 },
+      bebado:    { nome: "Bêbado", texto: "Com a condição Bêbado, as penalidades viram +3 Acerto, +1 Esquiva e +1 CA. Ainda fica Exausto e Desequilibrado depois de 2 horas.", acerto: 3, esquiva: 1, ca: 1 },
+      atirador:  { nome: "Atirador",  texto: "Atacando com arma à distância: margem de crítico +1. Abrindo mão do atributo no dano, a margem sobe +4 no lugar.", margem: 4, margemSempre: 1 },
       longo:     { nome: "Armamento Longo", texto: "Arma à distância Pesada ou Enorme: +1d6 de dano. Também pode atacar corpo a corpo desarmado com +1d4 de dano.", dano: "1d6", desarmado: "1d4" },
-      dupla:     { nome: "Arma Dupla", texto: "Usando duas ou mais armas: +3 Acerto e +2 CA.", acerto: 3, ca: 2 }
+      dupla:     { nome: "Arma Dupla", texto: "Usando duas ou mais armas: +2 Acerto e +1 Esquiva.", acerto: 2, esquiva: 1, ca: 0 }
     },
     cacador: { nivel: 17, custo: 20, acerto: 5, transferir: 8 }
   },
@@ -91,7 +91,7 @@ export const ARQUETIPOS = {
     id: "conjurador", nome: "Conjurador", icone: "fa-solid fa-hat-wizard", cor: "#8A7CE0",
     funcao: "Domina a mana, amplia a conjuração e modifica magias usando PE. O arquétipo libera círculos; a quantidade de magias conhecidas depende principalmente da Classe.",
     recursos: "PE Máximo = PE de Raça + PE de Classe + Constituição (Vigor). PM Máximo = PM de Raça + PM de Classe + Núcleo (Espírito).",
-    progressao: progressao(`1 Despertar • 2 Magia 1 • 3 Classe • 4 Evolução • 5 Manipulação • 6 Classe • 7 Olhar de Mana • 8 Evolução • 9 Classe • 10 Magia 2 • 11 Recuperar Mana • 12 Classe + Evolução • 13 Conjuração Precisa • 14 Canalização • 15 Classe • 16 Evolução • 17 Conjuração Dupla • 18 Classe • 19 Reserva Arcana • 20 Evolução • 21 Classe • 22 Recuperar Mana 2.0 • 23 Conjuração Reativa • 24 Classe + Evolução • 25 Sustentação • 26 Magia 3 • 27 Classe • 28 Evolução • 29 Reserva Arcana 2.0 • 30 Classe • 31 Manipulação 2.0 • 32 Evolução • 33 Classe • 34 Magia 4 • 35 Recuperar Mana 3.0 • 36 Classe + Evolução • 37 Sobrecarga • 38 Domínio • 39 Classe • 40 Evolução • 41 Reserva Arcana 3.0 • 42 Classe • 43 Magia 5 • 44 Evolução • 45 Classe • 46 Corpo de Mana • 47 Recuperar Mana 4.0 • 48 Classe + Evolução • 49 Magia 6 • 50 Zona de Mana`),
+    progressao: progressao(`1 Despertar • 2 Magia 1 • 3 Classe • 4 Evolução • 5 Manipulação • 6 Classe • 7 Olhar de Mana • 8 Evolução • 9 Classe • 10 Magia 2 • 11 Recuperar Mana • 12 Classe + Evolução • 13 Conjuração Precisa • 14 Canalização • 15 Classe • 16 Evolução • 17 Conjuração Dupla • 18 Classe • 19 Reserva Arcana + Magia 3 • 20 Evolução • 21 Classe • 22 Recuperar Mana 2.0 • 23 Conjuração Reativa • 24 Classe + Evolução • 25 Sustentação • 27 Classe • 28 Evolução • 29 Reserva Arcana 2.0 + Magia 4 • 30 Classe • 31 Manipulação 2.0 • 32 Evolução • 33 Classe • 35 Recuperar Mana 3.0 • 36 Classe + Evolução • 37 Sobrecarga • 38 Domínio + Magia 5 • 39 Classe • 40 Evolução • 41 Reserva Arcana 3.0 • 42 Classe • 44 Evolução • 45 Classe • 46 Corpo de Mana • 47 Recuperar Mana 4.0 + Magia 6 • 48 Classe + Evolução • 50 Zona de Mana`),
     habilidades: [
       { nivel: 1, nome: "Despertar Mágico", resumo: "Pode conjurar Truques, detectar magia e perceber a Aura de criaturas, objetos e fenômenos mágicos. Começa com 2 Truques; magias adicionais dependem da Classe." },
       { nivel: 2, nome: "Magia 1", resumo: "Desbloqueia magias de 1º círculo e aprende +1 Truque." },
@@ -106,24 +106,24 @@ export const ARQUETIPOS = {
       { nivel: 22, nome: "Recuperar Mana 2.0", resumo: "Recuperar Mana restaura 18 PM por 12 PE." },
       { nivel: 23, nome: "Conjuração Reativa", resumo: "Gaste 10 PE para conjurar um Truque como reação a uma ação que ele possa afetar diretamente. Uma vez por rodada." },
       { nivel: 25, nome: "Sustentação Mágica", resumo: "Gaste 8 PE quando a concentração ou sustentação seria interrompida para mantê-la automaticamente." },
-      { nivel: 26, nome: "Magia 3", resumo: "Desbloqueia magias de 3º círculo." },
+      { nivel: 19, nome: "Magia 3", resumo: "Desbloqueia magias de 3º círculo." },
       { nivel: 29, nome: "Reserva Arcana 2.0", resumo: "O bônus de Reserva Arcana aumenta para +25 PM Máximo." },
       { nivel: 31, nome: "Manipulação Mágica 2.0", resumo: "Pode aplicar 2 modificações ao mesmo tempo por 10 PE." },
-      { nivel: 34, nome: "Magia 4", resumo: "Desbloqueia magias de 4º círculo." },
+      { nivel: 29, nome: "Magia 4", resumo: "Desbloqueia magias de 4º círculo." },
       { nivel: 35, nome: "Recuperar Mana 3.0", resumo: "Recupera 25 PM por 15 PE." },
       { nivel: 37, nome: "Sobrecarga Mágica", resumo: "Uma vez por magia: 12 PE por +1 dado de dano ou cura; 20 PE por +2 dados; 30 PE por +3 dados." },
       { nivel: 38, nome: "Domínio de Conjuração", resumo: "Escolha uma especialização permanente: Alcance (categoria extra de alcance); Área (categoria extra de área); Controle (exclui +2 alvos de áreas); Sustentação (mantém mais uma magia ao mesmo tempo)." },
       { nivel: 41, nome: "Reserva Arcana 3.0", resumo: "O bônus de Reserva Arcana aumenta para +45 PM Máximo." },
-      { nivel: 43, nome: "Magia 5", resumo: "Desbloqueia magias de 5º círculo." },
+      { nivel: 38, nome: "Magia 5", resumo: "Desbloqueia magias de 5º círculo." },
       { nivel: 46, nome: "Corpo de Mana", resumo: "Gaste 10 PM por rodada para mover-se livremente no ar e andar por paredes e tetos." },
       { nivel: 47, nome: "Recuperar Mana 4.0", resumo: "Recupera 35 PM por 20 PE." },
-      { nivel: 49, nome: "Magia 6", resumo: "Desbloqueia magias de 6º círculo." },
+      { nivel: 47, nome: "Magia 6", resumo: "Desbloqueia magias de 6º círculo." },
       { nivel: 50, nome: "Zona de Mana", resumo: "Ativação: 40 PM + 25 PE. Cria uma grande zona ao redor. Enquanto ativa, move-se no ar, nas paredes, no teto ou no chão; magias podem surgir de qualquer ponto da zona, que também serve como origem; percebe manifestações de mana e o ambiente assume traços da sua magia." }
     ],
     /** Custo em PM por círculo (0 = Truque). */
     custosMagia: [0, 6, 10, 14, 18, 24, 32],
     /** Nível de Conjurador que libera cada círculo. */
-    circulos: { 0: 1, 1: 2, 2: 10, 3: 26, 4: 34, 5: 43, 6: 49 },
+    circulos: { 0: 1, 1: 2, 2: 10, 3: 19, 4: 29, 5: 38, 6: 47 },
     truques: [{ nivel: 1, qtd: 2 }, { nivel: 2, qtd: 3 }],
     reservaArcana: [{ nivel: 19, pm: 10 }, { nivel: 29, pm: 25 }, { nivel: 41, pm: 45 }],
     recuperarMana: [{ nivel: 11, pe: 10, pm: 10 }, { nivel: 22, pe: 12, pm: 18 }, { nivel: 35, pe: 15, pm: 25 }, { nivel: 47, pe: 20, pm: 35 }],
@@ -169,6 +169,8 @@ export const ARQUETIPOS = {
       { nivel: 47, dano: "8d10", cura: "5d10", soma: 10, protecao: 5 }
     ],
     projetosPorDia: 2,
+    /** Projetos por dia por nível (zeram no descanso longo). */
+    projetosPorDiaNivel: [{ nivel: 1, qtd: 2 }, { nivel: 25, qtd: 3 }, { nivel: 47, qtd: 4 }],
     /** Tempos dos projetos (no relógio do mundo, o mesmo do Simple Calendar). */
     tempoProjeto: { producaoMin: 1, voltaHoras: 1, efeitoHoras: 1 },
     livro: [{ nivel: 3, base: 0 }, { nivel: 10, base: 5 }, { nivel: 20, base: 8 }, { nivel: 35, base: 10 }, { nivel: 45, base: 15 }],
@@ -188,6 +190,7 @@ export const ARQUETIPOS = {
     subclasses: ["Alquimista", "Curandeiro", "Mecânico de Guerra", "Armadura Viva"]
   }
 };
+for (const a of Object.values(ARQUETIPOS)) a.habilidades?.sort((x, y) => x.nivel - y.nivel);
 
 /* -------------------------------------------- */
 /*  Contas                                      */
@@ -306,7 +309,7 @@ export function projetosPadraoTexto(nivel) {
   if (!t) return null;
   return {
     dano: `${t.dano} + Int`, cura: `${t.cura} + Int`, soma: `${t.soma} + Int`, protecao: String(t.protecao),
-    porDia: String(ARQUETIPOS.artifice.projetosPorDia), livro: l ? `${l.base} + Int` : ""
+    porDia: String(degrau(ARQUETIPOS.artifice.projetosPorDiaNivel, nivel)?.qtd ?? ARQUETIPOS.artifice.projetosPorDia), livro: l ? `${l.base} + Int` : ""
   };
 }
 
@@ -336,7 +339,7 @@ export function projetosDoNivel(nivel, inteligencia = 0, ajustes = {}) {
   return {
     etapa: ARQUETIPOS.artifice.projetos.indexOf(t) + 1,
     dano, cura, soma: num("soma", t.soma + i), protecao: num("protecao", t.protecao),
-    porDia: Math.max(0, num("porDia", ARQUETIPOS.artifice.projetosPorDia)),
+    porDia: Math.max(0, num("porDia", degrau(ARQUETIPOS.artifice.projetosPorDiaNivel, nivel)?.qtd ?? ARQUETIPOS.artifice.projetosPorDia)),
     ajustado: Object.keys(AJUSTES_PROJETO).filter(k => ov(k) !== null && k !== "livro"),
     proximo: proximoDegrau(ARQUETIPOS.artifice.projetos, nivel)?.nivel ?? null
   };
@@ -405,7 +408,10 @@ export function modsDeArquetipo(dados = {}, armasEquipadas = [], agora = null, i
     if (m?.id === "protetora" && armasEquipadas.some(a => eTipoFavorito(a, dados))) out.push({ alvo: "ca", valor: m.ca, fonte: "Arma Protetora (Combatente)" });
     if (comb >= 7) out.push({ alvo: "pericia.reflexos", valor: valorPessoal(dados, "arq-reflexos-de-combate", 5), fonte: "Reflexos de Combate" });
     const estilos = estilosEscolhidos(dados, comb);
-    if (estilos.includes("dupla") && armasEquipadas.length >= 2) out.push({ alvo: "ca", valor: estiloVal(dados, "dupla", "ca"), fonte: "Arma Dupla (Combatente)" });
+    if (estilos.includes("dupla") && armasEquipadas.length >= 2) {
+      if (estiloVal(dados, "dupla", "ca")) out.push({ alvo: "ca", valor: estiloVal(dados, "dupla", "ca"), fonte: "Arma Dupla (Combatente)" });
+      if (estiloVal(dados, "dupla", "esquiva")) out.push({ alvo: "defesa.esquiva", valor: estiloVal(dados, "dupla", "esquiva"), fonte: "Arma Dupla (Combatente)" });
+    }
     const E = ARQUETIPOS.combatente.estilos;
     if (estilos.includes("defensivo") && itensAtivos.some(i => i.armadura > 0 || i.escudo)) {
       out.push({ alvo: "ca", valor: estiloVal(dados, "defensivo", "ca"), fonte: "Combate Defensivo" }, { alvo: "defesa.bloqueio", valor: estiloVal(dados, "defensivo", "defesa"), fonte: "Combate Defensivo" });
@@ -486,8 +492,8 @@ export const estiloVal = (dados, est, campo) => valorPessoal(dados, chaveEstilo(
 
 /** Campos numéricos (ou de dado) de cada estilo, para a lista de ajustes. */
 const CAMPOS_ESTILO = { defensivo: { defesa: "Defesa (Bloqueio)", ca: "CA" }, duelista: { acertoIsolado: "Acerto contra inimigo isolado" },
-  bebado: { acerto: "Acerto", esquiva: "Esquiva", ca: "CA" }, atirador: { margem: "Margem de crítico" },
-  longo: { dano: "Dano à distância", desarmado: "Dano desarmado" }, dupla: { acerto: "Acerto", ca: "CA" } };
+  bebado: { acerto: "Acerto", esquiva: "Esquiva", ca: "CA" }, atirador: { margemSempre: "Margem de crítico (sempre)", margem: "Margem abrindo mão do atributo" },
+  longo: { dano: "Dano à distância", desarmado: "Dano desarmado" }, dupla: { acerto: "Acerto", esquiva: "Esquiva", ca: "CA" } };
 const CAMPOS_MAESTRIA = { custo: "Custo (PE)", dano: "Dano", acerto: "Acerto", alcance: "Alcance (m)", ca: "CA", margem: "Margem", mult: "Multiplicador" };
 
 /** Ataque Extra do Combatente nesta ficha (custo e ataques ajustáveis). */

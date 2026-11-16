@@ -9,18 +9,19 @@ import { normalizarTexto } from "./data.mjs";
 
 const SEM_NIVEL = new Set(["corrupcao"]);
 const TIPO_POR_LABEL = new Map(TIPOS_DANO.map(t => [normalizarTexto(t.label), t]));
-const GRUPO_LABELS = new Set(Object.values(GRUPOS_DANO).map(normalizarTexto));
+const GRUPO_LABELS = new Set(Object.values(GRUPOS_DANO).map(l => normalizarTexto(`Dano ${l}`)));
+const semNatureza = t => String(t ?? "").replace(/\b(?:danos?|natureza)\s+(?:f[ií]sicos?|naturais|natural|m[aá]gicos?|tecnol[oó]gicos?)\b/gi, "");
 let caixa = null;
 let campo = null;
 
 /** O texto sem o nível: "Fogo (Mágico)" → "Fogo". */
 function semNivel(texto) {
   let t = String(texto ?? "");
-  for (const n of NIVEIS_DANO) t = t.replace(new RegExp(`\\s*\\(?\\b${n.label}\\b\\)?`, "i"), "");
+  for (const n of NIVEIS_DANO) t = t.replace(new RegExp(`(?<!(?:dano|danos|natureza)\\s*)\\s*\\(?\\b${n.label}\\b\\)?`, "i"), "");
   return t.trim();
 }
 function nivelDe(texto) {
-  const t = normalizarTexto(texto);
+  const t = normalizarTexto(semNatureza(texto));
   return NIVEIS_DANO.slice(1).find(n => t.includes(normalizarTexto(n.label)))?.id ?? "natural";
 }
 function comNivel(base, nivelId) {
@@ -86,7 +87,7 @@ function desenhar() {
     </div>
     <div class="epm-sd-lista">
       ${grupos.map(g => `<div class="epm-sd-grupo"><span>${g.label}</span>${g.itens.map(t => botao(t.label, t.label, t.desc)).join("")}</div>`).join("")}
-      ${gruposInteiros.length ? `<div class="epm-sd-grupo"><span>Grupos inteiros</span>${gruposInteiros.map(v => botao(v, v, "Vale para todos os tipos do grupo")).join("")}</div>` : ""}
+      ${gruposInteiros.length ? `<div class="epm-sd-grupo"><span>Naturezas inteiras</span>${gruposInteiros.map(v => botao(v, v, "Vale para todos os tipos dessa natureza")).join("")}</div>` : ""}
       ${outros.length ? `<div class="epm-sd-grupo"><span>Outros</span>${outros.map(v => botao(v, v)).join("")}</div>` : ""}
       ${!grupos.length && !gruposInteiros.length && !outros.length ? `<p class="epm-sd-vazio">Nada com "${campo.value.replace(/</g, "&lt;")}". Tecle Enter para usar o texto.</p>` : ""}
     </div>`;

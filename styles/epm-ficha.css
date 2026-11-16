@@ -3422,3 +3422,32 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-forma-arma.bloqueada, .epm-forma-arma.gasta { opacity: .5; }
 .epm-forma-arma.gasta small::after { content: " · gasta"; }
 .epm-npcv-acoesbtn { text-align: right; white-space: normal; }
+
+/* ---------- Ressonância de Alma (aba Almas) ---------- */
+.epm-alma-usos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
+.epm-alma-usos .epm-tag.usado { opacity: 0.55; text-decoration: line-through; }
+.epm-alma-bloqueio { margin: 0 0 10px; }
+.application.epm .epm-alma-bloqueio-manual { margin: 0 0 10px; }
+.epm-alma-banner { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--epm-linha); border-left: 3px solid #7FB3E0; border-radius: 6px; background: var(--epm-painel-2); }
+.epm-alma-banner > div { flex: 1; font-size: 12.5px; }
+.epm-almas-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.epm-alma { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; padding: 10px; border: 1px solid var(--epm-linha); border-radius: 8px; background: var(--epm-painel-2); }
+.epm-alma.oculta { border-style: dashed; opacity: 0.75; }
+.epm-alma.no-controle, .epm-alma.falando { border-color: #C77DFF; box-shadow: 0 0 0 1px #C77DFF55; }
+.epm-alma-retrato { margin: 0; }
+.application.epm .epm-alma-retrato img { width: 84px; height: 84px; object-fit: cover; border-radius: 50%; border: 2px solid #7FB3E0; filter: saturate(0.7); }
+.application.epm .epm-alma-retrato img[data-action] { cursor: pointer; }
+.epm-alma-corpo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.epm-alma-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.application.epm .epm-alma-topo h3 { margin: 0; font-size: 15px; }
+.epm-tag.ativa { border-color: #C77DFF; color: #C77DFF; }
+.epm-alma-info { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; margin: 0; font-size: 12.5px; }
+.epm-alma-info dt { color: var(--epm-fraco); }
+.epm-alma-info dd { margin: 0; }
+.application.epm .epm-alma-reliquia { width: 18px; height: 18px; vertical-align: middle; border: 0; }
+.epm-alma-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+.epm-alma-botoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-alma-ganhos, .epm-alma-esquecidas, .epm-alma-historico { margin-top: 10px; }
+.epm-alma-ganhos ul, .epm-alma-esquecidas ul, .epm-alma-historico ul { margin: 4px 0 0; padding-left: 18px; font-size: 12.5px; }
+.epm-chat-alma { border-left: 3px solid var(--epm-cor-cartao, #7FB3E0); }
+.epm-chat-alma .epm-alma-resposta { border-top: 1px dashed currentColor; padding-top: 4px; font-style: italic; }

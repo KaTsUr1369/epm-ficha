@@ -14,6 +14,24 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.13
+
+- **Ressonância de Alma** (aba nova **Almas**):
+  - O Mestre registra as almas do personagem: nome, imagem, origem, personalidade, área de conhecimento, ficha ligada e Relíquia de Alma. Almas não reveladas não aparecem para o jogador.
+  - **Conversar** (1 vez por semana, sem teste): a pergunta vai para o chat, só para o Mestre e o dono, com um botão para o Mestre responder no próprio cartão.
+  - **Trocar de lugar** (1 vez por mês, só com a Relíquia no inventário ou na mochila): a ficha passa a usar os atributos, perícias, habilidades e ataques da alma; Vida, Mana, Estamina e condições continuam as do corpo. Acaba depois de 1 hora de jogo ou no fim do combate (se começou nele), volta tudo e dá +1 de Exaustão.
+  - **Manifestação involuntária**: dispara sozinha com a Vida em 0 e quando a Sanidade cai para 25 ou menos; o Mestre também tem um botão. A alma fala por cerca de 1 minuto (10 rodadas em combate). **Calar**: Vontade DT 20; falhar tira 1d6 de Sanidade (a temporária primeiro).
+  - **Ritual do Vazio** (Mestre): recompensa permanente (Relíquia, bônus, idioma ou treinamento concluído sem PT nem horas, marcada como Ressonância). O jogador escolhe 2 memórias para esquecer e o Mestre aprova. As memórias esquecidas ficam guardadas só para o Mestre, que pode devolver.
+  - **Guardião Ancestral** (Mestre): token fantasma com a ficha da alma e metade da Vida, entra no combate junto do personagem. **Dispensar** remove.
+  - Vínculo Quebrado, Apagamento, Ruptura Espiritual, maldições que bloqueiam a alma ou um bloqueio manual do Mestre desligam a seção. Sem o Simple Calendar, o Mestre recarrega os usos no Escudo (**Recarregar Ressonância**).
+- **Balanceamento (regras gerais e arquétipos)**:
+  - **Teto de Bônus** (regra opcional, ligada por padrão): bônus de habilidades de arquétipo e classe e bônus de cena de habilidade somam no máximo +5 / +8 / +12 / +15 num mesmo teste, ataque, CA ou defesa. O cartão mostra quanto foi cortado. Os bônus de cena ganharam o campo **origem**.
+  - **Tipos de dano em quatro naturezas** (Físico, Natural, Mágico, Tecnológico), com Água, Ar, Terra e Sombra, e a opção de escolher a natureza inteira ("dano natural"). Nomes antigos (Elétrico, Raio, Gelo, Trovejante, Pressão, Arcano, Sangue, Luz…) são trocados nas fichas e itens que já existem.
+  - Condições: **Flutuando** (mover gasta a Ação Padrão), **Assustado** (desvantagem no próximo ataque; sai depois dele ou no fim do próximo turno), **Molhado** (o próximo acerto de Relâmpago dobra e o Molhado termina).
+  - Combatente: recursos 26 PV / 16 PM / 21 PE no nível 1; Estilos com os números novos (Duelista +3, Bêbado +3/+1/+1, Arma Dupla +2 Acerto e +1 Esquiva, Atirador margem +1 ou +4 abrindo mão do atributo); Maestrias com custo em PE só 1 vez por turno.
+  - Conjurador: círculos nos níveis 2 / 10 / 19 / 29 / 38 / 47. Aumento de Status em todo nível par para todos (2 no nível 50). Artífice: 2 / 3 / 4 Projetos por dia (níveis 1 / 25 / 47).
+  - Aba Mestre das fichas de NPC: **Preencher pelo nível** (Lacaio, Monstro, Monstro Forte ou Chefe, níveis 1–50): CA, acerto, CD e Vida pela tabela de inimigos, e o dano por turno de referência.
+
 ## Novidades da 0.8.12
 
 - **Formas das armas na aba Combate**: cada forma da arma (as que não são passivas) aparece como um botão próprio ao lado de "Atacar", com o nome, a ação, o custo e o uso (ex.: "Varredura · Bônus · 3 PE · 1× por combate"). Clicar usa a forma direto, sem abrir a lista. Formas bloqueadas ou com o uso já gasto aparecem apagadas. O mesmo vale nas fichas de NPC (Ataques e Ações).

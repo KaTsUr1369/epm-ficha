@@ -11,7 +11,8 @@ import {
   num, int, novoId, lerPoder, avaliarForma, textoCusto, eSustentada, contarRaridades, situacaoLimite, raridadeItem,
   maxFormula, tetoDano, contarEfeitos, somarFormula, valorEmCobre, pagarMoedas, consolidarMoedas,
   formatarMoedas, formaPadrao, moedaPorId, multiplicarDados, bonusCenaAtivos, limitar, lerEfeitosItem,
-  custoEfetivo, condicaoPorId, danoRecebido, municaoDaArma, lerTipoDano, normalizarTexto, nivelHabilidade, montarBonusCena, itemAtivo
+  custoEfetivo, condicaoPorId, danoRecebido, municaoDaArma, lerTipoDano, normalizarTexto, nivelHabilidade, montarBonusCena, itemAtivo,
+  valorBonusCena, origemBonusCena, corteTetoAtaque
 } from "./data.mjs";
 import { lerAtor, dadosRolagemEPM, danoArma, periciaAtaquePadrao, ataqueDeArma, ataqueCustom, modsDoAtaque } from "./context.mjs";
 import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos.mjs";
@@ -1120,7 +1121,7 @@ export async function novoTurno(actor) {
     [`${P}.acoes.padrao`]: usadas.padrao, [`${P}.acoes.bonus`]: usadas.bonus, [`${P}.acoes.movimento`]: usadas.movimento,
     [`${P}.acoes.reacao`]: false, [`${P}.acoes.defesas`]: 0,
     [`${P}.usos.ataqueExtraTurno`]: false, [`${P}.usos.gemeaTurno`]: false,
-    [`${P}.usos.manobraTurno`]: false, [`${P}.acoes.convertida`]: "", [`${P}.acoes.extra`]: false
+    [`${P}.usos.manobraTurno`]: false, [`${P}.usos.maestriaTurno`]: false, [`${P}.acoes.convertida`]: "", [`${P}.acoes.extra`]: false
   };
   // Formas "1× por turno" (habilidades e formas de itens) voltam
   Object.assign(updates, liberarUsosFormas(dados, ["turno"]));
@@ -1138,6 +1139,12 @@ export async function novoTurno(actor) {
   }
   const transf = turnoTransformacao(dados);
   Object.assign(updates, transf.updates);
+  // Assustado: termina no fim do próximo turno da criatura (marca no 1º turno, sai no seguinte)
+  let assustadoSaiu = false;
+  if (actor.statuses?.has?.("epm-assustado")) {
+    if (dados.assustadoTurno) { updates[`${P}.-=assustadoTurno`] = null; assustadoSaiu = true; }
+    else updates[`${P}.assustadoTurno`] = true;
+  } else if (dados.assustadoTurno) updates[`${P}.-=assustadoTurno`] = null;
   // Recuperado: vale durante este turno e acaba no próximo
   const recup = recuperadoNoNovoTurno(dados);
   Object.assign(updates, recup.updates);
@@ -1177,6 +1184,7 @@ export async function novoTurno(actor) {
     }
   }
   await actor.update(updates);
+  if (assustadoSaiu) await actor.toggleStatusEffect("epm-assustado", { active: false });
   if (recup.encerrar) await encerrarRecuperado(actor);
   await fimDesprevenidoDaFalha(actor);
   if (divida) ui.notifications.info(`Novo turno: ${divida} ação(ões) já gasta(s) com defesas.`);
@@ -1539,6 +1547,14 @@ let chatLigado = false;
  * nos alvos marcados no momento do ataque ou, se não havia, nos alvos marcados agora.
  * O atacante nunca recebe o dano por estar selecionado.
  */
+/** Molhado: o acerto de Relâmpago dobra (vulnerabilidade) e o Molhado termina. */
+export async function secarMolhado(alvo, tipoDano, dano) {
+  if (!dano || !alvo?.statuses?.has?.("epm-molhado") || !alvo.isOwner) return false;
+  if (![...(lerTipoDano(tipoDano ?? "").tipos ?? [])].includes("raio")) return false;
+  await alvo.toggleStatusEffect("epm-molhado", { active: false });
+  return true;
+}
+
 export async function aplicarDanoDoCartao(atacante, botao) {
   const valor = Math.max(0, int(botao.dataset.valor));
   let alvos = (botao.dataset.alvos ?? "").split(",").filter(Boolean).map(u => fromUuidSync(u)).filter(Boolean);
@@ -1560,6 +1576,7 @@ export async function aplicarDanoDoCartao(atacante, botao) {
     resto -= usaTemp;
     await alvo.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - resto) }, { epmTipoDano: tipoDano });
     partes.push(`${alvo.name} ${calc.final}${calc.passos.length ? ` (${calc.passos.join("; ")})` : ""}`);
+    if (await secarMolhado(alvo, tipoDano, calc.final)) partes.push(`${alvo.name} deixa de estar Molhado`);
     await somarCorrupcao(alvo, calc.final, tipoDano);
     // Durabilidade: sofrer um acerto crítico tira 10 da armadura equipada
     if (botao.dataset.critico) {
@@ -1764,8 +1781,11 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     }
   }
   const opcoesArq = [];
-  if (ef?.id === "certeiro") opcoesArq.push(chk("certeiro", `Ataque Certeiro: ${ef.custo} PE → +${ef.acerto} de Acerto`, { desabilitado: peDisp < ef.custo }));
-  if (ef?.id === "longa") opcoesArq.push(chk("longa", `Arma Longa: ${ef.custo} PE → +${String(ef.alcance).replace(".", ",")} m de alcance`, { desabilitado: peDisp < ef.custo }));
+  // Maestrias com custo em PE: 1 vez por turno
+  const maestriaUsada = !!dados.usos?.maestriaTurno;
+  const jaTxt = maestriaUsada ? " <em>(já usada neste turno)</em>" : "";
+  if (ef?.id === "certeiro") opcoesArq.push(chk("certeiro", `Ataque Certeiro: ${ef.custo} PE → +${ef.acerto} de Acerto${jaTxt}`, { desabilitado: maestriaUsada || peDisp < ef.custo }));
+  if (ef?.id === "longa") opcoesArq.push(chk("longa", `Arma Longa: ${ef.custo} PE → +${String(ef.alcance).replace(".", ",")} m de alcance${jaTxt}`, { desabilitado: maestriaUsada || peDisp < ef.custo }));
   if (ef?.id === "leve" && ef.danoDex) notas.push("Arma Leve: +3 de dano se a arma já usa Destreza (some no bônus externo)");
   if (estilos.includes("duelista")) opcoesArq.push(chk("duelista", `Duelista: alvo é um único inimigo isolado (+${estiloVal(dados, "duelista", "acertoIsolado")})`));
   if (estilos.includes("atirador")) opcoesArq.push(chk("atirador", `Atirador: abrir mão do modificador de dano para reduzir a margem de crítico em ${estiloVal(dados, "atirador", "margem")}`));
@@ -1864,8 +1884,8 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   }
   if (extrasComb) { pe += ae.custo; updates[`${P}.usos.ataqueExtraTurno`] = true; }
   if (extrasGemea) { pe += ef.custo; updates[`${P}.usos.gemeaTurno`] = true; }
-  if (escolha.certeiro && ef?.id === "certeiro") pe += ef.custo;
-  if (escolha.longa && ef?.id === "longa") pe += ef.custo;
+  if (escolha.certeiro && ef?.id === "certeiro") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
+  if (escolha.longa && ef?.id === "longa") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
   if (pe) {
     const c = custoRecurso(ficha, "pe", pe);
     if (!c.ok) return ui.notifications.warn(`Faltam ${c.falta} PE para essas opções (${pe} PE).`);
@@ -1909,13 +1929,14 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
 
   // Bônus que valem para todos os ataques desta rodada
   const bonusFontes = [];
-  if (escolha.certeiro && ef?.id === "certeiro") bonusFontes.push({ valor: ef.acerto, fonte: "Ataque Certeiro" });
-  if (escolha.duelista) bonusFontes.push({ valor: estiloVal(dados, "duelista", "acertoIsolado"), fonte: "Duelista" });
-  if (estilos.includes("dupla") && armasEquipadas >= 2) bonusFontes.push({ valor: estiloVal(dados, "dupla", "acerto"), fonte: "Arma Dupla" });
-  if (escolha.presa) bonusFontes.push({ valor: ARQUETIPOS.combatente.cacador.acerto, fonte: `Presa (${presa})` });
+  if (escolha.certeiro && ef?.id === "certeiro") bonusFontes.push({ valor: ef.acerto, fonte: "Ataque Certeiro", hab: true });
+  if (escolha.duelista) bonusFontes.push({ valor: estiloVal(dados, "duelista", "acertoIsolado"), fonte: "Duelista", hab: true });
+  if (estilos.includes("dupla") && armasEquipadas >= 2) bonusFontes.push({ valor: estiloVal(dados, "dupla", "acerto"), fonte: "Arma Dupla", hab: true });
+  if (escolha.presa) bonusFontes.push({ valor: ARQUETIPOS.combatente.cacador.acerto, fonte: `Presa (${presa})`, hab: true });
   if (tec?.penal) bonusFontes.push({ valor: tec.penal, fonte: tec.fonte });
   const base = {
-    ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador, margemBonus: escolha.atirador ? estiloVal(dados, "atirador", "margem") : 0,
+    ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador, margemBonus: escolha.atirador ? estiloVal(dados, "atirador", "margem")
+      : (estilos.includes("atirador") && (at?.alcanceCat === "distancia" || (at?.alcanceCat !== "corpo" && at?.periciaId === "pontaria")) ? int(estiloVal(dados, "atirador", "margemSempre")) : 0),
     maestria: favorita && ef && ["destrutivo", "alongado"].includes(ef.id) ? ef : null,
     notasExtra: [
       ...(gastos.length ? [`Gastou: ${gastos.join(", ")}.`] : []),
@@ -2015,6 +2036,11 @@ export function somarDadosDaArma(formula, n) {
  * (Exaustão 1), o multiplicador de dano (Ruína Carmesim) e, vindo do diálogo, ataques extras, Maestria,
  * Estilo e Presa.
  */
+/** Itens do ator como fontes (para saber se um bônus de cena veio de habilidade ou de item). */
+function poderesComoFonte(actor) {
+  return (actor?.items?.contents ?? actor?.items ?? []).map(i => ({ id: i.id, poder: ["feat", "spell"].includes(i.type) }));
+}
+
 export async function rolarAtaque(actor, at, {
   modo = "normal", extraAcerto = "", extraDano = "", margem, mult, comDano = true,
   bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestria = null, notasExtra = [], tipoArma = ""
@@ -2026,7 +2052,12 @@ export async function rolarAtaque(actor, at, {
   const rd = dadosRolagem(actor, ficha);
   const d20 = formulaD20({ vantagem: modo === "vantagem", desvantagem: modo === "desvantagem" });
   const bonusArq = bonusFontes.reduce((s, b) => s + int(b.valor), 0);
-  const partesAcerto = [d20, per?.total ?? 0, at.bonusAcerto, cena.acerto, m.acerto, bonusArq, int(penalidade)].map(String).filter(x => x !== "0");
+  // Teto de Bônus: habilidades (perícia, acerto, bônus de cena de habilidade, estilos e Maestrias) somam no máximo o teto
+  const habCena = Object.values(dados.bonusCena ?? {}).filter(b => b?.ativo && origemBonusCena(b, poderesComoFonte(actor)) === "habilidade").map(b => valorBonusCena(b, "acerto"));
+  const habArq = bonusFontes.filter(b => b.hab).map(b => int(b.valor));
+  const extrasHab = [...habCena, ...habArq];
+  const corteTeto = corteTetoAtaque(ficha, at.periciaId, { extraPos: extrasHab.filter(v => v > 0).reduce((a, b) => a + b, 0), extraNeg: extrasHab.filter(v => v < 0).reduce((a, b) => a + b, 0) });
+  const partesAcerto = [d20, per?.total ?? 0, at.bonusAcerto, cena.acerto, m.acerto, bonusArq, int(penalidade), corteTeto].map(String).filter(x => x !== "0");
   if (extraAcerto) partesAcerto.push(extraAcerto);
   let atk;
   try {
@@ -2036,9 +2067,16 @@ export async function rolarAtaque(actor, at, {
     console.warn("EPM |", err);
     return ui.notifications.error("Não consegui rolar o acerto. Confira o bônus externo.");
   }
+  if (corteTeto) notas.push(`Teto de Bônus +${ficha.teto.valor}: ${Math.abs(corteTeto)} ${corteTeto < 0 ? "de bônus cortado" : "de penalidade cortada"}${Math.abs(corteTeto) === 1 ? "" : "s"}.`);
   {
     const usados = await consumirBonusUmaVez(actor);
     if (usados.length) notas.push(`Usou (só neste ataque): ${usados.join(", ")}.`);
+    // Assustado: a desvantagem vale só para este ataque
+    if (actor.statuses?.has?.("epm-assustado")) {
+      await actor.toggleStatusEffect("epm-assustado", { active: false });
+      await actor.update({ [`${P}.-=assustadoTurno`]: null });
+      notas.push("Assustado terminou depois deste ataque.");
+    }
   }
   // Sem o diálogo (margem não veio), a margem dos bônus de cena entra aqui
   const margemCena = margem === undefined || margem === null || margem === "" ? cena.margem : 0;

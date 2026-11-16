@@ -42,7 +42,9 @@
         <label class="epm-mini largo"><span>fórmula da Vida</span><input type="text" name="flags.epm-ficha.npc.vidaFormula" value="{{npcFicha.vidaFormula}}" placeholder="4d8 + 6" /></label>
         <button type="button" class="epm-npcv-btn gm" data-action="npcRolarVida">Rolar Vida</button>
         <button type="button" class="epm-npcv-btn gm" data-action="npcRolarVidaTokens">Rolar nos tokens selecionados</button>
+        <button type="button" class="epm-npcv-btn gm" data-action="npcPreencherNivel" title="CA, acerto, CD, Vida e dano por turno pela tabela de inimigos por nível">Preencher pelo nível</button>
       </div>
+      {{#if npcFicha.referencia}}<p class="epm-npcv-nota">Referência: {{npcFicha.referencia.tipoLabel}} de nível {{npcFicha.referencia.nivel}} · CA {{npcFicha.referencia.ca}} · Acerto +{{npcFicha.referencia.acerto}} · CD {{npcFicha.referencia.cd}} · Vida {{npcFicha.referencia.pv}} · dano por turno ~{{npcFicha.referencia.dano}}</p>{{/if}}
       <p class="epm-npcv-nota">{{#if npcFicha.eElite}}Monstro Forte e Chefe usam Vida fixa: escreva a máxima no cabeçalho (modo edição).{{else}}Cada token não vinculado pode ter a sua Vida rolada.{{/if}}</p>
     </div>
   </section>

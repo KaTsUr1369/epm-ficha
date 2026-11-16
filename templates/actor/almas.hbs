@@ -1,0 +1,123 @@
+<section class="tab epm-aba epm-almas {{cls.almas}}" data-group="primary" data-tab="almas">
+  <header class="epm-aba-topo">
+    <p class="epm-dica">Todo Escolhido carrega ecos de outras vidas. A Ressonância de Alma é o laço entre essas almas: dá para usar de propósito, mas às vezes ela acorda sozinha.</p>
+    <div class="epm-aba-acoes">
+      {{#if isGM}}
+      {{#if edicao}}<button type="button" class="epm-botao epm-botao-forte" data-action="almaNova"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova alma</button>{{/if}}
+      <button type="button" class="epm-botao" data-action="almaManifestar" title="Manifestação involuntária por um gatilho do Mestre"{{#if almas.bloqueado}} disabled{{/if}}><i class="fa-solid fa-comment-slash" aria-hidden="true"></i> Manifestação</button>
+      <button type="button" class="epm-botao" data-action="almaRitual" title="Ritual do Vazio: recompensa permanente em troca de 2 memórias"{{#if almas.bloqueado}} disabled{{/if}}><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i> Ritual do Vazio</button>
+      <button type="button" class="epm-botao epm-botao-sutil" data-action="almaRecarregar" title="Libera a Conversa da semana e a Troca do mês"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar usos</button>
+      {{/if}}
+    </div>
+  </header>
+
+  {{#if almas.bloqueado}}<p class="epm-aviso epm-alma-bloqueio"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Ressonância bloqueada: {{almas.bloqueios}}.</p>{{/if}}
+  {{#if isGM}}{{#if edicao}}<label class="epm-campo epm-alma-bloqueio-manual"><span>Bloqueio manual (maldição ou outro motivo; vazio = sem bloqueio)</span><input type="text" name="flags.epm-ficha.ressonancia.bloqueio" value="{{almas.bloqueioManual}}" /></label>{{/if}}{{/if}}
+
+  <div class="epm-alma-usos">
+    <span class="epm-tag{{#if almas.conversa.usado}} usado{{/if}}"><i class="fa-solid fa-comments" aria-hidden="true"></i> Conversa: {{#if almas.conversa.usado}}usada esta semana{{else}}disponível{{/if}}</span>
+    <span class="epm-tag{{#if almas.troca.usado}} usado{{/if}}"><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> Troca de lugar: {{#if almas.troca.usado}}usada este mês{{else}}disponível{{/if}}</span>
+    <span class="epm-dica">{{#if almas.calendario}}Contados pelo calendário do jogo. Não se acumulam.{{else}}Sem Simple Calendar: o Mestre recarrega no Escudo. Não se acumulam.{{/if}}</span>
+  </div>
+
+  {{#if almas.trocaAtiva}}
+  <div class="epm-alma-banner troca">
+    <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
+    <div><strong>{{almas.trocaAtiva.alma}} está no controle do corpo.</strong> Termina {{almas.trocaAtiva.termina}}. Ao voltar: +1 de Exaustão.</div>
+    {{#if editavel}}<button type="button" class="epm-botao" data-action="almaEncerrarTroca">Encerrar a troca</button>{{/if}}
+  </div>
+  {{/if}}
+  {{#if almas.manifestacao}}
+  <div class="epm-alma-banner manifestacao">
+    <i class="fa-solid fa-comment-slash" aria-hidden="true"></i>
+    <div><strong>{{almas.manifestacao.alma}} fala através de {{actor.name}}</strong> {{almas.manifestacao.termina}}{{#if almas.manifestacao.gatilho}} ({{almas.manifestacao.gatilho}}){{/if}}. Só fala: não age, não ataca e não usa habilidades.</div>
+    {{#if editavel}}{{#unless almas.manifestacao.tentou}}<button type="button" class="epm-botao" data-action="almaCalar">Calar (Vontade DT 20)</button>{{/unless}}{{/if}}
+    {{#if isGM}}<button type="button" class="epm-botao epm-botao-sutil" data-action="almaEncerrarManifestacao">Encerrar</button>{{/if}}
+  </div>
+  {{/if}}
+  {{#if almas.ritual}}
+  <div class="epm-alma-banner ritual">
+    <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+    <div>
+      <strong>Ritual do Vazio com {{almas.ritual.alma}}</strong>: {{almas.ritual.recompensa}}.
+      {{#if almas.ritual.escolhendo}}Falta escolher 2 memórias para esquecer.{{#if almas.ritual.recusa}} <em>{{almas.ritual.recusa}}</em>{{/if}}{{/if}}
+      {{#if almas.ritual.aprovando}}Memórias escolhidas: {{#each almas.ritual.memorias}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}. Esperando o Mestre.{{/if}}
+    </div>
+    {{#if almas.ritual.escolhendo}}{{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="almaMemorias">Escolher memórias</button>{{/if}}{{/if}}
+    {{#if isGM}}
+    {{#if almas.ritual.aprovando}}<button type="button" class="epm-botao epm-botao-forte" data-action="almaAprovar">Aprovar</button><button type="button" class="epm-botao" data-action="almaRecusar">Pedir outras</button>{{/if}}
+    <button type="button" class="epm-botao epm-botao-sutil" data-action="almaCancelarRitual">Cancelar</button>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#unless almas.temAlmas}}<div class="epm-vazio-grande"><p>{{#if isGM}}Nenhuma alma registrada. No modo edição, use "Nova alma". O personagem começa conhecendo só uma.{{else}}Nenhuma alma revelada ainda.{{/if}}</p></div>{{/unless}}
+
+  <div class="epm-almas-lista">
+    {{#each almas.almas}}
+    <article class="epm-alma{{#unless revelada}} oculta{{/unless}}{{#if noControle}} no-controle{{/if}}{{#if falando}} falando{{/if}}">
+      <figure class="epm-alma-retrato">
+        <img src="{{img}}" alt="" {{#if @root.isGM}}{{#if @root.edicao}}data-action="almaImagem" data-alma="{{id}}" title="Trocar imagem"{{/if}}{{/if}}>
+      </figure>
+      <div class="epm-alma-corpo">
+        {{#if @root.editarAlmas}}
+        <div class="epm-alma-campos">
+          <label class="epm-campo"><span>Nome</span><input type="text" name="flags.epm-ficha.ressonancia.almas.{{id}}.nome" value="{{nomeBruto}}" /></label>
+          <label class="epm-campo"><span>Origem (de onde ou de quando)</span><input type="text" name="flags.epm-ficha.ressonancia.almas.{{id}}.origem" value="{{origem}}" /></label>
+          <label class="epm-campo"><span>Personalidade</span><input type="text" name="flags.epm-ficha.ressonancia.almas.{{id}}.personalidade" value="{{personalidade}}" /></label>
+          <label class="epm-campo"><span>Área de conhecimento</span><input type="text" name="flags.epm-ficha.ressonancia.almas.{{id}}.conhecimento" value="{{conhecimento}}" /></label>
+          <label class="epm-campo"><span>Ficha da alma (troca e fantasma)</span><select name="flags.epm-ficha.ressonancia.almas.{{id}}.ator"><option value="">—</option>{{#each atores}}<option value="{{uuid}}" {{#if selected}}selected{{/if}}>{{nome}}</option>{{/each}}</select></label>
+          <label class="epm-campo"><span>Relíquia de Alma (item do inventário)</span><select name="flags.epm-ficha.ressonancia.almas.{{id}}.reliquia"><option value="">—</option>{{#each itens}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{nome}}</option>{{/each}}</select></label>
+        </div>
+        {{else}}
+        <header class="epm-alma-topo"><h3>{{nome}}</h3>{{#unless revelada}}<span class="epm-tag">oculta para o jogador</span>{{/unless}}{{#if noControle}}<span class="epm-tag ativa">no controle</span>{{/if}}{{#if falando}}<span class="epm-tag ativa">falando</span>{{/if}}{{#if guardiaoAtivo}}<span class="epm-tag ativa">guardião em cena</span>{{/if}}</header>
+        <dl class="epm-alma-info">
+          {{#if origem}}<dt>Origem</dt><dd>{{origem}}</dd>{{/if}}
+          {{#if personalidade}}<dt>Personalidade</dt><dd>{{personalidade}}</dd>{{/if}}
+          {{#if conhecimento}}<dt>Conhecimento</dt><dd>{{conhecimento}}</dd>{{/if}}
+          <dt>Relíquia</dt><dd>{{#if reliquiaItem}}<img class="epm-alma-reliquia" src="{{reliquiaItem.img}}" alt=""> {{reliquiaItem.nome}}{{else}}<span class="epm-dica">nenhuma no inventário</span>{{/if}}</dd>
+          {{#if ficha}}<dt>Ficha</dt><dd><button type="button" class="epm-link" data-action="almaAbrirFicha" data-uuid="{{ficha.uuid}}">{{ficha.nome}}</button></dd>{{/if}}
+        </dl>
+        {{/if}}
+        <div class="epm-alma-botoes">
+          {{#if @root.editavel}}
+          <button type="button" class="epm-botao" data-action="almaConversar" data-alma="{{id}}"{{#unless podeConversar}} disabled{{/unless}} title="1 vez por semana. Sem teste: o Mestre responde no chat."><i class="fa-solid fa-comments" aria-hidden="true"></i> Conversar</button>
+          {{#if podeTrocar}}<button type="button" class="epm-botao" data-action="almaTrocar" data-alma="{{id}}" title="1 vez por mês, com a Relíquia desta alma"><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> Trocar de lugar</button>{{else}}{{#if @root.isGM}}{{#if motivoSemTroca}}<span class="epm-dica">{{motivoSemTroca}}</span>{{/if}}{{/if}}{{/if}}
+          {{/if}}
+          {{#if @root.isGM}}
+          {{#if guardiaoAtivo}}<button type="button" class="epm-botao" data-action="almaDispensar" data-alma="{{id}}"><i class="fa-solid fa-ghost" aria-hidden="true"></i> Dispensar guardião</button>
+          {{else}}<button type="button" class="epm-botao" data-action="almaGuardiao" data-alma="{{id}}"{{#if @root.almas.bloqueado}} disabled{{/if}} title="Guardião Ancestral: fantasma com a ficha da alma e metade da Vida"><i class="fa-solid fa-ghost" aria-hidden="true"></i> Guardião</button>{{/if}}
+          <button type="button" class="epm-botao epm-botao-sutil" data-action="almaRevelar" data-alma="{{id}}">{{#if revelada}}Ocultar{{else}}Revelar{{/if}}</button>
+          {{#if @root.edicao}}<button type="button" class="epm-icone-botao perigo" data-action="almaExcluir" data-alma="{{id}}" title="Excluir alma"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>{{/if}}
+          {{/if}}
+        </div>
+      </div>
+    </article>
+    {{/each}}
+  </div>
+
+  {{#if almas.temBonus}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Ganhos da Ressonância</h3><span class="epm-dica">Nunca se perdem</span></header>
+    <ul class="epm-alma-ganhos">
+      {{#each almas.bonus}}<li><strong>{{texto}}</strong>{{#if nome}} · {{nome}}{{/if}} <span class="epm-dica">({{alma}})</span>{{#if @root.isGM}}{{#if @root.edicao}} <button type="button" class="epm-icone-botao perigo" data-action="almaRemoverBonus" data-id="{{id}}" title="Correção do Mestre"><i class="fa-solid fa-xmark"></i></button>{{/if}}{{/if}}</li>{{/each}}
+    </ul>
+  </section>
+  {{/if}}
+
+  {{#if almas.temEsquecidas}}
+  <section class="epm-painel">
+    <header class="epm-painel-titulo"><h3>Memórias esquecidas</h3><span class="epm-dica">Só voltam por meios extraordinários</span></header>
+    <ul class="epm-alma-esquecidas">
+      {{#each almas.esquecidas}}<li><span>{{rotuloJogador}}</span>{{#if @root.isGM}}{{#if conteudoTexto}} <em class="epm-dica" title="Só o Mestre vê">{{conteudoTexto}}</em>{{/if}} <button type="button" class="epm-link" data-action="almaRestaurar" data-id="{{id}}">Devolver</button>{{/if}}</li>{{/each}}
+    </ul>
+  </section>
+  {{/if}}
+
+  {{#if almas.rituais.length}}
+  <details class="epm-painel epm-alma-historico">
+    <summary>Rituais do Vazio ({{almas.rituais.length}})</summary>
+    <ul>{{#each almas.rituais}}<li><strong>{{alma}}</strong>: {{recompensa}} · {{memorias}}</li>{{/each}}</ul>
+  </details>
+  {{/if}}
+</section>

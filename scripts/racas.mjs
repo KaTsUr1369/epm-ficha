@@ -59,7 +59,7 @@ export const RACAS = [
     ],
     unicas: [
       { id: "pes", nome: "Pés Rápidos", texto: "+3 de deslocamento.", auto: { desl: 3 } },
-      { id: "pelos", nome: "Pelos Resistentes", texto: "Resistência a dano de Frio e de Fogo.", auto: { resistencias: ["Gelo", "Fogo"] } },
+      { id: "pelos", nome: "Pelos Resistentes", texto: "Resistência a dano de Frio e de Fogo.", auto: { resistencias: ["Frio", "Fogo"] } },
       { id: "pele", nome: "Pele Rígida", texto: "Todo ataque contra você causa −2 de dano.", auto: { rd: 2 } },
       { id: "forca", nome: "Força Anã", texto: "Vantagem em testes de resistência de Constituição.", auto: { vantagemPericias: ["fortitude"] } }
     ]

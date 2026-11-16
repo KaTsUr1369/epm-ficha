@@ -90,6 +90,10 @@ export async function pedirAoMestre(tipo, dados = {}) {
 }
 
 async function tratarPedido({ tipo, dados, userId }) {
+  if (tipo === "ressonancia") {
+    const { pedidoNoMestre } = await import("./ressonancia.mjs");
+    return pedidoNoMestre(dados);
+  }
   if (tipo === "relacaoMutua") {
     const { relacaoMutuaNoMestre } = await import("./relacoes.mjs");
     return relacaoMutuaNoMestre(dados);

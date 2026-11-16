@@ -18,9 +18,10 @@ export const REGRAS_OPCIONAIS = [
   { id: "purificacao", n: 20, label: "Purificação e transferência de maldição", dica: "Botões só do Mestre em cada maldição: Purificar (moedas, Sanidade ou sacrifício) e Transferir (o outro precisa aceitar)." },
   { id: "acumulos", n: 21, label: "Acúmulos de condições", dica: "Sangrando, Envenenado e Em Chamas acumulam de 1 a 3. O dano do Novo turno é multiplicado pelos acúmulos." },
   { id: "descanso", n: 22, label: "Atividades de descanso", dica: "No descanso longo cada personagem escolhe: Vigiar, Cozinhar, Conversar, Estudar ou Rezar." },
+  { id: "tetoBonus", n: 23, padrao: true, label: "Teto de Bônus das habilidades", dica: "Num mesmo teste (ataque, resistência, perícia, CD ou CA), os bônus de habilidades de arquétipo e classe (e bônus de cena vindos delas) somam no máximo +5 (Nv. 1–10), +8 (11–30), +12 (31–50) ou +15 (51+). Atributo, pontos de perícia, itens e vantagem ficam fora. O cartão mostra quanto foi cortado." },
   { id: "durabilidade", n: 8, label: "Durabilidade de itens", dica: "Armas, armaduras, escudos e ferramentas vão de 0 a 100. Falha crítica com a arma e crítico sofrido tiram 10; em 0 o item fica Quebrado (sem efeitos, nem a CA) até ser consertado (ferramenta, 10 minutos, Ofício DT 12, +50). Desligada, nada disso aparece e nenhum item fica quebrado." }
 ];
-export const PADRAO_REGRAS = Object.fromEntries(REGRAS_OPCIONAIS.map(r => [r.id, false]));
+export const PADRAO_REGRAS = Object.fromEntries(REGRAS_OPCIONAIS.map(r => [r.id, !!r.padrao]));
 
 /** Eventos rápidos de afinidade (botões do Mestre na aba Relações). */
 export const EVENTOS_AFINIDADE_PADRAO = [

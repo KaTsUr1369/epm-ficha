@@ -47,6 +47,7 @@ export function listaPropriedades(f = {}) {
   return Array.isArray(f.propriedades) ? f.propriedades.filter(Boolean) : [];
 }
 import { contextoProducao } from "./producao.mjs";
+import { contextoAlmas } from "./ressonancia.mjs";
 import { normalizarHex, posicaoNaRoda, estiloPaleta } from "./cores.mjs";
 
 /** Dados de rolagem do EPM (@atr.forca, @per.luta, @nivel, @cd …). */
@@ -780,7 +781,8 @@ export function montarContexto({
   const podeOcultar = a => a.id !== "principal" && !a.soEdicao && !a.opcional && !a.soNpc;
   const brutoFlags = actor?.flags?.[FLAG] ?? {};
   const abaLigada = a => (a.opcional ? !!abasExtras[a.id] : !(podeOcultar(a) && abaOcultaNpc(actor, brutoFlags, a.id)));
-  const abaPermitida = a => !a.soNpc || (eAtorNpc(actor) && (isGM || !a.soMestre));
+  const temAlmas = Object.values(dados.ressonancia?.almas ?? {}).some(x => x && (isGM || x.revelada));
+  const abaPermitida = a => (!a.soNpc || (eAtorNpc(actor) && (isGM || !a.soMestre))) && (!a.almas || temAlmas || (isGM && edicao));
   let abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id))
     .filter(a => a && abaPermitida(a) && (!a.soEdicao || edicao) && abaLigada(a) && (!a.seConteudo || edicao || temConteudo(a.seConteudo)))
     .map(a => ({ ...a, soEdicao: a.soEdicao || (!!a.seConteudo && !temConteudo(a.seConteudo)) }));
@@ -806,6 +808,7 @@ export function montarContexto({
     editavel, edicao, isGM, limitado: !!ui.limitado, tempAberto: !!ui.tempAberto && editavel,
     dados, ficha, cls, abaAtual,
     abas: abasVisiveis.map(a => ({ ...a, ativa: a.id === abaAtual })),
+    mostrarAlmas: abasVisiveis.some(a => a.id === "almas" && !a.soEdicao), editarAlmas: edicao && isGM,
     arquetiposSugeridos: ARQUETIPOS_SUGERIDOS
   };
 
@@ -1084,7 +1087,8 @@ export function montarContexto({
     margem: int(b.margem), critMult: int(b.critMult), debuff: !!b.debuff,
     desvantagem: ["ataques", "testes", "ambos"].includes(b.desvantagem) ? b.desvantagem : "",
     desvantagemTexto: { ataques: "desvantagem em ataques", testes: "desvantagem em testes", ambos: "desvantagem em ataques e testes" }[b.desvantagem] ?? "",
-    opcoesDesvantagem: [["", "nenhuma"], ["ataques", "ataques"], ["testes", "testes"], ["ambos", "ataques e testes"]].map(([id, label]) => ({ id, label, selected: id === (b.desvantagem ?? "") }))
+    opcoesDesvantagem: [["", "nenhuma"], ["ataques", "ataques"], ["testes", "testes"], ["ambos", "ataques e testes"]].map(([id, label]) => ({ id, label, selected: id === (b.desvantagem ?? "") })),
+    opcoesOrigem: [["habilidade", "habilidade (entra no Teto)"], ["item", "item"], ["bencao", "bênção ou maldição"], ["condicao", "condição"], ["outros", "outros"]].map(([id, label]) => ({ id, label, selected: id === (b.origemTipo || "habilidade") }))
   })).map(b => {
     // Etiquetas: no debuff os números aparecem como penalidade
     const n = v => (b.debuff ? -Math.abs(int(v)) : int(v));
@@ -1786,6 +1790,7 @@ export function montarContexto({
 
   /* ---------- Companheiros ---------- */
   ctx.companheiros = montarCompanheiros({ dados, ficha, edicao, editavel });
+  ctx.almas = contextoAlmas({ actor, dados, ficha, isGM, edicao, editavel });
 
   /* ---------- Bestiário ---------- */
   ctx.bestiario = Object.entries(dados.bestiario ?? {}).filter(([, b]) => b).map(([id, b]) => {

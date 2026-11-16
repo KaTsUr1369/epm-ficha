@@ -94,7 +94,7 @@
       </figure>
       <div class="epm-marca-textos">
         <p class="epm-dica">A tatuagem sobrenatural que liga você aos seus outros personagens e permite a Ressonância de Alma.</p>
-        {{#if editavel}}<button type="button" class="epm-botao epm-ressonancia" data-action="ressonancia" title="Chamar outro personagem seu pela Marca (registra no chat e abre a ficha dele)"><i class="fa-solid fa-link" aria-hidden="true"></i> Ressonância de Alma</button>{{/if}}
+        {{#if mostrarAlmas}}<button type="button" class="epm-botao epm-ressonancia" data-action="ressonancia" title="Abrir a aba Almas (Ressonância de Alma)"><i class="fa-solid fa-ghost" aria-hidden="true"></i> Ressonância de Alma</button>{{/if}}
         {{#if edicao}}
         <label class="epm-campo"><span>Onde fica</span><input type="text" name="flags.epm-ficha.sobre.marcaLocal" value="{{marca.local}}" placeholder="nuca, palma da mão esquerda…" /></label>
         <label class="epm-campo"><span>Como ela é</span><textarea name="flags.epm-ficha.sobre.marcaAparencia" rows="4">{{marca.aparencia}}</textarea></label>

@@ -542,13 +542,13 @@ export function visualNpc({ ctx, actor, bruto = {}, ficha, poderes = [], isGM = 
   const linhaAtaque = (a, tipoAtq) => ({
     nome: a.modoLabel ? `${a.nomeItem ?? a.nome}` : a.nome,
     sub: [a.alcance, a.modoLabel].filter(Boolean).join(" · ") || (/pontaria/i.test(a.periciaNome ?? "") ? "à distância" : /luta/i.test(a.periciaNome ?? "") ? "corpo a corpo" : ""),
-    acerto: `${a.periciaNome ?? ""} ${sinal(a.acertoTotal)}`.trim(), dano: a.danoTexto || "—", tipoDano: a.tipoDano ?? "", tipo: tipoAtq, ref: tipoAtq === "arma" ? a.ref : a.id, notas: a.notas ?? ""
+    acerto: `${a.periciaNome ?? ""} ${sinal(a.acertoTotal)}`.trim(), dano: a.danoTexto || "—", tipoDano: a.tipoDano ?? "", tipo: tipoAtq, ref: tipoAtq === "arma" ? a.ref : a.id, notas: a.notas ?? "", formas: a.formas ?? [], itemId: a.id
   });
   const ataques = [...(ctx.ataques?.armas ?? []).map(a => linhaAtaque(a, "arma")), ...(ctx.ataques?.custom ?? []).map(a => linhaAtaque(a, "custom"))];
 
   /* Ações: ataques + habilidades e magias (uma linha por forma) */
   const acoes = [];
-  for (const a of ataques) acoes.push({ pill: "Padrão", cls: "ok", nome: a.nome, teste: a.acerto, efeito: `${a.dano}${a.tipoDano ? ` ${a.tipoDano}` : ""}${a.notas ? `. ${a.notas}` : ""}`, dados: true, acao: "atacar", tipo: a.tipo, ref: a.ref });
+  for (const a of ataques) acoes.push({ pill: "Padrão", cls: "ok", nome: a.nome, teste: a.acerto, efeito: `${a.dano}${a.tipoDano ? ` ${a.tipoDano}` : ""}${a.notas ? `. ${a.notas}` : ""}`, dados: true, acao: "atacar", tipo: a.tipo, ref: a.ref, formas: a.formas, itemId: a.itemId });
   const cd = ficha.cd?.valor;
   const ordemAcao = { padrao: 0, bonus: 1, movimento: 2, reacao: 3, livre: 4, lendaria: 5, mitica: 6, arcaica: 7 };
   const linhasPoder = [];

@@ -3412,3 +3412,13 @@ button.epm-npcv-pill { cursor: pointer; }
 .application.epm .epm-npc-linha .epm-mini input { width: 100%; }
 .application.epm .epm-npcv-edit > .epm-mini:not(.largo) { display: inline-flex; flex-direction: column; width: 92px; }
 .application.epm .epm-npcv-edit > .epm-mini.largo { display: inline-flex; flex-direction: column; }
+
+/* 0.8.12: formas da arma ao lado de "Atacar" */
+.epm-ataque > .epm-ataque-botoes { grid-column: 4; grid-row: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px; max-width: 420px; }
+.epm-ataque-botoes .epm-botao { margin: 0; }
+.epm-forma-arma { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.15; padding-top: 2px; padding-bottom: 2px; }
+.epm-forma-arma > i { display: none; }
+.epm-forma-arma small { font-size: 10px; opacity: .75; font-weight: 400; }
+.epm-forma-arma.bloqueada, .epm-forma-arma.gasta { opacity: .5; }
+.epm-forma-arma.gasta small::after { content: " · gasta"; }
+.epm-npcv-acoesbtn { text-align: right; white-space: normal; }

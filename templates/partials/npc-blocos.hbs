@@ -92,9 +92,9 @@
   <h3>Ataques<span class="tag">1 a 3</span></h3>
   <div class="in">
     <table class="epm-npcv-tab">
-      <tr><th>Ataque</th><th>Acerto</th><th>Dano</th><th class="w12"></th></tr>
+      <tr><th>Ataque</th><th>Acerto</th><th>Dano</th><th></th></tr>
       {{#each npcVisual.ataques}}
-      <tr><td><b>{{this.nome}}</b>{{#if sub}} <span class="epm-npcv-dim">· {{this.sub}}</span>{{/if}}</td><td>{{this.acerto}}</td><td><span class="epm-npcv-dado">{{this.dano}}</span> {{this.tipoDano}}</td><td><button type="button" class="epm-npcv-btn" data-action="atacar" data-tipo="{{this.tipo}}" data-ref="{{this.ref}}">Atacar</button></td></tr>
+      <tr><td><b>{{this.nome}}</b>{{#if sub}} <span class="epm-npcv-dim">· {{this.sub}}</span>{{/if}}</td><td>{{this.acerto}}</td><td><span class="epm-npcv-dado">{{this.dano}}</span> {{this.tipoDano}}</td><td class="epm-npcv-acoesbtn">{{#each formas}}<button type="button" class="epm-npcv-btn{{#if bloqueada}} off{{/if}}" data-action="usarFormaItem" data-item-id="{{../itemId}}" data-forma-id="{{this.id}}" title="{{this.dica}}">{{this.nome}}</button>{{/each}}<button type="button" class="epm-npcv-btn" data-action="atacar" data-tipo="{{this.tipo}}" data-ref="{{this.ref}}">Atacar</button></td></tr>
       {{/each}}
     </table>
     {{#unless npcVisual.ataques.length}}<p class="epm-npcv-dim">Equipe uma arma ou crie um ataque.</p>{{/unless}}
@@ -111,7 +111,7 @@
       <tr><th class="w22">Ação</th><th>Nome</th><th>Teste</th><th>Efeito</th><th class="w11"></th></tr>
       {{#each npcVisual.acoes}}
       <tr><td><span class="epm-npcv-pill {{this.cls}}">{{this.pill}}</span></td><td><b>{{this.nome}}</b></td><td>{{this.teste}}</td><td>{{this.efeito}}</td>
-        <td>{{#unless passiva}}{{#if (epmEq acao "atacar")}}<button type="button" class="epm-npcv-btn" data-action="atacar" data-tipo="{{this.tipo}}" data-ref="{{this.ref}}">Usar</button>{{else}}<button type="button" class="epm-npcv-btn{{#if bloqueada}} off{{/if}}" data-action="usarPoder" data-item-id="{{this.itemId}}">Usar</button>{{/if}}{{/unless}}</td></tr>
+        <td>{{#unless passiva}}{{#if (epmEq acao "atacar")}}{{#each formas}}<button type="button" class="epm-npcv-btn{{#if bloqueada}} off{{/if}}" data-action="usarFormaItem" data-item-id="{{../itemId}}" data-forma-id="{{this.id}}" title="{{this.dica}}">{{this.nome}}</button>{{/each}}<button type="button" class="epm-npcv-btn" data-action="atacar" data-tipo="{{this.tipo}}" data-ref="{{this.ref}}">Usar</button>{{else}}<button type="button" class="epm-npcv-btn{{#if bloqueada}} off{{/if}}" data-action="usarPoder" data-item-id="{{this.itemId}}">Usar</button>{{/if}}{{/unless}}</td></tr>
       {{/each}}
     </table>
     {{#unless npcVisual.acoes.length}}<p class="epm-npcv-dim">Nenhuma ação. No modo edição: crie um ataque ou uma habilidade.</p>{{/unless}}

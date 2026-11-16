@@ -1054,6 +1054,21 @@ export function montarContexto({
       r.cargasTexto = cMax ? `${limitar(int(fi.cargas?.valor), 0, cMax)}/${cMax} cargas` : "";
       // Formas da arma: só na primeira linha dela (os modos de ataque repetem a arma)
       r.formasQtd = !a.modo && it ? Object.values(fi.formas ?? {}).filter(Boolean).length : 0;
+      // 0.8.12: cada forma vira um botão ao lado de "Atacar" (passivas ficam de fora)
+      r.formas = [];
+      if (r.formasQtd && it) {
+        try {
+          const p = lerPoder(it);
+          r.formas = p.formas.filter(fo => fo.acao !== "passiva").map(fo => {
+            const av = avaliarForma(fo, ficha, { raridade: p.raridade, melhorias: p.melhorias, dadosRolagem: rolagem, poder: { tipo: p.tipo, origem: p.origem } });
+            const custo = textoCusto(fo, av.custo.extra);
+            const usoGasto = !!(fo.uso && fo.uso !== "livre" && dados.usosFormas?.[`${it.id}_${fo.id}`]);
+            const partes = [ACOES[fo.acao]?.curto ?? fo.acao, custo && custo !== "Sem custo" ? custo : "", fo.uso && fo.uso !== "livre" ? USOS_FORMA[fo.uso] : ""].filter(Boolean);
+            return { id: fo.id, nome: fo.nome || "Forma", detalhe: partes.join(" · "), bloqueada: av.bloqueada, usoGasto,
+              dica: [`${fo.nome || "Forma"}: ${partes.join(" · ")}`, av.bloqueada ? `Bloqueada: ${av.motivos.join(", ")}` : "", usoGasto ? "Uso já gasto" : ""].filter(Boolean).join(". ") };
+          });
+        } catch (err) { console.warn("EPM | formas da arma", err); r.formas = []; }
+      }
       r.temPassiva = !a.modo && it ? (Object.keys(fi.efeitos ?? {}).length > 0 || Object.values(fi.formas ?? {}).some(fo => fo && (fo.acao === "passiva" || (fo.bonus?.gatilho && fo.bonus.gatilho !== "uso")))) : false;
       r.passivaLigada = !fi.passivaDesligada;
       return r;

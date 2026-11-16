@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.12
+
+- **Formas das armas na aba Combate**: cada forma da arma (as que não são passivas) aparece como um botão próprio ao lado de "Atacar", com o nome, a ação, o custo e o uso (ex.: "Varredura · Bônus · 3 PE · 1× por combate"). Clicar usa a forma direto, sem abrir a lista. Formas bloqueadas ou com o uso já gasto aparecem apagadas. O mesmo vale nas fichas de NPC (Ataques e Ações).
+
 ## Novidades da 0.8.11
 
 - **Fichas de NPC iguais aos modelos**: cada tipo tem o próprio visual e as próprias abas.

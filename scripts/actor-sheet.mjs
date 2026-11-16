@@ -49,7 +49,7 @@ const ACOES_FICHA = [
   "defesa", "alternarAcao", "novoTurno", "exaustao", "descanso",
   "converter", "subirNivel", "moedas", "filtroRaridade",
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
-  "usarItem", "usarFormasItem", "alternarPassivaItem", "testeMorte", "escolherTreino", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
+  "usarItem", "usarFormasItem", "usarFormaItem", "alternarPassivaItem", "testeMorte", "escolherTreino", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
   "abrirMochila", "tirarDaMochila", "moverItemPara", "moverNaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
   "novoPoder", "poderDeTexto", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
@@ -1236,6 +1236,12 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoUsarFormasItem(ev, alvo) {
     const item = this._item(alvo);
     if (item) return M.usarPoder(this.actor, item, { evento: ev });
+  }
+
+  /** 0.8.12: usa direto uma forma da arma (botão ao lado de "Atacar"). */
+  acaoUsarFormaItem(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) return M.usarPoder(this.actor, item, { evento: ev, formaId: alvo.dataset.formaId });
   }
 
   acaoAbrirMochila(ev, alvo) {

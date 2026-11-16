@@ -139,6 +139,9 @@ export async function rolarTeste(actor, { rotulo, bonus = 0, evento = null, desv
   const roll = new Roll(`${formulaD20({ vantagem, desvantagem })} ${comSinal(int(bonus))}`, dadosRolagem(actor));
   await roll.evaluate();
   const partes = [];
+  // Bônus "só no próximo teste" (um por ativação): entrou neste e some
+  const umaVez = await consumirBonusUmaVez(actor);
+  if (umaVez.length) partes.push(`usou ${umaVez.join(", ")}`);
   if (vantagem && desvantagem) partes.push(`vantagem${vantagens.length ? ` (${vantagens.join(", ")})` : ""} e desvantagem se anulam`);
   else if (vantagem) partes.push(vantagens.length ? `com vantagem (${vantagens.join(", ")})` : "com vantagem");
   else if (desvantagem) partes.push(desvantagens.length ? `com desvantagem (${desvantagens.join(", ")})` : "com desvantagem");
@@ -151,6 +154,14 @@ export async function rolarTeste(actor, { rotulo, bonus = 0, evento = null, desv
     flags: { [FLAG]: { tipo: "teste", rotulo, formula: roll.formula, total: roll.total, actorUuid: actor?.uuid ?? "" } }
   });
   return roll;
+}
+
+/** Tira os bônus de cena "só no próximo teste" depois que entraram numa rolagem. Devolve os nomes. */
+export async function consumirBonusUmaVez(actor) {
+  const lista = Object.entries(actor?.flags?.[FLAG]?.bonusCena ?? {}).filter(([, b]) => b?.ativo && b.umaVez);
+  if (!lista.length) return [];
+  await actor.update(Object.fromEntries(lista.map(([id]) => [`${P}.bonusCena.-=${id}`, null])));
+  return lista.map(([, b]) => b.nome || "bônus");
 }
 
 export async function rolarFormula(actor, formula, rotulo) {
@@ -318,6 +329,21 @@ export async function usarItem(actor, item) {
 /*  Habilidades e magias                        */
 /* -------------------------------------------- */
 
+/** Resumo curto de uma forma (para passar o mouse na escolha): ação, custo, uso, alcance, dano, efeito. */
+export function resumoForma(f) {
+  const texto = String(f.efeito ?? "").replace(/<br\s*\/?>/gi, " ").replace(/<\/(p|li)>/gi, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+  const curto = texto.length > 220 ? `${texto.slice(0, 217).replace(/\s+\S*$/, "")}…` : texto;
+  const partes = [
+    [ACOES[f.acao]?.label, textoCusto(f), f.uso && f.uso !== "livre" ? USOS_FORMA[f.uso] : ""].filter(Boolean).join(" · "),
+    [f.alcance ? `Alcance ${f.alcance}` : "", f.area ? `Área ${f.area}` : "", f.duracao ? `Duração ${f.duracao}` : ""].filter(Boolean).join(" · "),
+    f.dano?.formula ? `Dano ${f.dano.formula}${f.dano.tipo ? ` ${f.dano.tipo}` : ""}` : "",
+    f.bonus?.gatilho && f.bonus.gatilho !== "uso" ? `Automático: ${(GATILHOS_BONUS[f.bonus.gatilho] ?? "").replace(/ \(automático\)$/, "").toLowerCase()}` : "",
+    f.bonus?.opcoes?.length ? `${f.bonus.escolha === "todas" ? "Faz" : f.bonus.escolha === "rolar" ? "Rola um" : "Escolhe um"}: ${f.bonus.opcoes.map(o => o.texto).join("; ")}` : "",
+    curto
+  ].filter(Boolean);
+  return partes.join("\n");
+}
+
 async function escolherForma(item, p, ficha, rolagem) {
   const opcoes = p.formas.map(f => ({ f, av: avaliarForma(f, ficha, { raridade: p.raridade, melhorias: p.melhorias, dadosRolagem: rolagem }) }));
   const gm = game.user.isGM;
@@ -325,7 +351,8 @@ async function escolherForma(item, p, ficha, rolagem) {
   const html = opcoes.map(({ f, av }) => {
     const desab = av.bloqueada && !gm;
     const meta = [ACOES[f.acao]?.curto ?? f.acao, textoCusto(f), f.dano.formula].filter(Boolean).join(", ");
-    return `<label class="epm-opcao-forma${av.bloqueada ? " bloqueada" : ""}">
+    const resumo = resumoForma(f);
+    return `<label class="epm-opcao-forma${av.bloqueada ? " bloqueada" : ""}" data-tooltip="${escapar(resumo)}" data-tooltip-class="epm-dica-tooltip" title="${escapar(resumo)}">
       <input type="radio" name="forma" value="${f.id}" ${primeira?.f.id === f.id ? "checked" : ""} ${desab ? "disabled" : ""}>
       <span class="epm-opcao-nome">${escapar(f.nome)}</span>
       <span class="epm-opcao-meta">${escapar(meta)}</span>
@@ -359,7 +386,7 @@ async function marcarAcao(actor, acao, ficha) {
   return aviso;
 }
 
-export async function usarPoder(actor, item, { evento = null, automatico = false, formaId = "", conjunta = false, ativar = false } = {}) {
+export async function usarPoder(actor, item, { evento = null, automatico = false, formaId = "", conjunta = false, ativar = false, contexto = {} } = {}) {
   const { ficha, dados } = estadoAtor(actor);
   const p = lerPoder(item);
   // Técnica de Maestria: só depois que o Mestre aprovar
@@ -391,6 +418,7 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
   }
   const av = forma ? avaliarForma(forma, ficha, { raridade: p.raridade, melhorias: p.melhorias, dadosRolagem: rolagem, poder }) : null;
   if (av?.bloqueada) {
+    if (automatico) return null; // reação automática bloqueada (ex.: sem reações): não entra
     if (!game.user.isGM) return ui.notifications.warn(`${nome} está bloqueada por: ${av.motivos.join(", ")}.`);
     if (!(await confirmar("Forma bloqueada", `<p><strong>${escapar(nome)}</strong> está bloqueada por ${escapar(av.motivos.join(", "))}.</p><p>Usar mesmo assim?</p>`))) return null;
     avisos.push(`Usada apesar de: ${av.motivos.join(", ")}.`);
@@ -473,9 +501,25 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     if (aviso) avisos.push(aviso);
   }
   if (automatico) avisos.unshift(`Ativada sozinha: ${(GATILHOS_BONUS[automatico] ?? GATILHOS_BONUS.dano).replace(/ \(automático\)$/, "").toLowerCase()}.`);
+  if (automatico === "zeroPv" && forma?.bonus?.salvaVida) avisos.unshift("Ficou com 1 PV em vez de cair.");
+  if (automatico === "dano" && contexto.dano) avisos.push(`Dano recebido: ${contexto.dano}${contexto.tipoDano ? ` ${contexto.tipoDano}` : ""}.`);
   const fichaCartao = conj ? { ...ficha, cd: { ...ficha.cd, valor: conj.cd } } : ficha;
-  const msg = await cartaoPoder(actor, item, p, forma, { avisos, ficha: fichaCartao, rolagem, custo, automatico: !!automatico });
-  if (forma?.bonus?.opcoes?.length) await escolherBonusSituacional(actor, item, forma, { nome, automatico: !!automatico });
+  // Reação automática só com bônus/efeito (Corpo adaptável, Regeneração de Cabeças): basta a nota do efeito, sem cartão
+  const soNota = automatico && forma && !forma.dano?.formula && forma.bonus?.opcoes?.length && (!custo || custo.recurso === "nenhum" || !custo.valor);
+  const msg = soNota ? null : await cartaoPoder(actor, item, p, forma, { avisos, ficha: fichaCartao, rolagem, custo, automatico: !!automatico });
+  if (forma?.bonus?.opcoes?.length) {
+    // Fórmulas com @dano usadas na mão (Devoradora: um quarto do dano que a magia causou): pergunta o dano
+    let ctx = { ...contexto };
+    if (!automatico && ctx.dano === undefined && forma.bonus.opcoes.some(o => /@dano/.test(String(o.valor)))) {
+      const r = await fvtt.DialogV2.wait({
+        window: { title: nome }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+        content: `<label class="epm-campo"><span>Quanto de dano?</span><input type="number" name="dano" min="0" value="0" autofocus></label>`,
+        buttons: [{ action: "ok", label: "OK", default: true, callback: (ev, b) => Number(b.form.elements.dano.value) || 0 }, { action: "cancelar", label: "Cancelar" }]
+      });
+      if (typeof r === "number") ctx.dano = r;
+    }
+    await escolherBonusSituacional(actor, item, forma, { nome, automatico: !!automatico, contexto: ctx });
+  }
   if (sobrecarga) await testeSobrecarga(actor);
   return msg;
 }
@@ -517,15 +561,18 @@ async function testeSobrecarga(actor) {
  * Escolhe (ou rola) uma das opções de bônus da forma e grava como Bônus de cena ligado.
  * Um bônus por habilidade: usar de novo troca o anterior.
  */
-export async function escolherBonusSituacional(actor, item, forma, { nome = item.name, automatico = false } = {}) {
+export async function escolherBonusSituacional(actor, item, forma, { nome = item.name, automatico = false, contexto = {} } = {}) {
   const flagsAuto = automatico ? { flags: { [FLAG]: { automatico: true } } } : {};
   // Opções com nível mínimo (ex.: elementos desbloqueados) só entram a partir dele
   const nivelPersonagem = estadoAtor(actor).ficha?.nivelTotal ?? 0;
   const opcoes = forma.bonus.opcoes.filter(o => !o.nivel || nivelPersonagem >= o.nivel);
   if (!opcoes.length) { ui.notifications.warn(`${nome}: nenhuma opção liberada no nível ${nivelPersonagem}.`); return null; }
   const duracao = forma.bonus.duracao ?? "cena";
-  const quanto = duracao === "descanso" ? "até o próximo descanso" : "pela cena";
-  const rodape = duracao === "descanso" ? "Já está somado na ficha (aba Combate → Bônus de cena). Fica até o próximo descanso." : "Já está somado na ficha (aba Combate → Bônus de cena). Some no fim do combate.";
+  const quanto = { descanso: "até o próximo descanso", troca: "até trocar", turno: "até o início do seu próximo turno", turnos: `por ${Math.max(1, int(forma.bonus.turnos) || 1)} turno(s)` }[duracao] ?? "pela cena";
+  const rodape = {
+    descanso: "Já está somado na ficha (aba Combate → Bônus de cena). Fica até o próximo descanso.",
+    troca: "Já está somado na ficha (aba Combate → Bônus de cena). Fica até você usar de novo e escolher outra opção."
+  }[duracao] ?? "Já está somado na ficha (aba Combate → Bônus de cena). Some no fim do combate.";
   const n = opcoes.length;
   let escolhida = null;
   let rolagemTexto = "";
@@ -534,12 +581,19 @@ export async function escolherBonusSituacional(actor, item, forma, { nome = item
     rolagemTexto = `d${n} = ${r.total}`;
     return opcoes[r.total - 1];
   };
+  // Só efeitos na hora (cura, barreira…) ou no alvo: o rodapé de "bônus de cena" não vale
+  const soAcao = os => os.every(o => o.acao || o.noAlvo);
+  const linha = (os, res) => {
+    const partes = res?.length ? res : os.map(o => o.texto);
+    return soAcao(os) ? `${escapar(partes.join("; "))}.` : `${escapar(partes.join("; "))} ${quanto}.`;
+  };
   if (forma.bonus.escolha === "todas") {
-    await aplicarBonusSituacional(actor, item, opcoes, nome, { duracao });
+    const res = await aplicarBonusSituacional(actor, item, opcoes, nome, { duracao, formaId: forma.id, contexto, turnosBonus: forma.bonus.turnos });
+    if (res === null) return null;
     const nivel = nivelHabilidade(item);
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }), ...flagsAuto,
-      content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>${nivel > 1 ? ` (nível ${nivel})` : ""}: ${escapar(opcoes.map(o => o.texto).join("; "))} ${quanto}.</p><p class="epm-dica">${rodape}</p></div>`
+      content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>${nivel > 1 ? ` (nível ${nivel})` : ""}: ${linha(opcoes, res)}</p>${soAcao(opcoes) ? "" : `<p class="epm-dica">${rodape}</p>`}</div>`
     });
     return opcoes;
   }
@@ -548,53 +602,151 @@ export async function escolherBonusSituacional(actor, item, forma, { nome = item
     const botoes = opcoes.map((o, i) => ({ action: `o${i}`, label: `${i + 1}. ${o.texto}`, callback: () => i }));
     botoes.push({ action: "rolar", label: `Rolar d${n}`, icon: "fa-solid fa-dice", callback: () => "rolar" });
     const r = await fvtt.DialogV2.wait({
-      window: { title: `${nome}: ${duracao === "descanso" ? "escolha até o descanso" : "bônus pela cena"}` }, classes: ["epm-dialogo", "epm-dialogo-bonus"], rejectClose: false, modal: true,
+      window: { title: `${nome}: ${duracao === "descanso" ? "escolha até o descanso" : "escolha"}` }, classes: ["epm-dialogo", "epm-dialogo-bonus"], rejectClose: false, modal: true,
       content: `<p class="epm-dica">${duracao === "descanso" ? "Escolha o que vale até o próximo descanso" : "Escolha o efeito que mais faz sentido para a ameaça"}, ou role d${n}.</p>`, buttons: botoes
     });
     if (r === "rolar") escolhida = await rolar();
     else if (Number.isInteger(r)) escolhida = opcoes[r];
   }
   if (!escolhida) return null;
-  await aplicarBonusSituacional(actor, item, escolhida, nome, { duracao });
+  const res = await aplicarBonusSituacional(actor, item, escolhida, nome, { duracao, formaId: forma.id, contexto, turnosBonus: forma.bonus.turnos });
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }), ...flagsAuto,
-    content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>: ${escapar(escolhida.texto)} ${quanto}${rolagemTexto ? ` <em>(${rolagemTexto})</em>` : ""}.</p><p class="epm-dica">${rodape}</p></div>`
+    content: `<div class="epm-chat epm-chat-nota" style="--cor: #8FB3E0"><p><strong>${escapar(nome)}</strong>: ${linha([escolhida], res)}${rolagemTexto ? ` <em>(${rolagemTexto})</em>` : ""}</p>${soAcao([escolhida]) ? "" : `<p class="epm-dica">${rodape}</p>`}</div>`
   });
   return escolhida;
 }
 
-export async function aplicarBonusSituacional(actor, item, o, nome = item.name, { duracao = "cena" } = {}) {
+export async function aplicarBonusSituacional(actor, item, o, nome = item.name, { duracao = "cena", formaId = "", contexto = {}, turnosBonus = 0 } = {}) {
   const atuais = actor.flags?.[FLAG]?.bonusCena ?? {};
   const updates = {};
-  for (const [id, b] of Object.entries(atuais)) if (b?.origem === item.id) updates[`${P}.bonusCena.-=${id}`] = null;
+  // Usar de novo troca o bônus anterior da mesma forma (as outras formas do item ficam); "até o turno" acumula
+  if (duracao !== "turno") for (const [id, b] of Object.entries(atuais)) if (b?.origem === item.id && (!b.forma || !formaId || b.forma === formaId)) updates[`${P}.bonusCena.-=${id}`] = null;
   if (Object.keys(updates).length) await actor.update(updates);
-  const lista = Array.isArray(o) ? o : [o];
+  // Resistência "ao tipo do dano que recebeu" (Corpo adaptável, Adaptação): resolve pelo dano que disparou
+  const lista = (Array.isArray(o) ? o : [o]).map(x => {
+    if (x.tipo !== "resistencia" || !/@tipo/i.test(String(x.valor))) return x;
+    const tipo = String(contexto.tipoDano ?? "").trim();
+    const exceto = String(x.exceto ?? "").split(/[,;]/).map(t => normalizarTexto(t)).filter(Boolean);
+    if (!tipo || exceto.some(e => normalizarTexto(tipo).includes(e))) return null;
+    return { ...x, valor: tipo, texto: `resistência a ${tipo}` };
+  }).filter(Boolean);
+  if (!lista.length) return null;
   const nivel = nivelHabilidade(item);
-  const texto = lista.map(x => x.texto).join("; ");
-  const b = montarBonusCena(lista, nivel, { nome: `${nome}${nivel > 1 ? ` (nv ${nivel})` : ""}: ${texto}`, origem: item.id, criado: Date.now() });
-  // Só penalidades: a linha aparece como debuff (os números já vêm negativos)
-  if (b.ruim) b.debuff = true;
-  delete b.ruim;
-  // "Até o próximo descanso": a escolha não some no fim do combate
-  if (duracao === "descanso") { b.cena = false; b.ateDescanso = true; }
+  const resultados = [];
+  // Efeitos na hora (cura, barreira, encerrar condições) e no alvo (debuff, dano por turno)
+  const acoes = lista.filter(x => x.acao && x.tipo !== "danoTurno");
+  const paraAlvo = lista.filter(x => x.tipo === "danoTurno" || x.noAlvo);
+  const proprios = lista.filter(x => !x.acao && !x.noAlvo);
+  for (const x of acoes) resultados.push(await executarAcaoForma(actor, x, nome, contexto));
+  if (paraAlvo.length) resultados.push(await aplicarNosAlvos(actor, item, paraAlvo, nome, nivel, contexto));
   // Opções de condição: liga a condição no personagem (fica até ser removida)
-  for (const x of lista.filter(x => x.tipo === "condicao" && x.valor)) {
+  for (const x of proprios.filter(x => x.tipo === "condicao" && x.valor)) {
     const sid = String(x.valor).startsWith("epm-") ? x.valor : `epm-${x.valor}`;
     try { if (!actor.statuses?.has(sid)) await actor.toggleStatusEffect(sid, { active: true }); }
     catch (err) { console.warn("EPM |", err); }
   }
-  const soCondicao = lista.every(x => x.tipo === "condicao");
-  if (soCondicao) return actor;
-  return actor.update({ [`${P}.bonusCena.${novoId()}`]: b });
+  const comBonus = proprios.filter(x => x.tipo !== "condicao");
+  if (comBonus.length) {
+    const texto = comBonus.map(x => x.texto).join("; ");
+    const b = montarBonusCena(comBonus, nivel, { nome: `${nome}${nivel > 1 ? ` (nv ${nivel})` : ""}: ${texto}`, origem: item.id, criado: Date.now() });
+    if (formaId) b.forma = formaId;
+    // Só penalidades: a linha aparece como debuff (os números já vêm negativos)
+    if (b.ruim) b.debuff = true;
+    delete b.ruim;
+    if (duracao === "descanso") { b.cena = false; b.ateDescanso = true; }
+    // "Até trocar": fica valendo (combate e descanso não tiram) até usar de novo e escolher outra
+    if (duracao === "troca") { b.cena = false; b.fixo = true; }
+    // "Até o início do seu próximo turno" (Corpo adaptável)
+    if (duracao === "turno") b.ateTurno = true;
+    // "Por alguns turnos": conta no Novo turno de quem usou
+    if (duracao === "turnos") b.turnos = Math.max(1, int(turnosBonus) || 1);
+    await actor.update({ [`${P}.bonusCena.${novoId()}`]: b });
+  }
+  // Texto do chat: os bônus já resolvidos (ex.: "resistência a Fogo"), depois o que aconteceu na hora
+  return [...proprios.map(x => x.texto), ...resultados].filter(Boolean);
+}
+
+/** Cura, barreira, encerrar condições e notas: acontecem na hora em quem usou. */
+async function executarAcaoForma(actor, x, nome, contexto = {}) {
+  const { ficha } = estadoAtor(actor);
+  const dados = { ...dadosRolagem(actor, ficha), dano: Math.max(0, int(contexto.dano)), pvMax: int(actor.system?.attributes?.hp?.max), nivel: ficha.nivelTotal };
+  const avaliar = async formula => {
+    const f = Roll.replaceFormulaData(String(formula ?? "").trim() || "0", dados, { missing: "0" });
+    // Sem dados: conta direto (aceita floor, ceil, round, min, max)
+    if (!/\d*d\d/i.test(f)) {
+      const t = f.replace(/\b(floor|ceil|round|min|max|abs)\b/g, "Math.$1");
+      if (/^[\d\s+\-*/().,Mathflorceiundmxabs]+$/.test(t)) {
+        try { const v = Function(`"use strict"; return (${t});`)(); if (Number.isFinite(v)) return { total: Math.max(0, Math.floor(v)) }; } catch { /* cai para o Roll */ }
+      }
+    }
+    const r = await new Roll(f).evaluate();
+    return { total: Math.max(0, Math.floor(r.total)), r };
+  };
+  if (x.tipo === "cura") {
+    const { total } = await avaliar(x.valor);
+    const valor = x.maximo ? Math.min(x.maximo, total) : total;
+    const rec = calcularRecuperacao(ficha, x.recurso, valor, { fonte: nome });
+    if (Object.keys(rec.updates).length) await actor.update(rec.updates);
+    return `recuperou ${valor} ${({ pv: "PV", pm: "PM", pe: "PE", ps: "PS" })[x.recurso]}${x.maximo && total > x.maximo ? ` (limite ${x.maximo})` : ""}`;
+  }
+  if (x.tipo === "barreira") {
+    const { total } = await avaliar(x.valor);
+    const temp = int(actor.system?.attributes?.hp?.temp);
+    await actor.update({ "system.attributes.hp.temp": Math.max(temp, total), [`${P}.barreira`]: { valor: total, fonte: nome } });
+    return `barreira de ${total} (Vida temporária até o início do seu próximo turno)`;
+  }
+  if (x.tipo === "limparCondicoes") {
+    const negativas = [...(actor.statuses ?? [])].filter(sid => String(sid).startsWith("epm-") && !CONDICOES_NEUTRAS.includes(sid) && condicaoPorId(sid));
+    for (const sid of negativas) { try { await actor.toggleStatusEffect(sid, { active: false }); } catch (err) { console.warn("EPM |", err); } }
+    return negativas.length ? `encerrou ${negativas.map(sid => condicaoPorId(sid)?.label ?? sid).join(", ")}` : "nenhuma condição negativa para encerrar";
+  }
+  if (x.tipo === "nota") return x.texto;
+  return "";
+}
+
+/** Debuffs e dano por turno nos alvos marcados (o Mestre aplica quando a ficha não é sua). */
+async function aplicarNosAlvos(actor, item, lista, nome, nivel, contexto = {}) {
+  const alvos = [...(game.user?.targets ?? [])].map(t => t.actor).filter(a => a && a.uuid !== actor.uuid);
+  if (!alvos.length) return `marque o alvo para aplicar: ${lista.map(x => x.texto).join("; ")}`;
+  const turnos = Math.max(0, ...lista.map(x => int(x.turnos)));
+  const numeros = lista.filter(x => !x.acao && x.tipo !== "condicao").map(x => ({ ...x, noAlvo: false }));
+  const bonus = numeros.length ? { ...montarBonusCena(numeros, nivel, { nome: `${nome}: ${numeros.map(x => x.texto.replace(/^no alvo: /, "")).join("; ")}`, origem: "", criado: Date.now() }), debuff: numeros.every(x => x.debuff) || undefined, turnos: turnos || undefined, cena: !turnos } : null;
+  if (bonus) delete bonus.ruim;
+  const danos = [];
+  for (const x of lista.filter(x => x.tipo === "danoTurno")) {
+    const dados = { ...dadosRolagem(actor), dano: Math.max(0, int(contexto.dano)) };
+    danos.push({ formula: Roll.replaceFormulaData(String(x.valor || "0"), dados, { missing: "0" }), tipoDano: x.tipoDano ?? "", turnos: Math.max(1, int(x.turnos) || 1), fonte: nome });
+  }
+  const condicoes = lista.filter(x => x.tipo === "condicao" && x.valor).map(x => (String(x.valor).startsWith("epm-") ? x.valor : `epm-${x.valor}`));
+  const pacote = { bonus, danos, condicoes };
+  for (const alvo of alvos) {
+    if (alvo.isOwner) await aplicarEfeitoNoAlvo(alvo, pacote);
+    else { const { pedirAoMestre } = await import("./mundo.mjs"); await pedirAoMestre("efeitoNoAlvo", { alvo: alvo.uuid, pacote }); }
+  }
+  return `em ${alvos.map(a => a.name).join(", ")}: ${lista.map(x => x.texto.replace(/^no alvo: /, "")).join("; ")}`;
+}
+
+/** Grava no alvo o bônus/debuff (com contagem de turnos), o dano por turno e as condições. */
+export async function aplicarEfeitoNoAlvo(alvo, { bonus = null, danos = [], condicoes = [] } = {}) {
+  if (!alvo) return false;
+  const upd = {};
+  if (bonus && alvo.flags?.[FLAG]) upd[`${P}.bonusCena.${novoId()}`] = bonus;
+  for (const d of danos) upd[`${P}.danoPorTurno.${novoId()}`] = d;
+  if (Object.keys(upd).length) await alvo.update(upd);
+  for (const sid of condicoes) { try { if (!alvo.statuses?.has(sid)) await alvo.toggleStatusEffect(sid, { active: true }); } catch (err) { console.warn("EPM |", err); } }
+  return true;
 }
 
 /** Ao sofrer dano: dispara as formas com gatilho "dano" que ainda não estão valendo nesta cena. */
 const gatilhosRodando = new Set();
-export async function gatilhosAoSofrerDano(actor) {
+export async function gatilhosAoSofrerDano(actor, contexto = {}) {
   if (gatilhosRodando.has(actor.uuid)) return;
   gatilhosRodando.add(actor.uuid);
   try {
-    await dispararGatilhos(actor, "dano");
+    if (contexto.salvo) await usarPoder(actor, actor.items.get(contexto.salvo.item), { automatico: "zeroPv", formaId: contexto.salvo.forma, contexto });
+    else if (int(actor.system?.attributes?.hp?.value) <= 0) await dispararGatilhos(actor, "zeroPv", contexto);
+    await dispararGatilhos(actor, "dano", contexto);
     const hp = actor.system?.attributes?.hp ?? {};
     const pct = int(hp.max) > 0 ? int(hp.value) / int(hp.max) : 1;
     if (pct <= 0.5) await dispararGatilhos(actor, "vida50");
@@ -606,15 +758,34 @@ export async function gatilhosAoSofrerDano(actor) {
  * Ativação condicional: dispara as formas com o gatilho que ainda não estão valendo nesta cena
  * (cada habilidade entra uma vez por cena; o bônus some no fim do combate).
  */
-export async function dispararGatilhos(actor, gatilho = "dano") {
+export async function dispararGatilhos(actor, gatilho = "dano", contexto = {}) {
   const ativosPor = new Set(Object.values(actor.flags?.[FLAG]?.bonusCena ?? {}).filter(b => b?.ativo && b.origem).map(b => b.origem));
-  // (antes usava poderesDoAtor, que devolve só tipo e raridade: o gatilho nunca disparava)
-  for (const item of actor.items.filter(i => i.type === "feat" || i.type === "spell")) {
-    if (ativosPor.has(item.id)) continue;
-    const forma = lerPoder(item).formas.find(f => f.bonus?.gatilho === gatilho && f.bonus.opcoes.length);
-    if (!forma) continue;
-    await usarPoder(actor, item, { automatico: gatilho, formaId: forma.id });
+  // Habilidades e magias, e também itens equipados com formas (Hydrakariel)
+  for (const item of actor.items) {
+    const ePoder = item.type === "feat" || item.type === "spell";
+    if (!ePoder && !itemAtivo(item)) continue;
+    const formas = lerPoder(item).formas.filter(f => f.bonus?.gatilho === gatilho);
+    for (const forma of formas) {
+      if (gatilho === "dano" && forma.bonus.danoMinimo && int(contexto.dano) < forma.bonus.danoMinimo) continue;
+      if (gatilho === "zeroPv" && forma.bonus.salvaVida) continue; // já tratado ao cair (salvamentoZeroPv)
+      // Bônus "pela cena" sem limite de uso entra uma vez por cena; os outros respeitam o uso da forma
+      const pelaCena = forma.uso === "livre" && forma.bonus.duracao === "cena" && !forma.bonus.opcoes.some(o => o.acao || o.noAlvo);
+      if (pelaCena && ativosPor.has(item.id)) continue;
+      await usarPoder(actor, item, { automatico: gatilho, formaId: forma.id, contexto });
+    }
   }
+}
+
+/** Ao cair a 0 de Vida: forma com "fica com 1 PV" e uso disponível (Sobrevivência da Hidra). */
+export function salvamentoZeroPv(actor) {
+  const usos = actor.flags?.[FLAG]?.usosFormas ?? {};
+  for (const item of actor.items) {
+    const ePoder = item.type === "feat" || item.type === "spell";
+    if (!ePoder && !itemAtivo(item)) continue;
+    const forma = lerPoder(item).formas.find(f => f.bonus?.gatilho === "zeroPv" && f.bonus.salvaVida && !(f.uso !== "livre" && usos[`${item.id}_${f.id}`]));
+    if (forma) return { item: item.id, forma: forma.id };
+  }
+  return null;
 }
 
 /** A habilidade está ligada? (interruptor, bônus de cena dela valendo ou sustentada) */
@@ -953,6 +1124,18 @@ export async function novoTurno(actor) {
   };
   // Formas "1× por turno" (habilidades e formas de itens) voltam
   Object.assign(updates, liberarUsosFormas(dados, ["turno"]));
+  // Bônus "até o início do seu próximo turno" saem; debuffs com contagem de turnos descontam um
+  for (const [bid, b] of Object.entries(dados.bonusCena ?? {})) {
+    if (!b) continue;
+    if (b.ateTurno) updates[`${P}.bonusCena.-=${bid}`] = null;
+    else if (int(b.turnos) > 0) { if (int(b.turnos) <= 1) updates[`${P}.bonusCena.-=${bid}`] = null; else updates[`${P}.bonusCena.${bid}.turnos`] = int(b.turnos) - 1; }
+  }
+  // Barreira (Guardiã): a Vida temporária que sobrou dela some
+  if (dados.barreira) {
+    const temp = int(actor.system?.attributes?.hp?.temp);
+    updates["system.attributes.hp.temp"] = Math.max(0, temp - int(dados.barreira.valor));
+    updates[`${P}.-=barreira`] = null;
+  }
   const transf = turnoTransformacao(dados);
   Object.assign(updates, transf.updates);
   // Recuperado: vale durante este turno e acaba no próximo
@@ -1010,6 +1193,7 @@ export async function novoTurno(actor) {
     await ChatMessage.create({ speaker: falar(actor), content: `<div class="epm-chat epm-chat-nota"><p><strong>Armadura</strong>: −${totalPe} PE (${escapar(drenoArmadura.map(x => x.nome).join(", "))}).</p></div>` });
   }
   await curasDeInicioDeTurno(actor);
+  await danosPorTurno(actor);
   await efeitosDeInicioDeTurno(actor);
   // Com 0 de Vida (e ainda sem decidir): teste contra a morte no começo do turno
   {
@@ -1017,6 +1201,28 @@ export async function novoTurno(actor) {
     const em = estadoMorte(actor);
     if (em.ativo && !em.estado) await testeContraMorte(actor);
   }
+}
+
+/** Dano por turno recebido de habilidades (Veneno Primordial): aplica com RD e resistências e desconta um turno. */
+export async function danosPorTurno(actor) {
+  const lista = Object.entries(actor.flags?.[FLAG]?.danoPorTurno ?? {}).filter(([, d]) => d);
+  if (!lista.length) return 0;
+  const upd = {};
+  const linhas = [];
+  for (const [id, d] of lista) {
+    let total = 0;
+    try { total = Math.max(0, Math.floor((await new Roll(String(d.formula || "0")).evaluate()).total)); } catch (err) { console.warn("EPM |", err); }
+    const { ficha } = estadoAtor(actor);
+    const calc = danoRecebido(ficha, total, d.tipoDano ?? "");
+    const hp = actor.system.attributes.hp;
+    const temp = int(hp.temp), usaTemp = Math.min(temp, calc.final);
+    await actor.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - (calc.final - usaTemp)) }, { epmTipoDano: d.tipoDano ?? "" });
+    linhas.push(`${escapar(d.fonte || "Efeito")}: ${calc.final}${d.tipoDano ? ` ${escapar(d.tipoDano)}` : ""}${calc.passos.length ? ` (${escapar(calc.passos.join("; "))})` : ""}${int(d.turnos) > 1 ? `, faltam ${int(d.turnos) - 1} turno(s)` : ", acabou"}`);
+    if (int(d.turnos) <= 1) upd[`${P}.danoPorTurno.-=${id}`] = null; else upd[`${P}.danoPorTurno.${id}.turnos`] = int(d.turnos) - 1;
+  }
+  if (Object.keys(upd).length) await actor.update(upd);
+  await ChatMessage.create({ speaker: falar(actor), content: `<div class="epm-chat epm-chat-nota" style="--cor: #6FA05A"><p><strong>Dano no início do turno</strong></p><p>${linhas.join("<br>")}</p></div>` });
+  return linhas.length;
 }
 
 /** Itens com "Cura ou recuperação" no início do turno (ex.: Regeneração mítica do Hydrakariel), equipados. */
@@ -1351,7 +1557,7 @@ export async function aplicarDanoDoCartao(atacante, botao) {
     const temp = int(hp.temp);
     const usaTemp = Math.min(temp, resto);
     resto -= usaTemp;
-    await alvo.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - resto) });
+    await alvo.update({ "system.attributes.hp.temp": temp - usaTemp, "system.attributes.hp.value": Math.max(0, int(hp.value) - resto) }, { epmTipoDano: tipoDano });
     partes.push(`${alvo.name} ${calc.final}${calc.passos.length ? ` (${calc.passos.join("; ")})` : ""}`);
     await somarCorrupcao(alvo, calc.final, tipoDano);
     // Durabilidade: sofrer um acerto crítico tira 10 da armadura equipada
@@ -1828,6 +2034,10 @@ export async function rolarAtaque(actor, at, {
   } catch (err) {
     console.warn("EPM |", err);
     return ui.notifications.error("Não consegui rolar o acerto. Confira o bônus externo.");
+  }
+  {
+    const usados = await consumirBonusUmaVez(actor);
+    if (usados.length) notas.push(`Usou (só neste ataque): ${usados.join(", ")}.`);
   }
   // Sem o diálogo (margem não veio), a margem dos bônus de cena entra aqui
   const margemCena = margem === undefined || margem === null || margem === "" ? cena.margem : 0;

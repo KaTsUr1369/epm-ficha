@@ -40,6 +40,7 @@
           {{#with (lookup @root.novas.requisitos this.id) as |rq|}}{{#if rq.faltas.length}}<dt></dt><dd class="epm-requisito-falta"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Falta: {{epmJoin rq.faltas "; "}}</dd>{{else}}{{#if rq.cumpridos.length}}<dt></dt><dd class="epm-requisito-ok"><i class="fa-solid fa-check" aria-hidden="true"></i> Requisitos cumpridos</dd>{{/if}}{{/if}}{{/with}}
           <dt>Benefícios</dt><dd>{{#if beneficios}}{{this.beneficios}}{{else}}<span class="epm-vazio">A definir.</span>{{/if}}</dd>
         </dl>
+        {{#if escolha}}<div class="epm-escolha-treino" role="group" aria-label="Escolha de {{escolha.titulo}}"><span class="epm-rotulo">Usando</span>{{#each escolha.opcoes}}<button type="button" class="epm-botao{{#if ativa}} epm-botao-forte{{else}} epm-botao-sutil{{/if}}" data-action="escolherTreino" data-especial="{{../escolha.especial}}" data-opcao="{{this.id}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.label}}</button>{{/each}}<span class="epm-dica">Troque quando quiser.</span></div>{{/if}}
         {{#if temMods}}<div class="epm-chips">{{#each mods}}{{#if alvoLabel}}<span class="epm-tag{{#if (epmEq ../estado "concluido")}} epm-tag-ok{{/if}}">{{this.alvoLabel}} {{epmSinal valor}}</span>{{/if}}{{/each}}{{#unless (epmEq estado "concluido")}}<span class="epm-dica">entra na ficha ao concluir</span>{{/unless}}</div>{{/if}}
         {{/if}}
         <footer class="epm-treino-rodape">

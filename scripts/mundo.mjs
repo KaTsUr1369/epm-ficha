@@ -94,6 +94,10 @@ async function tratarPedido({ tipo, dados, userId }) {
     const { relacaoMutuaNoMestre } = await import("./relacoes.mjs");
     return relacaoMutuaNoMestre(dados);
   }
+  if (tipo === "efeitoNoAlvo") {
+    const { aplicarEfeitoNoAlvo } = await import("./mecanicas.mjs");
+    return aplicarEfeitoNoAlvo(await fromUuid(dados.alvo), dados.pacote ?? {});
+  }
   if (tipo === "revelarAtaque") {
     const { aplicarRevelacao } = await import("./extras.mjs");
     return aplicarRevelacao(game.messages?.get(dados.msgId), dados.defensor ?? "", { forcar: !!dados.forcar, reacao: dados.reacao ?? "" });

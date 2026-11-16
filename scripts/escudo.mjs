@@ -336,7 +336,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       }
       else if (tipo === "cura") updates = calcularRecuperacao(ficha, recurso, valor, { fonte: "Mestre", trocaPm: false }).updates;
       else if (tipo === "temp") updates = recurso === "pv" ? { "system.attributes.hp.temp": Math.max(int(a.system?.attributes?.hp?.temp), valor) } : { [`${P}.recursos.${recurso}.temp`]: valor };
-      if (Object.keys(updates).length) await a.update(updates);
+      if (Object.keys(updates).length) await a.update(updates, tipo === "dano" ? { epmTipoDano: tipoDano } : {});
       linhas.push(nome);
     }
     const rot = { dano: "perdem", cura: "recuperam", temp: "recebem temporário de" }[tipo];
@@ -441,11 +441,23 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const destinos = this._destinosItem();
     if (!destinos.length || !x) return ui.notifications.warn("Escolha para quem dar.");
     const deram = [], ja = [];
+    const atualizados = [];
     for (const destino of destinos) {
-      if (destino.items.some(i => i.flags?.[FLAG]?.pronto === x.id)) { ja.push(destino.name); continue; }
+      const existente = destino.items.find(i => i.flags?.[FLAG]?.pronto === x.id);
+      if (existente) {
+        // Versão nova do item pronto: troca formas e efeitos, mantém equipado e passiva
+        const novo = x.dados().flags[FLAG];
+        if ((existente.flags[FLAG].prontoVersao ?? 1) < (novo.prontoVersao ?? 1)) {
+          await existente.update({ [`flags.${FLAG}.-=formas`]: null, [`flags.${FLAG}.-=efeitos`]: null });
+          await existente.update({ [`flags.${FLAG}.formas`]: novo.formas, [`flags.${FLAG}.efeitos`]: novo.efeitos, [`flags.${FLAG}.prontoVersao`]: novo.prontoVersao, "system.description.value": x.dados().system.description.value });
+          atualizados.push(destino.name);
+        } else ja.push(destino.name);
+        continue;
+      }
       await destino.createEmbeddedDocuments("Item", [x.dados()]);
       deram.push(destino.name);
     }
+    if (atualizados.length) ui.notifications.info(`${x.nome} de ${atualizados.join(", ")} foi atualizado para a versão nova.`);
     if (deram.length) ui.notifications.info(`${x.nome} foi para ${deram.join(", ")} (equipe para valer; botão Formas para usar).`);
     if (ja.length) ui.notifications.info(`${ja.join(", ")} já tinha ${x.nome}.`);
   }
@@ -514,7 +526,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const { dadosHabilidadeTexto } = await import("./habilidade-texto.mjs");
     const r = await foundry.applications.api.DialogV2.wait({
       window: { title: "Habilidade a partir de texto" }, classes: ["epm-dialogo"], rejectClose: false, modal: true, position: { width: 560 },
-      content: `<p class="epm-dica">Primeira linha: o nome. Depois, se tiver, <strong>Tipo:</strong> e <strong>Tema:</strong>. Cada parte numerada (<em>1. Nome</em>) vira uma forma, com Custo, Ação, Duração, Uso, Alcance, Alvo e Área.</p>
+      content: `<p class="epm-dica">Primeira linha: o nome. Depois, se tiver, <strong>Tipo:</strong> e <strong>Tema:</strong>. Cada parte numerada (<em>1. Nome</em>) vira uma forma, com Custo, Ação, Duração, Uso, Alcance, Alvo e Área. Também aceita um ou vários registros do <strong>Códex do Vazio</strong> (botão "Copiar registro"): viram magias.</p>
         <label class="epm-campo"><span>Categoria</span><select name="origem"><option value="">Sem categoria</option>${Object.entries((await import("./config.mjs")).ORIGENS_HABILIDADE).map(([id, l]) => `<option value="${id}">${escapar(l)}</option>`).join("")}<option value="__magia">É uma magia</option></select></label>
         <textarea name="texto" rows="14" style="width:100%"></textarea>`,
       buttons: [
@@ -523,6 +535,23 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       ]
     });
     if (!r?.texto?.trim?.()) return;
+    // Registros copiados do Códex do Vazio: uma ou várias magias de uma vez
+    const C = await import("./codex.mjs");
+    if (C.eRegistroCodex(r.texto)) {
+      const lista = C.lerRegistrosCodex(r.texto).map(x => C.dadosMagiaCodex(x));
+      if (!lista.length) return ui.notifications.warn("Não achei nenhum registro do Códex no texto.");
+      const destinos = this._destinosItem();
+      if (!destinos.length) {
+        await Item.implementation.createDocuments(lista);
+        return ui.notifications.info(`${lista.length} magia(s) do Códex criadas na aba Itens do Foundry (ninguém escolhido em "Dar para").`);
+      }
+      for (const destino of destinos) {
+        const tem = new Set(destino.items.map(i => i.flags?.[FLAG]?.codex).filter(Boolean));
+        const novas = lista.filter(d => !tem.has(d.flags[FLAG].codex));
+        if (novas.length) await destino.createEmbeddedDocuments("Item", structuredClone(novas));
+      }
+      return ui.notifications.info(`${lista.length} magia(s) do Códex do Vazio foram para ${destinos.map(d => d.name).join(", ")} (as que já tinham ficaram de fora).`);
+    }
     const dados = dadosHabilidadeTexto(r.texto);
     if (r.origem === "__magia") dados.type = "spell";
     else if (r.origem) dados.flags[FLAG].origem = r.origem;

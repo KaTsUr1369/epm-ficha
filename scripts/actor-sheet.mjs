@@ -48,7 +48,7 @@ const ACOES_FICHA = [
   "defesa", "alternarAcao", "novoTurno", "exaustao", "descanso",
   "converter", "subirNivel", "moedas", "filtroRaridade",
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
-  "usarItem", "usarFormasItem", "testeMorte", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
+  "usarItem", "usarFormasItem", "alternarPassivaItem", "testeMorte", "escolherTreino", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
   "abrirMochila", "tirarDaMochila", "moverItemPara", "moverNaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
   "novoPoder", "poderDeTexto", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
@@ -1188,9 +1188,25 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (item) return M.usarItem(this.actor, item);
   }
 
+  /** Treino que dá uma coisa ou outra (Aura de Proteção: RD ou CA): troca a escolha. */
+  async acaoEscolherTreino(ev, alvo) {
+    const { especial, opcao } = alvo.dataset;
+    if (!especial || !opcao) return;
+    await this.actor.update({ [`${P}.escolhasTreino.${especial}`]: opcao, [`${P}.auraProtecaoCa`]: especial === "auraProtecao" ? opcao === "ca" : this.actor.flags?.[FLAG]?.auraProtecaoCa ?? null });
+  }
+
   async acaoTesteMorte() {
     const { testeContraMorte } = await import("./morte.mjs");
     return testeContraMorte(this.actor);
+  }
+
+  /** Liga/desliga a passiva do item (efeitos, regeneração, reações automáticas). */
+  async acaoAlternarPassivaItem(ev, alvo) {
+    const item = this._item(alvo);
+    if (!item) return;
+    const desligar = !item.flags?.[FLAG]?.passivaDesligada;
+    await item.update({ [`${P}.passivaDesligada`]: desligar });
+    ui.notifications.info(`${item.name}: passiva ${desligar ? "desligada" : "ligada"}.`);
   }
 
   /** Formas do item (arma de várias cabeças, amuleto de modos…): escolhe uma e usa como habilidade. */
@@ -1290,10 +1306,22 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const { dadosHabilidadeTexto, lerHabilidadeTexto } = await import("./habilidade-texto.mjs");
     const r = await X.dialogo({
       titulo: tipo === "magia" ? "Magia a partir de texto" : "Habilidade a partir de texto", ok: "Criar", icone: "fa-solid fa-paste",
-      content: `<p class="epm-dica">Primeira linha: o nome. Depois, se tiver, <strong>Tipo:</strong> e <strong>Tema:</strong> e o texto de abertura. Cada parte numerada (<em>1. Nome</em>) vira uma forma; as linhas <strong>Custo</strong>, <strong>Ação</strong>, <strong>Duração</strong>, <strong>Uso</strong>, <strong>Alcance</strong>, <strong>Alvo</strong> e <strong>Área</strong> logo abaixo dela são lidas, e o resto vira o efeito.</p><textarea name="texto" rows="16" style="width:100%;font-family:inherit" placeholder="O Legado do Errante&#10;Tipo: Ofensiva / Especial&#10;…&#10;1. A Fortuna do Estrategista&#10;Custo: 5 PE&#10;Ação: Ação Bônus&#10;…"></textarea>`,
+      content: `<p class="epm-dica">Primeira linha: o nome. Depois, se tiver, <strong>Tipo:</strong> e <strong>Tema:</strong> e o texto de abertura. Cada parte numerada (<em>1. Nome</em>) vira uma forma; as linhas <strong>Custo</strong>, <strong>Ação</strong>, <strong>Duração</strong>, <strong>Uso</strong>, <strong>Alcance</strong>, <strong>Alvo</strong> e <strong>Área</strong> logo abaixo dela são lidas, e o resto vira o efeito.</p><p class="epm-dica"><i class="fa-solid fa-book-skull"></i> Do <strong>Códex do Vazio</strong>: cole um ou vários registros (botão "Copiar registro" do site) e cada um vira uma magia, no círculo certo.</p><textarea name="texto" rows="16" style="width:100%;font-family:inherit" placeholder="O Legado do Errante&#10;Tipo: Ofensiva / Especial&#10;…&#10;1. A Fortuna do Estrategista&#10;Custo: 5 PE&#10;Ação: Ação Bônus&#10;…"></textarea>`,
       callback: el => ({ texto: el.texto?.value ?? "" })
     });
     if (!r?.texto?.trim()) return;
+    // Registros copiados do Códex do Vazio (botão "Copiar registro"): uma ou várias magias de uma vez
+    const C = await import("./codex.mjs");
+    if (C.eRegistroCodex(r.texto)) {
+      const tem = new Set(this.actor.items.map(i => i.flags?.[FLAG]?.codex).filter(Boolean));
+      const lidas = C.lerRegistrosCodex(r.texto).map(x => C.dadosMagiaCodex(x));
+      const novas = lidas.filter(d => !tem.has(d.flags[FLAG].codex));
+      if (!lidas.length) return ui.notifications.warn("Não achei nenhum registro do Códex no texto.");
+      const criadas = novas.length ? await this.actor.createEmbeddedDocuments("Item", novas) : [];
+      ui.notifications.info(`Códex do Vazio: ${criadas.length} magia(s) criada(s)${lidas.length > novas.length ? `, ${lidas.length - novas.length} já estavam na ficha` : ""}.`);
+      if (criadas.length === 1) abrirEditorPoder(criadas[0]);
+      return;
+    }
     const dados = dadosHabilidadeTexto(r.texto);
     if (tipo === "magia") {
       dados.type = "spell";

@@ -83,6 +83,7 @@
       <section class="epm-painel epm-rd">
         <header class="epm-painel-titulo"><h3>Redução de dano (RD)</h3>
           {{#if edicao}}<button type="button" class="epm-link" data-action="novaRd"><i class="fa-solid fa-plus" aria-hidden="true"></i> RD</button>{{/if}}</header>
+        {{#each escolhasTreino}}<div class="epm-escolha-treino" role="group" aria-label="{{this.titulo}}"><span class="epm-rotulo">{{this.titulo}}</span>{{#each opcoes}}<button type="button" class="epm-botao{{#if ativa}} epm-botao-forte{{else}} epm-botao-sutil{{/if}}" data-action="escolherTreino" data-especial="{{../especial}}" data-opcao="{{this.id}}" aria-pressed="{{#if ativa}}true{{else}}false{{/if}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.label}}</button>{{/each}}</div>{{/each}}
         {{#if edicao}}<p class="epm-dica">Como uma resistência a um tipo de dano, mas em vez de cortar à metade tira o número escolhido. Entra sozinha no "Aplicar dano", depois da imunidade, da vulnerabilidade e da resistência. Nível entre parênteses: "Fogo (Mágico)" segura até dano Mágico; sem nível, só Natural.</p>{{/if}}
         {{#if edicao}}
         {{#each rdBox.manuais}}
@@ -114,6 +115,7 @@
             <ul class="epm-tag-lista">
               {{#each itens}}<li class="epm-chip">{{this}}<button type="button" data-action="removerTag" data-campo="{{../campo}}" data-valor="{{this}}" aria-label="Remover {{this}}"><i class="fa-solid fa-xmark"></i></button></li>{{/each}}
             </ul>
+            {{#if externos.length}}<div class="epm-chips"><span class="epm-dica">Valendo de fora:</span>{{#each externos}}<span class="epm-chip" title="{{this.fonte}}">{{this.texto}} <small>({{this.fonte}})</small></span>{{/each}}</div>{{/if}}
             <input type="text" class="epm-tag-input" data-tag-campo="{{this.campo}}" list="epm-sug-{{this.campo}}-{{@root.actor.id}}" placeholder="Escolha ou digite e tecle Enter" aria-label="Adicionar em {{this.label}}" />
             <datalist id="epm-sug-{{this.campo}}-{{@root.actor.id}}">{{#each sugestoes}}<option value="{{this}}"></option>{{/each}}</datalist>
           </div>
@@ -160,6 +162,7 @@
             <div class="epm-ataque-info"><span class="epm-ataque-nome" title="{{this.nome}}">{{#if modoLabel}}{{this.nomeItem}}{{else}}{{this.nome}}{{/if}}{{#if favoritaCombatente}} <span class="epm-tag epm-tag-ok" title="Arma Favorita do Combatente ({{this.tipoArma}})"><i class="fa-solid fa-medal" aria-hidden="true"></i> Maestria</span>{{/if}}</span><span class="epm-ataque-sub">{{#if modoLabel}}<span class="epm-tag epm-tag-modo">{{this.modoLabel}}{{#if tipoDano}}{{#unless (epmEq tipoDano modoLabel)}} · {{this.tipoDano}}{{/unless}}{{/if}}</span> {{/if}}{{this.periciaNome}}, crítico {{this.critTexto}}</span>{{#if maestriaSelo}}<span class="epm-ataque-sub"><span class="epm-tag epm-selo-exotica{{#if maestriaSelo.liberada}} liberada{{/if}}" title="{{this.maestriaSelo.dica}}"><i class="fa-solid fa-{{#if maestriaSelo.liberada}}star{{else}}lock{{/if}}" aria-hidden="true"></i> {{this.maestriaSelo.texto}}</span></span>{{/if}}{{#if (epmOr municaoTexto (epmOr cargasTexto penteTexto))}}<span class="epm-ataque-sub">{{#if penteTexto}}<span class="epm-item-recurso{{#if penteVazio}} acabou{{/if}}"><i class="fa-solid fa-gun" aria-hidden="true"></i> {{this.penteTexto}}</span> <button type="button" class="epm-link" data-action="recarregarArma" data-item-id="{{this.id}}" title="Enche o pente com a munição ligada e gasta a {{this.recargaTexto}}"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Recarregar ({{this.recargaTexto}})</button> {{/if}}{{#if municaoTexto}}<span class="epm-item-recurso{{#if semMunicao}} acabou{{/if}}"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{this.municaoTexto}}</span> {{/if}}{{#if cargasTexto}}<span class="epm-item-recurso"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{this.cargasTexto}}</span>{{/if}}</span>{{/if}}</div>
             <span class="epm-ataque-acerto{{#if acertoMods}} penalizado{{/if}}" data-tooltip="{{this.acertoDica}}" data-tooltip-class="epm-dica-tooltip">{{epmSinal acertoTotal}}</span>
             <span class="epm-ataque-dano" data-tooltip="{{this.danoDica}}" data-tooltip-class="epm-dica-tooltip">{{#if danoTexto}}{{this.danoTexto}}{{else}}—{{/if}}{{#if danoMult}} <strong>×{{this.danoMult}}</strong>{{/if}}</span>
+            {{#if temPassiva}}<button type="button" class="epm-botao{{#if passivaLigada}} epm-botao-forte{{/if}} epm-passiva-item" data-action="alternarPassivaItem" data-item-id="{{this.id}}" aria-pressed="{{#if passivaLigada}}true{{else}}false{{/if}}" title="Passiva {{#if passivaLigada}}ligada (clique para desligar){{else}}desligada (clique para ligar){{/if}}: efeitos, regeneração e reações automáticas do item"><i class="fa-solid fa-power-off" aria-hidden="true"></i></button>{{/if}}
             {{#if formasQtd}}<button type="button" class="epm-botao" data-action="usarFormasItem" data-item-id="{{this.id}}" title="Escolher uma das {{this.formasQtd}} formas da arma"><i class="fa-solid fa-shapes" aria-hidden="true"></i> Formas</button>{{/if}}
             <button type="button" class="epm-botao epm-botao-forte" data-action="atacar" data-tipo="arma" data-ref="{{this.ref}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano">Atacar</button>
           </li>
@@ -230,7 +233,7 @@
           {{#if tTestes}}<span class="epm-tag">{{this.tTestes}}</span>{{/if}}
           {{#if tDesloc}}<span class="epm-tag">{{this.tDesloc}}</span>{{/if}}
           {{#if desvantagemTexto}}<span class="epm-tag epm-tag-debuff">{{this.desvantagemTexto}}</span>{{/if}}
-          {{#if cena}}<span class="epm-tag fraca" title="Some no fim do combate ou no descanso">pela cena</span>{{/if}}
+          {{#if cena}}<span class="epm-tag fraca" title="Some no fim do combate ou no descanso">pela cena</span>{{/if}}{{#if ateDescanso}}<span class="epm-tag fraca" title="Sai no próximo descanso">até o descanso</span>{{/if}}{{#if fixo}}<span class="epm-tag fraca" title="Fica até usar a habilidade de novo e escolher outra opção">até trocar</span>{{/if}}{{#if ateTurno}}<span class="epm-tag fraca" title="Sai no início do seu próximo turno">até seu turno</span>{{/if}}{{#if turnosRestantes}}<span class="epm-tag fraca" title="Conta no Novo turno">{{this.turnosRestantes}} turno(s)</span>{{/if}}{{#if umaVez}}<span class="epm-tag" title="Entra no próximo teste ou ataque e some">só 1 teste</span>{{/if}}
           {{/if}}
         </div>
         {{/each}}

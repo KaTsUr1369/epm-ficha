@@ -141,7 +141,8 @@
 {{/inline}}
     <div class="epm-coluna">
     <section class="epm-painel epm-pericias epm-resistencias{{#if edicao}} editando{{/if}}">
-      <header class="epm-painel-titulo"><h3>Testes de Resistência</h3></header>
+      <header class="epm-painel-titulo"><h3>Testes de Resistência</h3><i class="fa-solid fa-circle-info epm-dica-icone" title="Fortitude, Reflexos e Vontade contam como perícias: os pontos gastos nelas entram no total de pontos de perícia e respeitam o limite por perícia do seu nível." aria-hidden="true"></i></header>
+      <p class="epm-dica epm-resistencias-aviso">Contam como perícias: os pontos entram no total de pontos de perícia e no limite por perícia.</p>
       <ol class="epm-lista-pericias">
         {{#each resistenciasPericia}}{{> linhaPericia}}{{/each}}
       </ol>

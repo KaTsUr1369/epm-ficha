@@ -343,7 +343,7 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   if (nuc && esp.has("auraIniciante")) extrasAtaque.desarmado.push({ formula: String(Math.floor(nuc * numBonus("treino.auraIniciante"))), fonte: "Aura Iniciante" });
   if (nuc > 0 && (esp.has("auraProtecao") || esp.has("auraProtecaoSuperior"))) {
     const superior = esp.has("auraProtecaoSuperior");
-    const naCa = d.auraProtecaoCa === true;
+    const naCa = escolhaTreino(d, "auraProtecao") === "ca";
     if (superior || !naCa) rd.push({ valor: Math.floor(numBonus("treino.auraProtecaoRd") * nuc), tipos: "todos os danos", fonte: "Aura de Proteção" });
     if (superior || naCa) mods.push({ alvo: "ca", valor: Math.floor(numBonus("treino.auraProtecaoCa") * nuc), fonte: "Aura de Proteção" });
   }
@@ -364,7 +364,7 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   if (esp.has("magiaPotente")) treinosInfo.push(`Magia Potente: +${Math.floor(n(totais.inteligencia) * numBonus("treino.magiaPotente"))} (Inteligência) no dano e na cura das magias.`);
   if (esp.has("corredor")) treinosInfo.push(`Corredor: +${numBonus("treino.corredor")} m de deslocamento e Disparada como Ação Bônus.`);
   if (esp.has("miraRapida")) treinosInfo.push("Mira Rápida: Mira como Ação Bônus.");
-  if (esp.has("sintonizacao")) treinosInfo.push("Sintonização com Arma: marque a arma como \"conta como ataque desarmado\" no editor dela.");
+  if (esp.has("sintonizacao")) treinosInfo.push(escolhaTreino(d, "sintonizacao") ? "Sintonização com Arma: a arma escolhida conta como ataque desarmado." : "Sintonização com Arma: escolha a arma no treino (aba Treinos) ou na aba Combate.");
   if (esp.has("versatilidade")) treinosInfo.push("Versatilidade Armada: usa o maior tipo de dano e o maior atributo nas armas.");
   if (esp.has("delinquente")) treinosInfo.push("Delinquente Briguento: primeiro ataque da briga que você começou causa o dobro de dano.");
   if (esp.has("apostador")) treinosInfo.push("Apostador Experiente: vantagem em Intuição ligada a jogos de azar.");
@@ -413,13 +413,45 @@ export function nivelTecPersonagem(d = {}) {
   return Math.max(1, Math.min(3, nivel));
 }
 
+/**
+ * Treinos que dão uma coisa OU outra: o personagem escolhe (e pode trocar quando quiser).
+ * `superadoPor`: com esse treino concluído os dois valem juntos e a escolha some.
+ */
+export const ESCOLHAS_TREINO = {
+  auraProtecao: { titulo: "Aura de Proteção", opcoes: { rd: "RD (2 × Núcleo)", ca: "CA (+ Núcleo)" }, padrao: "rd", superadoPor: "auraProtecaoSuperior" },
+  // As opções são as armas da ficha (a escolhida conta como ataque desarmado sozinha)
+  sintonizacao: { titulo: "Sintonização com Arma", opcoes: null, padrao: "" }
+};
+/** Opção escolhida de um treino com escolha (fichas antigas: auraProtecaoCa). */
+export function escolhaTreino(d, especial) {
+  const e = ESCOLHAS_TREINO[especial];
+  if (!e) return "";
+  if (!e.opcoes) return String(d?.escolhasTreino?.[especial] ?? "");
+  let v = d?.escolhasTreino?.[especial];
+  if (v === undefined && especial === "auraProtecao" && d?.auraProtecaoCa === true) v = "ca";
+  return e.opcoes[v] ? v : e.padrao;
+}
+/** Escolhas que valem agora para a ficha: [{ especial, titulo, opcoes: [{ id, label, ativa }] }]. */
+export function escolhasTreinoAtivas(d, armas = []) {
+  const esp = especiaisConcluidos(d);
+  return Object.entries(ESCOLHAS_TREINO).filter(([id, e]) => esp.has(id) && !(e.superadoPor && esp.has(e.superadoPor)))
+    .map(([id, e]) => {
+      const opcoes = e.opcoes ?? Object.fromEntries(armas.map(a => [a.id, a.nome]));
+      return { especial: id, titulo: e.titulo, vazio: !Object.keys(opcoes).length, opcoes: Object.entries(opcoes).map(([oid, label]) => ({ id: oid, label, ativa: oid === escolhaTreino(d, id) })) };
+    });
+}
+/** A arma está sintonizada (treino concluído e escolhida)? Conta como ataque desarmado. */
+export function armaSintonizada(d, itemId) {
+  return !!itemId && especiaisConcluidos(d).has("sintonizacao") && escolhaTreino(d, "sintonizacao") === itemId;
+}
+
 export function especialDoTreino(t) {
   if (t?.especial) return t.especial;
   const nome = norm(t?.nome);
   if (nome.includes("familiaridade tecnologica")) return "familiaridade";
   return TREINAMENTOS_NOTION.find(x => norm(x.nome) === nome)?.especial ?? "";
 }
-const especiaisConcluidos = d => new Set(Object.values(d.treinamentos ?? {}).filter(t => t?.estado === "concluido").map(especialDoTreino).filter(Boolean));
+const especiaisConcluidos = d => new Set(Object.values(d?.treinamentos ?? {}).filter(t => t?.estado === "concluido").map(especialDoTreino).filter(Boolean));
 
 /** Vida, Mana e Estamina máximas automáticas (quando ligadas na ficha). */
 export function maximosAutomaticos(d, atributos, raca) {

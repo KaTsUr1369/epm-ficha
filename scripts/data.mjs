@@ -356,6 +356,8 @@ export function lerEfeitosItem(item) {
 /** O item dá seus bônus passivos agora? Armas e armaduras: equipadas. Consumíveis: só ao usar. */
 export function itemAtivo(item) {
   if (!item) return false;
+  // Passiva desligada pelo jogador (botão na linha do item): efeitos e gatilhos do item param
+  if (item.flags?.[FLAG]?.passivaDesligada) return false;
   // Durabilidade 0 = Quebrado: perde os efeitos (inclusive a CA da armadura) até ser consertado
   if (["weapon", "equipment", "tool"].includes(item.type) && regra("durabilidade")) {
     const dur = item.flags?.[FLAG]?.durabilidade;
@@ -1148,6 +1150,7 @@ export function normalizarBonusSituacional(b = {}) {
     .map(([id, o]) => {
       const semNumero = !!TIPOS_BONUS_SITUACIONAL[o.tipo].semNumero;
       let valor = o.tipo === "dano" ? (String(o.valor ?? "").trim() || "0") : semNumero ? String(o.valor ?? "").trim() : int(o.valor);
+      const acao = !!TIPOS_BONUS_SITUACIONAL[o.tipo].acao;
       if (o.tipo === "condicao" && !CONDICAO_POR_ID.has(valor)) valor = CONDICOES[0]?.id ?? "";
       if (o.tipo === "desvantagem" && !["ataques", "testes", "ambos"].includes(valor)) valor = "ataques";
       if (o.tipo === "resistencia" && !valor) valor = String(o.tipoDano ?? "").trim();
@@ -1157,18 +1160,46 @@ export function normalizarBonusSituacional(b = {}) {
         // Debuff: o número entra como penalidade (resultado ruim da rolagem, maldição…)
         debuff: !semNumero && !!o.debuff,
         // Só aparece a partir deste nível do personagem (ex.: elementos desbloqueados)
-        nivel: Math.max(0, int(o.nivel))
+        nivel: Math.max(0, int(o.nivel)),
+        acao,
+        // Cura: recurso e teto ("até 50 PV"); dano por turno: tipo e turnos; resistência: tipos que não valem
+        recurso: ["pv", "pm", "pe", "ps"].includes(o.recurso) ? o.recurso : "pv",
+        maximo: Math.max(0, int(o.maximo)),
+        turnos: Math.max(0, int(o.turnos)),
+        // No alvo marcado (debuff no inimigo, veneno…) em vez de em si mesmo
+        noAlvo: !!o.noAlvo,
+        exceto: String(o.exceto ?? "").trim(),
+        // Vale só no próximo teste/ataque e some (um benefício por ativação)
+        umaVez: o.tipo === "proximoTeste" || !!o.umaVez
       };
     })
     .sort((a, c) => a.criado - c.criado);
   for (const o of opcoes) {
+    if (o.acao) {
+      const v = String(o.valor ?? "").replace(/@dano/g, "o dano").replace(/@pvMax/g, "Vida máxima").replace(/@nivel/g, "nível");
+      o.texto = o.tipo === "cura" ? `recupera ${v} ${({ pv: "PV", pm: "PM", pe: "PE", ps: "PS" })[o.recurso]}${o.maximo ? ` (até ${o.maximo})` : ""}`
+        : o.tipo === "danoTurno" ? `${v} de dano${o.tipoDano ? ` ${o.tipoDano}` : ""} por turno no alvo${o.turnos ? ` durante ${o.turnos} turnos` : ""}`
+        : TIPOS_BONUS_SITUACIONAL[o.tipo].texto(v);
+      o.ruim = false;
+      continue;
+    }
     const valorTexto = o.tipo === "condicao" ? (CONDICAO_POR_ID.get(o.valor)?.label ?? o.valor) : String(o.valor).replace(/^[-−]/, "");
     o.texto = (o.debuff ? TEXTO_DEBUFF_SITUACIONAL[o.tipo](valorTexto) : TIPOS_BONUS_SITUACIONAL[o.tipo].texto(o.tipo === "condicao" ? valorTexto : o.valor))
       + (o.tipo === "rd" && o.tipoDano ? ` (${o.tipoDano})` : "") + (o.porNivel ? " por nível da habilidade" : "");
     o.ruim = o.debuff || o.tipo === "condicao" || o.tipo === "desvantagem";
+    if (o.tipo === "resistencia" && /@tipo/i.test(o.valor)) o.texto = `resistência ao tipo do dano que recebeu${o.exceto ? ` (menos ${o.exceto})` : ""}`;
+    if (o.noAlvo) o.texto = `no alvo: ${o.texto}${o.turnos ? ` por ${o.turnos} turnos` : ""}`;
   }
   const escolha = ["rolar", "todas"].includes(b?.escolha) ? b.escolha : "escolher";
-  return { gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha, opcoes, duracao: b?.duracao === "descanso" ? "descanso" : "cena" };
+  return {
+    gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha, opcoes,
+    duracao: ["descanso", "troca", "turno", "turnos"].includes(b?.duracao) ? b.duracao : "cena",
+    turnos: Math.max(0, int(b?.turnos)),
+    // Gatilho de dano: só a partir deste dano num golpe (Regeneração de Cabeças: 100)
+    danoMinimo: Math.max(0, int(b?.danoMinimo)),
+    // Gatilho de 0 de Vida: fica com 1 PV em vez de cair (Sobrevivência da Hidra)
+    salvaVida: !!b?.salvaVida
+  };
 }
 
 export function formaPadrao(ordem = 0, nome = "Padrão") {
@@ -1279,8 +1310,10 @@ export function montarBonusCena(opcoes, nivel = 1, extra = {}) {
   const danos = [];
   for (const o of opcoes) {
     const vezes = o.porNivel ? Math.max(1, int(nivel, 1)) : 1;
-    if (o.tipo === "condicao") continue; // aplicada no ator (aplicarBonusSituacional)
+    if (o.tipo === "condicao" || o.acao || o.noAlvo) continue; // aplicados na hora (aplicarBonusSituacional)
     if (o.tipo === "resistencia") { if (o.valor) b.resTipo = b.resTipo ? `${b.resTipo}, ${o.valor}` : o.valor; continue; }
+    if (o.tipo === "proximoTeste") { const v = (o.debuff ? -Math.abs(int(o.valor)) : int(o.valor)) * vezes; b.acerto = int(b.acerto) + v; b.testes = int(b.testes) + v; b.umaVez = true; continue; }
+    if (o.umaVez) b.umaVez = true;
     if (o.tipo === "desvantagem") { b.desvantagem = b.desvantagem && b.desvantagem !== o.valor ? "ambos" : o.valor; continue; }
     if (o.tipo === "dano") {
       const v = String(o.valor).replace(/^[-−]\s*/, "");

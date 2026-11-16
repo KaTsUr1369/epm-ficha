@@ -31,6 +31,8 @@ import { registrarCompendioItens } from "./compendio-itens.mjs";
 import { registrarDicasCompendio } from "./compendio-dicas.mjs";
 import { registrarPolyglot } from "./polyglot-epm.mjs";
 registrarPolyglot();
+// Fichas e itens antigos recebem as mudanças das versões novas (Mestre ativo, ao abrir o mundo)
+Hooks.once("ready", () => { import("./migracoes-mundo.mjs").then(m => m.migrarMundo()).catch(err => console.warn("EPM | migração do mundo", err)); });
 
 ligarGanchosNovas();
 
@@ -144,6 +146,12 @@ Hooks.on("deleteCombat", combate => {
 Hooks.on("preUpdateActor", (ator, mudancas, opcoes) => {
   const hp = ator.system?.attributes?.hp;
   if (hp && foundry.utils.hasProperty(mudancas, "system.attributes.hp")) opcoes.epmPvAntes = (Number(hp.value) || 0) + (Number(hp.temp) || 0);
+  // Ao cair a 0 de Vida: habilidade/item que segura com 1 PV (Sobrevivência da Hidra)
+  const novo = foundry.utils.getProperty(mudancas, "system.attributes.hp.value");
+  if (hp && ator.flags?.[FLAG] && novo !== undefined && Number(novo) <= 0 && (Number(hp.value) || 0) > 0 && !opcoes.epmCusto) {
+    const salvo = mecanicas.salvamentoZeroPv(ator);
+    if (salvo) { foundry.utils.setProperty(mudancas, "system.attributes.hp.value", 1); opcoes.epmSalvo = salvo; }
+  }
 });
 Hooks.on("updateActor", (ator, mudancas, opcoes) => {
   if (opcoes?.epmPvAntes === undefined || !ator.flags?.[FLAG]) return;
@@ -151,7 +159,8 @@ Hooks.on("updateActor", (ator, mudancas, opcoes) => {
   if ((Number(hp.value) || 0) + (Number(hp.temp) || 0) >= opcoes.epmPvAntes) return;
   const donos = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"));
   const responsavel = donos[0] ?? game.users.activeGM;
-  if (responsavel?.isSelf) mecanicas.gatilhosAoSofrerDano(ator).catch(err => console.warn("EPM | gatilho ao sofrer dano", err));
+  const dano = Math.max(0, opcoes.epmPvAntes - ((Number(hp.value) || 0) + (Number(hp.temp) || 0)));
+  if (responsavel?.isSelf) mecanicas.gatilhosAoSofrerDano(ator, { dano, tipoDano: opcoes.epmTipoDano ?? "", salvo: opcoes.epmSalvo ?? null }).catch(err => console.warn("EPM | gatilho ao sofrer dano", err));
 });
 /* Testes contra a morte: caiu a 0 de Vida começa do zero; curou, zera (no cliente do dono) */
 Hooks.on("updateActor", (ator, mudancas, opcoes) => {

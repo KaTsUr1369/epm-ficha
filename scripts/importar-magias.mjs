@@ -1,5 +1,6 @@
 /**
- * Importar magias do Codex do Vazio em português (pf2srd.com.br/magias).
+ * (Antigo) leitor de páginas do PF2 SRD (pf2srd.com.br). O botão "Códex do Vazio" da ficha agora usa o site
+ * certo (CODEX_URL) e o texto do botão "Copiar registro" (codex.mjs); este leitor fica só como reserva.
  * Tenta buscar a página direto; se o navegador bloquear (o site não autoriza outros endereços), aceita o texto colado.
  * O texto da página é lido pelos rótulos (Tradições, Execução, Distância, Alvos, Área, Duração, Teste de Resistência…)
  * e vira uma magia EPM com uma forma.
@@ -118,30 +119,17 @@ async function baixar(url) {
   }
 }
 
-/** Diálogo: nomes ou endereços (um por linha) ou o texto copiado da página. */
+/** Diálogo do botão "Códex do Vazio": cola um ou vários registros (botão "Copiar registro" do site). */
 export async function importarMagias(actor) {
-  const r = await formulario("Importar magias do Codex do Vazio", `
-    <p class="epm-dica">Do Codex do Vazio (<a href="${SITE_MAGIAS}" target="_blank" rel="noopener">pf2srd.com.br/magias</a>). Escreva o nome ou cole o endereço (uma magia por linha).
-    Se o navegador não deixar buscar a página, abra a magia no site, selecione o texto dela (do nome até a Fonte), copie e cole na caixa de baixo.</p>
-    <label class="epm-campo"><span>Nomes ou endereços</span><textarea name="lista" rows="3" placeholder="Luz&#10;https://pf2srd.com.br/magias/bola-de-fogo"></textarea></label>
-    <label class="epm-campo"><span>Ou o texto copiado de uma magia</span><textarea name="texto" rows="6"></textarea></label>
-    <label class="epm-check"><input type="checkbox" name="pm" checked> Cobrar a Mana pelo círculo (Conjurador)</label>`, { botao: "Importar", largura: 620 });
-  if (!r) return;
-  const itens = [];
-  const falhas = [];
-  if (String(r.texto ?? "").trim()) itens.push(dadosMagiaEpm(lerMagiaPf2(r.texto), { conjurador: !!r.pm }));
-  for (const linha of String(r.lista ?? "").split("\n").map(t => t.trim()).filter(Boolean)) {
-    const url = enderecoDaMagia(linha);
-    const html = url ? await baixar(url) : null;
-    if (!html) { falhas.push(linha); continue; }
-    const m = lerMagiaPf2(textoDoHtml(html));
-    if (!m.nome || !m.descricao.length) { falhas.push(linha); continue; }
-    itens.push(dadosMagiaEpm(m, { url, conjurador: !!r.pm }));
-  }
-  let criadas = 0;
-  for (const dados of itens) if (await criarPoder(actor, { tipo: "magia", raridade: "comum", aquisicao: "gratis", dadosBase: dados })) criadas++;
-  if (criadas) ui.notifications.info(`${criadas} magia(s) importada(s). Confira o custo, a ação e o dano no editor.`);
-  if (falhas.length) {
-    ui.notifications.warn(`Não consegui buscar: ${falhas.join(", ")}. O site pode estar bloqueando o acesso direto; copie o texto da magia e cole na caixa de texto.`, { permanent: true });
-  }
+  const C = await import("./codex.mjs");
+  const r = await formulario("Importar magias do Códex do Vazio", `
+    <p class="epm-dica">Abra o <a href="${C.CODEX_URL}" target="_blank" rel="noopener">Códex do Vazio</a>, clique em <strong>Copiar registro</strong> nas magias que quiser e cole tudo aqui (uma ou várias, uma embaixo da outra). Cada registro vira uma magia no círculo certo; as que a ficha já tem ficam de fora.</p>
+    <label class="epm-campo"><span>Registros copiados</span><textarea name="texto" rows="12" placeholder="Bolha Ácida&#10;Nível 0 · Abjuração&#10;Custo: 0 PM · 1 Ação&#10;Alcance: Pessoal · Duração: Instantânea&#10;…"></textarea></label>`, { botao: "Importar", largura: 620 });
+  if (!r || !String(r.texto ?? "").trim()) return;
+  if (!C.eRegistroCodex(r.texto)) return ui.notifications.warn("Não reconheci o texto. Use o botão \"Copiar registro\" de cada magia no Códex do Vazio.");
+  const tem = new Set(actor.items.map(i => i.flags?.[FLAG]?.codex).filter(Boolean));
+  const lidas = C.lerRegistrosCodex(r.texto).map(x => C.dadosMagiaCodex(x));
+  const novas = lidas.filter(d => !tem.has(d.flags[FLAG].codex));
+  const criadas = novas.length ? await actor.createEmbeddedDocuments("Item", novas) : [];
+  ui.notifications.info(`Códex do Vazio: ${criadas.length} magia(s) importada(s)${lidas.length > novas.length ? `, ${lidas.length - novas.length} já estavam na ficha` : ""}.`);
 }

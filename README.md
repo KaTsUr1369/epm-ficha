@@ -14,6 +14,17 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.9
+
+- **Hydrakariel 100% automático**: botão de ligar/desligar a passiva (regeneração, resistências e reações), Corpo adaptável (resistência ao tipo de dano sofrido até o seu próximo turno, menos Arcaico), Sobrevivência da Hidra (fica com 1 PV e rola 15d12 Venenoso, 1× por combate), Regeneração de Cabeças (golpe de 100+ pede a escolha), Devoradora (pergunta o dano e cura ¼ até 50), Veneno Primordial (30 por turno no alvo por 3 turnos), Corrosão (−5 de CA no alvo por 2 turnos), Guardiã (barreira de 150 até o seu turno), Renascimento (metade da Vida e encerra condições negativas). Quem já tinha o cajado recebe a versão nova sozinho.
+- **Resumo ao passar o mouse** em cada forma na hora de escolher qual usar.
+- **Ativação condicional mais completa**: gatilho "ao chegar a 0 de Vida" (com "fica com 1 PV"), dano mínimo no gatilho de dano, efeitos na hora (cura com @dano/@nivel/@pvMax, barreira, encerrar condições, dano por turno no alvo), debuffs no alvo marcado, resistência ao tipo do dano recebido, duração "até o seu próximo turno", "por alguns turnos" e "até trocar", e bônus "só no próximo teste" (um por ativação).
+- **Escolhas**: habilidades com duas opções trocam quando você usa de novo ("até trocar"); treinos com escolha: Aura de Proteção (RD ou CA) e Sintonização com Arma (escolha a arma e ela conta como desarmada sozinha), na aba Treinos e na aba Combate.
+- **Códex do Vazio**: o botão da aba Magias agora usa o site certo; cole um ou vários registros ("Copiar registro") e viram magias. As magias antigas com o link do site errado são corrigidas sozinhas.
+- **Testes de Resistência** ficam só na caixa própria (e se editam lá), com o aviso de que contam como perícias.
+- **Resistências de fora** (itens, bônus de cena, bênçãos) também aparecem no modo edição da aba Combate.
+- **Fichas antigas** recebem as mudanças das versões novas ao abrir o mundo (Mestre).
+
 ## Novidades da 0.8.8
 
 - **Escudo do Mestre**

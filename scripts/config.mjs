@@ -659,14 +659,22 @@ export const TIPOS_BONUS_SITUACIONAL = {
   deslocamento: { label: "Deslocamento", texto: v => `+${v} m de deslocamento` },
   margem: { label: "Margem de ameaça", texto: v => `−${v} na margem de ameaça (crítico mais fácil)` },
   critMult: { label: "Multiplicador de crítico", texto: v => `+${v} no multiplicador de crítico` },
+  proximoTeste: { label: "Próximo teste (ataque, manobra ou resistência)", texto: v => `+${v} no próximo teste de ataque, manobra ou resistência (um só)` },
   // Sem número: aplica uma condição ou dá desvantagem (para resultados ruins na rolagem)
   condicao: { label: "Condição", texto: v => `fica ${v}`, semNumero: true },
   resistencia: { label: "Resistência", texto: v => `resistência a ${v || "um tipo de dano"}`, semNumero: true },
-  desvantagem: { label: "Desvantagem", texto: v => `desvantagem em ${{ ataques: "ataques", testes: "testes", ambos: "ataques e testes" }[v] ?? "ataques"}`, semNumero: true }
+  desvantagem: { label: "Desvantagem", texto: v => `desvantagem em ${{ ataques: "ataques", testes: "testes", ambos: "ataques e testes" }[v] ?? "ataques"}`, semNumero: true },
+  // Efeitos que acontecem na hora (não viram bônus de cena)
+  cura: { label: "Cura / recuperação", texto: v => `recupera ${v}`, semNumero: true, acao: true },
+  barreira: { label: "Barreira (Vida temporária)", texto: v => `barreira que absorve ${v} de dano`, semNumero: true, acao: true },
+  limparCondicoes: { label: "Encerrar condições negativas", texto: () => "encerra as condições negativas", semNumero: true, acao: true },
+  danoTurno: { label: "Dano por turno no alvo", texto: v => `${v} de dano por turno no alvo`, semNumero: true, acao: true },
+  nota: { label: "Só texto", texto: v => v || "efeito descrito", semNumero: true, acao: true }
 };
+/** Fórmulas das opções podem usar @dano (dano sofrido/causado), @nivel, @pvMax e o tipo do dano (@tipoDano). */
 /** Texto de uma opção como penalidade (debuff). */
 export const TEXTO_DEBUFF_SITUACIONAL = {
-  rd: v => `−${v} de RD`, ca: v => `−${v} de CA`, dano: v => `−${v} de dano`, acerto: v => `−${v} no teste de ataque`,
+  rd: v => `−${v} de RD`, ca: v => `−${v} de CA`, proximoTeste: v => `−${v} no próximo teste`, dano: v => `−${v} de dano`, acerto: v => `−${v} no teste de ataque`,
   testes: v => `−${v} em todos os testes`, deslocamento: v => `−${v} m de deslocamento`,
   margem: v => `+${v} na margem de ameaça (crítico mais difícil)`, critMult: v => `−${v} no multiplicador de crítico`
 };
@@ -680,12 +688,13 @@ export const GATILHOS_BONUS = {
   vida50: "Ao ficar com a Vida em 50% ou menos (automático)",
   vida25: "Ao ficar com a Vida em 25% ou menos (automático)",
   combate: "No começo do combate (automático)",
-  critico: "Ao acertar um crítico (automático)"
+  critico: "Ao acertar um crítico (automático)",
+  zeroPv: "Ao chegar a 0 de Vida (automático)"
 };
 /** Como a opção do bônus é escolhida. */
 export const ESCOLHAS_BONUS = { escolher: "O jogador escolhe uma", rolar: "Rolar uma", todas: "Todas juntas" };
 /** Quanto tempo o bônus escolhido vale. */
-export const DURACOES_BONUS = { cena: "Pela cena (até o fim do combate)", descanso: "Até o próximo descanso (escolha fica valendo)" };
+export const DURACOES_BONUS = { turno: "Até o início do seu próximo turno", turnos: "Por alguns turnos (escolha quantos)", cena: "Pela cena (até o fim do combate)", descanso: "Até o próximo descanso (escolha fica valendo)", troca: "Até trocar (usar de novo troca a escolha)" };
 
 /** Tipos de dano sem níveis (vale contra qualquer proteção do tipo, em qualquer nível). */
 export const TIPOS_SEM_NIVEL = ["corrupcao"];

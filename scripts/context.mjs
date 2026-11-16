@@ -33,7 +33,7 @@ import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
-import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse } from "./ficha-extras.mjs";
+import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse, escolhasTreinoAtivas, especialDoTreino, armaSintonizada } from "./ficha-extras.mjs";
 import { PROPRIEDADES_PROTECAO, ITENS_CATALOGO, MAESTRIAS, REGIOES_CATALOGO } from "./itens-catalogo.mjs";
 import { estadoMaestria, aplicarMaestriaNoAtaque, seloMaestria, armasFavoritas, limiteFavoritas } from "./maestria-exotica.mjs";
 import { penalidadeTec, NOMES_REGIAO } from "./tecnologia.mjs";
@@ -170,7 +170,7 @@ export function ataqueDeArma(item, modoId = "") {
   const modos = modosDaArma(item);
   const base = {
     tipo: "arma", id: item.id, ref: item.id, nome: item.name, img: item.img,
-    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: comAtributo(danoArma(item), f.atributoDano), atributoDano: ATRIBUTOS[f.atributoDano] ? f.atributoDano : "", tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""), desarmado: !!f.contaDesarmado, desarmadoAmbos: !!f.contaDesarmado && f.desarmadoBonus === "ambos",
+    periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: comAtributo(danoArma(item), f.atributoDano), atributoDano: ATRIBUTOS[f.atributoDano] ? f.atributoDano : "", tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""), desarmado: !!f.contaDesarmado || armaSintonizada(item.actor?.flags?.[FLAG], item.id), desarmadoAmbos: (!!f.contaDesarmado || armaSintonizada(item.actor?.flags?.[FLAG], item.id)) && f.desarmadoBonus === "ambos",
     alcanceCat: alcanceDaArma(item),
     critMargem: limitar(int(f.critMargem, margemNativa), 2, 20), critMult: Math.max(2, int(f.critMult, CRITICO_PADRAO.mult)),
     equipado: !!item?.system?.equipped,
@@ -909,11 +909,11 @@ export function montarContexto({
   ctx.periciasTemFavoritas = ctx.pericias.some(p => p.favorita);
   // Testes de Resistência (Fortitude, Reflexos, Vontade) numa caixa própria
   ctx.resistenciasPericia = ctx.pericias.filter(p => PERICIAS_RESISTENCIA.includes(p.id));
-  // Reflexos aparece nos dois lugares. No modo edição os campos ficam na lista de perícias
-  // e a caixa de resistências mostra Reflexos só para leitura (sem campos repetidos no formulário).
-  ctx.pericias = ctx.pericias.filter(p => !PERICIAS_RESISTENCIA.includes(p.id) || p.id === "reflexos");
+  // Fortitude, Reflexos e Vontade ficam só na caixa de resistências (lá também se editam).
+  // Continuam sendo perícias: os pontos contam no total e respeitam o limite por perícia.
+  ctx.pericias = ctx.pericias.filter(p => !PERICIAS_RESISTENCIA.includes(p.id));
   for (const p of ctx.pericias) p.editar = !!edicao;
-  ctx.resistenciasPericia = ctx.resistenciasPericia.map(p => (p.id === "reflexos" && edicao ? { ...p, editar: false, soLeitura: true } : { ...p, editar: !!edicao }));
+  ctx.resistenciasPericia = ctx.resistenciasPericia.map(p => ({ ...p, editar: !!edicao }));
   for (const l of [ctx.resistenciasPericia, ctx.pericias]) l.forEach((p, i) => { p.primeira = i === 0; p.ultima = i === l.length - 1; });
   ctx.pontosLista = [
     { id: "pev", sigla: "PEv", nome: "Evolução", valor: ficha.pontos.pev, dica: "Pontos de Evolução: combates (5 × ND), encontros e recompensas" },
@@ -1039,6 +1039,8 @@ export function montarContexto({
       r.cargasTexto = cMax ? `${limitar(int(fi.cargas?.valor), 0, cMax)}/${cMax} cargas` : "";
       // Formas da arma: só na primeira linha dela (os modos de ataque repetem a arma)
       r.formasQtd = !a.modo && it ? Object.values(fi.formas ?? {}).filter(Boolean).length : 0;
+      r.temPassiva = !a.modo && it ? (Object.keys(fi.efeitos ?? {}).length > 0 || Object.values(fi.formas ?? {}).some(fo => fo && (fo.acao === "passiva" || (fo.bonus?.gatilho && fo.bonus.gatilho !== "uso")))) : false;
+      r.passivaLigada = !fi.passivaDesligada;
       return r;
     }, falhas),
     armasGuardadas: new Set(armas.filter(a => !a.equipado).map(a => a.id)).size,
@@ -1048,7 +1050,7 @@ export function montarContexto({
   ctx.ataques.vazio = !ctx.ataques.armas.length && !ctx.ataques.custom.length;
   ctx.bonusCena = Object.entries(dados.bonusCena ?? {}).filter(([, b]) => b).map(([id, b]) => ({
     id, nome: b.nome ?? "", ativo: !!b.ativo, acerto: int(b.acerto), dano: b.dano ?? "", criado: num(b.criado),
-    ca: int(b.ca), rd: int(b.rd), rdTipo: b.rdTipo ?? "", testes: int(b.testes), deslocamento: num(b.deslocamento), cena: !!b.cena,
+    ca: int(b.ca), rd: int(b.rd), rdTipo: b.rdTipo ?? "", testes: int(b.testes), deslocamento: num(b.deslocamento), cena: !!b.cena && !int(b.turnos), ateDescanso: !!b.ateDescanso, fixo: !!b.fixo, ateTurno: !!b.ateTurno, turnosRestantes: int(b.turnos), umaVez: !!b.umaVez,
     margem: int(b.margem), critMult: int(b.critMult), debuff: !!b.debuff,
     desvantagem: ["ataques", "testes", "ambos"].includes(b.desvantagem) ? b.desvantagem : "",
     desvantagemTexto: { ataques: "desvantagem em ataques", testes: "desvantagem em testes", ambos: "desvantagem em ataques e testes" }[b.desvantagem] ?? "",
@@ -1305,6 +1307,8 @@ export function montarContexto({
     const rotuloT = Object.fromEntries(alvosT.map(a => [a.id, a.label]));
     const horasHoje = Math.max(0, num(dados.treinoDia?.horas));
     const livres = Math.max(0, TREINO.horasDia - horasHoje);
+    const escolhasAtivasT = escolhasTreinoAtivas(dados, actor.items.filter(i => i.type === "weapon").map(i => ({ id: i.id, nome: i.name })));
+    ctx.escolhasTreino = escolhasAtivasT;
     const lista = Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t).map(([id, t]) => {
       const unidade = UNIDADES_TEMPO[t.unidade] ? t.unidade : "horas";
       const qtd = Math.max(0, num(t.tempo));
@@ -1328,7 +1332,9 @@ export function montarContexto({
         foraDaFaixa: pt > TREINO.ptMax || horas > TREINO.horasMax || (pt > 0 && pt < TREINO.ptMin) || horas < TREINO.horasMin,
         mods, temMods: mods.some(m => m.alvoLabel), criado: num(t.criado),
         categoriaId: t.categoria ?? "", categoriaLabel: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.label ?? "", categoriaIcone: CATEGORIAS_TREINO.find(c => c.id === t.categoria)?.icone ?? "",
-        categorias: CATEGORIAS_TREINO.map(c => ({ id: c.id, label: c.label, selected: c.id === t.categoria }))
+        categorias: CATEGORIAS_TREINO.map(c => ({ id: c.id, label: c.label, selected: c.id === t.categoria })),
+        // Treino que dá uma coisa OU outra (Aura de Proteção: RD ou CA): escolha no card, troca quando quiser
+        escolha: estado === "concluido" ? (escolhasAtivasT.find(e => e.especial === especialDoTreino(t)) ?? null) : null
       };
     }).sort((a, b) => a.criado - b.criado);
     ctx.treinos = {
@@ -1390,6 +1396,9 @@ export function montarContexto({
       equipado: !!item.system?.equipped,
       eArma, eConsumivel: item.type === "consumable", ataque,
       formasQtd: Object.values(f.formas ?? {}).filter(Boolean).length,
+      // Passiva do item (efeitos, regeneração, gatilhos): pode ser desligada
+      temPassiva: Object.keys(f.efeitos ?? {}).length > 0 || Object.values(f.formas ?? {}).some(fo => fo && (fo.acao === "passiva" || (fo.bonus?.gatilho && fo.bonus.gatilho !== "uso"))),
+      passivaLigada: !f.passivaDesligada,
       eArmadura: item.type === "equipment", armadura: int(f.armadura),
       maestriaSelo: eArma ? seloMaestria(estadoMaestria(item, dados)) : null,
       formulaUso: f.formula ?? "",
@@ -1602,6 +1611,8 @@ export function montarContexto({
     { campo: "imunidades", label: "Imunidades", dica: "Danos ou condições. Uma condição com o mesmo nome é ignorada. O dano aceita nível: Veneno (Verdadeiro).", itens: dados.imunidades, sugestoes: [...sugestoesDano(), ...ficha.condicoes.map(c => c.label)] },
     { campo: "vulnerabilidades", label: "Vulnerabilidades", dica: "Tipos de dano que você recebe em dobro, em qualquer nível. Escreva ×3 para o triplo (ex.: Fogo ×3).", itens: dados.vulnerabilidades, sugestoes: sugestoesDano() }
   ];
+  // As que vêm de fora (itens, bônus de cena, bênçãos, condições) também aparecem no modo edição, só para ver
+  for (const g of ctx.tagsCondicoes) g.externos = (ficha.tags?.[g.campo] ?? []).filter(t => t?.fonte).map(t => ({ texto: t.tipo ?? t.texto ?? "", fonte: t.fonte }));
 
   /* ---------- Bênçãos e maldições ---------- */
   const situacao = new Map(ficha.bencaos.map(x => [x.id, x]));
@@ -1869,11 +1880,15 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
       tem: fo.bonus.opcoes.length > 0,
       dado: `d${fo.bonus.opcoes.length || 1}`,
       opcoesGatilho: Object.entries(GATILHOS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.gatilho })),
+      eDano: fo.bonus.gatilho === "dano", danoMinimo: fo.bonus.danoMinimo, eTurnos: fo.bonus.duracao === "turnos", turnos: fo.bonus.turnos || 1, eZero: fo.bonus.gatilho === "zeroPv", salvaVida: fo.bonus.salvaVida,
       opcoesEscolha: Object.entries(ESCOLHAS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.escolha })),
       opcoesDuracao: Object.entries(DURACOES_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.duracao })),
       automatico: fo.bonus.gatilho !== "uso",
       linhas: fo.bonus.opcoes.map((o, i) => ({
         ...o, n: i + 1, eRd: o.tipo === "rd",
+        eCura: o.tipo === "cura", eDanoTurno: o.tipo === "danoTurno", eSemValor: o.tipo === "limparCondicoes",
+        podeAlvo: !o.acao && o.tipo !== "resistencia", usaTurnos: o.tipo === "danoTurno" || o.noAlvo,
+        opcoesRecurso: [["pv", "PV"], ["pm", "PM"], ["pe", "PE"], ["ps", "PS"]].map(([id, label]) => ({ id, label, selected: id === o.recurso })),
         eCondicao: o.tipo === "condicao", eDesv: o.tipo === "desvantagem", eRes: o.tipo === "resistencia", eNumero: !o.semNumero,
         opcoesCondicao: o.tipo === "condicao" ? CONDICOES.map(c => ({ id: c.id, label: c.label, selected: c.id === o.valor })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR")) : [],
         opcoesDesv: [["ataques", "ataques"], ["testes", "testes"], ["ambos", "ataques e testes"]].map(([id, label]) => ({ id, label, selected: id === o.valor })),

@@ -1,0 +1,33 @@
+<section class="tab epm-aba epm-npcv-aba {{cls.ficha}}" data-group="primary" data-tab="ficha" style="--npc-ac: {{npcVisual.cor}}">
+{{#if npcVisual}}
+{{#if npcVisual.eComum}}
+  {{#if npcVisual.semCombate}}
+  <div class="epm-npcv-g21">{{> "epm-npc" secao="loja"}}{{> "epm-npc" secao="interpretacao"}}</div>
+  <div class="epm-npcv-g2">{{> "epm-npc" secao="relacao"}}{{> "epm-npc" secao="notas"}}</div>
+  {{else}}
+  {{> "epm-npc" secao="atributos"}}
+  <div class="epm-npcv-g12"><div class="epm-npcv-col">{{> "epm-npc" secao="combate"}}{{> "epm-npc" secao="pericias"}}</div><div class="epm-npcv-col">{{> "epm-npc" secao="ataques"}}{{> "epm-npc" secao="comportamento"}}</div></div>
+  <div class="epm-npcv-g3">{{> "epm-npc" secao="interpretacao"}}{{> "epm-npc" secao="relacao"}}{{> "epm-npc" secao="lootCurto"}}</div>
+  {{#if npcVisual.loja.length}}{{> "epm-npc" secao="loja"}}{{/if}}
+  {{/if}}
+  {{#if isGM}}<div class="epm-npcv-botoes"><button type="button" class="epm-npcv-btn gm" data-action="npcRolarVida">Rolar Vida</button><button type="button" class="epm-npcv-btn gm" data-action="npcVariacao">Gerar variação</button><button type="button" class="epm-npcv-btn gm" data-action="npcDuplicar">Duplicar como grupo</button><button type="button" class="epm-npcv-btn gm" data-action="npcTipo" data-tipo="importante">Promover a NPC Importante</button></div>{{/if}}
+{{/if}}
+{{#if npcVisual.eMonstro}}
+  {{> "epm-npc" secao="atributos"}}
+  <div class="epm-npcv-g2"><div class="epm-npcv-col">{{> "epm-npc" secao="combate"}}{{> "epm-npc" secao="pericias"}}</div>{{> "epm-npc" secao="defesas"}}</div>
+  {{> "epm-npc" secao="acoes"}}
+  {{> "epm-npc" secao="comportamento"}}
+{{/if}}
+{{#if npcVisual.eForte}}
+  {{> "epm-npc" secao="atributos"}}
+  <div class="epm-npcv-g2"><div class="epm-npcv-col">{{> "epm-npc" secao="combate"}}{{> "epm-npc" secao="pericias"}}</div>{{> "epm-npc" secao="defesas"}}</div>
+  {{> "epm-npc" secao="elite"}}
+  {{> "epm-npc" secao="conhecimento"}}
+{{/if}}
+{{#if npcVisual.eChefe}}
+  {{> "epm-npc" secao="atributos"}}
+  <div class="epm-npcv-g2">{{> "epm-npc" secao="combate"}}{{> "epm-npc" secao="defesas"}}</div>
+  <div class="epm-npcv-g2">{{> "epm-npc" secao="aura"}}{{> "epm-npc" secao="pericias"}}</div>
+{{/if}}
+{{/if}}
+</section>

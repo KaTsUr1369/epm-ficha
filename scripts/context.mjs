@@ -31,7 +31,7 @@ const estadoMorteAtor = actor => { try { const e = estadoMorteBase(actor); retur
 import { conteudoNotion } from "./settings.mjs";
 import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
-import { contextoNpc, abaOcultaNpc, eAtorNpc } from "./tipos-npc.mjs";
+import { contextoNpc, abaOcultaNpc, eAtorNpc, abasDoTipo, visualNpc, corDaFicha } from "./tipos-npc.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
 import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse, escolhasTreinoAtivas, especialDoTreino, armaSintonizada } from "./ficha-extras.mjs";
@@ -780,12 +780,19 @@ export function montarContexto({
   const podeOcultar = a => a.id !== "principal" && !a.soEdicao && !a.opcional && !a.soNpc;
   const brutoFlags = actor?.flags?.[FLAG] ?? {};
   const abaLigada = a => (a.opcional ? !!abasExtras[a.id] : !(podeOcultar(a) && abaOcultaNpc(actor, brutoFlags, a.id)));
-  const abaPermitida = a => !a.soNpc || (eAtorNpc(actor) && isGM);
-  const abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id))
+  const abaPermitida = a => !a.soNpc || (eAtorNpc(actor) && (isGM || !a.soMestre));
+  let abasVisiveis = ordemAbas.map(id => ABAS.find(a => a.id === id))
     .filter(a => a && abaPermitida(a) && (!a.soEdicao || edicao) && abaLigada(a) && (!a.seConteudo || edicao || temConteudo(a.seConteudo)))
     .map(a => ({ ...a, soEdicao: a.soEdicao || (!!a.seConteudo && !temConteudo(a.seConteudo)) }));
+  // 0.8.11: NPC usa as abas do tipo, na ordem dos modelos; no modo edição as outras aparecem depois (apagadas)
+  if (eAtorNpc(actor)) {
+    const doTipo = abasDoTipo(actor).filter(id => id !== "npc" || isGM);
+    const base = doTipo.map(id => ABAS.find(a => a.id === id)).filter(Boolean).map(a => ({ ...a, soEdicao: false }));
+    const extras = edicao ? ABAS.filter(a => !doTipo.includes(a.id) && !a.soNpc).map(a => ({ ...a, soEdicao: true })) : [];
+    abasVisiveis = [...base, ...extras];
+  }
   let abaAtual = ui.limitado ? "sobre" : (ui.abas?.primary ?? "principal");
-  if (!abasVisiveis.some(a => a.id === abaAtual)) abaAtual = ui.limitado ? "sobre" : "principal";
+  if (!abasVisiveis.some(a => a.id === abaAtual)) abaAtual = ui.limitado ? "sobre" : (abasVisiveis[0]?.id ?? "principal");
   const cls = Object.fromEntries(ABAS.map(a => [a.id, a.id === abaAtual ? "active" : ""]));
   const expandidos = ui.expandidos ?? new Set();
   const filtro = ui.filtroRaridades ?? new Set();
@@ -809,7 +816,7 @@ export function montarContexto({
   } catch (err) { console.warn("EPM | ficha do NPC", err); ctx.npcFicha = null; }
 
   /* ---------- Personalização (cor da ficha) ---------- */
-  const cor = normalizarHex(dados.personalizacao?.cor, COR_PADRAO);
+  const cor = normalizarHex(eAtorNpc(actor) ? corDaFicha(actor, brutoFlags) : dados.personalizacao?.cor, COR_PADRAO);
   const brilho = limitar(int(dados.personalizacao?.brilho, BRILHO_PADRAO), 0, 100);
   ctx.estiloFicha = estiloPaleta(cor, brilho);
   const pos = posicaoNaRoda(cor);
@@ -1799,6 +1806,15 @@ export function montarContexto({
   } catch (err) {
     console.warn("EPM | novas mecânicas", err);
     ctx.novas = null;
+  }
+
+  /* ---------- 0.8.11: visual das fichas de NPC (igual aos modelos) ---------- */
+  try {
+    ctx.npcVisual = visualNpc({ ctx, actor, bruto: brutoFlags, ficha, poderes, isGM, edicao });
+    ctx.npcPrincipal = !!ctx.npcVisual?.eImportante && !edicao;
+  } catch (err) {
+    console.warn("EPM | visual do NPC", err);
+    ctx.npcVisual = null;
   }
 
   return ctx;

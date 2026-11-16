@@ -130,7 +130,9 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
 
   // Sanidade: estado e insanidades ativas
   const ps = d.recursos?.ps ?? {};
-  const estado = estadoSanidade(n(ps.value) + Math.max(0, n(ps.temp)));
+  // Sanidade máxima 0 = não usa Sanidade (monstros, construtos): sem estado nem penalidade
+  const semSanidade = ps.max !== undefined && ps.max !== "" && n(ps.max) <= 0;
+  const estado = estadoSanidade(semSanidade ? 100 : n(ps.value) + Math.max(0, n(ps.temp)));
   out.sanidade = estado;
   if (estado.mentais) out.fontesEfeito.push({ fonte: `Sanidade: ${estado.label}`, efeitos: { atributos: { inteligencia: estado.mentais, autocontrole: estado.mentais } }, tipo: "sanidade" });
   if (estado.testes) out.fontesEfeito.push({ fonte: `Sanidade: ${estado.label}`, efeitos: { testes: estado.testes }, tipo: "sanidade" });

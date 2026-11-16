@@ -1,0 +1,538 @@
+{{!-- Blocos das fichas de NPC (0.8.11), iguais aos modelos em PDF. Uso: {{> "epm-npc" secao="atributos"}} --}}
+
+{{#if (epmEq secao "atributos")}}
+<section class="epm-npcv-painel">
+  <h3>Atributos<span class="tag">{{#if npcVisual.eImportante}}igual à ficha de jogador{{else}}valor direto{{/if}}</span></h3>
+  <div class="in">
+    <div class="epm-npcv-attrs">
+      {{#each npcVisual.atributos}}
+      <div class="epm-npcv-attr">
+        <button type="button" class="n" data-action="rolarAtributo" data-atributo="{{this.id}}" title="Rolar {{this.label}}">{{this.label}}</button>
+        {{#if @root.edicao}}{{#unless @root.npcVisual.eImportante}}<input type="number" class="v-input" name="{{this.campo}}" value="{{this.base}}" aria-label="{{this.label}}" title="Valor direto (vai para a base)" />{{else}}<span class="v">{{this.valor}}</span>{{/unless}}{{else}}<span class="v">{{this.valor}}{{#if pen}}<span class="pen{{#unless penNeg}} bonus{{/unless}}">{{this.pen}}</span>{{/if}}</span>{{/if}}
+        <span class="c">{{this.grupo}}</span>
+      </div>
+      {{/each}}
+    </div>
+    {{#if npcVisual.eImportante}}<p class="epm-npcv-nota">Mesmo cálculo dos jogadores (Base + Raça + Aumento + Outros). O selo mostra penalidades de condições, exaustão, bênçãos e maldições e entra nas rolagens.</p>
+    {{else}}{{#if edicao}}<p class="epm-npcv-nota">Valor direto: o número vai para a base (raça, aumento e outros continuam somando, se houver).</p>{{else}}<p class="epm-npcv-nota">Só o valor final, sem Base/Raça/Aumento. Clicar rola o teste.</p>{{/if}}{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "combate")}}
+<section class="epm-npcv-painel">
+  <h3>Combate{{#if npcVisual.eImportante}}<span class="tag"></span>{{/if}}</h3>
+  <div class="in">
+    <div class="epm-npcv-stats">
+      {{#each npcVisual.stats}}
+      {{#if acao}}<button type="button" class="epm-npcv-stat{{#if ac}} ac{{/if}}" data-action="{{this.acao}}" {{#if defesa}}data-defesa="{{this.defesa}}"{{/if}} title="{{#if defesa}}Usar {{this.l}}{{else}}Rolar iniciativa{{/if}}"><span class="v">{{this.v}}</span><span class="l">{{this.l}}</span></button>
+      {{else}}<div class="epm-npcv-stat{{#if ac}} ac{{/if}}"><span class="v">{{this.v}}</span><span class="l">{{this.l}}</span></div>{{/if}}
+      {{/each}}
+    </div>
+    <div class="epm-npcv-pills">
+      {{#each npcVisual.pills}}{{#if acao}}<button type="button" class="epm-npcv-pill {{this.cls}}" data-action="alternarAcao" data-acao="{{this.acao}}" title="Marcar/desmarcar">{{this.texto}}</button>{{else}}<span class="epm-npcv-pill {{this.cls}}">{{this.texto}}</span>{{/if}}{{/each}}
+      <span class="epm-npcv-dim"> · {{npcVisual.caTexto}}</span>
+    </div>
+    {{#if edicao}}
+    <div class="epm-npcv-edit">
+      <label class="epm-mini"><span>CA base</span><input type="number" name="flags.epm-ficha.ca.base" value="{{dados.ca.base}}" /></label>
+      <label class="epm-mini"><span>CA outros</span><input type="number" name="flags.epm-ficha.ca.bonus" value="{{dados.ca.bonus}}" /></label>
+      <label class="epm-mini"><span>iniciativa</span><input type="number" name="flags.epm-ficha.iniciativa.bonus" value="{{dados.iniciativa.bonus}}" /></label>
+      <label class="epm-mini"><span>desloc. (m)</span><input type="number" step="0.5" name="flags.epm-ficha.deslocamento.base" value="{{dados.deslocamento.base}}" /></label>
+      {{#if npcVisual.eCriatura}}<label class="epm-mini largo"><span>deslocamentos</span><input type="text" name="flags.epm-ficha.npc.defesas.deslocamentos" value="{{npcFicha.defesas.deslocamentos}}" placeholder="Andar 9 m, Escalar 6 m" /></label>{{/if}}
+    </div>
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "condicoes")}}
+<section class="epm-npcv-painel">
+  <h3>Condições e efeitos ativos<button type="button" class="tag-btn" data-action="irAba" data-tab="condicoes">gerenciar</button></h3>
+  <div class="in">
+    <div class="epm-npcv-chips">{{#each npcVisual.condicoes}}<span class="epm-npcv-chip red">{{this.texto}}</span>{{/each}}{{#unless npcVisual.condicoes.length}}<span class="epm-npcv-dim">Nenhuma condição ativa.</span>{{/unless}}</div>
+    <p class="epm-npcv-nota">Motor de efeitos completo: 131 condições, combinações, imunidades, Novo turno, descanso e fim de combate.</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "pericias")}}
+<section class="epm-npcv-painel">
+  <h3>{{#if npcVisual.eImportante}}Perícias{{else}}Perícias de destaque{{/if}}<span class="tag">{{#if npcVisual.eImportante}}30 oficiais · ★ favoritas{{else}}até 5{{/if}}</span></h3>
+  <div class="in">
+    <table class="epm-npcv-tab">
+      <tr>{{#if npcVisual.eImportante}}<th class="w4"></th>{{/if}}<th>Perícia</th>{{#if npcVisual.eImportante}}<th>Atributo</th>{{/if}}<th class="w10">Total</th></tr>
+      {{#each npcVisual.destaque}}
+      <tr>{{#if @root.npcVisual.eImportante}}<td>{{#if favorita}}★{{/if}}</td>{{/if}}<td><button type="button" class="epm-npcv-link{{#if favorita}} b{{/if}}" data-action="rolarPericia" data-pericia="{{this.id}}" title="Rolar">{{this.nome}}</button></td>{{#if @root.npcVisual.eImportante}}<td>{{this.atributo}}</td>{{/if}}<td><b>{{this.total}}</b></td></tr>
+      {{/each}}
+    </table>
+    {{#unless npcVisual.destaque.length}}<p class="epm-npcv-dim">Nenhuma perícia com pontos.</p>{{/unless}}
+    <p class="epm-npcv-nota">{{#if npcVisual.eImportante}}Lista oficial das 30 perícias, igual à dos jogadores; “Favoritas no topo” ligado.{{else}}Até 5. As outras usam só o atributo.{{#if edicao}} Marque ★ na aba Principal para escolher.{{/if}}{{/if}}</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "habResumo")}}
+<section class="epm-npcv-painel">
+  <h3>Habilidades e magias (resumo)<button type="button" class="tag-btn" data-action="irAba" data-tab="habilidades">abrir</button></h3>
+  <div class="in">
+    <table class="epm-npcv-tab">
+      <tr><th>Nome</th><th>Tipo</th><th>Ação</th><th>Custo</th><th>Efeito</th></tr>
+      {{#each npcVisual.habResumo}}
+      <tr><td><button type="button" class="epm-npcv-link b" data-action="usarPoder" data-item-id="{{this.itemId}}" title="Usar">{{this.nome}}</button></td><td>{{this.tipo}}</td><td>{{this.acao}}</td><td>{{#if custoCls}}<span class="epm-npcv-pill {{this.custoCls}}">{{this.custo}}</span>{{else}}{{this.custo}}{{/if}}</td><td>{{this.efeito}}</td></tr>
+      {{/each}}
+    </table>
+    {{#unless npcVisual.habResumo.length}}<p class="epm-npcv-dim">Nenhuma habilidade ou magia.</p>{{/unless}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "ataques")}}
+<section class="epm-npcv-painel">
+  <h3>Ataques<span class="tag">1 a 3</span></h3>
+  <div class="in">
+    <table class="epm-npcv-tab">
+      <tr><th>Ataque</th><th>Acerto</th><th>Dano</th><th class="w12"></th></tr>
+      {{#each npcVisual.ataques}}
+      <tr><td><b>{{this.nome}}</b>{{#if sub}} <span class="epm-npcv-dim">· {{this.sub}}</span>{{/if}}</td><td>{{this.acerto}}</td><td><span class="epm-npcv-dado">{{this.dano}}</span> {{this.tipoDano}}</td><td><button type="button" class="epm-npcv-btn" data-action="atacar" data-tipo="{{this.tipo}}" data-ref="{{this.ref}}">Atacar</button></td></tr>
+      {{/each}}
+    </table>
+    {{#unless npcVisual.ataques.length}}<p class="epm-npcv-dim">Equipe uma arma ou crie um ataque.</p>{{/unless}}
+    {{#if edicao}}<p class="epm-npcv-nota"><button type="button" class="epm-npcv-btn" data-action="novoAtaque">+ Novo ataque</button> Os detalhes de cada ataque se editam na aba Combate.</p>{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "acoes")}}
+<section class="epm-npcv-painel">
+  <h3>Ações<span class="tag">{{#if npcVisual.eChefe}}contadores ◆ ◇ ▲ na ficha{{else}}{{#if npcVisual.eElite}}recarga e lendárias controladas pela ficha{{else}}as condições são aplicadas pelo cartão{{/if}}{{/if}}</span></h3>
+  <div class="in">
+    <table class="epm-npcv-tab">
+      <tr><th class="w22">Ação</th><th>Nome</th><th>Teste</th><th>Efeito</th><th class="w11"></th></tr>
+      {{#each npcVisual.acoes}}
+      <tr><td><span class="epm-npcv-pill {{this.cls}}">{{this.pill}}</span></td><td><b>{{this.nome}}</b></td><td>{{this.teste}}</td><td>{{this.efeito}}</td>
+        <td>{{#unless passiva}}{{#if (epmEq acao "atacar")}}<button type="button" class="epm-npcv-btn" data-action="atacar" data-tipo="{{this.tipo}}" data-ref="{{this.ref}}">Usar</button>{{else}}<button type="button" class="epm-npcv-btn{{#if bloqueada}} off{{/if}}" data-action="usarPoder" data-item-id="{{this.itemId}}">Usar</button>{{/if}}{{/unless}}</td></tr>
+      {{/each}}
+    </table>
+    {{#unless npcVisual.acoes.length}}<p class="epm-npcv-dim">Nenhuma ação. No modo edição: crie um ataque ou uma habilidade.</p>{{/unless}}
+    {{#if edicao}}<p class="epm-npcv-nota"><button type="button" class="epm-npcv-btn" data-action="novoAtaque">+ Ataque</button> <button type="button" class="epm-npcv-btn" data-action="novoPoder" data-tipo="habilidade">+ Habilidade</button> <button type="button" class="epm-npcv-btn" data-action="novoPoder" data-tipo="magia">+ Magia</button> As formas (ação, custo, teste, dano) se editam no editor de habilidade; a ação Lendária/Mítica/Arcaica é escolhida na forma.</p>{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "defesas")}}
+<section class="epm-npcv-painel">
+  <h3>Defesas e sentidos{{#if npcVisual.eMonstro}}<span class="tag">entram no motor de efeitos</span>{{/if}}</h3>
+  <div class="in">
+    <table class="epm-npcv-tab">
+      {{#each npcVisual.defesas}}<tr><td class="w30"><b>{{this.l}}</b></td><td>{{this.v}}</td></tr>{{/each}}
+    </table>
+    {{#if edicao}}
+    <div class="epm-npcv-edit">
+      <label class="epm-mini largo"><span>RD</span><input type="text" name="flags.epm-ficha.npc.defesas.rd" value="{{npcFicha.defesas.rd}}" placeholder="2 contra Cortante" /></label>
+      <label class="epm-mini largo"><span>imune a condições</span><input type="text" name="flags.epm-ficha.npc.defesas.imunesCondicoes" value="{{npcFicha.defesas.imunesCondicoes}}" placeholder="Em Chamas" /></label>
+      <label class="epm-mini largo"><span>sentidos</span><input type="text" name="flags.epm-ficha.npc.defesas.sentidos" value="{{npcFicha.defesas.sentidos}}" placeholder="Sentido sísmico 9 m" /></label>
+    </div>
+    <p class="epm-npcv-nota">Resistência, vulnerabilidade e imunidade a dano (e a RD que entra no “Aplicar dano”) se editam na aba Combate.</p>
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "comportamento")}}
+<section class="epm-npcv-painel">
+  <h3>Comportamento</h3>
+  <div class="in">
+    {{#if edicao}}
+    <div class="epm-npcv-edit">
+      <label class="epm-mini"><span>moral: Vida ≤ %</span><input type="number" min="0" max="99" name="flags.epm-ficha.npc.moral.pct" value="{{npcFicha.moral.pct}}" /></label>
+      <label class="epm-mini largo"><span>moral: observação</span><input type="text" name="flags.epm-ficha.npc.moral.texto" value="{{npcFicha.moral.texto}}" placeholder="menos dentro da toca" /></label>
+      <label class="epm-mini largo"><span>tática</span><input type="text" name="flags.epm-ficha.npc.tatica" value="{{npcFicha.tatica}}" placeholder="chama reforço antes de lutar" /></label>
+      {{#if npcVisual.eCriatura}}<label class="epm-mini"><span>bando</span><input type="text" name="flags.epm-ficha.npc.bando" value="{{npcFicha.bando}}" placeholder="1d4 + 1" /></label>{{/if}}
+    </div>
+    {{else}}
+    {{#if npcFicha.moral.pct}}<div class="epm-npcv-ln"><span><b>Moral</b> <span class="epm-npcv-dim">· pergunta com {{npcFicha.moral.pct}}% da Vida{{#if npcFicha.moral.texto}}, {{npcFicha.moral.texto}}{{/if}}</span></span><span class="epm-npcv-pill gold">pergunta ao Mestre</span></div>{{/if}}
+    {{#if npcFicha.tatica}}<div class="epm-npcv-ln"><span><b>Tática</b> <span class="epm-npcv-dim">· {{npcFicha.tatica}}</span></span><span></span></div>{{/if}}
+    {{#if npcVisual.eCriatura}}<div class="epm-npcv-ln"><span><b>Bando</b> <span class="epm-npcv-dim">· {{#if npcFicha.bando}}{{npcFicha.bando}}; {{/if}}iniciativa única para o grupo; cada um com Vida rolada</span></span>{{#if isGM}}<button type="button" class="epm-npcv-btn gm" data-action="npcDuplicar">Criar bando</button>{{/if}}</div>{{/if}}
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "interpretacao")}}
+<section class="epm-npcv-painel">
+  <h3>Interpretação rápida<span class="tag">1 linha cada</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    <label class="epm-mini largo"><span>jeito</span><input type="text" name="flags.epm-ficha.npc.interp.jeito" value="{{npcFicha.interp.jeito}}" /></label>
+    <label class="epm-mini largo"><span>quer</span><input type="text" name="flags.epm-ficha.npc.interp.quer" value="{{npcFicha.interp.quer}}" /></label>
+    <label class="epm-mini largo"><span>sabe</span><input type="text" name="flags.epm-ficha.npc.interp.sabe" value="{{npcFicha.interp.sabe}}" /></label>
+    {{else}}
+    <p><b>Jeito:</b> {{npcFicha.interp.jeito}}</p>
+    <p><b>Quer:</b> {{npcFicha.interp.quer}}</p>
+    <p><b>Sabe:</b> {{#if npcFicha.interp.sabe}}“{{npcFicha.interp.sabe}}”{{/if}}</p>
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "relacao")}}
+<section class="epm-npcv-painel">
+  <h3>Relação com o grupo</h3>
+  <div class="in">
+    <div class="epm-npcv-ln"><span>Grupo inteiro</span><span class="epm-npcv-aff-wrap">{{#if isGM}}<button type="button" class="epm-npcv-seta" data-action="npcAfinidade" data-delta="-1" aria-label="Menos 1">−</button>{{/if}}<span class="epm-npcv-aff">{{#each npcVisual.afinidadeCelulas}}<span class="{{this.cls}}"></span>{{/each}}</span> <b>{{npcVisual.afinidadeTexto}}</b>{{#if isGM}}<button type="button" class="epm-npcv-seta" data-action="npcAfinidade" data-delta="1" aria-label="Mais 1">+</button>{{/if}}</span></div>
+    <p class="epm-npcv-nota">Uma afinidade só para o grupo. Dá para separar por personagem promovendo a NPC Importante.</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "lootCurto")}}
+<section class="epm-npcv-painel">
+  <h3>Loot<span class="tag">rola ao derrotar</span></h3>
+  <div class="in">
+    {{#if npcFicha.moedasLoot}}<div class="epm-npcv-ln"><span>Moedas</span><span class="epm-npcv-dado">{{npcFicha.moedasLoot}}</span></div>{{/if}}
+    {{#each npcFicha.loot}}<div class="epm-npcv-ln"><span>{{this.nome}}</span><span>{{#if (epmEq chance 100)}}sempre{{else}}{{this.chance}}%{{/if}}</span></div>{{/each}}
+    {{#if edicao}}<button type="button" class="epm-npcv-btn" data-action="irAba" data-tab="npc">Editar o loot na aba Mestre</button>{{else}}{{#if isGM}}<button type="button" class="epm-npcv-btn gm" data-action="npcSaquear">Saquear</button>{{/if}}{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "loot")}}
+<section class="epm-npcv-painel">
+  <h3>Loot e materiais de criação<span class="tag">liga com a Criação de itens</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    <label class="epm-mini"><span>moedas</span><input type="text" name="flags.epm-ficha.npc.moedasLoot" value="{{npcFicha.moedasLoot}}" placeholder="2d6 PP" /></label>
+    {{#each npcFicha.loot}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.loot.{{this.id}}.nome" value="{{this.nome}}" placeholder="Material" aria-label="Material" />
+      <label class="epm-mini"><span>qtd.</span><input type="text" name="flags.epm-ficha.npc.loot.{{this.id}}.qtd" value="{{this.qtd}}" /></label>
+      <label class="epm-mini"><span>chance %</span><input type="number" min="0" max="100" name="flags.epm-ficha.npc.loot.{{this.id}}.chance" value="{{this.chance}}" /></label>
+      <input type="text" name="flags.epm-ficha.npc.loot.{{this.id}}.uso" value="{{this.uso}}" placeholder="Uso sugerido" aria-label="Uso" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="loot" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="loot">+ Material</button>
+    {{else}}
+    <table class="epm-npcv-tab">
+      <tr><th>Material</th><th class="w13">Qtd.</th><th class="w12">Chance</th><th>Uso sugerido</th></tr>
+      {{#if npcFicha.moedasLoot}}<tr><td><b>Moedas</b></td><td><span class="epm-npcv-dado">{{npcFicha.moedasLoot}}</span></td><td>100%</td><td></td></tr>{{/if}}
+      {{#each npcFicha.loot}}<tr><td><b>{{this.nome}}</b></td><td>{{#if (epmEq qtd "1")}}1{{else}}<span class="epm-npcv-dado">{{this.qtd}}</span>{{/if}}</td><td>{{this.chance}}%</td><td>{{this.uso}}</td></tr>{{/each}}
+    </table>
+    {{#if isGM}}<p class="epm-npcv-nota"><button type="button" class="epm-npcv-btn gm" data-action="npcSaquear">Saquear</button> Rola as chances ao derrotar e manda o resultado para o chat.</p>{{/if}}
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "elite")}}
+<section class="epm-npcv-painel">
+  <h3>Traços de elite<span class="tag">o que separa do Monstro comum</span></h3>
+  <div class="in">
+    <div class="epm-npcv-g2">
+      <div class="epm-npcv-fase{{#if npcVisual.aura}} cur{{/if}}"><div class="ph"><b>Aura de Horror</b>{{#if npcVisual.aura}}<span class="epm-npcv-pill v">{{npcVisual.aura.dado}} · DT {{npcVisual.aura.dt}}</span>{{else}}<span class="epm-npcv-pill">sem aura</span>{{/if}}</div>
+        <p class="epm-npcv-small">No começo do combate, quem ainda não o viu testa Vontade. Falha: perde {{#if npcVisual.aura}}{{npcVisual.aura.dado}}{{else}}1dX{{/if}} PS.{{#if npcVisual.aura.vistos}} <span class="epm-npcv-dim">Já viram: {{npcVisual.aura.vistos}}.</span>{{/if}}{{#if edicao}} <span class="epm-npcv-dim">(Configure no painel Aura de Horror da aba Combate.)</span>{{/if}}</p></div>
+      <div class="epm-npcv-fase"><div class="ph"><b>Tenacidade</b><span class="epm-npcv-pill gold">{{npcFicha.tenacidade.livres}} / {{npcFicha.tenacidade.max}} por combate</span></div>
+        <p class="epm-npcv-small">Ao receber uma condição, o Mestre pode recusar.{{#if isGM}} <button type="button" class="epm-npcv-btn" data-action="npcContador" data-campo="tenacidade">Usar</button>{{/if}}{{#if edicao}} <label class="epm-mini"><span>por combate</span><input type="number" min="0" max="10" name="flags.epm-ficha.npc.tenacidade.max" value="{{npcFicha.tenacidade.max}}" /></label>{{/if}}</p></div>
+      <div class="epm-npcv-fase"><div class="ph"><b>Ações Lendárias</b><span class="epm-npcv-pill gold">{{npcFicha.lendarias}} por rodada</span></div>
+        <p class="epm-npcv-small">Usadas no fim do turno de outra criatura. Recarregam no começo do turno dele.{{#if isGM}} <button type="button" class="epm-npcv-seta" data-action="npcAcaoEspecial" data-acao="lendaria" data-delta="-1">−</button><button type="button" class="epm-npcv-seta" data-action="npcAcaoEspecial" data-acao="lendaria" data-delta="1">+</button>{{/if}}</p></div>
+      <div class="epm-npcv-fase"><div class="ph"><b>Limiar{{#if npcVisual.fases.[1].nome}}: {{npcVisual.fases.[1].nome}}{{/if}}</b>{{#if npcVisual.temFases}}<span class="epm-npcv-pill r">{{npcVisual.fases.[1].limiar}}% da Vida</span>{{else}}<span class="epm-npcv-pill">sem limiar</span>{{/if}}</div>
+        <p class="epm-npcv-small">{{#if npcVisual.temFases}}{{#each npcVisual.fases.[1].efeitos}}{{this}} {{/each}}{{npcVisual.fases.[1].texto}} Uma vez por combate.{{else}}Ligue “Chefes com fases” (Regras opcionais) e marque “É chefe” com uma fase na aba Combate.{{/if}}</p></div>
+    </div>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "aura")}}
+<section class="epm-npcv-painel">
+  <h3>Aura de Horror e presença</h3>
+  <div class="in">
+    <div class="epm-npcv-ln"><span><b>Aura de Horror</b> <span class="epm-npcv-dim">· Vontade no começo do combate</span></span>{{#if npcVisual.aura}}<span class="epm-npcv-pill v">{{npcVisual.aura.dado}} · DT {{npcVisual.aura.dt}}</span>{{else}}<span class="epm-npcv-pill">sem aura</span>{{/if}}</div>
+    <div class="epm-npcv-ln"><span><b>Tenacidade</b> <span class="epm-npcv-dim">· recusa condições</span>{{#if isGM}} <button type="button" class="epm-npcv-btn" data-action="npcContador" data-campo="tenacidade">Usar</button>{{/if}}</span><span class="epm-npcv-pill gold">{{npcFicha.tenacidade.livres}} / {{npcFicha.tenacidade.max}} por combate</span></div>
+    <div class="epm-npcv-ln"><span><b>Resistência Lendária</b> <span class="epm-npcv-dim">· escolhe passar num teste</span>{{#if isGM}} <button type="button" class="epm-npcv-btn" data-action="npcContador" data-campo="resistLendaria">Usar</button>{{/if}}</span><span class="epm-npcv-pill gold">{{npcFicha.resistLendaria.livres}} / {{npcFicha.resistLendaria.max}} por dia</span></div>
+    <div class="epm-npcv-ln"><span><b>Recuperado</b> <span class="epm-npcv-dim">· imune por 1 turno ao sair de Atordoado, Paralisado ou Dominado</span></span><span class="epm-npcv-pill ok">automático</span></div>
+    {{#if edicao}}<div class="epm-npcv-edit"><label class="epm-mini"><span>tenacidade</span><input type="number" min="0" max="10" name="flags.epm-ficha.npc.tenacidade.max" value="{{npcFicha.tenacidade.max}}" /></label><label class="epm-mini"><span>res. lendária</span><input type="number" min="0" max="10" name="flags.epm-ficha.npc.resistLendaria.max" value="{{npcFicha.resistLendaria.max}}" /></label><span class="epm-npcv-dim">A Aura se configura na aba Combate.</span></div>{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "conhecimento")}}
+<section class="epm-npcv-painel">
+  <h3>{{#if npcVisual.eMonstro}}Conhecimento: o que os jogadores descobrem{{else}}Conhecimento{{/if}}<span class="tag">{{#if npcVisual.eMonstro}}como o background por afinidade{{else}}perícia: {{npcFicha.conhecimento.pericia}}{{/if}}</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    <label class="epm-mini"><span>perícia</span><input type="text" name="flags.epm-ficha.npc.conhecimento.pericia" value="{{npcFicha.conhecimento.pericia}}" /></label>
+    {{#each npcFicha.conhecimento.niveis}}
+    <div class="epm-npc-linha">
+      <label class="epm-mini"><span>DT</span><input type="number" min="1" name="flags.epm-ficha.npc.conhecimento.niveis.{{this.id}}.dt" value="{{this.dt}}" /></label>
+      <input type="text" name="flags.epm-ficha.npc.conhecimento.niveis.{{this.id}}.revela" value="{{this.revela}}" placeholder="O que revela" aria-label="Revela" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="conhecimento.niveis" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="conhecimento.niveis">+ DT</button>
+    {{else}}
+    <table class="epm-npcv-tab">
+      <tr><th class="w9">DT</th><th>Revela{{#if npcVisual.eMonstro}} no Bestiário dos jogadores{{/if}}</th><th class="w24">Grupo</th></tr>
+      {{#each npcFicha.conhecimento.niveis}}<tr><td><b>{{this.dt}}</b></td><td>{{this.revela}}</td><td>{{#if (epmMenor @root.npcFicha.conhecimento.revelado this.dt)}}<span class="epm-npcv-lock">ninguém ainda</span>{{else}}<span class="epm-npcv-pill ok">já sabem</span>{{/if}}</td></tr>{{/each}}
+    </table>
+    {{#if isGM}}<p class="epm-npcv-nota"><button type="button" class="epm-npcv-btn" data-action="npcRevelar">Testar conhecimento</button> Perícia padrão: {{npcFicha.conhecimento.pericia}}. Você informa o total; o cartão mostra o que foi descoberto.</p>{{/if}}
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "visaoJogador")}}
+<section class="epm-npcv-painel">
+  <h3>Como os jogadores veem<span class="tag">visão do jogador</span></h3>
+  <div class="in">
+    <div class="epm-npcv-ln"><span><b>{{actor.name}}</b>{{#if npcFicha.categoria}} <span class="epm-npcv-dim">· {{npcFicha.categoria}}{{#if npcFicha.habitat}} · {{npcFicha.habitat}}{{/if}}</span>{{/if}}</span><span class="epm-npcv-pill ok">sempre</span></div>
+    {{#each npcFicha.conhecimento.niveis}}
+    {{#if (epmMenor @root.npcFicha.conhecimento.revelado this.dt)}}<div class="epm-npcv-ln"><span class="epm-npcv-lock">??? · descubra com DT {{this.dt}}</span><span class="epm-npcv-pill">trancado</span></div>
+    {{else}}<div class="epm-npcv-ln"><span>{{this.revela}}</span><span class="epm-npcv-pill ok">DT {{this.dt}}</span></div>{{/if}}
+    {{/each}}
+    <div class="epm-npcv-ln"><span>Vida estimada</span><span>{{npcFicha.vidaEstimada}}</span></div>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "loja")}}
+<section class="epm-npcv-painel">
+  <h3>Loja<span class="tag">desconto pela afinidade</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    {{#each npcVisual.loja}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.loja.{{this.id}}.nome" value="{{this.nome}}" placeholder="Item (mesmo nome de um item do inventário para copiar)" aria-label="Item" />
+      <label class="epm-mini"><span>estoque</span><input type="number" min="0" name="flags.epm-ficha.npc.loja.{{this.id}}.estoque" value="{{this.estoque}}" /></label>
+      <label class="epm-mini"><span>preço</span><input type="text" name="flags.epm-ficha.npc.loja.{{this.id}}.preco" value="{{this.preco}}" placeholder="50 PO" /></label>
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="loja" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="loja">+ Item à venda</button>
+    {{else}}
+    <table class="epm-npcv-tab">
+      <tr><th>Item</th><th class="w13">Estoque</th><th class="w15">Preço</th><th class="w15"></th></tr>
+      {{#each npcVisual.loja}}<tr><td><b>{{this.nome}}</b></td><td>{{this.estoque}}</td><td>{{this.preco}}</td><td><button type="button" class="epm-npcv-btn{{#unless estoque}} off{{/unless}}" data-action="npcComprar" data-id="{{this.id}}">Comprar</button></td></tr>{{/each}}
+    </table>
+    {{#unless npcVisual.loja.length}}<p class="epm-npcv-dim">Nada à venda.</p>{{/unless}}
+    {{/if}}
+    <p class="epm-npcv-nota">Desconto por afinidade: +2 = −5% · +4 = −10% · −2 = +10%. Compra para o token selecionado (ou o personagem do jogador) e paga com troco automático.</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "servicos")}}
+<section class="epm-npcv-painel">
+  <h3>Serviços<span class="tag">nova aba</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    {{#each npcFicha.servicos}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.servicos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Treinadora: Controle de Núcleo I" aria-label="Serviço" />
+      <input type="text" name="flags.epm-ficha.npc.servicos.{{this.id}}.detalhes" value="{{this.detalhes}}" placeholder="10 PT · 48 h · req. Núcleo 4" aria-label="Detalhes" />
+      <input type="text" class="curto" name="flags.epm-ficha.npc.servicos.{{this.id}}.preco" value="{{this.preco}}" placeholder="5 PO / hora" aria-label="Preço" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="servicos" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="servicos">+ Serviço</button>
+    {{else}}
+    <table class="epm-npcv-tab">
+      <tr><th>Serviço</th><th>Detalhes</th><th class="w17">Preço</th></tr>
+      {{#each npcFicha.servicos}}<tr><td><b>{{this.nome}}</b></td><td>{{this.detalhes}}</td><td>{{this.preco}}</td></tr>{{/each}}
+    </table>
+    {{#unless npcFicha.servicos.length}}<p class="epm-npcv-dim">Nenhum serviço. Use o modo edição para criar.</p>{{/unless}}
+    {{/if}}
+    <p class="epm-npcv-nota">O treino com o NPC entra na aba Treinamentos do jogador com treinador confirmado; as horas são pagas das moedas dele, com troco.</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "recargas")}}
+<section class="epm-npcv-painel">
+  <h3>Recargas<span class="tag">1d6 no começo do turno dele</span></h3>
+  <div class="in">
+    {{#each npcFicha.recargas}}
+    <div class="epm-npc-linha">
+      {{#if @root.edicao}}<input type="text" name="flags.epm-ficha.npc.recargas.{{this.id}}.nome" value="{{this.nome}}" placeholder="Canhão de Rebites" aria-label="Ação" />
+      <label class="epm-mini"><span>recarga</span><input type="number" min="2" max="6" name="flags.epm-ficha.npc.recargas.{{this.id}}.min" value="{{this.min}}" /></label>
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="recargas" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+      {{else}}<span class="epm-npcv-flex"><b>{{this.nome}}</b> <span class="epm-npcv-dim">· Recarga {{this.min}}–6</span></span>{{#if pronta}}<span class="epm-npcv-pill ok">pronto</span>{{else}}<span class="epm-npcv-pill r">recarregando</span>{{/if}}
+      <button type="button" class="epm-npcv-btn{{#unless pronta}} off{{/unless}}" data-action="npcRecarga" data-id="{{this.id}}">Usar</button>{{/if}}
+    </div>
+    {{/each}}
+    {{#if edicao}}<button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="recargas">+ Recarga</button>{{else}}{{#unless npcFicha.recargas.length}}<p class="epm-npcv-dim">Nenhuma ação com recarga.</p>{{/unless}}{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "lacaios")}}
+<section class="epm-npcv-painel">
+  <h3>{{#if npcVisual.eChefe}}Lacaios e invocações{{else}}Lacaios{{/if}}</h3>
+  <div class="in">
+    {{#each npcFicha.lacaios}}
+    {{#if @root.edicao}}
+    <div class="epm-npc-linha">
+      <input type="text" name="flags.epm-ficha.npc.lacaios.{{this.id}}.nome" value="{{this.nome}}" placeholder="Drone de Reparo · Monstro ND 2" aria-label="Lacaio" />
+      <input type="text" class="curto" name="flags.epm-ficha.npc.lacaios.{{this.id}}.qtd" value="{{this.qtd}}" placeholder="1d4" aria-label="Quantidade" />
+      <input type="text" name="flags.epm-ficha.npc.lacaios.{{this.id}}.nota" value="{{this.nota}}" placeholder="×2 na fase 2" aria-label="Nota" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="lacaios" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    {{else}}
+    <div class="epm-npcv-ln"><span><b>{{this.nome}}</b></span><span>{{#if nota}}{{this.nota}}{{else}}<span class="epm-npcv-dado">{{this.qtd}}</span>{{/if}}</span></div>
+    {{/if}}
+    {{/each}}
+    {{#if edicao}}<button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="lacaios">+ Lacaio</button>{{else}}{{#unless npcFicha.lacaios.length}}<p class="epm-npcv-dim">Nenhum lacaio.</p>{{/unless}}<p class="epm-npcv-nota">Arraste a ficha do lacaio para o mapa (ou use “Criar bando” na ficha dele).</p>{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "bencaosResumo")}}
+<section class="epm-npcv-painel">
+  <h3>Bênçãos e maldições</h3>
+  <div class="in">
+    {{#each npcFicha.bencaosLista}}<div class="epm-npcv-ln"><span><b>{{this.nome}}</b> <span class="epm-npcv-dim">· {{this.tipo}}</span></span><span></span></div>{{/each}}
+    {{#unless npcFicha.bencaosLista.length}}<div class="epm-npcv-ln"><span><b>Bênção ou maldição do catálogo</b> <span class="epm-npcv-dim">· opcional</span></span><button type="button" class="epm-npcv-btn gm" data-action="irAba" data-tab="bencaos">Adicionar da lista</button></div>{{/unless}}
+    <p class="epm-npcv-nota">Monstros fortes podem carregar até 1 bênção ou maldição, com a automação do catálogo.</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "fases")}}
+<section class="epm-npcv-painel">
+  <h3>Fases<span class="tag">automático pelo limiar de Vida</span></h3>
+  <div class="in">
+    {{#unless npcFicha.regraChefes}}<p class="epm-aviso">As fases precisam da regra opcional “Chefes com fases” (Escudo do Mestre → Regras opcionais).</p>{{/unless}}
+    <div class="epm-npcv-fases">
+      {{#each npcVisual.fases}}
+      <div class="epm-npcv-fase{{#if atual}} cur{{/if}}">
+        <div class="ph"><b>Fase {{this.n}}{{#if nome}} · {{this.nome}}{{/if}}</b><span><span class="epm-npcv-pill {{this.cor}}">{{this.gatilho}}</span><span class="epm-npcv-pill{{#if atual}} ok{{/if}}">{{this.estado}}</span></span></div>
+        {{#if @root.edicao}}
+        <div class="epm-npcv-edit">
+          <label class="epm-mini largo"><span>nome da fase</span><input type="text" name="{{this.campoNome}}" value="{{this.nome}}" placeholder="O Erudito" /></label>
+          {{#unless primeira}}
+          <label class="epm-mini"><span>Vida ≤ %</span><input type="number" min="1" max="99" name="flags.epm-ficha.chefe.etapas.{{this.id}}.limiar" value="{{this.limiar}}" /></label>
+          <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.chefe.etapas.{{this.id}}.tirarNegativas" {{#if etapa.tirarNegativas}}checked{{/if}} /> tira condições negativas</label>
+          <label class="epm-mini"><span>ações</span><input type="number" min="0" name="flags.epm-ficha.chefe.etapas.{{this.id}}.acaoQtd" value="{{this.etapa.acaoQtd}}" /></label>
+          <label class="epm-mini"><span>tipo</span><select name="flags.epm-ficha.chefe.etapas.{{this.id}}.acao"><option value="">—</option><option value="lendaria" {{#if (epmEq etapa.acao "lendaria")}}selected{{/if}}>Lendária</option><option value="mitica" {{#if (epmEq etapa.acao "mitica")}}selected{{/if}}>Mítica</option><option value="arcaica" {{#if (epmEq etapa.acao "arcaica")}}selected{{/if}}>Arcaica</option></select></label>
+          <label class="epm-mini"><span>cura</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.cura" value="{{this.etapa.cura}}" placeholder="4d10" /></label>
+          <label class="epm-mini largo"><span>condições</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.condicoes" value="{{this.etapa.condicoes}}" placeholder="Voando, Invisível" /></label>
+          <label class="epm-mini"><span>+ acerto</span><input type="number" name="flags.epm-ficha.chefe.etapas.{{this.id}}.acerto" value="{{this.etapa.acerto}}" /></label>
+          <label class="epm-mini"><span>+ dano</span><input type="text" name="flags.epm-ficha.chefe.etapas.{{this.id}}.dano" value="{{this.etapa.dano}}" placeholder="1d8" /></label>
+          <button type="button" class="epm-icone-botao perigo" data-action="apagarFaseChefe" data-fase="{{this.id}}" title="Apagar fase"><i class="fa-solid fa-trash"></i></button>
+          {{/unless}}
+          <label class="epm-mini largo"><span>fala / texto da fase</span><input type="text" name="{{this.campoTexto}}" value="{{this.texto}}" placeholder="Vieram me entregar seus núcleos?" /></label>
+        </div>
+        {{else}}
+        {{#if efeitos.length}}<ul class="epm-npcv-small">{{#each efeitos}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
+        {{#if texto}}<div class="epm-npcv-fala">“{{this.texto}}”</div>{{/if}}
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{#if isGM}}<p class="epm-npcv-nota">{{#if edicao}}<button type="button" class="epm-npcv-btn gm" data-action="novaFaseChefe">+ Fase</button> {{/if}}<button type="button" class="epm-npcv-btn gm" data-action="npcFase" data-delta="1">Forçar próxima fase</button><button type="button" class="epm-npcv-btn gm" data-action="npcFase" data-delta="-1">Voltar fase</button> Cada fase acontece sozinha ao passar do limiar, uma vez por combate, e reseta no fim do combate.</p>{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "vitoria")}}
+<section class="epm-npcv-painel">
+  <h3>Vitória alternativa</h3>
+  <div class="in">
+    {{#if edicao}}
+    <label class="epm-mini largo"><span>nome</span><input type="text" name="flags.epm-ficha.npc.vitoria.nome" value="{{npcFicha.vitoria.nome}}" placeholder="Selar o Núcleo" /></label>
+    <label class="epm-mini largo"><span>como funciona</span><input type="text" name="flags.epm-ficha.npc.vitoria.texto" value="{{npcFicha.vitoria.texto}}" placeholder="Três sucessos de Arcanismo DT 25 antes de três falhas…" /></label>
+    <label class="epm-mini"><span>meta</span><input type="number" min="1" max="10" name="flags.epm-ficha.npc.vitoria.meta" value="{{npcFicha.vitoria.meta}}" /></label>
+    <label class="epm-mini"><span>liberada na fase</span><input type="number" min="1" max="9" name="flags.epm-ficha.npc.vitoria.fase" value="{{npcFicha.vitoria.fase}}" /></label>
+    {{else}}
+    <p><b>{{#if npcFicha.vitoria.nome}}{{npcFicha.vitoria.nome}}{{else}}Sem vitória alternativa{{/if}}</b>{{#if npcFicha.vitoria.fase}} <span class="epm-npcv-pill r">liberada na fase {{npcFicha.vitoria.fase}}</span>{{/if}}</p>
+    {{#if npcFicha.vitoria.texto}}<p class="epm-npcv-small">{{npcFicha.vitoria.texto}}</p>{{/if}}
+    <div class="epm-npcv-ln"><span>Sucessos</span><span>{{#if isGM}}<button type="button" class="epm-npcv-seta" data-action="npcVitoria" data-campo="sucessos" data-delta="-1">−</button>{{/if}}<span class="epm-npcv-pill ok">{{#each npcFicha.vitoria.pipsS}}{{#if this}}●{{else}}○{{/if}} {{/each}}</span>{{#if isGM}}<button type="button" class="epm-npcv-seta" data-action="npcVitoria" data-campo="sucessos" data-delta="1">+</button>{{/if}}</span></div>
+    <div class="epm-npcv-ln"><span>Falhas</span><span>{{#if isGM}}<button type="button" class="epm-npcv-seta" data-action="npcVitoria" data-campo="falhas" data-delta="-1">−</button>{{/if}}<span class="epm-npcv-pill r">{{#each npcFicha.vitoria.pipsF}}{{#if this}}●{{else}}○{{/if}} {{/each}}</span>{{#if isGM}}<button type="button" class="epm-npcv-seta" data-action="npcVitoria" data-campo="falhas" data-delta="1">+</button>{{/if}}</span></div>
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "tela")}}
+<section class="epm-npcv-painel">
+  <h3>O que os jogadores veem<span class="tag">barra de chefe</span></h3>
+  <div class="in">
+    <div class="epm-npcv-tela">
+      <div class="nome">{{actor.name}}</div>
+      <div class="epm-npcv-hpstrip"><div class="f" style="width: {{npcVisual.vidaPct}}%"></div>{{#each npcVisual.fases}}{{#unless primeira}}<div class="mk" style="left: {{this.limiar}}%"></div>{{/unless}}{{/each}}</div>
+      <div class="rod"><span class="ac">Fase {{npcVisual.faseAtual}}{{#each npcVisual.fases}}{{#if atual}}{{#if nome}} · {{this.nome}}{{/if}}{{/if}}{{/each}}</span><span class="epm-npcv-dim">{{#if npcFicha.barraNumeros}}com números{{else}}sem números · só a barra{{/if}}</span></div>
+    </div>
+    {{#if isGM}}<label class="epm-check"><input type="checkbox" name="flags.epm-ficha.npc.barra" {{#if npcFicha.barra}}checked{{/if}} /> Mostrar a barra no topo da tela de todos durante o combate</label>
+    <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.npc.barraNumeros" {{#if npcFicha.barraNumeros}}checked{{/if}} /> Mostrar a Vida exata</label>{{/if}}
+    <p class="epm-npcv-nota">Ao mudar de fase, a fala aparece na barra.</p>
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "covil")}}
+<section class="epm-npcv-painel">
+  <h3>Ações de Covil<span class="tag">só dentro do covil</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    {{#each npcFicha.covil.entradas}}
+    <div class="epm-npc-linha"><span class="epm-npc-num">{{this.n}}</span>
+      <input type="text" name="flags.epm-ficha.npc.covil.entradas.{{this.id}}.texto" value="{{this.texto}}" placeholder="Pilares desabam: área de 6 m, Acrobacia DT 18 ou 4d10 Contundente e Caído." aria-label="Ação de Covil" />
+      <button type="button" class="epm-icone-botao perigo" data-action="npcApagar" data-lista="covil.entradas" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button></div>
+    {{/each}}
+    <button type="button" class="epm-npcv-btn" data-action="npcNovo" data-lista="covil.entradas">+ Ação de Covil</button>
+    <label class="epm-mini largo"><span>nome do covil</span><input type="text" name="flags.epm-ficha.npc.covilNome" value="{{npcFicha.covilNome}}" placeholder="Cripta do Eclipse" /></label>
+    {{else}}
+    <table class="epm-npcv-tab">
+      <tr><th class="w9">d{{npcFicha.covil.entradas.length}}</th><th>Na iniciativa 20, perdendo empates</th></tr>
+      {{#each npcFicha.covil.entradas}}<tr><td><b>{{this.n}}</b></td><td>{{this.texto}}</td></tr>{{/each}}
+    </table>
+    {{#unless npcFicha.covil.entradas.length}}<p class="epm-npcv-dim">Nenhuma Ação de Covil. Use o modo edição.</p>{{/unless}}
+    {{/if}}
+    {{#if isGM}}<p class="epm-npcv-nota"><button type="button" class="epm-npcv-btn gm" data-action="npcCovil">Rolar covil</button> <label class="epm-check"><input type="checkbox" name="flags.epm-ficha.npc.covil.ativo" {{#if npcFicha.covil.ativo}}checked{{/if}} /> rolar sozinho a cada rodada</label></p>{{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "recompensas")}}
+<section class="epm-npcv-painel">
+  <h3>Recompensas<span class="tag">fim do combate</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    <label class="epm-mini largo"><span>feito</span><input type="text" name="flags.epm-ficha.npc.recomp.feito" value="{{npcFicha.recomp.feito}}" placeholder="Devorador Devorado" /></label>
+    <label class="epm-mini largo"><span>título</span><input type="text" name="flags.epm-ficha.npc.recomp.titulo" value="{{npcFicha.recomp.titulo}}" placeholder="Quebra-Núcleos" /></label>
+    <label class="epm-mini largo"><span>item</span><input type="text" name="flags.epm-ficha.npc.recomp.item" value="{{npcFicha.recomp.item}}" placeholder="Cajado do Último Eclipse · Lendário" /></label>
+    <label class="epm-mini largo"><span>bênção</span><input type="text" name="flags.epm-ficha.npc.recomp.bencao" value="{{npcFicha.recomp.bencao}}" placeholder="do catálogo · para quem der o golpe final" /></label>
+    <label class="epm-mini"><span>moedas</span><input type="text" name="flags.epm-ficha.npc.moedasLoot" value="{{npcFicha.moedasLoot}}" placeholder="4d10 PL" /></label>
+    <label class="epm-mini largo"><span>outras</span><textarea name="flags.epm-ficha.npc.recompensas" rows="2">{{npcFicha.recompensas}}</textarea></label>
+    {{else}}
+    <div class="epm-npcv-ln"><span><b>PEv</b> <span class="epm-npcv-dim">· 5 × ND, +2 por nível de diferença</span></span><span>{{npcFicha.pev}}</span></div>
+    {{#if npcFicha.recomp.feito}}<div class="epm-npcv-ln"><span><b>Feito</b> “{{npcFicha.recomp.feito}}”</span>{{#if npcFicha.recomp.titulo}}<span class="epm-npcv-pill gold">título: {{npcFicha.recomp.titulo}}</span>{{/if}}</div>{{/if}}
+    {{#if npcFicha.recomp.item}}<div class="epm-npcv-ln"><span><b>Item</b> {{npcFicha.recomp.item}}</span><span>100%</span></div>{{/if}}
+    {{#if npcFicha.recomp.bencao}}<div class="epm-npcv-ln"><span><b>Bênção</b> <span class="epm-npcv-dim">· {{npcFicha.recomp.bencao}}</span></span>{{#if isGM}}<button type="button" class="epm-npcv-btn gm" data-action="irAba" data-tab="bencaos">Escolher</button>{{/if}}</div>{{/if}}
+    {{#if npcFicha.moedasLoot}}<div class="epm-npcv-ln"><span><b>Moedas</b></span><span class="epm-npcv-dado">{{npcFicha.moedasLoot}}</span></div>{{/if}}
+    {{#if npcFicha.recompensas}}<p class="epm-npcv-small">{{npcFicha.recompensas}}</p>{{/if}}
+    {{#if isGM}}<p class="epm-npcv-nota"><button type="button" class="epm-npcv-btn gm" data-action="npcEntregar">Entregar no chat</button></p>{{/if}}
+    {{/if}}
+  </div>
+</section>
+{{/if}}
+
+{{#if (epmEq secao "notas")}}{{#if isGM}}
+<section class="epm-npcv-painel gm">
+  <h3>Notas do Mestre<span class="tag gm">só o Mestre vê</span></h3>
+  <div class="in">
+    {{#if edicao}}
+    <label class="epm-mini largo"><span>{{#if npcVisual.eCriatura}}motivação / onde aparece{{else}}agenda{{/if}}</span><textarea rows="2" name="flags.epm-ficha.npc.notas.agenda">{{npcFicha.notas.agenda}}</textarea></label>
+    <label class="epm-mini largo"><span>segredo</span><textarea rows="2" name="flags.epm-ficha.npc.notas.segredo">{{npcFicha.notas.segredo}}</textarea></label>
+    <label class="epm-mini largo"><span>ganchos</span><textarea rows="2" name="flags.epm-ficha.npc.notas.ganchos">{{npcFicha.notas.ganchos}}</textarea></label>
+    <label class="epm-mini largo"><span>{{#if npcVisual.eChefe}}se fugir / ritmo{{else}}se morrer{{/if}}</span><textarea rows="2" name="flags.epm-ficha.npc.notas.seMorrer">{{npcFicha.notas.seMorrer}}</textarea></label>
+    {{else}}
+    {{#if npcFicha.notas.agenda}}<p><b>{{#if npcVisual.eCriatura}}{{#if npcVisual.eChefe}}Motivação{{else}}Onde aparece{{/if}}{{else}}Agenda{{/if}}:</b> {{npcFicha.notas.agenda}}</p>{{/if}}
+    {{#if npcFicha.notas.segredo}}<p><b>Segredo:</b> {{npcFicha.notas.segredo}}</p>{{/if}}
+    {{#if npcFicha.notas.ganchos}}<p><b>{{#if npcVisual.eCriatura}}Gancho{{else}}Ganchos{{/if}}:</b> {{npcFicha.notas.ganchos}}</p>{{/if}}
+    {{#if npcFicha.notas.seMorrer}}<p><b>{{#if npcVisual.eChefe}}Se fugir{{else}}Se morrer{{/if}}:</b> {{npcFicha.notas.seMorrer}}</p>{{/if}}
+    {{#unless npcFicha.temNotas}}<p class="epm-npcv-dim">Sem notas. Use o modo edição.</p>{{/unless}}
+    {{/if}}
+  </div>
+</section>
+{{/if}}{{/if}}

@@ -1,0 +1,55 @@
+<header class="epm-cabecalho epm-npcv-cabecalho{{#if edicao}} modo-edicao{{/if}}" style="--npc-ac: {{npcVisual.cor}}">
+  <div class="epm-npcv-head">
+    <div class="epm-npcv-retrato">
+      <img src="{{retrato}}" alt="Retrato de {{actor.name}}" {{#if edicao}}data-action="editarImagem" title="Trocar retrato"{{else}}data-action="verImagem" data-src="{{retrato}}" data-titulo="{{actor.name}}" title="Ver retrato"{{/if}} />
+    </div>
+    <div class="epm-npcv-info">
+      {{#if edicao}}
+      <input class="epm-npcv-nome-input" type="text" name="name" value="{{actor.name}}" placeholder="Nome" aria-label="Nome" />
+      {{#if isGM}}<input class="epm-npcv-titulo-input" type="text" name="flags.epm-ficha.npc.titulo" value="{{npcVisual.titulo}}" placeholder="Uma linha: quem é (ex.: Guarda do Portão Leste · combatente)" aria-label="Título" />{{/if}}
+      {{else}}
+      <h1 class="epm-npcv-nome">{{actor.name}}</h1>
+      {{#if npcVisual.titulo}}<p class="epm-npcv-titulo">{{npcVisual.titulo}}</p>{{/if}}
+      {{/if}}
+      <div class="epm-npcv-chips">
+        {{#each npcVisual.chips}}<span class="epm-npcv-chip {{this.cls}}">{{this.texto}}</span>{{/each}}
+      </div>
+    </div>
+    <div class="epm-npcv-badges">
+      {{#if editavel}}<button type="button" class="epm-modo-edicao epm-npcv-edicao{{#if edicao}} ativo{{/if}}" data-action="alternarEdicao" aria-pressed="{{#if edicao}}true{{else}}false{{/if}}" title="{{#if edicao}}Sair do modo edição{{else}}Entrar no modo edição{{/if}}"><span class="epm-modo-trilho" aria-hidden="true"></span><span>{{#if edicao}}Editando{{else}}Editar{{/if}}</span></button>{{/if}}
+      {{#each npcVisual.badges}}<div class="epm-npcv-badge{{#if ac}} ac{{/if}}"><span class="v">{{this.v}}</span><span class="l">{{this.l}}</span></div>{{/each}}
+    </div>
+  </div>
+
+  {{#if npcVisual.eChefe}}{{#if npcVisual.temFases}}
+  <div class="epm-npcv-fasebarra">
+    <div class="epm-npcv-fasebarra-topo"><span><b>Vida e fases</b> <span class="epm-npcv-dim">· marcadores = limiares das fases</span></span><span>{{npcVisual.vidaPct}}%</span></div>
+    <div class="epm-npcv-hpstrip"><div class="f" style="width: {{npcVisual.vidaPct}}%"></div>
+      {{#each npcVisual.fases}}{{#unless primeira}}<div class="mk" style="left: {{this.limiar}}%"><i>Fase {{this.n}} · {{this.limiar}}%</i></div>{{/unless}}{{/each}}
+    </div>
+  </div>
+  {{/if}}{{/if}}
+
+  <div class="epm-recursos epm-npcv-barras">
+    {{#each npcVisual.barras}}
+    {{#if off}}
+    <div class="epm-npcv-barra off"><div class="lab"><span><b>{{this.abrev}}</b> {{this.label}}</span><span>desligado</span></div><div class="trk"><span class="val">— não usa {{this.label}}</span></div></div>
+    {{else}}
+    <div class="epm-recurso epm-npcv-barra" style="--cor: {{this.cor}}" data-recurso="{{this.id}}">
+      <div class="lab"><span><b>{{this.abrev}}</b> {{this.labelBarra}}</span><span>{{this.value}} / {{#if @root.edicao}}<input class="epm-npcv-max" type="number" name="{{this.nomeMax}}" value="{{this.maxFonte}}" min="0" aria-label="{{this.label}} máxima" />{{else}}{{this.max}}{{/if}}{{#if temTemp}} <span class="tmp" style="color: {{this.corTemp}}">+{{this.temp}} temp</span>{{/if}}</span></div>
+      <div class="trk">
+        <div class="epm-barra"><span style="width: {{this.pctNum}}%; background: {{this.cor}}"></span></div>
+        {{#if temTemp}}<div class="epm-barra epm-barra-temp" style="left: {{this.pctNum}}%"><span style="width: 100%; background: {{this.corTemp}}"></span></div>{{/if}}
+        <input class="epm-recurso-atual val" type="text" inputmode="numeric" data-recurso-valor="{{this.id}}" value="{{this.value}}" aria-label="{{this.label}} atual" title="Digite o valor, ou +5 / -3" />
+        <span class="arrows">
+          <button type="button" data-action="ajustarRecurso" data-recurso="{{this.id}}" data-delta="-5" title="−5" aria-label="Diminuir 5" {{#unless @root.editavel}}disabled{{/unless}}>«</button>
+          <button type="button" data-action="ajustarRecurso" data-recurso="{{this.id}}" data-delta="-1" title="−1" aria-label="Diminuir 1" {{#unless @root.editavel}}disabled{{/unless}}>‹</button>
+          <button type="button" data-action="ajustarRecurso" data-recurso="{{this.id}}" data-delta="1" title="+1" aria-label="Aumentar 1" {{#unless @root.editavel}}disabled{{/unless}}>›</button>
+          <button type="button" data-action="ajustarRecurso" data-recurso="{{this.id}}" data-delta="5" title="+5" aria-label="Aumentar 5" {{#unless @root.editavel}}disabled{{/unless}}>»</button>
+        </span>
+      </div>
+    </div>
+    {{/if}}
+    {{/each}}
+  </div>
+</header>

@@ -64,6 +64,8 @@ Hooks.once("init", () => {
     "epm-arquetipo-painel": `${CAMINHO}/partials/arquetipo-painel.hbs`,
     "epm-classe-painel": `${CAMINHO}/partials/classe-painel.hbs`,
     "epm-novas": `${CAMINHO}/partials/novas.hbs`,
+    "epm-npc-cabecalho": `${CAMINHO}/partials/npc-cabecalho.hbs`,
+    "epm-npc": `${CAMINHO}/partials/npc-blocos.hbs`,
     "epm-transformacoes": `${CAMINHO}/partials/transformacoes.hbs`,
     "epm-historico": `${CAMINHO}/partials/historico.hbs`,
     "epm-painel-060": `${CAMINHO}/partials/painel-060.hbs`

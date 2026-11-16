@@ -14,6 +14,18 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.11
+
+- **Fichas de NPC iguais aos modelos**: cada tipo tem o próprio visual e as próprias abas.
+  - Cabeçalho novo: retrato, nome, linha de descrição, etiquetas (função, região, categoria, tamanho, habitat, covil, Elite/Chefe, fase atual), selos de ND, PEv, nível total e Resistência Lendária, e barras de Vida, Mana, Estamina e Sanidade lado a lado (recursos com máximo 0 aparecem como "não usa").
+  - **NPC Importante**: Principal resumida (atributos, combate, condições, perícias com favoritas e habilidades), aba **Serviços** e aba **Mestre**.
+  - **NPC Comum**: aba **Ficha** com atributos, combate, perícias de destaque, ataques, comportamento, interpretação, relação com o grupo e loot; botões Rolar Vida, **Gerar variação**, **Duplicar como grupo** e Promover. Modo "sem combate" com **Loja** (compra com desconto pela afinidade e troco automático).
+  - **Monstro**: Ficha (bloco de estatísticas com defesas e ações), **Ações**, **Loot** e **Conhecimento** (o que o grupo já descobriu e como os jogadores veem a criatura).
+  - **Monstro Forte**: traços de elite (Aura de Horror, Tenacidade, Ações Lendárias, Limiar), recargas, lacaios e bênçãos.
+  - **Chefe**: abas **Fases** (cartões das fases com fala, forçar/voltar fase, vitória alternativa), **Covil** e **Recompensas** ("Entregar no chat"); **barra de chefe** no topo da tela de todos durante o combate (opcional, com ou sem números).
+  - No modo edição os campos aparecem no lugar e as outras abas da ficha ficam no fim da barra.
+- **Sanidade máxima 0** desliga a Sanidade (sem penalidade de Colapso em monstros e construtos).
+
 ## Novidades da 0.8.10
 
 - **Tipos de ficha de NPC**: fichas de NPC (atores "npc") ganham a aba **Mestre** (só o Mestre vê) com o tipo de ficha: **NPC Importante**, **NPC Comum**, **Monstro**, **Monstro Forte** e **Chefe**. Cada tipo mostra só as abas que fazem sentido (dá para mostrar ou esconder cada uma em Personalizar).

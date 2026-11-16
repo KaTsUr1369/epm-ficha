@@ -1,0 +1,9 @@
+<section class="tab epm-aba epm-npcv-aba {{cls.acoes}}" data-group="primary" data-tab="acoes" style="--npc-ac: {{npcVisual.cor}}">
+{{#if npcVisual}}
+  {{> "epm-npc" secao="acoes"}}
+  {{#if npcVisual.eElite}}{{> "epm-npc" secao="recargas"}}{{/if}}
+  {{#if npcVisual.eForte}}<div class="epm-npcv-g2"><div class="epm-npcv-col">{{> "epm-npc" secao="bencaosResumo"}}{{> "epm-npc" secao="lacaios"}}</div>{{> "epm-npc" secao="loot"}}</div>{{/if}}
+  {{#if npcVisual.eChefe}}{{> "epm-npc" secao="covil"}}<div class="epm-npcv-g2">{{> "epm-npc" secao="recompensas"}}{{> "epm-npc" secao="notas"}}</div>{{/if}}
+  {{#if npcVisual.eMonstro}}{{> "epm-npc" secao="comportamento"}}{{/if}}
+{{/if}}
+</section>

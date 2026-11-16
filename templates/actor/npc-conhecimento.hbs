@@ -1,0 +1,7 @@
+<section class="tab epm-aba epm-npcv-aba {{cls.conhecimento}}" data-group="primary" data-tab="conhecimento" style="--npc-ac: {{npcVisual.cor}}">
+{{#if npcVisual}}
+  {{> "epm-npc" secao="conhecimento"}}
+  {{> "epm-npc" secao="visaoJogador"}}
+  {{#if npcVisual.eMonstro}}{{> "epm-npc" secao="loot"}}{{> "epm-npc" secao="notas"}}{{/if}}
+{{/if}}
+</section>

@@ -1,0 +1,6 @@
+<section class="tab epm-aba epm-npcv-aba {{cls.servicos}}" data-group="primary" data-tab="servicos" style="--npc-ac: {{npcVisual.cor}}">
+{{#if npcVisual}}
+  {{> "epm-npc" secao="servicos"}}
+  {{#if (epmOr npcVisual.loja.length edicao)}}{{> "epm-npc" secao="loja"}}{{/if}}
+{{/if}}
+</section>

@@ -87,7 +87,8 @@ const ACOES_FICHA = [
   "consertarItem", "purificarMaldicao", "transferirMaldicao",
   // 0.8.10: tipos de ficha de NPC
   "npcTipo", "npcNovo", "npcApagar", "npcRolarVida", "npcRolarVidaTokens", "npcSaquear", "npcRevelar",
-  "npcContador", "npcZerar", "npcRecarga", "npcRolarRecargas", "npcCovil", "npcVitoria", "npcAcaoEspecial"
+  "npcContador", "npcZerar", "npcRecarga", "npcRolarRecargas", "npcCovil", "npcVitoria", "npcAcaoEspecial",
+  "npcAfinidade", "npcComprar", "npcDuplicar", "npcFase", "npcEntregar", "npcVariacao"
 ];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
@@ -157,11 +158,27 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     actions: Object.fromEntries(ACOES_FICHA.map(n => [n, despachar(n)]))
   };
 
+  /** 0.8.11: NPC mostra o tipo de ficha no título da janela. */
+  get title() {
+    try {
+      if (this.actor?.type === "npc") return `${this.actor.name} · Ficha EPM · ${Npc.TIPOS_NPC[Npc.tipoNpc(this.actor.flags?.[FLAG])].label}`;
+    } catch { /* segue */ }
+    return super.title;
+  }
+
   static PARTS = {
     erro: { template: `${CAMINHO}/actor/erro.hbs` },
     header: { template: `${CAMINHO}/actor/header.hbs` },
     nav: { template: `${CAMINHO}/actor/nav.hbs` },
     principal: { template: `${CAMINHO}/actor/principal.hbs`, scrollable: [""] },
+    ficha: { template: `${CAMINHO}/actor/npc-ficha.hbs`, scrollable: [""] },
+    fases: { template: `${CAMINHO}/actor/npc-fases.hbs`, scrollable: [""] },
+    acoes: { template: `${CAMINHO}/actor/npc-acoes.hbs`, scrollable: [""] },
+    covil: { template: `${CAMINHO}/actor/npc-covil.hbs`, scrollable: [""] },
+    loot: { template: `${CAMINHO}/actor/npc-loot.hbs`, scrollable: [""] },
+    recompensas: { template: `${CAMINHO}/actor/npc-recompensas.hbs`, scrollable: [""] },
+    conhecimento: { template: `${CAMINHO}/actor/npc-conhecimento.hbs`, scrollable: [""] },
+    servicos: { template: `${CAMINHO}/actor/npc-servicos.hbs`, scrollable: [""] },
     npc: { template: `${CAMINHO}/actor/npc.hbs`, scrollable: [""] },
     combate: { template: `${CAMINHO}/actor/combate.hbs`, scrollable: [""] },
     inventario: { template: `${CAMINHO}/actor/inventario.hbs`, scrollable: [""] },
@@ -348,7 +365,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     });
     this.element.classList.toggle("epm-limitado", this._visaoLimitada());
     const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
-    aplicarPaleta(this.element, pers.cor ?? COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
+    aplicarPaleta(this.element, (this.actor.type === "npc" ? Npc.corDaFicha(this.actor, this.actor.flags?.[FLAG]) : "") || pers.cor || COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
+    this.element.classList.toggle("epm-npc-visual", this.actor.type === "npc");
     try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
     try { this._restaurarDetalhes(); } catch (err) { console.warn("EPM | detalhes abertos", err); }
     if (options.isFirstRender || options.parts?.includes("header")) {
@@ -1595,6 +1613,12 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoNpcRolarRecargas() { return Npc.rolarRecargas(this.actor); }
   acaoNpcCovil() { return Npc.rolarCovil(this.actor); }
   acaoNpcVitoria(ev, alvo) { return Npc.marcarVitoria(this.actor, alvo.dataset.campo, int(alvo.dataset.delta, 1)); }
+  acaoNpcAfinidade(ev, alvo) { return Npc.ajustarAfinidadeGrupo(this.actor, int(alvo.dataset.delta)); }
+  acaoNpcComprar(ev, alvo) { return Npc.comprar(this.actor, alvo.dataset.id); }
+  acaoNpcDuplicar() { return Npc.duplicarComoGrupo(this.actor); }
+  acaoNpcFase(ev, alvo) { return Npc.mudarFase(this.actor, int(alvo.dataset.delta)); }
+  acaoNpcEntregar() { return Npc.entregarRecompensas(this.actor); }
+  acaoNpcVariacao() { return Npc.gerarVariacao(this.actor); }
   acaoNpcAcaoEspecial(ev, alvo) {
     const id = alvo.dataset.acao;
     if (!["lendaria", "mitica", "arcaica"].includes(id) || !game.user.isGM) return;

@@ -1,4 +1,9 @@
 <section class="tab epm-aba epm-principal {{cls.principal}}" data-group="primary" data-tab="principal">
+{{#if npcPrincipal}}
+  {{> "epm-npc" secao="atributos"}}
+  <div class="epm-npcv-g12"><div class="epm-npcv-col">{{> "epm-npc" secao="combate"}}{{> "epm-npc" secao="condicoes"}}</div>{{> "epm-npc" secao="pericias"}}</div>
+  {{> "epm-npc" secao="habResumo"}}
+{{else}}
   <section class="epm-faixa-pontos" aria-label="Pontos">
     {{#each pontosLista}}
     <label class="epm-ponto" title="{{this.dica}}">
@@ -170,4 +175,5 @@
     </section>
     </div>
   </div>
+{{/if}}
 </section>

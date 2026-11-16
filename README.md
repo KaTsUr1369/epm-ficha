@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.14
+
+- **Fichas antigas acompanham as mudanças da 0.8.13** (roda sozinho quando o Mestre abre o mundo):
+  - Habilidades de arquétipo criadas pelos modelos passam a ter o texto e o nível do livro atual (ex.: Magia 3 a 6 do Conjurador nos níveis 19, 29, 38 e 47). Textos editados à mão não são mexidos.
+  - Valores que eram o padrão antigo do livro e ficaram gravados na ficha (Vida, Mana e Estamina iniciais do Combatente 20/12/16 e os números antigos dos Estilos) voltam a seguir o livro novo. Valores pessoais diferentes continuam.
+  - O mesmo vale para os números antigos dos Estilos salvos nas configurações do mundo.
+
 ## Novidades da 0.8.13
 
 - **Ressonância de Alma** (aba nova **Almas**):

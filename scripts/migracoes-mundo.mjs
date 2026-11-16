@@ -88,6 +88,70 @@ async function renomearTiposDano(itens) {
   return n;
 }
 
+/**
+ * Habilidades de arquétipo criadas pelos modelos: acompanham o texto e o nível do livro atual
+ * (ex.: Magia 3 do Conjurador passou do nível 26 para o 19). Só mexe se o texto ainda é o do modelo.
+ */
+export async function sincronizarHabilidadesArquetipo(itens) {
+  const { ARQUETIPOS } = await import("./arquetipos.mjs");
+  const { escapar } = await import("./helpers.mjs");
+  let n = 0;
+  for (const item of itens) {
+    const ref = item.flags?.[FLAG]?.arquetipoRef;
+    if (!ref) continue;
+    const [arqId] = String(ref).split(":");
+    const a = ARQUETIPOS[arqId];
+    const h = a?.habilidades?.find(x => x.nome === item.name);
+    if (!h) continue;
+    const desc = String(item.system?.description?.value ?? "");
+    if (!/\(modelo 0\.5\)/.test(desc)) continue;
+    const nova = `<p>${escapar(h.resumo)}</p><p class="epm-dica">${escapar(a.nome)}, nível ${h.nivel} (modelo 0.5).</p>`;
+    const novoRef = `${arqId}:${h.nivel}`;
+    if (desc === nova && ref === novoRef) continue;
+    await item.update({ "system.description.value": nova, [`${P}.arquetipoRef`]: novoRef }, { render: false });
+    n++;
+  }
+  return n;
+}
+
+/** Valores que eram o padrão antigo do livro e ficaram gravados na ficha: voltam a seguir o livro novo (0.8.13). */
+const ANTIGOS_0813 = {
+  tabela: { combatente: { pv: 20, pe: 16, pm: 12 } },
+  ajustes: { "arq-estilo-duelista-acertoisolado": 5, "arq-estilo-bebado-acerto": 5, "arq-estilo-bebado-esquiva": 2, "arq-estilo-bebado-ca": 2,
+    "arq-estilo-dupla-acerto": 3, "arq-estilo-dupla-ca": 2, "arq-estilo-atirador-margem": 2 },
+  numeros: { "estilo.duelista.acertoIsolado": 5, "estilo.bebado.acerto": 5, "estilo.bebado.esquiva": 2, "estilo.bebado.ca": 2,
+    "estilo.atirador.margem": 2, "estilo.dupla.acerto": 3, "estilo.dupla.ca": 2 }
+};
+export function trocasValoresAntigos(f = {}) {
+  const upd = {};
+  for (const [arq, recs] of Object.entries(ANTIGOS_0813.tabela)) for (const [r, velho] of Object.entries(recs)) {
+    const v = f.recursosAuto?.tabela?.[arq]?.[r]?.inicial;
+    if (v !== undefined && v !== "" && Number(v) === velho) upd[`${P}.recursosAuto.tabela.${arq}.${r}.inicial`] = "";
+  }
+  for (const [k, velho] of Object.entries(ANTIGOS_0813.ajustes)) {
+    const v = f.ajustesBonus?.[k];
+    if (v !== undefined && v !== "" && Number(v) === velho) upd[`${P}.ajustesBonus.-=${k}`] = null;
+  }
+  return upd;
+}
+async function valoresAntigos() {
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.migrado0813) continue;
+    const upd = trocasValoresAntigos(f);
+    await a.update({ ...upd, [`${P}.migrado0813`]: true }, { render: false });
+    if (Object.keys(upd).length) n++;
+  }
+  try {
+    const salvos = { ...(game.settings.get(FLAG, "numerosBonus") ?? {}) };
+    let mudou = false;
+    for (const [k, velho] of Object.entries(ANTIGOS_0813.numeros)) if (salvos[k] !== undefined && Number(salvos[k]) === velho) { delete salvos[k]; mudou = true; }
+    if (mudou) await game.settings.set(FLAG, "numerosBonus", salvos);
+  } catch (err) { console.warn("EPM | números dos estilos", err); }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -95,6 +159,8 @@ export async function migrarMundo() {
   try { const n = await corrigirMagiasPf2(itens); if (n) feitos.push(`${n} magia(s) com o link antigo corrigidas`); } catch (err) { console.warn("EPM | migração das magias", err); }
   try { const n = await atualizarItensProntos(itens); if (n) feitos.push(`${n} item(ns) pronto(s) atualizado(s)`); } catch (err) { console.warn("EPM | migração dos itens prontos", err); }
   try { const n = await renomearTiposDano(itens); if (n) feitos.push(`${n} ficha(s)/item(ns) com tipos de dano renomeados`); } catch (err) { console.warn("EPM | migração dos tipos de dano", err); }
+  try { const n = await sincronizarHabilidadesArquetipo(itens); if (n) feitos.push(`${n} habilidade(s) de arquétipo com o texto e o nível do livro atual`); } catch (err) { console.warn("EPM | habilidades de arquétipo", err); }
+  try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;
 }

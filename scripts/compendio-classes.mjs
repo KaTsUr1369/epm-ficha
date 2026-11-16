@@ -10,7 +10,7 @@
 import { FLAG, MODULE_ID } from "./config.mjs";
 import { ARQUETIPOS } from "./arquetipos.mjs";
 import { CLASSES_NOTION, habilidadesDaClasse, RECURSOS_ARQUETIPO } from "./regras-extras.mjs";
-import { dadosHabilidadeArquetipo, dadosHabilidadeClasse } from "./extras.mjs";
+import { dadosHabilidadeArquetipo, dadosHabilidadeClasse, formaEspecialClasse } from "./extras.mjs";
 import { escapar } from "./helpers.mjs";
 import { formaPadrao } from "./data.mjs";
 import { dadosHabilidadeTexto } from "./habilidade-texto.mjs";
@@ -19,7 +19,7 @@ export const NOME_PACOTE = "epm-arquetipos-classes";
 export const ID_PACOTE = `world.${NOME_PACOTE}`;
 const ROTULO = "EPM · Arquétipos e Classes";
 /** Suba quando mudar o formato dos itens (força refazer o compêndio mesmo sem mudar os dados). */
-const FORMATO = 1;
+const FORMATO = 2;
 
 const IMAGENS_ARQ = { combatente: "icons/svg/combat.svg", conjurador: "icons/svg/lightning.svg", artifice: "icons/svg/item-bag.svg" };
 
@@ -252,5 +252,27 @@ export function registrarCompendioClasses() {
   game.settings.register(MODULE_ID, "assinaturaCompendioClasses", { scope: "world", config: false, type: String, default: "" });
   Hooks.once("ready", () => {
     sincronizarCompendio().catch(err => console.error("EPM | Falha ao montar o compêndio de Arquétipos e Classes", err));
+    if (game.user?.isGM && game.users?.activeGM?.isSelf !== false) atualizarFormasEspeciais().catch(err => console.warn("EPM | habilidades de classe com escolha", err));
   });
+}
+
+/**
+ * Fichas que já tinham uma habilidade de classe passiva que agora tem escolha (Revestimento Elemental):
+ * troca a forma pela nova, uma vez (sem mexer nas que o jogador já editou com formas próprias).
+ */
+export async function atualizarFormasEspeciais() {
+  for (const ator of game.actors ?? []) {
+    for (const item of ator.items ?? []) {
+      const f = item.flags?.[FLAG] ?? {};
+      const especial = f.classeRef ? formaEspecialClasse(f.classeRef) : null;
+      if (!especial) continue;
+      const formas = Object.values(f.formas ?? {}).filter(Boolean);
+      const jaTem = formas.some(fo => Object.keys(fo.bonus?.opcoes ?? {}).length);
+      if (jaTem || formas.length > 1 || (formas[0] && formas[0].acao !== "passiva")) continue;
+      const upd = { [`flags.${FLAG}.passiva`]: especial.passiva };
+      for (const id of Object.keys(f.formas ?? {})) upd[`flags.${FLAG}.formas.-=${id}`] = null;
+      await item.update(upd);
+      await item.update({ [`flags.${FLAG}.formas.${foundry.utils.randomID()}`]: especial.forma });
+    }
+  }
 }

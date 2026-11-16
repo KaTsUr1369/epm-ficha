@@ -26,7 +26,8 @@ const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "rolarTestes", "rolarLivre", "abrirItem",
-  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre"
+  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
+  "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo"
 ];
 
 export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -113,7 +114,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
   _alvos() {
     const marcados = [...this._marcados].map(u => fromUuidSync(u)).filter(Boolean);
     if (marcados.length) return { atores: marcados, origem: "marcados no escudo" };
-    const tokens = (canvas?.tokens?.controlled ?? []).map(t => t.actor).filter(Boolean);
+    const tokens = (globalThis.canvas?.tokens?.controlled ?? []).map(t => t.actor).filter(Boolean);
     return { atores: [...new Set(tokens)], origem: "tokens selecionados" };
   }
 
@@ -135,7 +136,11 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       for (const [id, n] of Object.entries(contagem)) condicoesDosAlvos[id] = n === alvos.atores.length ? "todos" : "alguns";
     }
     let pericias = [];
-    try { pericias = listaPericias().map(p => ({ id: p.id, nome: p.nome, selected: p.id === (this._ui.periciaTeste ?? "percepcao") })); } catch { pericias = []; }
+    // A lista de perícias vem como [id, nome, atributos] (ou objetos, em listas antigas)
+    try {
+      pericias = listaPericias().map(p => Array.isArray(p) ? { id: p[0], nome: p[1] } : { id: p.id, nome: p.nome })
+        .filter(p => p.id).map(p => ({ ...p, selected: p.id === (this._ui.periciaTeste ?? "percepcao") }));
+    } catch { pericias = []; }
     const ctx = montarEscudo({
       aba: this._aba, combate, grupo: this._grupo(),
       itensMundo: game.items.contents.map(i => ({ id: i.id, uuid: i.uuid, name: i.name, img: i.img, type: i.type })),
@@ -200,6 +205,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     };
     busca("[data-busca-cond]", "buscaCond");
     busca("[data-busca-item]", "buscaItem");
+    busca("[data-busca-hab]", "buscaHab");
     raiz.querySelector("[data-tipo-item]")?.addEventListener("change", ev => { this._ui.tipoItem = ev.target.value; this.render(); });
     raiz.querySelector("[data-destino-item]")?.addEventListener("change", ev => { this._ui.alvoItem = ev.target.value; });
     raiz.querySelector("[data-pericia-teste]")?.addEventListener("change", ev => { this._ui.periciaTeste = ev.target.value; });
@@ -222,7 +228,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const niveis = grupo.map(a => { try { return lerAtor(a).ficha.nivelTotal; } catch { return 1; } });
     const resultado = mundo.calcularEncontro(calc, niveis);
     const discord = lerMundo("discord", {}) ?? {};
-    const token = canvas?.tokens?.controlled?.[0]?.actor ?? null;
+    const token = globalThis.canvas?.tokens?.controlled?.[0]?.actor ?? null;
     return {
       relogios: mundo.relogiosVisiveis(true),
       codigos: Object.entries(lerMundo("codigos", {}) ?? {}).map(([id, c]) => ({
@@ -245,7 +251,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       novoCodigo: () => mundo.novoCodigo(), editarCodigo: () => mundo.novoCodigo(id), apagarCodigo: () => mundo.apagarCodigo(id),
       enquete: () => mundo.novaEnquete(), npc: () => mundo.fichaRapidaNpc(), discord: () => mundo.configurarDiscord(), testarDiscord: () => mundo.testarDiscord(),
       apagarCompendio: () => mundo.apagarDoCompendio(alvo.dataset.tipo, id),
-      chefe: () => mundo.configurarChefe(canvas?.tokens?.controlled?.[0]?.actor ?? null),
+      chefe: () => mundo.configurarChefe(globalThis.canvas?.tokens?.controlled?.[0]?.actor ?? null),
       calcular: () => {
         const linhas = [...this.element.querySelectorAll("[data-calc-linha]")].map(l => ({ nd: l.querySelector("[data-calc-nd]")?.value ?? "", qtd: int(l.querySelector("[data-calc-qtd]")?.value, 1) }));
         this._ui.calc = [...linhas.filter(l => l.nd !== ""), { nd: "", qtd: 1 }];
@@ -285,7 +291,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
   _focarToken(ev, alvo) {
     const comb = game.combat?.combatants.get(alvo.dataset.combatente);
     const t = comb?.token?.object;
-    if (t) { t.control({ releaseOthers: true }); canvas.animatePan({ x: t.center.x, y: t.center.y }); }
+    if (t) { t.control({ releaseOthers: true }); globalThis.canvas.animatePan({ x: t.center.x, y: t.center.y }); }
   }
 
   /* ---------- Combate ---------- */
@@ -415,8 +421,112 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!destinos.length || !item) return ui.notifications.warn("Escolha para quem dar.");
     const dados = item.toObject();
     delete dados._id;
-    for (const destino of destinos) await destino.createEmbeddedDocuments("Item", [structuredClone(dados)]);
+    const empilha = ["consumable", "loot"].includes(item.type);
+    const qtd = Math.max(1, int(dados.system?.quantity, 1));
+    for (const destino of destinos) {
+      // Consumíveis e loot iguais somam na quantidade (antes criava outra pilha)
+      const igual = empilha ? destino.items.find(i => i.type === item.type && i.name === item.name && !i.system?.container) : null;
+      if (igual) await igual.update({ "system.quantity": int(igual.system?.quantity, 0) + qtd });
+      else await destino.createEmbeddedDocuments("Item", [structuredClone(dados)]);
+    }
     ui.notifications.info(`${item.name} foi para ${destinos.map(d => d.name).join(", ")}.`);
+  }
+
+  /* ---------- Habilidades ---------- */
+
+  /** Dá uma habilidade pronta (ex.: Dobro e Passo) a quem está em "Dar para". Quem já tem não ganha outra. */
+  async _darItemPronto(ev, alvo) {
+    const { itemProntoPorId } = await import("./itens-prontos.mjs");
+    const x = itemProntoPorId(alvo.dataset.id);
+    const destinos = this._destinosItem();
+    if (!destinos.length || !x) return ui.notifications.warn("Escolha para quem dar.");
+    const deram = [], ja = [];
+    for (const destino of destinos) {
+      if (destino.items.some(i => i.flags?.[FLAG]?.pronto === x.id)) { ja.push(destino.name); continue; }
+      await destino.createEmbeddedDocuments("Item", [x.dados()]);
+      deram.push(destino.name);
+    }
+    if (deram.length) ui.notifications.info(`${x.nome} foi para ${deram.join(", ")} (equipe para valer; botão Formas para usar).`);
+    if (ja.length) ui.notifications.info(`${ja.join(", ")} já tinha ${x.nome}.`);
+  }
+
+  async _darHabilidadePronta(ev, alvo) {
+    const { HABILIDADES_PRONTAS, dadosHabilidadePronta } = await import("./habilidades-prontas.mjs");
+    const h = HABILIDADES_PRONTAS.find(x => x.id === alvo.dataset.id);
+    const destinos = this._destinosItem();
+    if (!destinos.length || !h) return ui.notifications.warn("Escolha para quem dar.");
+    const deram = [], ja = [];
+    for (const destino of destinos) {
+      if (destino.items.some(i => i.flags?.[FLAG]?.pronta === h.id)) { ja.push(destino.name); continue; }
+      await destino.createEmbeddedDocuments("Item", [dadosHabilidadePronta(h)]);
+      deram.push(destino.name);
+    }
+    if (deram.length) ui.notifications.info(`${h.nome} foi para ${deram.join(", ")} (aba Habilidades → ${h.origem === "meme" ? "Memes" : "Habilidades"}).`);
+    if (ja.length) ui.notifications.info(`${ja.join(", ")} já tinha ${h.nome}.`);
+  }
+
+  /** Lê o formulário "Criar habilidade ou magia". */
+  _lerCriarPoder() {
+    const raiz = this.element.querySelector("[data-criar-poder]");
+    const v = n => raiz?.querySelector(`[name="${n}"]`);
+    return {
+      nome: v("nome")?.value ?? "", tipo: v("tipo")?.value ?? "habilidade", origem: v("origem")?.value ?? "", circulo: int(v("circulo")?.value),
+      raridade: v("raridade")?.value ?? "comum", tipoHab: v("tipoHab")?.value ?? "", acao: v("acao")?.value ?? "padrao",
+      custoRecurso: v("custoRecurso")?.value ?? "nenhum", custoValor: int(v("custoValor")?.value), duracao: v("duracao")?.value ?? "",
+      efeito: v("efeito")?.value ?? "", passiva: !!v("passiva")?.checked, foraDoLimite: !!v("foraDoLimite")?.checked,
+      alternavel: !!v("alternavel")?.checked, abrirEditor: !!v("abrirEditor")?.checked
+    };
+  }
+
+  /** Cria a habilidade (ou magia) e dá aos destinos, ou só cria no mundo. */
+  async _criarPoderEscudo(ev, alvo, pronto = null) {
+    const { montarPoder } = await import("./habilidades-prontas.mjs");
+    const o = pronto ?? this._lerCriarPoder();
+    if (!pronto && !String(o.nome).trim()) return ui.notifications.warn("Dê um nome à habilidade.");
+    const dados = pronto ?? montarPoder(o);
+    const abrir = pronto ? true : o.abrirEditor;
+    if (alvo?.dataset?.mundo === "1") {
+      const item = await Item.implementation.create(dados);
+      ui.notifications.info(`${dados.name} foi criada na aba Itens do Foundry.`);
+      if (abrir) item?.sheet?.render(true);
+      return this.render();
+    }
+    const destinos = this._destinosItem();
+    if (!destinos.length) return ui.notifications.warn("Escolha para quem dar (ou use Criar no mundo).");
+    let primeiro = null;
+    for (const destino of destinos) {
+      const [item] = await destino.createEmbeddedDocuments("Item", [structuredClone(dados)]);
+      primeiro ??= item;
+    }
+    ui.notifications.info(`${dados.name} foi para ${destinos.map(d => d.name).join(", ")}.`);
+    if (abrir && primeiro) {
+      const { abrirEditorPoder } = await import("./poder-sheet.mjs");
+      abrirEditorPoder(primeiro);
+    }
+    if (!pronto) {
+      const n = this.element.querySelector('[data-criar-poder] [name="nome"]');
+      if (n) n.value = "";
+    }
+  }
+
+  /** "Colar texto" no Escudo: monta a habilidade pelo texto e dá aos destinos. */
+  async _poderDeTextoEscudo(ev, alvo) {
+    const { dadosHabilidadeTexto } = await import("./habilidade-texto.mjs");
+    const r = await foundry.applications.api.DialogV2.wait({
+      window: { title: "Habilidade a partir de texto" }, classes: ["epm-dialogo"], rejectClose: false, modal: true, position: { width: 560 },
+      content: `<p class="epm-dica">Primeira linha: o nome. Depois, se tiver, <strong>Tipo:</strong> e <strong>Tema:</strong>. Cada parte numerada (<em>1. Nome</em>) vira uma forma, com Custo, Ação, Duração, Uso, Alcance, Alvo e Área.</p>
+        <label class="epm-campo"><span>Categoria</span><select name="origem"><option value="">Sem categoria</option>${Object.entries((await import("./config.mjs")).ORIGENS_HABILIDADE).map(([id, l]) => `<option value="${id}">${escapar(l)}</option>`).join("")}<option value="__magia">É uma magia</option></select></label>
+        <textarea name="texto" rows="14" style="width:100%"></textarea>`,
+      buttons: [
+        { action: "ok", label: "Criar e dar", icon: "fa-solid fa-check", default: true, callback: (e, b) => ({ texto: b.form.elements.texto.value, origem: b.form.elements.origem.value }) },
+        { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+      ]
+    });
+    if (!r?.texto?.trim?.()) return;
+    const dados = dadosHabilidadeTexto(r.texto);
+    if (r.origem === "__magia") dados.type = "spell";
+    else if (r.origem) dados.flags[FLAG].origem = r.origem;
+    return this._criarPoderEscudo(ev, alvo, dados);
   }
 
   async _darTransformacao(ev, alvo) {

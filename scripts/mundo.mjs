@@ -90,6 +90,14 @@ export async function pedirAoMestre(tipo, dados = {}) {
 }
 
 async function tratarPedido({ tipo, dados, userId }) {
+  if (tipo === "relacaoMutua") {
+    const { relacaoMutuaNoMestre } = await import("./relacoes.mjs");
+    return relacaoMutuaNoMestre(dados);
+  }
+  if (tipo === "revelarAtaque") {
+    const { aplicarRevelacao } = await import("./extras.mjs");
+    return aplicarRevelacao(game.messages?.get(dados.msgId), dados.defensor ?? "", { forcar: !!dados.forcar, reacao: dados.reacao ?? "" });
+  }
   if (tipo === "codigoUsado") {
     const cods = foundry.utils.deepClone(lerMundo("codigos", {}));
     if (!cods[dados.id]) return;

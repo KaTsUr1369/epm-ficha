@@ -15,6 +15,7 @@
     <button type="button" class="epm-botao" data-action="atacar" data-tipo="arma" data-ref="{{this.id}}" title="Escolher vantagem, bônus e crítico, depois rolar acerto e dano"><i class="fa-solid fa-dice-d20"></i> Atacar</button>
     {{#if ataque.dano}}<button type="button" class="epm-dano" data-action="danoArma" data-item-id="{{this.id}}" title="Rolar só o dano ({{ataque.dano}})">{{ataque.danoBase}}</button>{{/if}}
     {{/if}}
+    {{#if formasQtd}}<button type="button" class="epm-botao" data-action="usarFormasItem" data-item-id="{{this.id}}" title="Escolher uma das {{this.formasQtd}} formas"><i class="fa-solid fa-shapes" aria-hidden="true"></i> Formas</button>{{/if}}
     {{#if eConsumivel}}<button type="button" class="epm-botao" data-action="usarItem" data-item-id="{{this.id}}" title="Gasta 1 unidade e mostra no chat">Usar</button>{{/if}}
     <div class="epm-quantidade">
       <button type="button" data-action="quantidade" data-item-id="{{this.id}}" data-delta="-1" aria-label="Diminuir quantidade" {{#unless @root.editavel}}disabled{{/unless}}>−</button>

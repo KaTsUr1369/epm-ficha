@@ -14,6 +14,29 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.8
+
+- **Escudo do Mestre**
+  - Aba **Habilidades**: habilidades prontas (Dobro e Passo, Meme, fora do limite), transformações, criar habilidade ou magia de qualquer categoria (dar ou só criar no mundo), colar texto e as habilidades do mundo com Dar.
+  - Aba **Opcionais**: as mecânicas opcionais e as listas delas saíram de Ajustes.
+  - **Itens prontos**: Hydrakariel, Trono das Sete Cabeças (cajado mítico com 11 formas, resistências e regeneração).
+  - Correções: Teste em grupo sem perícias, caixinhas enormes nas regras, consumível repetido agora soma na pilha, nomes de condição cortados.
+- **Armas e itens**
+  - Campo **Alcance** na arma (Automático, Corpo a corpo, À distância): bônus de corpo a corpo não vão para uma sniper.
+  - **Formas em itens**: arma ou acessório com vários poderes; o botão Formas escolhe qual usar. Novo uso "1× por turno" e cura de item no início do turno.
+  - **Joia de Kan** no catálogo (Gemas e tesouros), valendo 3 Dracmas. Kan antigo guardado como moeda vira 3 Dracmas por Joia.
+- **Combate**
+  - **Testes contra a morte** com 0 de Vida: d20 puro, 11+ positivo, 10− negativo, 20 vale 2 positivos e 1 vale 2 negativos; 3 de um lado decidem. Rola sozinho no Novo turno.
+  - **Reação antes do acerto**: contra uma ficha EPM, o cartão esconde acerto e dano até o alvo escolher Esquiva, Bloqueio, Contra-ataque ou Nenhuma (desligável nas configurações).
+  - **Crítico nos danos extras**: bônus de cena, efeitos e bônus externos com dados também multiplicam, cada um com a origem anotada.
+  - **Ataque extra** comum: Ação de Movimento primeiro e sem a penalidade de −5.
+- **Bônus de cena e ativação condicional**
+  - Bônus de cena com testes, deslocamento, desvantagem e **Debuff** (números viram penalidade).
+  - Opções de ativação condicional podem ser debuff, condição, desvantagem ou resistência, com nível mínimo e duração "até o próximo descanso". Revestimento Elemental (Guerreiro Elemental 6) pede o elemento ao usar.
+- **Valores por ficha**: na aba Arquétipo e na sub-aba Classe, modo edição, cada personagem pode trocar os números do arquétipo e da classe (Duelista, Ataque Extra, Maestria, Projetos com "Int", Fúria, Crítico Brutal, Núcleo Vermelho…).
+- **Relações**: pastas (Membros do grupo, Aliados, Inimigos…) e o jogador já conecta personagens de outros jogadores (não NPCs).
+- **Polyglot**: só os idiomas do EPM aparecem.
+
 ## Novidades da 0.8.7
 
 - **Briavoterna e Genesis de volta ao catálogo**: o catálogo agora tem as três regiões (646 itens: Umbra'Draxil 373, Briavoterna 177, Genesis 96), com os números revisados na conversa dos itens:

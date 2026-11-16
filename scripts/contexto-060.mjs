@@ -1,3 +1,4 @@
+import { valorPessoal } from "./arquetipos.mjs";
 /**
  * Contexto dos painéis da 0.6.0 (raça, corpo, Sanidade, corrupção, máximos automáticos, classes do Notion,
  * votos e pactos, talentos, catálogos, títulos, relógios, nomeação, conhecimento de criaturas, receio e confiança).
@@ -158,7 +159,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
     if (cl.histeria) c.histeria = cl.histeria;
     if (cl.pistola) c.pistola = `Pistola do Caçador: ${cl.pistola} Perfurante, 18 m, Ação Bônus + 1 Bala de Mercúrio`;
     if (cl.inspiracao) c.inspiracao = `Dado de Inspiração: ${cl.inspiracao} (+5 quando usado em Ataque, Resistência ou Perícia)`;
-    if (cl.furia) c.furia = { ...cl.furia, usos: int(dados.classeEpm?.furiaUsos), max: CLASSES_NOTION.barbaro.furia.usos };
+    if (cl.furia) c.furia = { ...cl.furia, usos: int(dados.classeEpm?.furiaUsos), max: cl.furia.usosMax ?? CLASSES_NOTION.barbaro.furia.usos };
     if (cl.critico) c.critico = `Crítico Brutal: ${cl.critico.margem < 20 ? `margem ${cl.critico.margem}–20, ` : ""}multiplicador +${cl.critico.mult} (até ×${cl.critico.max})`;
     if (cl.id === "barbaro" && cl.nivel >= 6) {
       const max = CLASSES_NOTION.barbaro.protecao.niveis.filter(x => cl.nivel >= x).length;
@@ -168,7 +169,7 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
     if (cl.corpoDePedra) c.corpoDePedra = `Corpo de Pedra: RD ${cl.corpoDePedra}`;
     if (cl.protecao) c.protecaoGuardiao = `Proteção (ao defender um aliado): ${cl.protecao}`;
     if (cl.id === "lutador" && cl.nivel >= 3) {
-      c.porradaFranca = `Porrada Franca: +${valorPorNivel(CLASSES_NOTION.lutador.porradaFranca, cl.nivel)?.[1] ?? "—"} nos ataques desarmados`;
+      c.porradaFranca = `Porrada Franca: +${valorPessoal(dados, "cla-lutador-porrada-franca", valorPorNivel(CLASSES_NOTION.lutador.porradaFranca, cl.nivel)?.[1]) ?? "—"} nos ataques desarmados`;
       if (cl.posicoes?.max) {
         c.posicoes = { max: cl.posicoes.max, opcoes: CLASSES_NOTION.lutador.posicoes.filter(p => p.nivel <= cl.nivel).map(p => ({ id: p.id, nome: p.nome, texto: p.texto, ativo: (cl.posicoes.ativas ?? []).includes(p.id) })) };
       }

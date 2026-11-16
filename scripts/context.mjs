@@ -6,7 +6,7 @@
 import {
   FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, USOS_FORMA, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, itemNaCategoria, eVestimenta, TIPOS_VESTIMENTA, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
-  AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, ESCOLHAS_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
+  AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, ESCOLHAS_BONUS, DURACOES_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, PERICIAS_RESISTENCIA, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
   CATEGORIAS_CONDICAO, CATEGORIA_NOTION, TIPOS_EFEITO_ITEM, QUANDO_CURA, RECURSOS, REVELACOES, OPCOES_REVELAR,
   CORES_PRONTAS, COR_PADRAO, BRILHO_PADRAO, SUBABAS_HABILIDADE, TREINO, UNIDADES_TEMPO, ESTADOS_TREINO, MINIJOGOS, EXEMPLOS_TREINAMENTO,
@@ -14,7 +14,8 @@ import {
 } from "./config.mjs";
 import {
   ARQUETIPOS, arquetiposDoPersonagem, nivelArquetipo, degrau, proximoDegrau, efeitoMaestria, textoMaestria, estilosPermitidos, tipoDaArma, eTipoFavorito,
-  estilosEscolhidos, projetosDoNivel, limiteLivro, bonusAutomato, reservaArcana, custoMagiaCirculo, circuloLiberado, intMin1
+  estilosEscolhidos, projetosDoNivel, limiteLivro, bonusAutomato, reservaArcana, custoMagiaCirculo, circuloLiberado, intMin1,
+  ataqueExtraDe, recuperarManaDe, valoresAjustaveisArquetipo
 } from "./arquetipos.mjs";
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
@@ -25,12 +26,14 @@ import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
+import { estadoMorte as estadoMorteBase } from "./morte.mjs";
+const estadoMorteAtor = actor => { try { const e = estadoMorteBase(actor); return e.ativo ? e : null; } catch { return null; } };
 import { conteudoNotion } from "./settings.mjs";
 import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
-import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra } from "./ficha-extras.mjs";
+import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse } from "./ficha-extras.mjs";
 import { PROPRIEDADES_PROTECAO, ITENS_CATALOGO, MAESTRIAS, REGIOES_CATALOGO } from "./itens-catalogo.mjs";
 import { estadoMaestria, aplicarMaestriaNoAtaque, seloMaestria, armasFavoritas, limiteFavoritas } from "./maestria-exotica.mjs";
 import { penalidadeTec, NOMES_REGIAO } from "./tecnologia.mjs";
@@ -168,6 +171,7 @@ export function ataqueDeArma(item, modoId = "") {
   const base = {
     tipo: "arma", id: item.id, ref: item.id, nome: item.name, img: item.img,
     periciaId: periciaAtaquePadrao(item), bonusAcerto: int(f.bonusAcerto), dano: comAtributo(danoArma(item), f.atributoDano), atributoDano: ATRIBUTOS[f.atributoDano] ? f.atributoDano : "", tipoDano: f.tipoDano ?? "", tipoArma: String(f.tipoArma ?? ""), desarmado: !!f.contaDesarmado, desarmadoAmbos: !!f.contaDesarmado && f.desarmadoBonus === "ambos",
+    alcanceCat: alcanceDaArma(item),
     critMargem: limitar(int(f.critMargem, margemNativa), 2, 20), critMult: Math.max(2, int(f.critMult, CRITICO_PADRAO.mult)),
     equipado: !!item?.system?.equipped,
     danoExtra: efeitos.filter(e => e.tipo === "danoExtra" && e.formula).map(e => ({ formula: e.formula, tipo: e.tipoDano })),
@@ -223,8 +227,17 @@ export function resolverReferencias(formula, ficha) {
   });
 }
 
-/** Ataque à distância? (usa Pontaria) */
-export const ataqueADistancia = at => at?.periciaId === "pontaria";
+/** Categoria de alcance escolhida na arma: corpo a corpo ou à distância ("" = pela perícia). */
+export const ALCANCES_ARMA = { "": "Automático", corpo: "Corpo a corpo", distancia: "À distância" };
+/** Alcance escolhido no editor da arma ("" = automático). */
+export function alcanceEscolhido(item) {
+  const a = item?.flags?.[FLAG]?.alcanceCat;
+  return a === "corpo" || a === "distancia" ? a : "";
+}
+/** Alcance que vale no ataque: o escolhido ("" = automático: Pontaria é à distância, o resto corpo a corpo). */
+export const alcanceDaArma = alcanceEscolhido;
+/** Ataque à distância? Pela categoria escolhida na arma; sem ela, pela perícia (Pontaria). */
+export const ataqueADistancia = at => at?.alcanceCat === "distancia" || (at?.alcanceCat !== "corpo" && at?.periciaId === "pontaria");
 
 /** Modificadores gerais que valem num ataque (condições, bênçãos, itens). */
 /** Ataque desarmado (tipo de arma "Desarmado", nome com "desarmad" ou ataque natural marcado). */
@@ -363,7 +376,7 @@ export function resumoAtaque(at, ficha, cena) {
     acertoDica: (() => { try { return detalharAcerto(at, ficha, cena); } catch (err) { console.warn("EPM |", err); return "Bônus de acerto"; } })(),
     danoBase: at.dano ? resolverReferencias(at.dano, ficha).replace(/\+ -/g, "− ") : "",
     danoMult: m.danoMult > 1 ? m.danoMult : 0,
-    critTexto: textoCritico(Math.max(2, at.critMargem - int(cena.margem)), at.critMult + int(cena.critMult)),
+    critTexto: textoCritico(Math.min(20, Math.max(2, at.critMargem - int(cena.margem))), Math.max(2, at.critMult + int(cena.critMult))),
     maestriaSelo: seloMaestria(at.maestriaExotica),
     bloqueado: ficha.ataquesGerais.bloqueados.join(", ")
   };
@@ -590,8 +603,8 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
       const doTipo = armas.filter(i => eTipoFavorito(i, dados));
       const tiposInventario = [...new Set(armas.map(tipoDaArma).filter(Boolean))];
       const mId = cfg.maestrias[opc.maestria] ? opc.maestria : "";
-      const ef = mId ? efeitoMaestria(mId, nivel) : null;
-      const ae = degrau(cfg.ataqueExtra, nivel);
+      const ef = mId ? efeitoMaestria(mId, nivel, dados) : null;
+      const ae = ataqueExtraDe(nivel, dados);
       const prox = proximoDegrau(cfg.ataqueExtra, nivel);
       const permitidos = estilosPermitidos(nivel);
       const escolhidos = estilosEscolhidos(dados, nivel);
@@ -617,14 +630,14 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
     }
     if (id === "conjurador") {
       const cfg = ARQUETIPOS.conjurador;
-      const rec = degrau(cfg.recuperarMana, nivel);
+      const rec = recuperarManaDe(nivel, dados);
       const usado = !!dados.usos?.recuperarMana;
       const proxRes = proximoDegrau(cfg.reservaArcana, nivel);
       painel.conjurador = {
         custos: cfg.custosMagia.map((pm, circ) => ({
           circulo: circ, label: circ === 0 ? "Truque" : `${circ}º`, pm, liberado: circuloLiberado(circ, nivel), liberaEm: cfg.circulos[circ]
         })),
-        reserva: reservaArcana(nivel), proximaReserva: proxRes ? `Nv. ${proxRes.nivel}: +${proxRes.pm} PM` : "",
+        reserva: reservaArcana(nivel, dados), proximaReserva: proxRes ? `Nv. ${proxRes.nivel}: +${proxRes.pm} PM` : "",
         recuperar: rec ? { pe: rec.pe, pm: rec.pm, usado, pode: editavel && !usado && ficha.recursos.pe.value >= rec.pe } : null,
         manipulacao: nivel >= cfg.manipulacao.nivel ? {
           custo: nivel >= cfg.manipulacao.nivelDupla ? "5 PE (uma) ou 10 PE (duas)" : "5 PE",
@@ -637,12 +650,12 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
     }
     if (id === "artifice") {
       const cfg = ARQUETIPOS.artifice;
-      const proj = projetosDoNivel(nivel, intel);
+      const proj = projetosDoNivel(nivel, intel, dados.ajustesBonus);
       const enc = degrau(cfg.encantados, nivel);
       const i = intMin1(intel);
       const escolhidas = (Array.isArray(opcoes.artifice?.utensilios) ? opcoes.artifice.utensilios : []).filter(p => !cfg.utensilios.exceto.includes(p)).slice(0, cfg.utensilios.qtd);
       painel.artifice = {
-        intel: i, projetos: proj, porDia: cfg.projetosPorDia, livro: limiteLivro(nivel, intel),
+        intel: i, projetos: proj, porDia: proj?.porDia ?? cfg.projetosPorDia, livro: limiteLivro(nivel, intel, dados.ajustesBonus),
         dia: proj ? painelProjetos(dados, nivel, intel, editavel) : null,
         encantados: enc ? {
           dano: `${enc.dano}${enc.danoInt ? ` + ${i}` : ""}`, cura: `+${enc.cura + (enc.curaInt ? i : 0)}`, auxilio: `+${enc.auxilio + (enc.auxilioInt ? i : 0)}`
@@ -669,8 +682,8 @@ function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
   if (comb) {
     const cfg = ARQUETIPOS.combatente;
     const opc = dados.arquetipoOpcoes?.combatente ?? {};
-    const ae = degrau(cfg.ataqueExtra, comb);
-    const ef = efeitoMaestria(opc.maestria, comb);
+    const ae = ataqueExtraDe(comb, dados);
+    const ef = efeitoMaestria(opc.maestria, comb, dados);
     const tipoFav = String(opc.tipoFavorito ?? "").trim();
     const estilos = estilosEscolhidos(dados, comb).map(e => cfg.estilos[e].nome);
     const linhas = [];
@@ -688,8 +701,8 @@ function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
   const conj = nivelArquetipo(dados, "conjurador");
   if (conj) {
     const cfg = ARQUETIPOS.conjurador;
-    const rec = degrau(cfg.recuperarMana, conj);
-    const res = reservaArcana(conj);
+    const rec = recuperarManaDe(conj, dados);
+    const res = reservaArcana(conj, dados);
     const linhas = [];
     if (res) linhas.push(`Reserva Arcana: +${res} PM máximo (já somado).`);
     linhas.push(`Custo das magias: ${cfg.custosMagia.map((pm, c) => `${c === 0 ? "Truque" : `${c}º`} ${pm}`).join(" · ")} PM.`);
@@ -705,10 +718,10 @@ function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
   const art = nivelArquetipo(dados, "artifice");
   if (art) {
     const cfg = ARQUETIPOS.artifice;
-    const proj = projetosDoNivel(art, ficha.atributos?.inteligencia?.total ?? 0);
+    const proj = projetosDoNivel(art, ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
     const linhas = [];
-    if (proj) linhas.push(`Projetos (${cfg.projetosPorDia} por dia): dano ${proj.dano}, cura ${proj.cura}, soma +${proj.soma}, proteção +${proj.protecao}.`);
-    const livro = limiteLivro(art, ficha.atributos?.inteligencia?.total ?? 0);
+    if (proj) linhas.push(`Projetos (${proj.porDia} por dia): dano ${proj.dano}, cura ${proj.cura}, soma +${proj.soma}, proteção +${proj.protecao}.`);
+    const livro = limiteLivro(art, ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
     if (livro) linhas.push(`Livro de Projetos: guarda até ${livro}.`);
     lista.push({ id: "artifice", nome: "Artífice", nivel: art, icone: cfg.icone, cor: cfg.cor, linhas, botoes: [] });
   }
@@ -810,6 +823,7 @@ export function montarContexto({
 
   /* ---------- Cabeçalho ---------- */
   const raios = { pv: 66, pm: 60, pe: 54, ps: 48 };
+  ctx.morte = estadoMorteAtor(actor);
   ctx.recursosLista = ["pv", "pm", "pe", "ps"].map(id => {
     const r = ficha.recursos[id];
     const eVida = id === "pv";
@@ -1023,6 +1037,8 @@ export function montarContexto({
       r.temPente = !!md.pente;
       r.recargaTexto = ACOES[fi.recargaAcao]?.curto ?? "Padrão";
       r.cargasTexto = cMax ? `${limitar(int(fi.cargas?.valor), 0, cMax)}/${cMax} cargas` : "";
+      // Formas da arma: só na primeira linha dela (os modos de ataque repetem a arma)
+      r.formasQtd = !a.modo && it ? Object.values(fi.formas ?? {}).filter(Boolean).length : 0;
       return r;
     }, falhas),
     armasGuardadas: new Set(armas.filter(a => !a.equipado).map(a => a.id)).size,
@@ -1033,8 +1049,24 @@ export function montarContexto({
   ctx.bonusCena = Object.entries(dados.bonusCena ?? {}).filter(([, b]) => b).map(([id, b]) => ({
     id, nome: b.nome ?? "", ativo: !!b.ativo, acerto: int(b.acerto), dano: b.dano ?? "", criado: num(b.criado),
     ca: int(b.ca), rd: int(b.rd), rdTipo: b.rdTipo ?? "", testes: int(b.testes), deslocamento: num(b.deslocamento), cena: !!b.cena,
-    margem: int(b.margem), critMult: int(b.critMult)
-  })).sort((a, b) => a.criado - b.criado);
+    margem: int(b.margem), critMult: int(b.critMult), debuff: !!b.debuff,
+    desvantagem: ["ataques", "testes", "ambos"].includes(b.desvantagem) ? b.desvantagem : "",
+    desvantagemTexto: { ataques: "desvantagem em ataques", testes: "desvantagem em testes", ambos: "desvantagem em ataques e testes" }[b.desvantagem] ?? "",
+    opcoesDesvantagem: [["", "nenhuma"], ["ataques", "ataques"], ["testes", "testes"], ["ambos", "ataques e testes"]].map(([id, label]) => ({ id, label, selected: id === (b.desvantagem ?? "") }))
+  })).map(b => {
+    // Etiquetas: no debuff os números aparecem como penalidade
+    const n = v => (b.debuff ? -Math.abs(int(v)) : int(v));
+    const sinal = v => (v > 0 ? `+${v}` : v < 0 ? `−${Math.abs(v)}` : "0");
+    return Object.assign(b, {
+      tAcerto: b.acerto ? `${sinal(n(b.acerto))} acerto` : "",
+      tDano: b.dano ? `${b.debuff ? "−" : "+"}${String(b.dano).replace(/^[+−-]\s*/, "")} dano` : "",
+      tCa: b.ca ? `${sinal(n(b.ca))} CA` : "",
+      tTestes: b.testes ? `${sinal(n(b.testes))} testes` : "",
+      tDesloc: b.deslocamento ? `${sinal(b.debuff ? -Math.abs(b.deslocamento) : b.deslocamento)} m desloc.` : "",
+      tMargem: b.margem ? `${n(b.margem) > 0 ? "−" : "+"}${Math.abs(b.margem)} margem` : "",
+      tCrit: b.critMult ? `${sinal(n(b.critMult))} ×crítico` : ""
+    });
+  }).sort((a, b) => a.criado - b.criado);
   /* ---------- CA ---------- */
   const caF = ficha.ca;
   ctx.caAtributos = [...Object.entries(ATRIBUTOS).map(([id, a]) => ({ id, abrev: a.abrev, label: a.label })), { id: "nenhum", abrev: "—", label: "Nenhum" }]
@@ -1141,7 +1173,7 @@ export function montarContexto({
   }));
   // Ajustes salvos de bônus que não estão valendo agora (ex.: Fúria desligada) continuam aparecendo para poder limpar
   const salvosForaDaLista = origem => Object.entries(dados.ajustesBonus ?? {})
-    .filter(([k, v]) => String(v ?? "").trim() !== "" && !(ficha.ajustaveis ?? []).some(a => a.chave === k))
+    .filter(([k, v]) => String(v ?? "").trim() !== "" && !(ficha.ajustaveis ?? []).some(a => a.chave === k) && !/^(arq-|cla-|artifice-projetos-|artifice-livro-)/.test(k))
     .map(([k, v]) => ({ chave: k, atual: v, fonte: k.replace(/-/g, " "), rotulo: "não está valendo agora", padrao: "—", origem }));
   const tabRec = tabelaRecursos(dados.recursosAuto?.tabela);
   const arqsFicha = [...new Set([idArquetipo(dados.arquetipo), idArquetipo(dados.arquetipo2)].filter(a => RECURSOS_ARQUETIPO[a]))];
@@ -1153,9 +1185,11 @@ export function montarContexto({
         return { id: r, label: { pv: "Vida", pe: "Estamina", pm: "Mana" }[r], livro, inicial: salvo.inicial ?? "", dado: salvo.dado ?? "", media: salvo.media ?? "", atual: tabRec[arq][r] };
       })
     })),
-    bonus: listaAjustes("arquetipo")
+    bonus: listaAjustes("arquetipo"),
+    // Números do arquétipo usados na hora (Duelista, Ataque Extra, Maestria, Projetos…), trocados só nesta ficha
+    valores: valoresAjustaveisArquetipo(dados)
   };
-  const ajustesCla = { bonus: listaAjustes("classe"), salvos: salvosForaDaLista("classe") };
+  const ajustesCla = { bonus: listaAjustes("classe"), salvos: salvosForaDaLista("classe"), valores: valoresAjustaveisClasse(dados) };
   // Bônus extras criados pela mesa (ex.: Duelista também dá CA)
   const alvosExtra = [
     ...alvosModificador(ficha.pericias.map(p => ({ id: p.id, nome: p.nome }))),
@@ -1355,6 +1389,7 @@ export function montarContexto({
       equipavel: ["weapon", "equipment"].includes(item.type),
       equipado: !!item.system?.equipped,
       eArma, eConsumivel: item.type === "consumable", ataque,
+      formasQtd: Object.values(f.formas ?? {}).filter(Boolean).length,
       eArmadura: item.type === "equipment", armadura: int(f.armadura),
       maestriaSelo: eArma ? seloMaestria(estadoMaestria(item, dados)) : null,
       formulaUso: f.formula ?? "",
@@ -1673,9 +1708,28 @@ export function montarContexto({
       afinidadePct: Math.round(((af - AFINIDADE.min) / (AFINIDADE.max - AFINIDADE.min)) * 100),
       notas: r.notas ?? "", criado: num(r.criado),
       background, liberadas, totalPartes: background?.length ?? 0, aberta: relAbertas.has(id),
-      opcoesTipo: Object.entries(TIPOS_RELACAO).map(([tid, label]) => ({ id: tid, label, selected: tid === (r.tipo ?? "outro") }))
+      opcoesTipo: Object.entries(TIPOS_RELACAO).map(([tid, label]) => ({ id: tid, label, selected: tid === (r.tipo ?? "outro") })),
+      pasta: String(r.pasta ?? "")
     };
   }).sort((a, b) => a.criado - b.criado || a.nome.localeCompare(b.nome, "pt-BR"));
+  // Pastas de relações (Membros do grupo, Aliados, Inimigos…): cada relação aponta para uma pasta ou fica sem pasta
+  {
+    const pastas = Object.entries(dados.pastasRelacoes ?? {}).filter(([, p]) => p)
+      .map(([id, p]) => ({ id, nome: String(p.nome ?? "").trim() || "Pasta sem nome", nomeBruto: p.nome ?? "", fechada: !!p.fechada, ordem: num(p.ordem, num(p.criado)) }))
+      .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR"));
+    const existe = new Set(pastas.map(p => p.id));
+    for (const r of ctx.relacoes) {
+      if (!existe.has(r.pasta)) r.pasta = "";
+      r.opcoesPasta = [{ id: "", label: "Sem pasta", selected: !r.pasta }, ...pastas.map(p => ({ id: p.id, label: p.nome, selected: p.id === r.pasta }))];
+    }
+    ctx.pastasRelacoes = pastas;
+    ctx.temPastasRelacoes = pastas.length > 0;
+    const grupos = pastas.map(p => ({ ...p, ePasta: true, relacoes: ctx.relacoes.filter(r => r.pasta === p.id) }));
+    const soltas = ctx.relacoes.filter(r => !r.pasta);
+    if (soltas.length || !pastas.length) grupos.unshift({ id: "", nome: pastas.length ? "Sem pasta" : "", ePasta: false, fechada: false, relacoes: soltas });
+    for (const g of grupos) { g.qtd = g.relacoes.length; g.semTitulo = !pastas.length; }
+    ctx.gruposRelacao = grupos;
+  }
   ctx.afinidade = AFINIDADE;
   ctx.podeAfinidade = ctx.relacoes.some(r => r.podeAfinidade);
   ctx.podeVerPrivado = isGM || !!usuario.dono;
@@ -1816,9 +1870,13 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
       dado: `d${fo.bonus.opcoes.length || 1}`,
       opcoesGatilho: Object.entries(GATILHOS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.gatilho })),
       opcoesEscolha: Object.entries(ESCOLHAS_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.escolha })),
+      opcoesDuracao: Object.entries(DURACOES_BONUS).map(([id, label]) => ({ id, label, selected: id === fo.bonus.duracao })),
       automatico: fo.bonus.gatilho !== "uso",
       linhas: fo.bonus.opcoes.map((o, i) => ({
         ...o, n: i + 1, eRd: o.tipo === "rd",
+        eCondicao: o.tipo === "condicao", eDesv: o.tipo === "desvantagem", eRes: o.tipo === "resistencia", eNumero: !o.semNumero,
+        opcoesCondicao: o.tipo === "condicao" ? CONDICOES.map(c => ({ id: c.id, label: c.label, selected: c.id === o.valor })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR")) : [],
+        opcoesDesv: [["ataques", "ataques"], ["testes", "testes"], ["ambos", "ataques e testes"]].map(([id, label]) => ({ id, label, selected: id === o.valor })),
         tipos: Object.entries(TIPOS_BONUS_SITUACIONAL).map(([id, t]) => ({ id, label: t.label, selected: id === o.tipo }))
       }))
     },
@@ -1826,7 +1884,7 @@ export function montarContextoPoder({ item, ficha = null, listaPericias = null, 
   }));
   return {
     item: { id: item.id, uuid: item.uuid, name: item.name, img: item.img, type: item.type },
-    editavel, eMagia: p.tipo === "magia", dados: p,
+    editavel, eMagia: p.tipo === "magia", eItem: p.tipo === "item", dados: p,
     nivelHab: { nivel: int(item.flags?.[FLAG]?.nivelHab, 1) || 1, phPorNivel: int(item.flags?.[FLAG]?.phPorNivel), ph: ficha?.pontos?.ph ?? null },
     raridadeCor: r.cor, raridadeLabel: r.label,
     limite: { danoMax: r.danoMax, efeitos: r.efeitos, limite: r.limite },
@@ -1919,6 +1977,10 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
   if (eArma) {
     ctx.tipoArma = String(f.tipoArma ?? "");
     ctx.contaDesarmado = !!f.contaDesarmado;
+    {
+      const efetivo = alcanceDaArma(item) || (periciaAtaquePadrao(item) === "pontaria" ? "distancia" : "corpo");
+      ctx.opcoesAlcance = Object.entries(ALCANCES_ARMA).map(([id, label]) => ({ id, label: id ? label : `Automático (${ALCANCES_ARMA[efetivo].toLowerCase()})`, selected: id === alcanceEscolhido(item) }));
+    }
     ctx.opcoesDesarmado = [["so", "Só os bônus de ataque desarmado"], ["ambos", "Os dois: bônus de desarmado e de arma"]].map(([id, label]) => ({ id, label, selected: id === (f.desarmadoBonus === "ambos" ? "ambos" : "so") }));
     ctx.sugestoesTipoArma = TIPOS_ARMA;
     const candidatos = doDono.filter(i => ["consumable", "loot"].includes(i.type) && i.id !== item.id);
@@ -1967,6 +2029,14 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     opcoesRecarga: Object.entries(RECARGAS).map(([id, label]) => ({ id, label: id === "nenhuma" ? "Não recarrega sozinha" : label, selected: id === recarga })),
     dica: eArma ? "Cada ataque gasta 1 carga" : tipo === "consumable" ? "Usar gasta 1 carga em vez de 1 unidade" : "Usar gasta 1 carga"
   };
+  // Formas do item (poderes que se escolhe ao usar: as cabeças do Hydrakariel)
+  if (!eMochila && tipo !== "consumable") {
+    const formas = lerPoder(item).formas;
+    ctx.formasItem = {
+      pode: true, tem: formas.length > 0,
+      lista: formas.map(fo => ({ id: fo.id, nome: fo.nome, meta: [ACOES[fo.acao]?.curto ?? "", fo.uso && fo.uso !== "livre" ? USOS_FORMA[fo.uso] : "", textoCusto(fo), fo.dano.formula].filter(Boolean).join(" · ") }))
+    };
+  }
   if (eMochila) {
     const actor = item.actor;
     const conteudo = (actor?.items?.contents ?? [...(actor?.items ?? [])]).filter(i => i.system?.container === item.id)

@@ -5,10 +5,32 @@
       {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="conectarRelacao"><i class="fa-solid fa-link"></i> Conectar personagem</button>{{/if}}
       {{#if isGM}}<button type="button" class="epm-botao" data-action="relacaoMultipla" title="Mudar a afinidade de vários personagens com alguém de uma vez"><i class="fa-solid fa-people-group"></i> Relação múltipla</button>{{/if}}
       {{#if edicao}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaRelacao" title="Relação com alguém que não tem ficha"><i class="fa-solid fa-plus"></i> Sem ficha</button>{{/if}}
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaPastaRelacao" title="Pasta para organizar as relações (Membros do grupo, Aliados, Inimigos…)"><i class="fa-solid fa-folder-plus"></i> Nova pasta</button>
+      {{#unless temPastasRelacoes}}<button type="button" class="epm-botao epm-botao-sutil" data-action="pastasPadraoRelacao" title="Cria Membros do grupo, Aliados, Inimigos, Família e Contatos"><i class="fa-solid fa-folder-tree"></i> Pastas prontas</button>{{/unless}}{{/if}}
     </div>
   </header>
   {{#if edicao}}{{#unless isGM}}{{#unless podeAfinidade}}{{#if relacoes.length}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Neste mundo a afinidade é definida pelo Mestre.</p>{{/if}}{{/unless}}{{/unless}}{{/if}}
   {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
+  {{#each gruposRelacao}}
+  <section class="epm-pasta-relacao{{#if fechada}} fechada{{/if}}{{#if semTitulo}} sem-titulo{{/if}}" data-pasta="{{this.id}}">
+    {{#unless semTitulo}}
+    <header class="epm-pasta-relacao-topo">
+      {{#if ePasta}}
+      <button type="button" class="epm-pasta-relacao-alternar" data-action="alternarPastaRelacao" data-pasta="{{this.id}}" aria-expanded="{{#if fechada}}false{{else}}true{{/if}}"><i class="fa-solid fa-folder{{#unless fechada}}-open{{/unless}}" aria-hidden="true"></i>{{#unless @root.edicao}} {{this.nome}}{{/unless}}</button>
+      {{#if @root.edicao}}<input type="text" class="epm-pasta-relacao-nome" name="flags.epm-ficha.pastasRelacoes.{{this.id}}.nome" value="{{this.nomeBruto}}" placeholder="Nome da pasta" aria-label="Nome da pasta" />{{/if}}
+      <span class="epm-contador">{{this.qtd}}</span>
+      {{#if @root.edicao}}
+      <button type="button" class="epm-icone-botao" data-action="moverPastaRelacao" data-pasta="{{this.id}}" data-dir="-1" title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
+      <button type="button" class="epm-icone-botao" data-action="moverPastaRelacao" data-pasta="{{this.id}}" data-dir="1" title="Descer"><i class="fa-solid fa-arrow-down"></i></button>
+      <button type="button" class="epm-icone-botao perigo" data-action="excluirPastaRelacao" data-pasta="{{this.id}}" title="Apagar a pasta (as relações ficam sem pasta)"><i class="fa-solid fa-trash"></i></button>
+      {{/if}}
+      {{else}}
+      <span class="epm-pasta-relacao-alternar"><i class="fa-regular fa-folder" aria-hidden="true"></i> {{this.nome}}</span><span class="epm-contador">{{this.qtd}}</span>
+      {{/if}}
+    </header>
+    {{/unless}}
+    {{#unless fechada}}
+    {{#if ePasta}}{{#unless qtd}}<p class="epm-vazio">Pasta vazia. No modo edição, escolha esta pasta numa relação.</p>{{/unless}}{{/if}}
   <div class="epm-relacoes-grade">
     {{#each relacoes}}
     <article class="epm-relacao{{#if aberta}} aberta{{/if}}{{#if perdido}} perdida{{/if}}" data-relacao="{{this.id}}">
@@ -25,6 +47,7 @@
             {{/if}}
             {{#if @root.edicao}}
             <i class="{{this.tipoIcone}} epm-vinculo-icone" style="color: {{this.tipoCor}}" aria-hidden="true"></i><select name="flags.epm-ficha.relacoes.{{this.id}}.tipo" aria-label="Tipo de vínculo">{{#each opcoesTipo}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+            {{#if @root.temPastasRelacoes}}<select class="epm-relacao-pasta" name="flags.epm-ficha.relacoes.{{this.id}}.pasta" aria-label="Pasta" title="Pasta">{{#each opcoesPasta}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{/if}}
             <button type="button" class="epm-icone-botao perigo" data-action="excluirRelacao" data-relacao="{{this.id}}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
             {{else}}
             <span class="epm-vinculo" style="--cor-vinculo: {{this.tipoCor}}"><i class="{{this.tipoIcone}}" aria-hidden="true"></i> {{this.tipoLabel}}</span>
@@ -88,6 +111,9 @@
     </article>
     {{/each}}
   </div>
+    {{/unless}}
+  </section>
+  {{/each}}
 
   <section class="epm-painel epm-faccoes">
     <header class="epm-painel-titulo">

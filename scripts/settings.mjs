@@ -47,15 +47,21 @@ export function registrarAjustes() {
     hint: "Fórmula base dos testes de atributo, perícia e iniciativa. Com 1dX, vantagem e desvantagem rolam 2dX e ficam com o maior ou o menor.",
     scope: "world", config: true, type: String, default: "1d20"
   });
+  reg("reacaoAntesDoAcerto", {
+    name: "Reação antes de ver o acerto",
+    hint: "Num ataque contra uma ficha EPM marcada como alvo, o acerto e o dano ficam escondidos até o alvo escolher a reação (Esquiva, Bloqueio, Contra-ataque ou nenhuma). O Mestre e o atacante podem revelar antes.",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   reg("marcarAcoes", {
     name: "Marcar ações ao usar poderes",
     hint: "Durante um combate iniciado, usar uma habilidade ou magia marca na ficha a ação que ela gasta.",
     scope: "world", config: true, type: Boolean, default: true
   });
-  reg("penalidadeAtaqueExtra", {
+  // 0.8.8: chave nova (sem penalidade por padrão); a antiga "penalidadeAtaqueExtra" (5) não é mais lida
+  reg("penalidadeExtraAtaque", {
     name: "Penalidade do ataque extra",
-    hint: "Ataque extra comum (gastando a Ação Bônus ou a de Movimento): quanto sai do acerto desse ataque. O Ataque Extra do Combatente (com PE) não tem penalidade.",
-    scope: "world", config: true, type: Number, default: 5, range: { min: 0, max: 20, step: 1 }
+    hint: "Ataque extra comum (gastando a Ação de Movimento ou a Bônus): quanto sai do acerto desse ataque. Padrão 0. O Ataque Extra do Combatente (com PE) não tem penalidade.",
+    scope: "world", config: true, type: Number, default: 0, range: { min: 0, max: 20, step: 1 }
   });
   reg("marcadorTurnoEpm", {
     name: "Marcador de turno EPM",
@@ -94,6 +100,8 @@ export function registrarAjustes() {
   reg("periciasPadrao", { scope: "world", config: false, type: Array, default: [] });
   // Novas mecânicas: regras opcionais e listas editadas no Escudo do Mestre
   registrarOpcionais(reg);
+  // Polyglot: o provedor de idiomas do EPM já foi escolhido uma vez pelo Mestre
+  reg("polyglotEscolhido", { scope: "world", config: false, type: Boolean, default: false });
 }
 
 function ler(chave, padrao) {
@@ -125,9 +133,10 @@ export function ajustes() {
     bloquearLimites: ler("bloquearLimites", true),
     formulaTeste: ler("formulaTeste", "1d20"),
     marcarAcoes: ler("marcarAcoes", true),
+    reacaoAntesDoAcerto: ler("reacaoAntesDoAcerto", true),
     condicoesHudTodas: ler("condicoesHudTodas", false),
     afinidadeSoMestre: ler("afinidadeSoMestre", false),
-    penalidadeAtaqueExtra: ler("penalidadeAtaqueExtra", 5),
+    penalidadeAtaqueExtra: ler("penalidadeExtraAtaque", 0),
     bestiarioAutomatico: ler("bestiarioAutomatico", true),
     relacaoMutua: ler("relacaoMutua", true),
     avisoFichaPadrao: ler("avisoFichaPadrao", true)

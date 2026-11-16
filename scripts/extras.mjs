@@ -9,7 +9,7 @@ import {
 } from "./config.mjs";
 import { num, int, novoId, formaPadrao } from "./data.mjs";
 import {
-  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato
+  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato, recuperarManaDe
 } from "./arquetipos.mjs";
 import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas } from "./regras-extras.mjs";
 import { idClasse } from "./ficha-extras.mjs";
@@ -195,16 +195,36 @@ export function classeDaFicha(dados = {}) {
   return { id, def, nivel, caminhos };
 }
 
+/**
+ * Habilidades de classe que precisam de escolha ao usar (valem até o descanso).
+ * Ex.: Revestimento Elemental (Guerreiro Elemental, nível 6): resistência a um elemento desbloqueado.
+ */
+export function formaEspecialClasse(ref) {
+  if (ref === "guerreiroElemental:revestimento-elemental") {
+    const forma = formaPadrao(0, "Escolher elemento");
+    forma.acao = "livre"; forma.uso = "curto";
+    forma.efeito = "<p>Escolha um elemento desbloqueado: resistência a ele até o próximo descanso. Depois do descanso, pode escolher de novo.</p>";
+    const elementos = (CLASSES_NOTION.guerreiroElemental?.elementos ?? []).flatMap(([nivel, lista]) => lista.map(e => [nivel, e]));
+    forma.bonus = {
+      gatilho: "uso", escolha: "escolher", duracao: "descanso",
+      opcoes: Object.fromEntries(elementos.map(([nivel, e], i) => [`el${i}`, { tipo: "resistencia", valor: e, nivel, criado: i + 1 }]))
+    };
+    return { forma, passiva: false };
+  }
+  return null;
+}
+
 export function dadosHabilidadeClasse(classeId, h) {
   const c = CLASSES_NOTION[classeId];
-  const forma = formaPadrao(0, "Passiva");
-  forma.acao = "passiva";
+  const especial = formaEspecialClasse(h.ref);
+  const forma = especial?.forma ?? formaPadrao(0, "Passiva");
+  if (!especial) forma.acao = "passiva";
   const caminho = h.caminho ? ` · ${c.caminhos?.[h.caminho] ?? h.caminho}` : "";
   return {
     name: h.nome, type: "feat", img: "icons/svg/book.svg",
     system: { description: { value: `<p>${escapar(h.texto)}</p><p class="epm-dica">${escapar(c.nome)}, nível ${h.nivel}${escapar(caminho)}.</p>` } },
     flags: { [FLAG]: {
-      raridade: "comum", origem: "classe", passiva: true, classeRef: h.ref,
+      raridade: "comum", origem: "classe", passiva: especial ? especial.passiva : true, classeRef: h.ref,
       formas: { [novoId()]: forma }, usos: { valor: 0, max: 0, recarga: "nenhuma" }
     } }
   };
@@ -364,7 +384,7 @@ export async function adicionarHabilidadesArquetipo(actor, ref) {
 export async function recuperarMana(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
   const nivel = nivelArquetipo(dados, "conjurador");
-  const rec = degrau(ARQUETIPOS.conjurador.recuperarMana, nivel);
+  const rec = recuperarManaDe(nivel, dados);
   if (!rec) return ui.notifications.warn("Recuperar Mana libera no nível 11 de Conjurador.");
   if (dados.usos?.recuperarMana) return ui.notifications.warn("Recuperar Mana já foi usado nesta cena.");
   const { ficha } = estadoAtor(actor);
@@ -890,6 +910,25 @@ export async function cliqueChatExtra(acao, actor, botao) {
     if (await cliqueChat060(acao, actor, botao)) return true;
   }
   const msgIdDef = botao.closest("[data-message-id]")?.dataset.messageId;
+  // Ataque escondido: o Mestre ou quem atacou revela sem esperar a reação
+  if (acao === "revelarAtaque") {
+    const msg = game.messages?.get(msgIdDef);
+    const atacante = msg?.flags?.[FLAG]?.atacante ? await fromUuid(msg.flags[FLAG].atacante) : null;
+    if (!game.user?.isGM && !atacante?.isOwner) { ui.notifications.warn("Só o Mestre ou quem atacou revela o ataque."); return true; }
+    await revelarAtaque(msgIdDef, "", { forcar: true });
+    return true;
+  }
+  if (acao === "semReacao") {
+    const defensor = botao.dataset.defensor ? await fromUuid(botao.dataset.defensor) : null;
+    if (!defensor) return true;
+    if (!defensor.isOwner) { ui.notifications.warn(`Só quem controla ${defensor.name} escolhe a reação.`); return true; }
+    const chaveDef = `${msgIdDef}:def:${defensor.uuid}`;
+    cliqueChatExtra.usados ??= new Set();
+    if (cliqueChatExtra.usados.has(chaveDef)) { ui.notifications.info(`${defensor.name} já respondeu a este cartão.`); return true; }
+    cliqueChatExtra.usados.add(chaveDef);
+    await revelarAtaque(msgIdDef, defensor.uuid, { reacao: "Nenhuma" });
+    return true;
+  }
   if (acao === "defender" || acao === "resistir" || acao === "contraatacar") {
     let defensor = botao.dataset.defensor ? await fromUuid(botao.dataset.defensor) : null;
     if (!defensor && acao === "resistir") defensor = canvas?.tokens?.controlled?.[0]?.actor ?? game.user?.character ?? null;
@@ -899,11 +938,18 @@ export async function cliqueChatExtra(acao, actor, botao) {
     cliqueChatExtra.usados ??= new Set();
     if (cliqueChatExtra.usados.has(chaveDef)) { ui.notifications.info(`${defensor.name} já respondeu a este cartão.`); return true; }
     if (acao === "defender") {
+      // Cartão escondido: os números vêm da mensagem (não ficam no botão)
+      const oculto = game.messages?.get(msgIdDef)?.flags?.[FLAG]?.oculto ?? null;
       const r = await defenderDoCartao(defensor, botao.dataset.defesa, {
-        acerto: int(botao.dataset.acerto), dano: int(botao.dataset.valor), tipoDano: botao.dataset.tipoDano ?? "",
-        atacanteUuid: botao.closest(".epm-chat")?.dataset.actorUuid ?? "", critico: !!botao.dataset.critico, tipoArma: botao.dataset.tipoArma ?? ""
+        acerto: oculto ? int(oculto.acerto) : int(botao.dataset.acerto), dano: oculto ? int(oculto.dano) : int(botao.dataset.valor),
+        tipoDano: oculto ? (oculto.tipoDano ?? "") : (botao.dataset.tipoDano ?? ""),
+        atacanteUuid: botao.closest(".epm-chat")?.dataset.actorUuid ?? "", critico: oculto ? !!oculto.critico : !!botao.dataset.critico,
+        tipoArma: oculto ? (oculto.tipoArma ?? "") : (botao.dataset.tipoArma ?? "")
       });
-      if (r) cliqueChatExtra.usados.add(chaveDef);
+      if (r) {
+        cliqueChatExtra.usados.add(chaveDef);
+        if (oculto) await revelarAtaque(msgIdDef, defensor.uuid, { reacao: botao.dataset.rotulo || botao.dataset.defesa });
+      }
       return true;
     }
     if (acao === "resistir") {
@@ -928,7 +974,7 @@ export async function cliqueChatExtra(acao, actor, botao) {
   if (cliqueChatExtra.usados.has(chave)) { ui.notifications.info("Já usado neste cartão."); return true; }
   const dados = actor.flags?.[FLAG] ?? {};
   if (acao === "destrutivo" || acao === "alongado") {
-    const e = efeitoMaestria(acao, nivelArquetipo(dados, "combatente"));
+    const e = efeitoMaestria(acao, nivelArquetipo(dados, "combatente"), dados);
     if (!e) { ui.notifications.warn("Maestria indisponível."); return true; }
     if (!(await gastar(actor, "pe", e.custo, e.nome))) return true;
     cliqueChatExtra.usados.add(chave);
@@ -981,3 +1027,37 @@ export async function cliqueChatExtra(acao, actor, botao) {
   return false;
 }
 
+
+
+/* -------------------------------------------- */
+/*  Ataque escondido até a reação do alvo       */
+/* -------------------------------------------- */
+
+/** Pede a revelação do ataque: direto se puder mexer na mensagem; senão o Mestre faz (socket). */
+export async function revelarAtaque(msgId, defensorUuid = "", { forcar = false, reacao = "" } = {}) {
+  const msg = game.messages?.get(msgId);
+  if (!msg) return false;
+  if (msg.isOwner || game.user?.isGM) return aplicarRevelacao(msg, defensorUuid, { forcar, reacao });
+  const { pedirAoMestre } = await import("./mundo.mjs");
+  return pedirAoMestre("revelarAtaque", { msgId, defensor: defensorUuid, forcar, reacao });
+}
+
+/** Marca a reação do defensor; quando todos responderam (ou forçado), troca o cartão pelo completo com as rolagens. */
+export async function aplicarRevelacao(msg, defensorUuid = "", { forcar = false, reacao = "" } = {}) {
+  const oculto = msg?.flags?.[FLAG]?.oculto;
+  if (!oculto || oculto.revelado) return false;
+  const respostas = { ...(oculto.respostas ?? {}) };
+  if (defensorUuid) respostas[defensorUuid.replace(/\./g, "_")] = { reacao: reacao || "—", uuid: defensorUuid };
+  const todos = (oculto.defensores ?? []).every(u => respostas[u.replace(/\./g, "_")]);
+  if (!todos && !forcar) {
+    await msg.update({ [`flags.${FLAG}.oculto.respostas`]: respostas });
+    return false;
+  }
+  const nomes = await Promise.all(Object.values(respostas).map(async r => `${escapar((await fromUuid(r.uuid))?.name ?? "Alvo")}: ${escapar(r.reacao)}`));
+  const linhaReacoes = nomes.length ? `<p class="epm-chat-requisitos epm-chat-reacoes"><strong>Reação</strong>: ${nomes.join("; ")}.</p>` : `<p class="epm-chat-requisitos epm-chat-reacoes">Revelado sem esperar a reação.</p>`;
+  const conteudo = String(oculto.conteudo ?? "").replace(/<\/div>\s*$/, `${linhaReacoes}</div>`);
+  const upd = { content: conteudo, [`flags.${FLAG}.oculto.revelado`]: true, [`flags.${FLAG}.oculto.respostas`]: respostas };
+  if (Array.isArray(oculto.rolls) && oculto.rolls.length) upd.rolls = oculto.rolls;
+  await msg.update(upd);
+  return true;
+}

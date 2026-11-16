@@ -58,16 +58,26 @@ export async function conectar(actor, outro, { tipo = "aliado" } = {}) {
     return false;
   }
   await actor.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(outro, tipo) });
-  if (ajustes().relacaoMutua && usaFichaEPM(outro) && outro.isOwner && !temRelacao(outro, actor.uuid)) {
-    await outro.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(actor, tipo) });
-    ui.notifications.info(`${actor.name} e ${outro.name} agora estão conectados nas duas fichas.`);
+  if (ajustes().relacaoMutua && usaFichaEPM(outro) && !temRelacao(outro, actor.uuid)) {
+    if (outro.isOwner) {
+      await outro.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(actor, tipo) });
+      ui.notifications.info(`${actor.name} e ${outro.name} agora estão conectados nas duas fichas.`);
+    } else if (outro.hasPlayerOwner) {
+      // Ficha de outro jogador: o Mestre grava a relação de volta
+      const { pedirAoMestre } = await import("./mundo.mjs");
+      await pedirAoMestre("relacaoMutua", { de: outro.uuid, para: actor.uuid, tipo });
+    }
   }
   return true;
 }
 
+/**
+ * Quem aparece para escolher: o Mestre vê todos; o jogador vê os personagens de jogadores (mesmo sem permissão
+ * na ficha deles) e os que ele mesmo controla. NPCs do Mestre ficam de fora.
+ */
 function atoresVisiveis(excluir = []) {
   return (game.actors?.contents ?? [])
-    .filter(a => !excluir.includes(a.uuid) && (game.user.isGM || a.testUserPermission(game.user, "LIMITED")))
+    .filter(a => !excluir.includes(a.uuid) && (game.user.isGM || a.hasPlayerOwner || a.isOwner))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
 
@@ -185,4 +195,12 @@ export async function mudarAfinidade(ator, com, delta, tipo = "aliado", motivo =
 /** Personagem de jogador? (afinidade entre jogadores é decidida por eles; com NPCs, só pelo Mestre) */
 export function eDeJogador(ator) {
   return !!ator && ator.type === "character" && !!ator.hasPlayerOwner;
+}
+
+/** Pedido do jogador (feito no Mestre): cria em `de` a relação com `para`, se não existir. */
+export async function relacaoMutuaNoMestre({ de, para, tipo = "aliado" } = {}) {
+  const a = await fromUuid(de), b = await fromUuid(para);
+  if (!a || !b || temRelacao(a, b.uuid)) return false;
+  await a.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(b, tipo) });
+  return true;
 }

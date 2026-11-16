@@ -16,7 +16,7 @@
       <div class="epm-escudo-aplicar">
         <input type="number" min="0" data-rapido-valor placeholder="valor" aria-label="Valor" />
         <select data-rapido-recurso aria-label="Recurso"><option value="pv">PV</option><option value="pm">PM</option><option value="pe">PE</option><option value="ps">PS</option></select>
-        <input type="text" class="epm-escudo-tipo-dano" data-rapido-tipo list="epm-escudo-tipos-dano" placeholder="tipo (opcional)" aria-label="Tipo de dano (para RD, resistência e imunidade)" title="Opcional. Com o tipo, a RD, a resistência e a imunidade do alvo entram sozinhas no dano de PV." />
+        <input type="text" class="epm-escudo-tipo-dano" data-rapido-tipo list="epm-escudo-tipos-dano" placeholder="tipo" aria-label="Tipo de dano (para RD, resistência e imunidade)" title="Opcional. Com o tipo, a RD, a resistência e a imunidade do alvo entram sozinhas no dano de PV." />
         <datalist id="epm-escudo-tipos-dano">{{#each this.tiposDano}}<option value="{{this}}"></option>{{/each}}</datalist>
         <button type="button" class="epm-botao perigo" data-action="aplicarRapido" data-tipo="dano"><i class="fa-solid fa-burst" aria-hidden="true"></i> Dano</button>
         <button type="button" class="epm-botao epm-botao-cura" data-action="aplicarRapido" data-tipo="cura"><i class="fa-solid fa-heart" aria-hidden="true"></i> Cura</button>
@@ -160,7 +160,7 @@
       <label class="epm-campo"><span>Dar para</span><select data-destino-item>{{#each destinos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <input type="search" class="epm-busca" data-busca-item value="{{this.buscaItem}}" placeholder="Buscar item do mundo…" aria-label="Buscar item" />
       <select data-tipo-item aria-label="Tipo">{{#each tiposItem}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
-      <button type="button" class="epm-botao" data-action="abrirCatalogo" title="Catálogo do EPM (Umbra'Draxil): dar itens ou importar para a aba Itens"><i class="fa-solid fa-book-open"></i> Catálogo de itens</button>
+      <button type="button" class="epm-botao" data-action="abrirCatalogo" title="Catálogo do EPM (Umbra'Draxil, Briavoterna e Genesis): dar itens ou importar para a aba Itens"><i class="fa-solid fa-book-open"></i> Catálogo de itens</button>
     </div>
     <section class="epm-painel">
       <header class="epm-painel-titulo"><h3>Moedas</h3></header>
@@ -170,9 +170,10 @@
       </div>
     </section>
     <section class="epm-painel">
-      <header class="epm-painel-titulo"><h3>Transformações prontas</h3></header>
-      <ul class="epm-escudo-itens">{{#each transformacoesProntas}}<li title="{{this.descricao}}"><span class="epm-escudo-item-nome">{{this.nome}}</span><button type="button" class="epm-botao" data-action="darTransformacao" data-id="{{this.id}}"><i class="fa-solid fa-paw"></i> Dar</button></li>{{/each}}</ul>
+      <header class="epm-painel-titulo"><h3>Itens prontos</h3><span class="epm-dica">Itens únicos com formas. Só quem você der tem.</span></header>
+      <ul class="epm-escudo-itens epm-escudo-prontas">{{#each itensProntos}}<li title="{{this.resumo}}"><span class="epm-escudo-item-nome"><strong>{{this.nome}}</strong> <span class="epm-tag fraca">{{this.categoria}}</span><small>{{this.resumo}}</small></span><button type="button" class="epm-botao" data-action="darItemPronto" data-id="{{this.id}}"><i class="fa-solid fa-hand-holding"></i> Dar</button></li>{{/each}}</ul>
     </section>
+    <p class="epm-dica">Transformações e habilidades prontas ficam na aba <strong>Habilidades</strong>.</p>
     {{#if itensVazio}}<p class="epm-vazio">Nenhum item no mundo com esse filtro. Crie itens na aba Itens do Foundry.</p>{{/if}}
     <ul class="epm-escudo-itens">
       {{#each itens}}
@@ -184,6 +185,61 @@
       {{/each}}
     </ul>
     {{#if itensMais}}<p class="epm-dica">E mais {{this.itensMais}}: refine a busca.</p>{{/if}}
+    {{/if}}
+
+    {{!-- ================= HABILIDADES ================= --}}
+    {{#if (epmEq aba "habilidades")}}
+    <div class="epm-escudo-barra">
+      <label class="epm-campo"><span>Dar para</span><select data-destino-item>{{#each destinos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+      <span class="epm-dica">Marque fichas no Grupo ou no Combate para dar a várias de uma vez.</span>
+    </div>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Habilidades prontas</h3><span class="epm-dica">Só quem você der tem.</span></header>
+      <ul class="epm-escudo-itens epm-escudo-prontas">{{#each habilidadesProntas}}<li title="{{this.resumo}}"><span class="epm-escudo-item-nome"><strong>{{this.nome}}</strong> <span class="epm-tag fraca">{{this.categoria}}</span><small>{{this.resumo}}</small></span><button type="button" class="epm-botao" data-action="darHabilidadePronta" data-id="{{this.id}}"><i class="fa-solid fa-hand-holding"></i> Dar</button></li>{{/each}}</ul>
+    </section>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Transformações prontas</h3></header>
+      <ul class="epm-escudo-itens">{{#each transformacoesProntas}}<li title="{{this.descricao}}"><span class="epm-escudo-item-nome">{{this.nome}}</span><button type="button" class="epm-botao" data-action="darTransformacao" data-id="{{this.id}}"><i class="fa-solid fa-paw"></i> Dar</button></li>{{/each}}</ul>
+    </section>
+    <section class="epm-painel epm-escudo-criar">
+      <header class="epm-painel-titulo"><h3>Criar habilidade ou magia</h3><button type="button" class="epm-link" data-action="poderDeTextoEscudo" title="Cole o texto (nome, Tipo, Tema, partes numeradas com Custo, Ação, Duração, Uso…)"><i class="fa-solid fa-paste"></i> Colar texto</button></header>
+      <div class="epm-escudo-criar-grade" data-criar-poder>
+        <label class="epm-campo largo"><span>Nome</span><input type="text" name="nome" placeholder="Nome da habilidade" /></label>
+        <label class="epm-campo"><span>É</span><select name="tipo"><option value="habilidade">Habilidade</option><option value="magia">Magia</option></select></label>
+        <label class="epm-campo"><span>Categoria (habilidade)</span><select name="origem">{{#each criarPoder.origens}}<option value="{{this.id}}">{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Círculo (magia)</span><select name="circulo">{{#each criarPoder.circulos}}<option value="{{this.id}}">{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Raridade</span><select name="raridade">{{#each criarPoder.raridades}}<option value="{{this.id}}">{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Tipo (texto)</span><input type="text" name="tipoHab" placeholder="Ofensiva, Suporte, Global…" /></label>
+        <label class="epm-campo"><span>Ação</span><select name="acao">{{#each criarPoder.acoes}}<option value="{{this.id}}">{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Custo</span><select name="custoRecurso">{{#each criarPoder.recursos}}<option value="{{this.id}}">{{this.label}}</option>{{/each}}</select></label>
+        <label class="epm-campo"><span>Valor do custo</span><input type="number" min="0" name="custoValor" value="0" /></label>
+        <label class="epm-campo"><span>Duração</span><input type="text" name="duracao" placeholder="instantânea, 3 rodadas…" /></label>
+        <label class="epm-campo largo"><span>Efeito</span><textarea name="efeito" rows="4" placeholder="O que a habilidade faz. Uma linha por parágrafo."></textarea></label>
+        <div class="epm-escudo-criar-checks largo">
+          <label class="epm-check"><input type="checkbox" name="passiva" /> Passiva</label>
+          <label class="epm-check"><input type="checkbox" name="foraDoLimite" /> Não conta no limite</label>
+          <label class="epm-check"><input type="checkbox" name="alternavel" /> Liga/desliga</label>
+          <label class="epm-check"><input type="checkbox" name="abrirEditor" checked /> Abrir o editor depois</label>
+        </div>
+      </div>
+      <div class="epm-escudo-barra">
+        <button type="button" class="epm-botao epm-botao-forte" data-action="criarPoderEscudo"><i class="fa-solid fa-plus"></i> Criar e dar</button>
+        <button type="button" class="epm-botao" data-action="criarPoderEscudo" data-mundo="1" title="Cria na aba Itens do Foundry (sem dar a ninguém), para arrastar ou dar depois"><i class="fa-solid fa-earth-americas"></i> Criar no mundo</button>
+      </div>
+    </section>
+    <section class="epm-painel">
+      <header class="epm-painel-titulo"><h3>Habilidades e magias do mundo</h3><input type="search" class="epm-busca" data-busca-hab value="{{this.buscaHab}}" placeholder="Buscar…" aria-label="Buscar habilidade do mundo" /></header>
+      {{#unless habilidadesMundo.length}}<p class="epm-vazio">Nenhuma na aba Itens do Foundry{{#if buscaHab}} com essa busca{{/if}}.</p>{{/unless}}
+      <ul class="epm-escudo-itens">
+        {{#each habilidadesMundo}}
+        <li draggable="true" data-item-uuid="{{this.uuid}}" title="Arraste para uma ficha ou clique em Dar">
+          <img src="{{this.img}}" alt="" /><span class="epm-escudo-item-nome" data-action="abrirItem" data-uuid="{{this.uuid}}">{{this.name}}</span>
+          <span class="epm-tag fraca">{{this.tipoLabel}}</span>
+          <button type="button" class="epm-botao" data-action="darItem" data-uuid="{{this.uuid}}"><i class="fa-solid fa-hand-holding"></i> Dar</button>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
     {{/if}}
 
     {{!-- ================= TESTES ================= --}}
@@ -225,7 +281,7 @@
       <section class="epm-painel"><header class="epm-painel-titulo"><h3>Ações e testes</h3></header>
         <ul class="epm-escudo-ref"><li>Ações: {{epmJoin regras.acoes ", "}}.</li>
         <li>DT de magias e habilidades = 10 + atributo (Núcleo) + perícia (Arcanismo). Resistir gasta a Reação.</li>
-        <li>Ataque extra comum: Ação Bônus ou de Movimento, com penalidade. Ataque de oportunidade: Reação. Atrasar turno: 1 vez por combate.</li></ul></section>
+        <li>Ataque extra comum: Ação de Movimento (ou Bônus), sem penalidade. Ataque de oportunidade: Reação. Atrasar turno: 1 vez por combate.</li></ul></section>
       <section class="epm-painel"><header class="epm-painel-titulo"><h3>Progressão</h3></header>
         <ul class="epm-escudo-ref">{{#each regras.progressao}}<li>{{this}}</li>{{/each}}</ul></section>
       <section class="epm-painel"><header class="epm-painel-titulo"><h3>Magias do Conjurador</h3></header>
@@ -311,10 +367,10 @@
     </div>
     {{/if}}
 
-    {{!-- ================= AJUSTES ================= --}}
-    {{#if (epmEq aba "ajustes")}}
+    {{!-- ================= MECÂNICAS OPCIONAIS ================= --}}
+    {{#if (epmEq aba "opcionais")}}
     <section class="epm-painel epm-escudo-ajustes">
-      <header class="epm-painel-titulo"><h3>Regras opcionais</h3><span class="epm-dica">Começam desligadas. Desligada, nada dela aparece nas fichas.</span></header>
+      <header class="epm-painel-titulo"><h3>Mecânicas opcionais</h3><span class="epm-dica">Começam desligadas. Desligada, nada dela aparece nas fichas.</span></header>
       <div class="epm-ajustes-lista">
         {{#each novasMestre.lista}}
         <label class="epm-ajuste {{#if this.ligado}}ligado{{/if}}">
@@ -324,12 +380,22 @@
         {{/each}}
       </div>
     </section>
+    {{#if novasMestre.temListasOpcionais}}
     <section class="epm-painel epm-escudo-ajustes">
-      <header class="epm-painel-titulo"><h3>Listas do Mestre</h3><span class="epm-dica">Uma linha por item, partes separadas por "|". Linha vazia some. Apagar tudo volta ao padrão.</span></header>
-      <label class="epm-campo"><span>Eventos rápidos de afinidade (nome | valor)</span><textarea rows="4" data-lista="eventos">{{novasMestre.textos.eventos}}</textarea></label>
+      <header class="epm-painel-titulo"><h3>Listas das mecânicas ligadas</h3><span class="epm-dica">Uma linha por item, partes separadas por "|". Apagar tudo volta ao padrão.</span></header>
       {{#if novasMestre.regras.traumas}}<label class="epm-campo"><span>Tabela de traumas (nome | efeito) — os 6 do padrão têm automação</span><textarea rows="5" data-lista="traumas">{{novasMestre.textos.traumas}}</textarea></label>{{/if}}
       {{#if novasMestre.regras.feitos}}<label class="epm-campo"><span>Feitos (nome | descrição | PEv | título | automático: umPv, chefe ou maestria50)</span><textarea rows="5" data-lista="feitos">{{novasMestre.textos.feitos}}</textarea></label>{{/if}}
       {{#if novasMestre.regras.acumulos}}<label class="epm-campo"><span>Dano por acúmulo no Novo turno (Sangrando | Envenenado | Em Chamas)</span><input type="text" data-lista="acumulos" value="{{novasMestre.textos.acumulos}}" /></label>{{/if}}
+      <button type="button" class="epm-botao epm-botao-forte" data-action="novasMestre" data-op="salvarListas"><i class="fa-solid fa-floppy-disk"></i> Salvar listas</button>
+    </section>
+    {{/if}}
+    {{/if}}
+
+    {{!-- ================= AJUSTES ================= --}}
+    {{#if (epmEq aba "ajustes")}}
+    <section class="epm-painel epm-escudo-ajustes">
+      <header class="epm-painel-titulo"><h3>Listas do Mestre</h3><span class="epm-dica">Uma linha por item, partes separadas por "|". Apagar tudo volta ao padrão. As listas das mecânicas opcionais ficam na aba Opcionais.</span></header>
+      <label class="epm-campo"><span>Eventos rápidos de afinidade (nome | valor)</span><textarea rows="4" data-lista="eventos">{{novasMestre.textos.eventos}}</textarea></label>
       <button type="button" class="epm-botao epm-botao-forte" data-action="novasMestre" data-op="salvarListas"><i class="fa-solid fa-floppy-disk"></i> Salvar listas</button>
     </section>
     <section class="epm-painel epm-escudo-ajustes">

@@ -243,7 +243,7 @@ export function estilosPermitidos(nivel) {
 }
 
 /** Efeitos da Maestria escolhida na etapa atual (valores prontos para a ficha e o diálogo de ataque). */
-export function efeitoMaestria(id, nivel) {
+export function efeitoMaestria(id, nivel, dados = null) {
   const m = ARQUETIPOS.combatente.maestrias[id];
   const etapa = etapaMaestria(nivel);
   if (!m || !etapa) return null;
@@ -259,6 +259,8 @@ export function efeitoMaestria(id, nivel) {
   if (m.mult) out.mult = degrau(m.mult, nivel)?.valor ?? 0;
   if (id === "leve") out.dex = nivel >= 11;
   if (id === "leve") out.danoDex = nivel >= 31 ? 3 : 0;
+  // Ajuste desta ficha (Valores do arquétipo): custo, dano, acerto…
+  if (dados) for (const campo of ["custo", "dano", "acerto", "alcance", "ca", "margem", "mult"]) if (typeof out[campo] === "number") out[campo] = valorPessoal(dados, `arq-maestria-${campo}`, out[campo]);
   return out;
 }
 
@@ -291,21 +293,65 @@ export function eTipoFavorito(item, dados = {}) {
 export const intMin1 = valor => Math.max(1, Math.floor(Number(valor) || 0));
 
 /** Projetos do Artífice no nível dado, com a Inteligência já somada. */
-export function projetosDoNivel(nivel, inteligencia = 0) {
+/** Chaves dos valores ajustáveis dos projetos (Ajustar bônus do arquétipo). */
+export const AJUSTES_PROJETO = {
+  dano: "artifice-projetos-dano", cura: "artifice-projetos-cura", soma: "artifice-projetos-soma",
+  protecao: "artifice-projetos-protecao", porDia: "artifice-projetos-por-dia", livro: "artifice-livro-de-projetos"
+};
+
+/** Texto do livro com "Int" no lugar da Inteligência (o que aparece como padrão no campo). */
+export function projetosPadraoTexto(nivel) {
+  const t = degrau(ARQUETIPOS.artifice.projetos, nivel);
+  const l = degrau(ARQUETIPOS.artifice.livro, nivel);
+  if (!t) return null;
+  return {
+    dano: `${t.dano} + Int`, cura: `${t.cura} + Int`, soma: `${t.soma} + Int`, protecao: String(t.protecao),
+    porDia: String(ARQUETIPOS.artifice.projetosPorDia), livro: l ? `${l.base} + Int` : ""
+  };
+}
+
+/** Troca "Int", "Inteligência" ou "@int" pelo valor. */
+const comInt = (texto, i) => String(texto ?? "").replace(/@int\b|\binteligên?cia\b|\binteligencia\b|\bint\b/gi, String(i));
+/** Conta simples (só números e + − × ÷ parênteses); senão null. */
+function conta(texto) {
+  const t = String(texto ?? "").replace(/−/g, "-").replace(/×/g, "*").replace(/÷/g, "/").replace(/\s+/g, "");
+  if (!t || !/^[\d+\-*/().]+$/.test(t)) return null;
+  try { const v = Function(`"use strict"; return (${t});`)(); return Number.isFinite(v) ? Math.floor(v) : null; } catch { return null; }
+}
+/** Fórmula de dados com a Inteligência já trocada e os sinais arrumados ("2d8 + 3"). */
+const formulaLimpa = t => String(t).replace(/\s*([+-])\s*/g, " $1 ").replace(/\s+/g, " ").trim();
+
+/**
+ * Valores dos projetos no nível. `ajustes` = flags.ajustesBonus (a mesa pode trocar dano, cura, soma, proteção,
+ * projetos por dia e o limite do Livro, usando "Int" para a Inteligência: "2d8 + Int", "2 + Int", "3").
+ */
+export function projetosDoNivel(nivel, inteligencia = 0, ajustes = {}) {
   const t = degrau(ARQUETIPOS.artifice.projetos, nivel);
   if (!t) return null;
   const i = intMin1(inteligencia);
+  const ov = chave => { const v = ajustes?.[AJUSTES_PROJETO[chave]]; return v !== undefined && v !== null && String(v).trim() !== "" ? String(v).trim() : null; };
+  const num = (chave, padrao) => { const v = ov(chave); if (v === null) return padrao; const c = conta(comInt(v, i)); return c ?? padrao; };
+  const dano = ov("dano") ? formulaLimpa(comInt(ov("dano"), i)) : `${t.dano} + ${i}`;
+  const cura = ov("cura") ? formulaLimpa(comInt(ov("cura"), i)) : `${t.cura} + ${i}`;
   return {
     etapa: ARQUETIPOS.artifice.projetos.indexOf(t) + 1,
-    dano: `${t.dano} + ${i}`, cura: `${t.cura} + ${i}`, soma: t.soma + i, protecao: t.protecao,
+    dano, cura, soma: num("soma", t.soma + i), protecao: num("protecao", t.protecao),
+    porDia: Math.max(0, num("porDia", ARQUETIPOS.artifice.projetosPorDia)),
+    ajustado: Object.keys(AJUSTES_PROJETO).filter(k => ov(k) !== null && k !== "livro"),
     proximo: proximoDegrau(ARQUETIPOS.artifice.projetos, nivel)?.nivel ?? null
   };
 }
 
 /** Limite do Livro de Projetos (0 se ainda não tem). */
-export function limiteLivro(nivel, inteligencia = 0) {
+export function limiteLivro(nivel, inteligencia = 0, ajustes = {}) {
   const t = degrau(ARQUETIPOS.artifice.livro, nivel);
-  return t ? t.base + intMin1(inteligencia) : 0;
+  if (!t) return 0;
+  const v = ajustes?.[AJUSTES_PROJETO.livro];
+  if (v !== undefined && v !== null && String(v).trim() !== "") {
+    const c = conta(comInt(v, intMin1(inteligencia)));
+    if (c !== null) return Math.max(0, c);
+  }
+  return t.base + intMin1(inteligencia);
 }
 
 /** Bônus do Pequeno Autômato (2.0 e 3.0) no nível dado. */
@@ -314,8 +360,9 @@ export function bonusAutomato(nivel) {
 }
 
 /** Bônus de PM máximo da Reserva Arcana. */
-export function reservaArcana(nivel) {
-  return degrau(ARQUETIPOS.conjurador.reservaArcana, nivel)?.pm ?? 0;
+export function reservaArcana(nivel, dados = null) {
+  const pm = degrau(ARQUETIPOS.conjurador.reservaArcana, nivel)?.pm ?? 0;
+  return dados && pm ? Math.max(0, valorPessoal(dados, "arq-reserva-arcana", pm)) : pm;
 }
 
 /** Custo de PM sugerido para uma magia do círculo (Conjurador). */
@@ -342,28 +389,29 @@ export function modsDeArquetipo(dados = {}, armasEquipadas = [], agora = null, i
   const opc = dados.arquetipoOpcoes ?? {};
   const conj = nivelArquetipo(dados, "conjurador");
   if (conj) {
-    const pm = reservaArcana(conj);
+    const pm = reservaArcana(conj, dados);
     if (pm) out.push({ alvo: "recurso.pm", valor: pm, fonte: "Reserva Arcana (Conjurador)" });
   }
   const art = nivelArquetipo(dados, "artifice");
   if (art >= ARQUETIPOS.artifice.utensilios.nivel) {
     const lista = (Array.isArray(opc.artifice?.utensilios) ? opc.artifice.utensilios : [])
       .filter(p => p && !ARQUETIPOS.artifice.utensilios.exceto.includes(p)).slice(0, ARQUETIPOS.artifice.utensilios.qtd);
-    for (const p of lista) out.push({ alvo: `pericia.${p}`, valor: ARQUETIPOS.artifice.utensilios.bonus, fonte: "Utensílios (Artífice)" });
+    const bonusUt = valorPessoal(dados, "arq-utensilios-bonus", ARQUETIPOS.artifice.utensilios.bonus);
+    for (const p of lista) out.push({ alvo: `pericia.${p}`, valor: bonusUt, fonte: "Utensílios (Artífice)" });
   }
   const comb = nivelArquetipo(dados, "combatente");
   if (comb) {
-    const m = efeitoMaestria(opc.combatente?.maestria, comb);
+    const m = efeitoMaestria(opc.combatente?.maestria, comb, dados);
     if (m?.id === "protetora" && armasEquipadas.some(a => eTipoFavorito(a, dados))) out.push({ alvo: "ca", valor: m.ca, fonte: "Arma Protetora (Combatente)" });
-    if (comb >= 7) out.push({ alvo: "pericia.reflexos", valor: 5, fonte: "Reflexos de Combate" });
+    if (comb >= 7) out.push({ alvo: "pericia.reflexos", valor: valorPessoal(dados, "arq-reflexos-de-combate", 5), fonte: "Reflexos de Combate" });
     const estilos = estilosEscolhidos(dados, comb);
-    if (estilos.includes("dupla") && armasEquipadas.length >= 2) out.push({ alvo: "ca", valor: ARQUETIPOS.combatente.estilos.dupla.ca, fonte: "Arma Dupla (Combatente)" });
+    if (estilos.includes("dupla") && armasEquipadas.length >= 2) out.push({ alvo: "ca", valor: estiloVal(dados, "dupla", "ca"), fonte: "Arma Dupla (Combatente)" });
     const E = ARQUETIPOS.combatente.estilos;
     if (estilos.includes("defensivo") && itensAtivos.some(i => i.armadura > 0 || i.escudo)) {
-      out.push({ alvo: "ca", valor: E.defensivo.ca, fonte: "Combate Defensivo" }, { alvo: "defesa.bloqueio", valor: E.defensivo.defesa, fonte: "Combate Defensivo" });
+      out.push({ alvo: "ca", valor: estiloVal(dados, "defensivo", "ca"), fonte: "Combate Defensivo" }, { alvo: "defesa.bloqueio", valor: estiloVal(dados, "defensivo", "defesa"), fonte: "Combate Defensivo" });
     }
     if (estilos.includes("bebado") && statuses.includes("epm-bebado")) {
-      out.push({ alvo: "acerto", valor: E.bebado.acerto, fonte: "Bêbado (estilo)" }, { alvo: "defesa.esquiva", valor: E.bebado.esquiva, fonte: "Bêbado (estilo)" }, { alvo: "ca", valor: E.bebado.ca, fonte: "Bêbado (estilo)" });
+      out.push({ alvo: "acerto", valor: estiloVal(dados, "bebado", "acerto"), fonte: "Bêbado (estilo)" }, { alvo: "defesa.esquiva", valor: estiloVal(dados, "bebado", "esquiva"), fonte: "Bêbado (estilo)" }, { alvo: "ca", valor: estiloVal(dados, "bebado", "ca"), fonte: "Bêbado (estilo)" });
     }
   }
   return out;
@@ -415,3 +463,79 @@ export function estadoProjetos(dados = {}, agora = 0, dia = "") {
 }
 
 export { INT as ATRIBUTO_INTELECTO };
+
+
+/* -------------------------------------------- */
+/*  Valores do arquétipo ajustados por ficha     */
+/* -------------------------------------------- */
+
+const vazio = v => v === undefined || v === null || String(v).trim() === "";
+/**
+ * Valor de um número do arquetipo trocado só nesta ficha (flags.ajustesBonus[chave]).
+ * Número: aceita conta simples ("2 + 3"); dado: texto ("2d8"). Vazio = valor do livro (ou do Mestre).
+ */
+export function valorPessoal(dados, chave, padrao) {
+  const v = dados?.ajustesBonus?.[chave];
+  if (vazio(v)) return padrao;
+  if (typeof padrao === "number") { const c = conta(v); return c ?? padrao; }
+  return String(v).trim();
+}
+export const chaveEstilo = (est, campo) => `arq-estilo-${est}-${campo}`.toLowerCase();
+/** Número de um Estilo de Combate (Duelista, Arma Dupla…) para esta ficha. */
+export const estiloVal = (dados, est, campo) => valorPessoal(dados, chaveEstilo(est, campo), ARQUETIPOS.combatente.estilos[est]?.[campo]);
+
+/** Campos numéricos (ou de dado) de cada estilo, para a lista de ajustes. */
+const CAMPOS_ESTILO = { defensivo: { defesa: "Defesa (Bloqueio)", ca: "CA" }, duelista: { acertoIsolado: "Acerto contra inimigo isolado" },
+  bebado: { acerto: "Acerto", esquiva: "Esquiva", ca: "CA" }, atirador: { margem: "Margem de crítico" },
+  longo: { dano: "Dano à distância", desarmado: "Dano desarmado" }, dupla: { acerto: "Acerto", ca: "CA" } };
+const CAMPOS_MAESTRIA = { custo: "Custo (PE)", dano: "Dano", acerto: "Acerto", alcance: "Alcance (m)", ca: "CA", margem: "Margem", mult: "Multiplicador" };
+
+/** Ataque Extra do Combatente nesta ficha (custo e ataques ajustáveis). */
+export function ataqueExtraDe(nivel, dados = {}) {
+  const ae = degrau(ARQUETIPOS.combatente.ataqueExtra, nivel);
+  if (!ae) return null;
+  return { ...ae, custo: Math.max(0, valorPessoal(dados, "arq-ataque-extra-custo", ae.custo)), ataques: Math.max(0, valorPessoal(dados, "arq-ataque-extra-ataques", ae.ataques)) };
+}
+/** Recuperar Mana do Conjurador nesta ficha. */
+export function recuperarManaDe(nivel, dados = {}) {
+  const r = degrau(ARQUETIPOS.conjurador.recuperarMana, nivel);
+  if (!r) return null;
+  return { ...r, pe: Math.max(0, valorPessoal(dados, "arq-recuperar-mana-pe", r.pe)), pm: Math.max(0, valorPessoal(dados, "arq-recuperar-mana-pm", r.pm)) };
+}
+
+/**
+ * Tudo o que esta ficha pode trocar no arquétipo (para a lista "Valores do arquétipo"):
+ * [{ chave, fonte, rotulo, padrao, formula }]. Só o que vale no nível e nas escolhas atuais.
+ */
+export function valoresAjustaveisArquetipo(dados = {}) {
+  const out = [];
+  const add = (chave, fonte, rotulo, padrao) => out.push({ chave, fonte, rotulo, padrao: String(padrao), formula: typeof padrao !== "number", origem: "arquetipo", atual: dados.ajustesBonus?.[chave] ?? "" });
+  const comb = nivelArquetipo(dados, "combatente");
+  if (comb) {
+    const E = ARQUETIPOS.combatente.estilos;
+    for (const est of estilosEscolhidos(dados, comb)) for (const [campo, rot] of Object.entries(CAMPOS_ESTILO[est] ?? {})) add(chaveEstilo(est, campo), E[est].nome, rot, E[est][campo]);
+    const ae = degrau(ARQUETIPOS.combatente.ataqueExtra, comb);
+    if (ae) { add("arq-ataque-extra-custo", "Ataque Extra", "Custo (PE)", ae.custo); add("arq-ataque-extra-ataques", "Ataque Extra", "Ataques", ae.ataques); }
+    const mId = dados.arquetipoOpcoes?.combatente?.maestria;
+    const m = mId ? efeitoMaestria(mId, comb) : null;
+    if (m) for (const [campo, rot] of Object.entries(CAMPOS_MAESTRIA)) if (typeof m[campo] === "number" && (campo !== "margem" || m[campo]) && (campo !== "mult" || m[campo])) add(`arq-maestria-${campo}`, `Maestria: ${m.nome}`, rot, m[campo]);
+    if (comb >= 7) add("arq-reflexos-de-combate", "Reflexos de Combate", "Reflexos", 5);
+  }
+  const conj = nivelArquetipo(dados, "conjurador");
+  if (conj) {
+    const res = reservaArcana(conj);
+    if (res) add("arq-reserva-arcana", "Reserva Arcana", "PM máximo", res);
+    const rec = degrau(ARQUETIPOS.conjurador.recuperarMana, conj);
+    if (rec) { add("arq-recuperar-mana-pe", "Recuperar Mana", "Custo (PE)", rec.pe); add("arq-recuperar-mana-pm", "Recuperar Mana", "Mana recuperada", rec.pm); }
+  }
+  const art = nivelArquetipo(dados, "artifice");
+  if (art) {
+    const pt = projetosPadraoTexto(art);
+    if (pt) {
+      const rot = { dano: "Dano", cura: "Cura", soma: "Soma (testes)", protecao: "Proteção (CA)", porDia: "Projetos por dia", livro: "Livro de Projetos (limite)" };
+      for (const k of Object.keys(AJUSTES_PROJETO)) if (pt[k]) out.push({ chave: AJUSTES_PROJETO[k], fonte: "Projetos", rotulo: /Int/.test(pt[k]) ? `${rot[k]} · "Int" = Inteligência` : rot[k], padrao: pt[k], formula: true, origem: "arquetipo", atual: dados.ajustesBonus?.[AJUSTES_PROJETO[k]] ?? "" });
+    }
+    if (art >= ARQUETIPOS.artifice.utensilios.nivel) add("arq-utensilios-bonus", "Utensílios", "Bônus nas perícias", ARQUETIPOS.artifice.utensilios.bonus);
+  }
+  return out;
+}

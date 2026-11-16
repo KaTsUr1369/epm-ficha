@@ -91,5 +91,14 @@
       </div>
       {{/each}}
     </div>
+    {{#if morte}}
+    <div class="epm-morte{{#if morte.estado}} {{morte.estado}}{{/if}}" title="{{morte.texto}}">
+      <span class="epm-morte-titulo"><i class="fa-solid fa-skull" aria-hidden="true"></i> Testes contra a morte</span>
+      <span class="epm-morte-lado">Positivos {{#each morte.pipsSucesso}}<span class="epm-morte-pip sucesso{{#if this}} marcado{{/if}}"></span>{{/each}}</span>
+      <span class="epm-morte-lado">Negativos {{#each morte.pipsFalha}}<span class="epm-morte-pip falha{{#if this}} marcado{{/if}}"></span>{{/each}}</span>
+      {{#if morte.estado}}<span class="epm-tag">{{#if (epmEq morte.estado "estavel")}}Estável{{else}}Morto{{/if}}</span>
+      {{else}}{{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="testeMorte" title="d20 puro: 11+ positivo, 10− negativo, 20 = 2 positivos, 1 = 2 negativos"><i class="fa-solid fa-dice-d20" aria-hidden="true"></i> Rolar</button>{{/if}}{{/if}}
+    </div>
+    {{/if}}
   </div>
 </header>

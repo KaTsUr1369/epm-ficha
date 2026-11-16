@@ -8,8 +8,8 @@ import { modsDeArquetipo } from "./arquetipos.mjs";
 import {
   FLAG, USOS_FORMA, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, PERICIAS_RESISTENCIA, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
-  MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
-  TIPOS_EFEITO_ITEM, QUANDO_CURA, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO, TIPOS_SEM_NIVEL,
+  MOEDAS, MOEDAS_DESC, MOEDAS_ANTIGAS, DRACMAS_POR_JOIA, ACOES, REQUISITOS, TIPOS_TESTE, CUSTO_RECURSOS, RECARGAS, CD,
+  TIPOS_EFEITO_ITEM, QUANDO_CURA, TEXTO_DEBUFF_SITUACIONAL, COR_PADRAO, BRILHO_PADRAO, TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO, TIPOS_SEM_NIVEL,
   TIPOS_BONUS_SITUACIONAL, GATILHOS_BONUS
 } from "./config.mjs";
 import { automacaoDe, NATUREZAS } from "./bencaos.mjs";
@@ -225,7 +225,7 @@ export function normalizarDados(bruto = {}, listaPericias = PERICIAS_PADRAO) {
     if (!Array.isArray(dados[campo])) dados[campo] = [];
   }
   for (const [antiga, nova] of Object.entries(MOEDAS_ANTIGAS)) {
-    if (bruto?.moedas?.[antiga] !== undefined && !int(bruto?.moedas?.[nova])) dados.moedas[nova] = int(bruto.moedas[antiga]);
+    if (bruto?.moedas?.[antiga] !== undefined && !int(bruto?.moedas?.[nova])) dados.moedas[nova] = int(bruto.moedas[antiga]) * (antiga === "kan" ? DRACMAS_POR_JOIA : 1);
     delete dados.moedas[antiga];
   }
   dados.exaustao = limitar(int(dados.exaustao), 0, EXAUSTAO_MAX);
@@ -268,7 +268,8 @@ export function migrarDados(bruto = {}) {
   if (versao >= VERSAO_DADOS) return updates;
   for (const [antiga, nova] of Object.entries(MOEDAS_ANTIGAS)) {
     if (bruto?.moedas?.[antiga] === undefined) continue;
-    updates[`moedas.${nova}`] = int(bruto.moedas?.[nova]) + int(bruto.moedas[antiga]);
+    // Joias de Kan antigas guardadas como moeda: 1 Joia = 3 Dracmas
+    updates[`moedas.${nova}`] = int(bruto.moedas?.[nova]) + int(bruto.moedas[antiga]) * (antiga === "kan" ? DRACMAS_POR_JOIA : 1);
     updates[`moedas.-=${antiga}`] = null;
   }
   if (int(bruto?.exaustao) > EXAUSTAO_MAX) updates.exaustao = EXAUSTAO_MAX;
@@ -672,8 +673,15 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   const reducoes = [...rdCondicoes, ...extrasFicha.rd];
   resistenciasExtra.push(...extrasFicha.resistencias);
   for (const b of Object.values(d.bonusCena ?? {})) {
+    // Debuff: desvantagem em ataques e/ou testes enquanto estiver ligado
+    if (b?.ativo && ["ataques", "testes", "ambos"].includes(b.desvantagem)) {
+      const nomeB = b.nome || "Bônus de cena";
+      if (b.desvantagem !== "testes") desv.ataques.push(nomeB);
+      if (b.desvantagem !== "ataques") desv.testes.push(nomeB);
+    }
+    if (b?.ativo && b.debuff) continue;
     if (b?.ativo && num(b.rd) > 0) reducoes.push({ valor: num(b.rd), tipos: String(b.rdTipo ?? "").trim() || "todos os danos", fonte: b.nome || "Bônus de cena" });
-    if (b?.ativo && String(b.resTipo ?? "").trim()) resistenciasExtra.push({ tipo: String(b.resTipo).trim(), fonte: b.nome || "Bônus de cena" });
+    if (b?.ativo) for (const tipo of String(b.resTipo ?? "").split(",").map(t => t.trim()).filter(Boolean)) resistenciasExtra.push({ tipo, fonte: b.nome || "Bônus de cena" });
   }
   // RD da própria ficha (aba Combate): reduz o número escolhido do dano daquele tipo
   for (const r of Object.values(d.rd ?? {})) {
@@ -752,7 +760,10 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   // Bônus de cena ligados: CA, testes e deslocamento (acerto e dano entram no ataque; RD nas reduções)
   for (const b of Object.values(d.bonusCena ?? {})) {
     if (!b?.ativo) continue;
-    for (const chave of ["ca", "testes", "deslocamento"]) if (num(b[chave])) somar(chave, num(b[chave]), b.nome || "Bônus de cena");
+    for (const chave of ["ca", "testes", "deslocamento"]) {
+      const v = b.debuff ? -Math.abs(num(b[chave])) : num(b[chave]);
+      if (v) somar(chave, v, b.nome || "Bônus de cena");
+    }
   }
   lerModsAE(modsAE, somar);
   for (const m of extrasFicha.mods) somar(m.alvo, m.valor, m.fonte);
@@ -1134,14 +1145,30 @@ export function normalizarForma(id, fo = {}) {
 export function normalizarBonusSituacional(b = {}) {
   const opcoes = Object.entries(eObjeto(b?.opcoes) ? b.opcoes : {})
     .filter(([, o]) => o && TIPOS_BONUS_SITUACIONAL[o.tipo])
-    .map(([id, o]) => ({
-      id, tipo: o.tipo, valor: o.tipo === "dano" ? (String(o.valor ?? "").trim() || "0") : int(o.valor),
-      tipoDano: String(o.tipoDano ?? "").trim(), criado: num(o.criado), porNivel: !!o.porNivel
-    }))
+    .map(([id, o]) => {
+      const semNumero = !!TIPOS_BONUS_SITUACIONAL[o.tipo].semNumero;
+      let valor = o.tipo === "dano" ? (String(o.valor ?? "").trim() || "0") : semNumero ? String(o.valor ?? "").trim() : int(o.valor);
+      if (o.tipo === "condicao" && !CONDICAO_POR_ID.has(valor)) valor = CONDICOES[0]?.id ?? "";
+      if (o.tipo === "desvantagem" && !["ataques", "testes", "ambos"].includes(valor)) valor = "ataques";
+      if (o.tipo === "resistencia" && !valor) valor = String(o.tipoDano ?? "").trim();
+      return {
+        id, tipo: o.tipo, valor, semNumero,
+        tipoDano: String(o.tipoDano ?? "").trim(), criado: num(o.criado), porNivel: !semNumero && !!o.porNivel,
+        // Debuff: o número entra como penalidade (resultado ruim da rolagem, maldição…)
+        debuff: !semNumero && !!o.debuff,
+        // Só aparece a partir deste nível do personagem (ex.: elementos desbloqueados)
+        nivel: Math.max(0, int(o.nivel))
+      };
+    })
     .sort((a, c) => a.criado - c.criado);
-  for (const o of opcoes) o.texto = TIPOS_BONUS_SITUACIONAL[o.tipo].texto(o.valor) + (o.tipo === "rd" && o.tipoDano ? ` (${o.tipoDano})` : "") + (o.porNivel ? " por nível da habilidade" : "");
+  for (const o of opcoes) {
+    const valorTexto = o.tipo === "condicao" ? (CONDICAO_POR_ID.get(o.valor)?.label ?? o.valor) : String(o.valor).replace(/^[-−]/, "");
+    o.texto = (o.debuff ? TEXTO_DEBUFF_SITUACIONAL[o.tipo](valorTexto) : TIPOS_BONUS_SITUACIONAL[o.tipo].texto(o.tipo === "condicao" ? valorTexto : o.valor))
+      + (o.tipo === "rd" && o.tipoDano ? ` (${o.tipoDano})` : "") + (o.porNivel ? " por nível da habilidade" : "");
+    o.ruim = o.debuff || o.tipo === "condicao" || o.tipo === "desvantagem";
+  }
   const escolha = ["rolar", "todas"].includes(b?.escolha) ? b.escolha : "escolher";
-  return { gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha, opcoes };
+  return { gatilho: GATILHOS_BONUS[b?.gatilho] ? b.gatilho : "uso", escolha, opcoes, duracao: b?.duracao === "descanso" ? "descanso" : "cena" };
 }
 
 export function formaPadrao(ordem = 0, nome = "Padrão") {
@@ -1160,7 +1187,8 @@ export function formaPadrao(ordem = 0, nome = "Padrão") {
 /** Lê os dados EPM de um item de habilidade (feat) ou magia (spell). */
 export function lerPoder(item) {
   const f = item?.flags?.[FLAG] ?? {};
-  const tipo = item?.type === "spell" ? "magia" : "habilidade";
+  // Itens (armas, armaduras, acessórios) também podem ter formas: o "Cajado das sete cabeças" escolhe a cabeça ao usar
+  const tipo = item?.type === "spell" ? "magia" : item?.type === "feat" || !item?.type ? "habilidade" : "item";
   const raridade = RARIDADES_PODER[f.raridade] ? f.raridade : "comum";
   const formas = Object.entries(f.formas ?? {})
     .filter(([, fo]) => fo)
@@ -1217,7 +1245,7 @@ export function avaliarForma(forma, ficha, { raridade = "comum", melhorias = [],
       if (ligado) motivos.push(...(b.requisitos?.[req] ?? []));
     }
     if (poder.tipo === "magia") motivos.push(...(b.magias ?? []));
-    else if (poder.tipo) motivos.push(...(b.habilidades ?? []));
+    else if (poder.tipo && poder.tipo !== "item") motivos.push(...(b.habilidades ?? []));
     if (poder.origem) motivos.push(...(b.origens?.[poder.origem] ?? []));
     if (forma.custo?.recurso === "pm" && forma.custo?.valor > 0) motivos.push(...(b.mana ?? []));
     if (formaOfensiva(forma)) motivos.push(...(b.ataques ?? []));
@@ -1251,11 +1279,19 @@ export function montarBonusCena(opcoes, nivel = 1, extra = {}) {
   const danos = [];
   for (const o of opcoes) {
     const vezes = o.porNivel ? Math.max(1, int(nivel, 1)) : 1;
-    if (o.tipo === "dano") { const v = String(o.valor); danos.push(vezes > 1 ? (/^\d+$/.test(v) ? String(int(v) * vezes) : `${vezes} * (${v})`) : v); }
-    else if (o.tipo === "rd") { b.rd += int(o.valor) * vezes; if (o.tipoDano) b.rdTipo = o.tipoDano; }
-    else b[o.tipo] = int(b[o.tipo]) + int(o.valor) * vezes;
+    if (o.tipo === "condicao") continue; // aplicada no ator (aplicarBonusSituacional)
+    if (o.tipo === "resistencia") { if (o.valor) b.resTipo = b.resTipo ? `${b.resTipo}, ${o.valor}` : o.valor; continue; }
+    if (o.tipo === "desvantagem") { b.desvantagem = b.desvantagem && b.desvantagem !== o.valor ? "ambos" : o.valor; continue; }
+    if (o.tipo === "dano") {
+      const v = String(o.valor).replace(/^[-−]\s*/, "");
+      const f = vezes > 1 ? (/^\d+$/.test(v) ? String(int(v) * vezes) : `${vezes} * (${v})`) : v;
+      danos.push(o.debuff ? (/^\d+$/.test(f) ? `-${f}` : `-(${f})`) : f);
+    }
+    else if (o.tipo === "rd") { if (!o.debuff) { b.rd += int(o.valor) * vezes; if (o.tipoDano) b.rdTipo = o.tipoDano; } }
+    else b[o.tipo] = int(b[o.tipo]) + (o.debuff ? -Math.abs(int(o.valor)) : int(o.valor)) * vezes;
   }
-  b.dano = danos.join(" + ");
+  if (opcoes.length && opcoes.every(o => o.ruim)) b.ruim = true;
+  b.dano = danos.join(" + ").replace(/\+ -/g, "- ");
   return b;
 }
 
@@ -1618,15 +1654,27 @@ export function multiplicarDados(formula, mult) {
 }
 
 /** Soma dos bônus de cena ativos (ex.: "+1d8 de dano pela cena"). */
+/** Valor de um campo numérico do bônus de cena: no debuff vira penalidade (2 → −2). */
+export function valorBonusCena(b, chave) {
+  const v = int(b?.[chave]);
+  return b?.debuff ? -Math.abs(v) : v;
+}
+/** Dano do bônus de cena: no debuff a fórmula é subtraída ("1d4" → "-(1d4)"). */
+export function danoBonusCena(b) {
+  const f = String(b?.dano ?? "").trim();
+  if (!f) return "";
+  if (!b?.debuff || /^[-−]/.test(f)) return f.replace(/^−/, "-");
+  return /^\d+$/.test(f) ? `-${f}` : `-(${f})`;
+}
 export function bonusCenaAtivos(dados) {
   const ativos = Object.values(dados?.bonusCena ?? {}).filter(b => b?.ativo);
   return {
-    acerto: ativos.reduce((s, b) => s + int(b.acerto), 0),
-    margem: ativos.reduce((s, b) => s + int(b.margem), 0),
-    critMult: ativos.reduce((s, b) => s + int(b.critMult), 0),
-    dano: ativos.map(b => String(b.dano ?? "").trim()).filter(Boolean),
-    danoFontes: ativos.filter(b => String(b.dano ?? "").trim()).map(b => ({ formula: String(b.dano).trim(), fonte: b.nome || "Bônus" })),
-    acertoFontes: ativos.filter(b => int(b.acerto)).map(b => ({ valor: int(b.acerto), fonte: b.nome || "Bônus" })),
+    acerto: ativos.reduce((s, b) => s + valorBonusCena(b, "acerto"), 0),
+    margem: ativos.reduce((s, b) => s + valorBonusCena(b, "margem"), 0),
+    critMult: ativos.reduce((s, b) => s + valorBonusCena(b, "critMult"), 0),
+    dano: ativos.map(danoBonusCena).filter(Boolean),
+    danoFontes: ativos.filter(b => danoBonusCena(b)).map(b => ({ formula: danoBonusCena(b), fonte: b.nome || "Bônus" })),
+    acertoFontes: ativos.filter(b => int(b.acerto)).map(b => ({ valor: valorBonusCena(b, "acerto"), fonte: b.nome || "Bônus" })),
     nomes: ativos.map(b => b.nome || "Bônus").filter(Boolean)
   };
 }

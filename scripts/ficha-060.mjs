@@ -554,7 +554,8 @@ export async function alternarFuria(actor) {
   const ativa = !!dados.classeEpm?.furiaAtiva;
   if (ativa) return actor.update({ [`${P}.classeEpm.furiaAtiva`]: false });
   const usos = int(dados.classeEpm?.furiaUsos);
-  if (usos >= CLASSES_NOTION.barbaro.furia.usos) return ui.notifications.warn("Fúria: os 2 usos deste descanso já foram.");
+  const maxFuria = estadoAtor(actor).ficha.extras?.classe?.furia?.usosMax ?? CLASSES_NOTION.barbaro.furia.usos;
+  if (usos >= maxFuria) return ui.notifications.warn(`Fúria: os ${maxFuria} usos deste descanso já foram.`);
   await actor.update({ [`${P}.classeEpm.furiaAtiva`]: true, [`${P}.classeEpm.furiaUsos`]: usos + 1 });
   const { ficha } = estadoAtor(actor);
   const f = ficha.extras?.classe?.furia;

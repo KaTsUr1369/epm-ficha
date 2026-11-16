@@ -796,7 +796,9 @@ const GEMAS = [
     ["Safira", U, 1000, 0, "", { raridade: "rara" }],
     ["Rubi", U, 5000, 0, "", { raridade: "epica" }],
     ["Diamante", U, 5000, 0, "Componente de magias de ressurreição (o Mestre decide).", { raridade: "epica" }],
-    ["Diamante Negro", U, 10000, 0, "", { raridade: "lendaria" }]
+    ["Diamante Negro", U, 10000, 0, "", { raridade: "lendaria" }],
+    // As Joias de Kan não são moeda: valem 3 Dracmas cada (1 Dracma = 1/3 de Joia)
+    ["Joia de Kan", U, 30000, 0, "Vale 3 Dracmas (1 Dracma = 1/3 de Joia). Não é moeda: fica no inventário e é trocada como tesouro.", { raridade: "lendaria" }]
   ]),
   ...lista("gemas", "loot", "treasure", [
     ["Taça de Prata", U, 25, 0.5, ""],

@@ -3160,9 +3160,9 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-ajustes-tabela th, .epm-ajustes-tabela td { padding: 2px 4px; border: 0; background: none; font-size: 12px; text-align: center; }
 .epm-ajustes-tabela tbody th { text-align: left; }
 .application.epm .epm-ajustes-tabela input { width: 70px; height: 24px; text-align: center; }
-.epm-ajustes-lista { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 4px; }
-.epm-ajustes-lista li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.application.epm .epm-ajustes-lista input { width: 90px; flex: none; text-align: center; }
+.epm-ajbonus-lista { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 4px; }
+.epm-ajbonus-lista li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.application.epm .epm-ajbonus-lista input { width: 90px; flex: none; text-align: center; }
 .epm-bonus-extra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; padding: 6px 0; border-top: 1px solid var(--epm-linha); }
 .application.epm .epm-bonus-extra input.epm-bonus-extra-nome { flex: 1 1 120px; min-width: 100px; width: auto; }
 .application.epm .epm-bonus-extra select { max-width: 165px; }
@@ -3177,3 +3177,52 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-favoritas-escolher { display: flex; gap: 6px; align-items: center; }
 .application.epm .epm-favoritas-escolher select { flex: 1 1 auto; min-width: 0; }
 .application.epm .epm-favoritas .epm-mini input { width: 60px; }
+
+/* Escudo do Mestre: revisão */
+.epm-escudo-cond-botao span { white-space: normal; line-height: 1.1; font-size: 12px; overflow: visible; text-overflow: clip; }
+.application.epm .epm-escudo-cond-botao { height: auto; min-height: 32px; padding: 3px 7px; }
+.epm-escudo-cond-grade { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.epm-escudo-tipo-dano { width: 150px; }
+.application.epm .epm-escudo-barra > select[data-tipo-item] { flex: 0 0 auto; width: auto; min-width: 140px; }
+.application.epm .epm-escudo-barra .epm-busca { min-width: 180px; }
+.epm-escudo-prontas li { align-items: center; }
+.epm-escudo-prontas .epm-escudo-item-nome { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; white-space: normal; }
+.epm-escudo-prontas .epm-escudo-item-nome small { flex: 1 0 100%; color: var(--epm-suave); font-size: 12px; }
+.epm-escudo-criar-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.epm-escudo-criar-grade .largo { grid-column: 1 / -1; }
+.epm-escudo-criar-grade textarea { width: 100%; resize: vertical; }
+.epm-escudo-criar-checks { display: flex; flex-wrap: wrap; gap: 14px; }
+.epm-escudo-criar .epm-painel-titulo .epm-busca, .epm-painel-titulo .epm-busca { max-width: 220px; }
+
+/* Bônus de cena: debuff, testes, deslocamento e desvantagem */
+.application.epm .epm-bonus .epm-bonus-campos select { width: 100%; }
+.application.epm .epm-bonus .epm-bonus-campos .epm-bonus-debuff { align-self: end; padding-bottom: 4px; white-space: nowrap; }
+.epm-bonus.debuff.ativo { border-color: #8A3A33; box-shadow: inset 3px 0 0 #D2544A; }
+.epm-tag.epm-tag-debuff { color: #F2A49B; border-color: #8A3A33; }
+
+/* Testes contra a morte (0 de Vida) */
+.epm-morte { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 10px; border: 1px solid #8A3A33; border-radius: 6px; background: rgba(210, 84, 74, 0.08); }
+.epm-morte.estavel { border-color: #3F7F62; background: rgba(95, 179, 138, 0.08); }
+.epm-morte-titulo { font-weight: 600; color: #F2A49B; }
+.epm-morte.estavel .epm-morte-titulo { color: #8FD3B0; }
+.epm-morte-lado { display: inline-flex; align-items: center; gap: 4px; font-size: 0.9em; }
+.epm-morte-pip { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid currentColor; opacity: 0.6; }
+.epm-morte-pip.sucesso { color: #5FB38A; }
+.epm-morte-pip.falha { color: #D2544A; }
+.epm-morte-pip.marcado { background: currentColor; opacity: 1; }
+.epm-morte .epm-botao { margin-left: auto; }
+.epm-morte-placar { display: flex; gap: 12px; }
+
+/* Pastas de relações */
+.epm-pasta-relacao { margin-bottom: 10px; }
+.epm-pasta-relacao-topo { display: flex; align-items: center; gap: 8px; padding: 4px 6px; margin-bottom: 6px; border-bottom: 1px solid var(--epm-linha); }
+.epm-pasta-relacao-alternar { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 2px 4px; font-weight: 600; color: var(--epm-latao, inherit); cursor: pointer; }
+.application.epm .epm-pasta-relacao-alternar { width: auto; flex: 0 0 auto; }
+.application.epm .epm-pasta-relacao-topo .epm-pasta-relacao-nome { flex: 1; min-width: 120px; max-width: 280px; font-weight: 600; }
+.application.epm .epm-pasta-relacao-topo .epm-icone-botao { flex: 0 0 auto; }
+.epm-pasta-relacao.fechada .epm-pasta-relacao-topo { margin-bottom: 0; opacity: 0.85; }
+.application.epm select.epm-relacao-pasta { width: auto; max-width: 150px; }
+
+/* Ataque escondido até a reação */
+.epm-chat-oculto { margin: 6px 0; padding: 6px 8px; border: 1px dashed var(--cor, #D3A85E); border-radius: 6px; font-size: 0.92em; }
+.epm-chat-reacoes { font-style: italic; }

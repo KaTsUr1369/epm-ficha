@@ -70,7 +70,7 @@ export function textoDuracao(seg) {
 export function painelProjetos(dados, nivel, intel, podeUsar) {
   const t = agora();
   const dia = chaveDia(t);
-  const valores = projetosDoNivel(nivel, intel);
+  const valores = projetosDoNivel(nivel, intel, dados.ajustesBonus);
   const todos = estadoProjetos(dados, t, dia);
   const lista = todos.filter(p => !p.apagado).map(p => ({
     ...p,
@@ -81,10 +81,10 @@ export function painelProjetos(dados, nivel, intel, podeUsar) {
   const efeitos = efeitosProjetoValendo(dados, t).map(e => ({
     ...e, label: TIPOS_PROJETO[e.tipo].label, alvo: e.tipo === "soma" ? "em todos os testes" : "na CA", faltamTexto: textoDuracao(e.ate - t)
   }));
-  const limite = limiteLivro(nivel, intel);
+  const limite = limiteLivro(nivel, intel, dados.ajustesBonus);
   const livro = Object.entries(dados.livroProjetos ?? {}).filter(([, l]) => l && TIPOS_PROJETO[l.tipo])
     .map(([id, l]) => ({ id, nome: l.nome || TIPOS_PROJETO[l.tipo].label, tipoLabel: TIPOS_PROJETO[l.tipo].label, icone: TIPOS_PROJETO[l.tipo].icone }));
-  const porDia = ARQUETIPOS.artifice.projetosPorDia;
+  const porDia = valores?.porDia ?? ARQUETIPOS.artifice.projetosPorDia;
   return {
     lista, efeitos, livro, limiteLivro: limite, livroCheio: livro.length >= limite,
     criadosHoje: todos.length, restam: Math.max(0, porDia - todos.length), podeCriar: podeUsar && todos.length < porDia,
@@ -118,7 +118,7 @@ export async function criarProjeto(actor) {
   if (!nivelArquetipo(dados, "artifice")) return ui.notifications.warn("Criar Projetos é do Artífice.");
   const t = agora();
   const dia = chaveDia(t);
-  const porDia = ARQUETIPOS.artifice.projetosPorDia;
+  const porDia = projetosDoNivel(nivelArquetipo(dados, "artifice"), estadoAtor(actor).ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus)?.porDia ?? ARQUETIPOS.artifice.projetosPorDia;
   const hoje = estadoProjetos(dados, t, dia).length;
   if (hoje >= porDia) return ui.notifications.warn(`Você já criou ${porDia} projetos hoje. Eles voltam a ficar disponíveis quando o dia muda.`);
   const livro = Object.entries(dados.livroProjetos ?? {}).filter(([, l]) => l && TIPOS_PROJETO[l.tipo]);
@@ -155,7 +155,7 @@ export async function usarProjeto(actor, id) {
   if (p.estado === "recarga") return ui.notifications.warn(`${p.nome} volta em ${textoDuracao(p.faltam)}.`);
   const { ficha } = estadoAtor(actor);
   const nivel = nivelArquetipo(dados, "artifice");
-  const v = projetosDoNivel(nivel, ficha.atributos?.inteligencia?.total ?? 0);
+  const v = projetosDoNivel(nivel, ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
   if (!v) return;
   const volta = somarTempo(t, { horas: CFG().voltaHoras });
   const up = { [`${P}.projetos.${id}.voltaEm`]: volta };
@@ -211,7 +211,7 @@ export async function guardarNoLivro(actor, id) {
   const p = dados.projetos?.[id];
   if (!p) return;
   const { ficha } = estadoAtor(actor);
-  const limite = limiteLivro(nivelArquetipo(dados, "artifice"), ficha.atributos?.inteligencia?.total ?? 0);
+  const limite = limiteLivro(nivelArquetipo(dados, "artifice"), ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
   if (!limite) return ui.notifications.warn("O Livro de Projetos libera no nível 3 de Artífice.");
   const livro = Object.values(dados.livroProjetos ?? {}).filter(Boolean);
   if (livro.some(l => l.nome === p.nome && l.tipo === p.tipo)) return ui.notifications.info(`${p.nome} já está no livro.`);

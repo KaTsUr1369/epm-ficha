@@ -223,6 +223,7 @@ export const CORES_TEMP = { pv: COR_VIDA_TEMP, pe: "#5FBF6A", pm: "#9B6BE0", ps:
 /** Limite de uso de cada forma de uma habilidade ("Uso: uma vez por combate"). */
 export const USOS_FORMA = {
   livre:   "Sem limite",
+  turno:   "1× por turno",
   combate: "1× por combate",
   cena:    "1× por cena",
   curto:   "1× por descanso curto",
@@ -367,7 +368,7 @@ export const TIPOS_EFEITO_ITEM = {
   cura:            { label: "Cura ou recuperação",  dica: "Recupera Vida, Mana, Estamina ou Sanidade" },
   danoExtra:       { label: "Dano extra",           dica: "Dano a mais nos ataques com esta arma" }
 };
-export const QUANDO_CURA = { uso: "Ao usar", acerto: "Ao acertar um ataque" };
+export const QUANDO_CURA = { uso: "Ao usar", acerto: "Ao acertar um ataque", turno: "No início do turno (equipado)" };
 
 /** Tipos do dnd5e que não fazem sentido na ficha EPM (ignorados ao soltar na ficha). */
 export const TIPOS_IGNORADOS = ["class", "subclass", "background", "race", "facility"];
@@ -384,6 +385,8 @@ export const MOEDAS = [
 export const MOEDAS_DESC = [...MOEDAS].sort((a, b) => b.valor - a.valor);
 /** Moedas antigas e para onde vão na migração. */
 export const MOEDAS_ANTIGAS = { kan: "dr" };
+/** Uma Joia de Kan (antiga moeda "kan", hoje item do catálogo) vale 3 Dracmas. */
+export const DRACMAS_POR_JOIA = 3;
 
 /* -------------------------------------------- */
 /*  Sobre o personagem / relações / abas        */
@@ -655,7 +658,17 @@ export const TIPOS_BONUS_SITUACIONAL = {
   testes: { label: "Testes", texto: v => `+${v} em todos os testes` },
   deslocamento: { label: "Deslocamento", texto: v => `+${v} m de deslocamento` },
   margem: { label: "Margem de ameaça", texto: v => `−${v} na margem de ameaça (crítico mais fácil)` },
-  critMult: { label: "Multiplicador de crítico", texto: v => `+${v} no multiplicador de crítico` }
+  critMult: { label: "Multiplicador de crítico", texto: v => `+${v} no multiplicador de crítico` },
+  // Sem número: aplica uma condição ou dá desvantagem (para resultados ruins na rolagem)
+  condicao: { label: "Condição", texto: v => `fica ${v}`, semNumero: true },
+  resistencia: { label: "Resistência", texto: v => `resistência a ${v || "um tipo de dano"}`, semNumero: true },
+  desvantagem: { label: "Desvantagem", texto: v => `desvantagem em ${{ ataques: "ataques", testes: "testes", ambos: "ataques e testes" }[v] ?? "ataques"}`, semNumero: true }
+};
+/** Texto de uma opção como penalidade (debuff). */
+export const TEXTO_DEBUFF_SITUACIONAL = {
+  rd: v => `−${v} de RD`, ca: v => `−${v} de CA`, dano: v => `−${v} de dano`, acerto: v => `−${v} no teste de ataque`,
+  testes: v => `−${v} em todos os testes`, deslocamento: v => `−${v} m de deslocamento`,
+  margem: v => `+${v} na margem de ameaça (crítico mais difícil)`, critMult: v => `−${v} no multiplicador de crítico`
 };
 /**
  * Quando o bônus da habilidade entra (ativação condicional). Os automáticos disparam sozinhos uma vez por cena,
@@ -671,6 +684,8 @@ export const GATILHOS_BONUS = {
 };
 /** Como a opção do bônus é escolhida. */
 export const ESCOLHAS_BONUS = { escolher: "O jogador escolhe uma", rolar: "Rolar uma", todas: "Todas juntas" };
+/** Quanto tempo o bônus escolhido vale. */
+export const DURACOES_BONUS = { cena: "Pela cena (até o fim do combate)", descanso: "Até o próximo descanso (escolha fica valendo)" };
 
 /** Tipos de dano sem níveis (vale contra qualquer proteção do tipo, em qualquer nível). */
 export const TIPOS_SEM_NIVEL = ["corrupcao"];

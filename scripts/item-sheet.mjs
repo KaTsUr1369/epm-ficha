@@ -4,7 +4,7 @@
  * capacidade, conteúdo e moedas guardadas.
  */
 import { FLAG, CAMINHO, TIPOS_EFEITO_ITEM } from "./config.mjs";
-import { novoId, int } from "./data.mjs";
+import { novoId, int, lerPoder, formaPadrao } from "./data.mjs";
 import { lerAtor, montarContextoItem, listaPropriedades } from "./context.mjs";
 
 const listaPropriedadesItem = item => listaPropriedades(item.flags?.["epm-ficha"] ?? {});
@@ -21,7 +21,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "novaMelhoriaItem", "removerMelhoriaItem", "adicionarPropriedade", "removerPropriedade"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "novaMelhoriaItem", "removerMelhoriaItem", "adicionarPropriedade", "removerPropriedade", "novaFormaItem", "editarFormasItem"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -107,6 +107,19 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         tipoDano: "", em: "", recurso: "pv", formula: "", quando: item.type === "weapon" ? "acerto" : "uso", criado: Date.now()
       }
     });
+  }
+
+  /** Formas do item: editadas no mesmo editor das formas de habilidade. */
+  async acaoNovaFormaItem() {
+    const formas = lerPoder(this.item).formas;
+    const ordem = formas.length ? Math.max(...formas.map(f => f.ordem)) + 1 : 0;
+    await this.item.update({ [`${P}.formas.${novoId()}`]: formaPadrao(ordem, `Forma ${formas.length + 1}`) });
+    return this.acaoEditarFormasItem();
+  }
+
+  async acaoEditarFormasItem() {
+    const { abrirEditorPoder } = await import("./poder-sheet.mjs");
+    return abrirEditorPoder(this.item);
   }
 
   async acaoNovoModo() {

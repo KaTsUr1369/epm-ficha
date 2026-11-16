@@ -30,8 +30,19 @@
       </table>
       {{/each}}
       {{#if ajustes.recursos.length}}<p class="epm-dica">Vida, Estamina e Mana usam esta tabela quando "Calcular" está ligado (painel Vida, Mana e Estamina automáticas).</p>{{/if}}
+      {{#if ajustes.valores.length}}
+      <p class="epm-rotulo">Valores {{#if eArquetipo}}do arquétipo{{else}}da classe{{/if}} nesta ficha</p>
+      <ul class="epm-ajbonus-lista">
+        {{#each ajustes.valores}}
+        <li><span><strong>{{this.fonte}}</strong> <span class="epm-dica">{{this.rotulo}} · livro: {{this.padrao}}</span></span>
+          <input type="{{#if formula}}text{{else}}number{{/if}}" name="flags.epm-ficha.ajustesBonus.{{this.chave}}" value="{{this.atual}}" placeholder="{{this.padrao}}" aria-label="{{this.fonte}}: {{this.rotulo}}" /></li>
+        {{/each}}
+      </ul>
+      <p class="epm-dica">Só vale para esta ficha (cada pessoa pode ter os seus). Ex.: Duelista +8 no Acerto; Projetos com dano "2d8 + Int". Para um bônus que o livro não dá (RD geral, CA…), use Bônus extras abaixo.</p>
+      {{#if ajustes.bonus.length}}<p class="epm-rotulo">Bônus valendo agora</p>{{/if}}
+      {{/if}}
       {{#if ajustes.bonus.length}}
-      <ul class="epm-ajustes-lista">
+      <ul class="epm-ajbonus-lista">
         {{#each ajustes.bonus}}
         <li><span><strong>{{this.fonte}}</strong> <span class="epm-dica">{{this.rotulo}} · livro: {{this.padrao}}</span></span>
           <input type="{{#if formula}}text{{else}}number{{/if}}" name="flags.epm-ficha.ajustesBonus.{{this.chave}}" value="{{this.atual}}" placeholder="{{this.padrao}}" aria-label="{{this.fonte}}: {{this.rotulo}}" /></li>

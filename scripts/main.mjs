@@ -29,6 +29,8 @@ import { ligarGanchosNovas, prepararNovas } from "./novas.mjs";
 import { registrarCompendioClasses, sincronizarCompendio } from "./compendio-classes.mjs";
 import { registrarCompendioItens } from "./compendio-itens.mjs";
 import { registrarDicasCompendio } from "./compendio-dicas.mjs";
+import { registrarPolyglot } from "./polyglot-epm.mjs";
+registrarPolyglot();
 
 ligarGanchosNovas();
 
@@ -150,6 +152,13 @@ Hooks.on("updateActor", (ator, mudancas, opcoes) => {
   const donos = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"));
   const responsavel = donos[0] ?? game.users.activeGM;
   if (responsavel?.isSelf) mecanicas.gatilhosAoSofrerDano(ator).catch(err => console.warn("EPM | gatilho ao sofrer dano", err));
+});
+/* Testes contra a morte: caiu a 0 de Vida começa do zero; curou, zera (no cliente do dono) */
+Hooks.on("updateActor", (ator, mudancas, opcoes) => {
+  if (opcoes?.epmPvAntes === undefined || !ator.flags?.[FLAG]) return;
+  const donos = game.users.filter(u => u.active && !u.isGM && ator.testUserPermission(u, "OWNER"));
+  const responsavel = donos[0] ?? game.users.activeGM;
+  if (responsavel?.isSelf) import("./morte.mjs").then(m => m.vidaMudouMorte(ator, opcoes.epmPvAntes)).catch(err => console.warn("EPM | testes contra a morte", err));
 });
 /* Gatilho "no começo do combate" das habilidades com ativação condicional */
 Hooks.on("combatStart", combate => {

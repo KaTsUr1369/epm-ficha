@@ -44,7 +44,8 @@ export function contextoEscudoNovas() {
   const regras = regrasLigadas();
   return {
     regras, lista: REGRAS_OPCIONAIS.map(r => ({ ...r, ligado: !!regras[r.id] })),
-    textos: textosListas(), feitos: regras.feitos ? listaFeitos() : []
+    textos: textosListas(), feitos: regras.feitos ? listaFeitos() : [],
+    temListasOpcionais: !!(regras.traumas || regras.feitos || regras.acumulos)
   };
 }
 
@@ -64,7 +65,7 @@ export async function acaoEscudo(app, op, alvo) {
     const raiz = app.element;
     const ler = k => raiz.querySelector(`[data-lista="${k}"]`)?.value;
     const l = lerListas({ eventos: ler("eventos"), traumas: ler("traumas"), feitos: ler("feitos"), acumulos: ler("acumulos") });
-    await game.settings.set(MODULE_ID, "eventosAfinidade", l.eventos);
+    if (ler("eventos") !== undefined) await game.settings.set(MODULE_ID, "eventosAfinidade", l.eventos);
     if (ler("traumas") !== undefined) await game.settings.set(MODULE_ID, "tabelaTraumas", l.traumas);
     if (ler("feitos") !== undefined) await game.settings.set(MODULE_ID, "listaFeitos", l.feitos);
     if (ler("acumulos") !== undefined) await game.settings.set(MODULE_ID, "danoAcumulos", l.acumulos);

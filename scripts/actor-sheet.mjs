@@ -48,14 +48,14 @@ const ACOES_FICHA = [
   "defesa", "alternarAcao", "novoTurno", "exaustao", "descanso",
   "converter", "subirNivel", "moedas", "filtroRaridade",
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
-  "usarItem", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
+  "usarItem", "usarFormasItem", "testeMorte", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
   "abrirMochila", "tirarDaMochila", "moverItemPara", "moverNaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
   "novoPoder", "poderDeTexto", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
   "alternarCondicao", "soAtivas", "aplicarCombinacao", "removerCombinacao", "removerTag", "removerIdioma",
   "novaBencao", "excluirBencao", "adicionarMod", "removerMod", "abrirCatalogo", "tipoCatalogo", "adicionarDoCatalogo",
   "usarBencao", "encerrarBencao", "recarregarBencao", "chatBencao",
-  "novaRelacao", "excluirRelacao", "abrirRelacao", "conectarRelacao", "relacaoMultipla", "ajustarAfinidade", "abrirBackground",
+  "novaRelacao", "novaPastaRelacao", "pastasPadraoRelacao", "excluirPastaRelacao", "alternarPastaRelacao", "moverPastaRelacao", "excluirRelacao", "abrirRelacao", "conectarRelacao", "relacaoMultipla", "ajustarAfinidade", "abrirBackground",
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
   "favoritarPericia", "favoritasNoTopo", "moverPericia", "ordemPericiasPadrao", "recolherPainel",
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
@@ -1188,6 +1188,17 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     if (item) return M.usarItem(this.actor, item);
   }
 
+  async acaoTesteMorte() {
+    const { testeContraMorte } = await import("./morte.mjs");
+    return testeContraMorte(this.actor);
+  }
+
+  /** Formas do item (arma de várias cabeças, amuleto de modos…): escolhe uma e usa como habilidade. */
+  acaoUsarFormasItem(ev, alvo) {
+    const item = this._item(alvo);
+    if (item) return M.usarPoder(this.actor, item, { evento: ev });
+  }
+
   acaoAbrirMochila(ev, alvo) {
     const id = alvo.dataset.itemId;
     const fechar = !this._mochilasFechadas.has(id);
@@ -1562,6 +1573,47 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.actor.update({
       [`${P}.relacoes.${novoId()}`]: { nome: "", img: "", uuid: "", tipo: "aliado", afinidade: 0, notas: "", criado: Date.now() }
     });
+  }
+
+  /* Pastas de relações (Membros do grupo, Aliados, Inimigos…) */
+  async acaoNovaPastaRelacao() {
+    const pastas = Object.values(this.actor.flags?.[FLAG]?.pastasRelacoes ?? {}).filter(Boolean);
+    const ordem = pastas.length ? Math.max(...pastas.map(p => Number(p.ordem) || 0)) + 1 : 0;
+    await this.actor.update({ [`${P}.pastasRelacoes.${novoId()}`]: { nome: `Pasta ${pastas.length + 1}`, ordem, criado: Date.now() } });
+    ui.notifications.info("Pasta criada. No modo edição dá para renomear e escolher a pasta de cada relação.");
+  }
+
+  async acaoPastasPadraoRelacao() {
+    const nomes = ["Membros do grupo", "Aliados", "Inimigos", "Família", "Contatos"];
+    const upd = {};
+    nomes.forEach((nome, i) => { upd[`${P}.pastasRelacoes.${novoId()}`] = { nome, ordem: i, criado: Date.now() + i }; });
+    await this.actor.update(upd);
+  }
+
+  async acaoExcluirPastaRelacao(ev, alvo) {
+    const id = alvo.dataset.pasta;
+    const dados = this.actor.flags?.[FLAG] ?? {};
+    const nome = dados.pastasRelacoes?.[id]?.nome || "esta pasta";
+    if (!(await M.confirmar("Apagar pasta", `<p>Apagar a pasta <strong>${escapar(nome)}</strong>? As relações dela ficam sem pasta.</p>`))) return;
+    const upd = { [`${P}.pastasRelacoes.-=${id}`]: null };
+    for (const [rid, r] of Object.entries(dados.relacoes ?? {})) if (r?.pasta === id) upd[`${P}.relacoes.${rid}.pasta`] = "";
+    await this.actor.update(upd);
+  }
+
+  async acaoAlternarPastaRelacao(ev, alvo) {
+    const id = alvo.dataset.pasta;
+    const p = this.actor.flags?.[FLAG]?.pastasRelacoes?.[id];
+    if (p) await this.actor.update({ [`${P}.pastasRelacoes.${id}.fechada`]: !p.fechada });
+  }
+
+  async acaoMoverPastaRelacao(ev, alvo) {
+    const pastas = Object.entries(this.actor.flags?.[FLAG]?.pastasRelacoes ?? {}).filter(([, p]) => p)
+      .sort(([, a], [, b]) => (Number(a.ordem ?? a.criado) || 0) - (Number(b.ordem ?? b.criado) || 0));
+    const i = pastas.findIndex(([id]) => id === alvo.dataset.pasta);
+    const j = i + Number(alvo.dataset.dir);
+    if (i < 0 || j < 0 || j >= pastas.length) return;
+    [pastas[i], pastas[j]] = [pastas[j], pastas[i]];
+    await this.actor.update(Object.fromEntries(pastas.map(([id], k) => [`${P}.pastasRelacoes.${id}.ordem`, k])));
   }
 
   async acaoExcluirRelacao(ev, alvo) {

@@ -3,6 +3,9 @@
     <img class="epm-poder-retrato" src="{{item.img}}" alt="" {{#if editavel}}data-action="editarImagem" title="Trocar ícone"{{/if}} />
     <div class="epm-poder-identidade">
       <input class="epm-nome" type="text" name="name" value="{{item.name}}" placeholder="Nome" aria-label="Nome" />
+      {{#if eItem}}
+      <p class="epm-dica">Formas de {{item.name}}: cada forma é um poder do item (ação, custo, uso por turno/combate, teste e dano). Na ficha, o botão <i class="fa-solid fa-shapes"></i> do item abre a escolha. Os bônus fixos do item ficam no editor do item.</p>
+      {{else}}
       <div class="epm-linha-identidade">
         <label class="epm-campo"><span>Raridade</span><select name="flags.epm-ficha.raridade">{{#each opcoesRaridade}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         {{#if eMagia}}
@@ -23,6 +26,7 @@
         {{#if nivelHab.phPorNivel}}{{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="subirNivelHab" title="Gasta {{nivelHab.phPorNivel}} PH da ficha{{#if nivelHab.ph}} (tem {{nivelHab.ph}}){{/if}}"><i class="fa-solid fa-arrow-up"></i> Subir de nível ({{nivelHab.phPorNivel}} PH)</button>{{/if}}{{/if}}
       </div>
       <p class="epm-dica">Teto {{this.raridadeLabel}}: até {{limite.danoMax}} de dano por ativação e {{limite.efeitos}} efeito(s) adicional(is){{#if limite.limite}}; no máximo {{limite.limite}} por personagem{{/if}}.</p>
+      {{/if}}
     </div>
   </header>
 
@@ -43,7 +47,7 @@
     <article class="epm-forma" data-forma="{{this.id}}">
       <header class="epm-forma-topo">
         <input class="epm-forma-nome" type="text" name="flags.epm-ficha.formas.{{this.id}}.nome" value="{{this.nome}}" aria-label="Nome da forma" />
-        {{#if av.excedeDano}}<span class="epm-alerta-texto" title="O teto desta raridade é {{av.teto}}">dano máximo {{av.maxDano}} passa do teto</span>{{/if}}
+        {{#if av.excedeDano}}{{#unless @root.eItem}}<span class="epm-alerta-texto" title="O teto desta raridade é {{av.teto}}">dano máximo {{av.maxDano}} passa do teto</span>{{/unless}}{{/if}}
         {{#if @root.editavel}}
         <div class="epm-item-controles">
           <button type="button" class="epm-icone-botao" data-action="moverForma" data-forma="{{this.id}}" data-dir="-1" {{#if primeira}}disabled{{/if}} title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
@@ -74,18 +78,26 @@
       </fieldset>
       <fieldset class="epm-bonus-sit">
         <legend>Ativação condicional e bônus (pela cena){{#if bonusSit.tem}} <span class="epm-contador">{{bonusSit.dado}}</span>{{/if}}</legend>
-        <p class="epm-dica">Escolha <strong>quando</strong> a habilidade entra: ao usar, ou sozinha quando algo acontece (sofrer dano, Vida baixa, começo do combate, acertar um crítico). Ela entra uma vez por cena, se tiver o custo, e os bônus valem até o fim do combate (aba Combate → Bônus de cena). Ex.: Instinto Assassino, ao sofrer dano, −1 na margem de ameaça.</p>
+        <p class="epm-dica">Escolha <strong>quando</strong> a habilidade entra: ao usar, ou sozinha quando algo acontece (sofrer dano, Vida baixa, começo do combate, acertar um crítico). Ela entra uma vez por cena, se tiver o custo, e os bônus valem até o fim do combate (aba Combate → Bônus de cena). Ex.: Instinto Assassino, ao sofrer dano, −1 na margem de ameaça. As opções também podem ser ruins (debuff, condição, desvantagem) para efeitos de sorte: "Rolar uma" sorteia entre elas. "Até o próximo descanso" serve para escolhas como a resistência do Revestimento Elemental.</p>
         <div class="epm-bonus-sit-topo">
           <label class="epm-campo"><span>Quando</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.gatilho">{{#each bonusSit.opcoesGatilho}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
           <label class="epm-campo"><span>Quais opções</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.escolha">{{#each bonusSit.opcoesEscolha}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
+          <label class="epm-campo" title="Até o próximo descanso: a escolha (ex.: resistência a um elemento) fica valendo depois do combate e só sai no descanso"><span>Vale</span><select name="flags.epm-ficha.formas.{{this.id}}.bonus.duracao">{{#each bonusSit.opcoesDuracao}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
         </div>
         {{#each bonusSit.linhas}}
         <div class="epm-bonus-sit-linha">
           <span class="epm-bonus-sit-n">{{this.n}}</span>
           <select name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.tipo" aria-label="Tipo do bônus">{{#each tipos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
-          <input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />
+          {{#if eCondicao}}<select name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" aria-label="Condição">{{#each opcoesCondicao}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+          {{else if eDesv}}<select name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" aria-label="Desvantagem em">{{#each opcoesDesv}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+          {{else if eRes}}<input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" value="{{this.valor}}" list="epm-tipos-dano-{{@root.item.id}}" placeholder="Fogo" aria-label="Tipo de dano" />
+          {{else}}<input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.valor" value="{{this.valor}}" aria-label="Valor" />{{/if}}
           {{#if eRd}}<input type="text" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.tipoDano" value="{{this.tipoDano}}" list="epm-tipos-dano-{{@root.item.id}}" placeholder="todos os danos" aria-label="Tipo de dano da RD" />{{/if}}
+          {{#if eNumero}}
+          <label class="epm-check" title="Debuff: o valor entra como penalidade (resultado ruim da rolagem, maldição…)"><input type="checkbox" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.debuff" {{epmChecked debuff}} /> debuff</label>
           <label class="epm-check" title="O valor multiplica pelo nível desta habilidade (campo Nível lá em cima), não pelo nível do personagem"><input type="checkbox" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.porNivel" {{epmChecked porNivel}} /> por nível da habilidade</label>
+          {{/if}}
+          <label class="epm-mini curto" title="Só aparece a partir deste nível do personagem (0 = sempre). Ex.: elementos desbloqueados."><span>a partir do nv.</span><input type="number" min="0" name="flags.epm-ficha.formas.{{../id}}.bonus.opcoes.{{this.id}}.nivel" value="{{this.nivel}}" /></label>
           <span class="epm-dica">{{this.texto}}</span>
           {{#if @root.editavel}}<button type="button" class="epm-icone-botao perigo" data-action="removerOpcaoBonus" data-forma="{{../id}}" data-opcao="{{this.id}}" title="Remover"><i class="fa-solid fa-xmark"></i></button>{{/if}}
         </div>
@@ -96,12 +108,13 @@
         <span class="epm-rotulo">Efeito</span>
         {{{this.editorEfeito}}}
       </div>
-      <p class="epm-dica">Efeitos adicionais comprados: {{av.efeitosUsados}} de {{av.limiteEfeitos}}.{{#if av.maxDano}} Dano máximo {{av.maxDano}} de {{av.teto}}.{{/if}}</p>
+      {{#unless @root.eItem}}<p class="epm-dica">Efeitos adicionais comprados: {{av.efeitosUsados}} de {{av.limiteEfeitos}}.{{#if av.maxDano}} Dano máximo {{av.maxDano}} de {{av.teto}}.{{/if}}</p>{{/unless}}
     </article>
     {{/each}}
     <datalist id="epm-tipos-dano-{{item.id}}">{{#each sugestoesDano}}<option value="{{this}}"></option>{{/each}}</datalist>
   </section>
 
+  {{#unless eItem}}
   <section class="epm-painel epm-melhorias">
     <header class="epm-painel-titulo">
       <h3>Melhorias com PT</h3>
@@ -130,4 +143,5 @@
     </ol>
     {{else}}<p class="epm-vazio">Nenhuma melhoria comprada.</p>{{/if}}
   </section>
+  {{/unless}}
 </div>

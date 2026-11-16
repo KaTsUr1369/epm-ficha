@@ -6,24 +6,31 @@
       <span class="epm-chat-sub">{{this.periciaNome}}{{#if modo}}, {{this.modo}}{{/if}}</span>
     </div>
   </header>
+  {{#if oculto}}
+  <p class="epm-chat-oculto"><i class="fa-solid fa-eye-slash" aria-hidden="true"></i> Acerto e dano escondidos até {{#each defensores}}{{#unless @first}}{{#if @last}} e {{else}}, {{/if}}{{/unless}}<strong>{{this.nome}}</strong>{{/each}} escolher a reação.</p>
+  {{else}}
   <div class="epm-chat-rolagem"><span class="epm-rotulo">Acerto</span>{{{this.htmlAtaque}}}</div>
   {{#if critico}}<p class="epm-chat-critico">Crítico! Dados da arma ×{{this.mult}}.</p>{{/if}}
   {{#if htmlDano}}<div class="epm-chat-rolagem"><span class="epm-rotulo">Dano{{#if tipoDano}} ({{this.tipoDano}}){{/if}}</span>{{{this.htmlDano}}}</div>{{/if}}
   {{#each notas}}<p class="epm-chat-requisitos">{{this}}</p>{{/each}}
+  {{/if}}
   {{#if defensores.length}}
   <div class="epm-chat-defesas">
-    <span class="epm-rotulo">Defesa do alvo (acerto {{this.acertoTotal}})</span>
+    <span class="epm-rotulo">{{#if oculto}}Reação do alvo{{else}}Defesa do alvo (acerto {{this.acertoTotal}}){{/if}}</span>
     {{#each defensores}}
     <div class="epm-chat-defesa-linha">
       <span class="epm-chat-defensor">{{this.nome}}</span>
       <button type="button" data-epm-action="defender" data-defesa="esquiva" data-defensor="{{this.uuid}}" data-acerto="{{../acertoTotal}}" data-valor="{{../danoValor}}"{{#if ../critico}} data-critico="1"{{/if}}{{#if ../tipoArma}} data-tipo-arma="{{../tipoArma}}"{{/if}}{{#if ../tipoDano}} data-tipo-dano="{{../tipoDano}}"{{/if}} data-rotulo="Esquiva" title="CA + Acrobacia: passou, recebe o dano; falhou, nada"><i class="fa-solid fa-person-running" aria-hidden="true"></i> Esquiva</button>
       <button type="button" data-epm-action="defender" data-defesa="bloqueio" data-defensor="{{this.uuid}}" data-acerto="{{../acertoTotal}}" data-valor="{{../danoValor}}"{{#if ../critico}} data-critico="1"{{/if}}{{#if ../tipoArma}} data-tipo-arma="{{../tipoArma}}"{{/if}}{{#if ../tipoDano}} data-tipo-dano="{{../tipoDano}}"{{/if}} data-rotulo="Bloqueio" title="CA + Fortitude: atacante falhou por 1–2, 2/3 do dano; 3–4, metade; 5+, nada"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Bloqueio</button>
       <button type="button" data-epm-action="defender" data-defesa="contra" data-defensor="{{this.uuid}}" data-acerto="{{../acertoTotal}}" data-valor="{{../danoValor}}"{{#if ../critico}} data-critico="1"{{/if}}{{#if ../tipoArma}} data-tipo-arma="{{../tipoArma}}"{{/if}}{{#if ../tipoDano}} data-tipo-dano="{{../tipoDano}}"{{/if}} data-rotulo="Contra-ataque" title="CA + Luta: se o atacante errar, você ataca de volta"><i class="fa-solid fa-hand-fist" aria-hidden="true"></i> Contra-ataque</button>
+      {{#if ../oculto}}<button type="button" data-epm-action="semReacao" data-defensor="{{this.uuid}}" data-rotulo="Sem reação" title="Não reage: o acerto aparece e o atacante aplica o dano"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Nenhuma</button>{{/if}}
     </div>
     {{/each}}
   </div>
   {{/if}}
-  {{#if botoes.length}}
+  {{#if oculto}}
+  <div class="epm-chat-botoes"><button type="button" data-epm-action="revelarAtaque" data-rotulo="Revelar" title="Só o Mestre ou quem atacou: mostra o acerto e o dano sem esperar a reação"><i class="fa-solid fa-eye" aria-hidden="true"></i> Revelar sem esperar</button></div>
+  {{else if botoes.length}}
   <div class="epm-chat-botoes">
     {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}}{{#if valor}} data-valor="{{this.valor}}"{{/if}}{{#if alvos}} data-alvos="{{this.alvos}}"{{/if}}{{#if tipoDano}} data-tipo-dano="{{this.tipoDano}}"{{/if}}{{#if custo}} data-custo="{{this.custo}}"{{/if}}{{#if condicao}} data-condicao="{{this.condicao}}"{{/if}}{{#if critico}} data-critico="1"{{/if}}{{#if tipoArma}} data-tipo-arma="{{this.tipoArma}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
   </div>

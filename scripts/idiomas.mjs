@@ -1,34 +1,35 @@
 /**
- * Idiomas: a ficha guarda os idiomas no campo do dnd5e (system.traits.languages), que é o que o
- * módulo Polyglot lê. A lista de opções vem do Polyglot quando ele está ativo; senão, do D&D 5e.
+ * Idiomas: a ficha guarda os idiomas no campo do dnd5e (system.traits.languages), que o provedor do
+ * EPM no Polyglot lê (polyglot-epm.mjs). Com o Polyglot, a lista é só a dos idiomas do EPM.
  */
 import { FLAG, IDIOMAS_EPM, IDIOMAS_PROIBIDOS } from "./config.mjs";
 import { normalizarTexto } from "./data.mjs";
+import { idiomasPolyglot } from "./polyglot-epm.mjs";
+
+const slug = t => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 export function polyglotAtivo() {
   return !!game.modules?.get("polyglot")?.active;
 }
 
 /**
- * Lista de idiomas disponíveis: [{ key, label, proibido }]. Com o Polyglot, os idiomas dele (chave própria);
- * os do EPM que faltarem entram sem chave (ficam como idioma escrito). Sem Polyglot, a lista do EPM.
+ * Lista de idiomas disponíveis: [{ key, label, proibido }]. Só os idiomas do EPM (os do D&D 5e não aparecem).
+ * Com o Polyglot usando o provedor do EPM, a chave é a dele; com outro provedor, a chave dele quando o nome bate.
  * Os proibidos só aparecem para o Mestre.
  */
 export function catalogoIdiomas({ incluirProibidos = !!game.user?.isGM } = {}) {
-  let lista = [];
   const provedor = polyglotAtivo() ? game.polyglot?.languageProvider : null;
-  if (provedor?.languages && Object.keys(provedor.languages).length) {
-    lista = Object.entries(provedor.languages).map(([key, l]) => ({ key, label: l?.label || key }));
-  }
-  const tem = new Set(lista.map(l => normalizarTexto(l.label)));
-  for (const nome of [...IDIOMAS_EPM, ...(incluirProibidos ? IDIOMAS_PROIBIDOS : [])]) {
-    if (!tem.has(normalizarTexto(nome))) { lista.push({ key: "", label: nome }); tem.add(normalizarTexto(nome)); }
-  }
+  const nossos = idiomasPolyglot();
+  const chavesProv = Object.keys(provedor?.languages ?? {});
+  const nosso = chavesProv.length > 0 && chavesProv.every(k => nossos[k]);
+  const doProvedor = nome => {
+    if (nosso) return slug(nome);
+    const alvo = normalizarTexto(nome);
+    return chavesProv.find(k => normalizarTexto(provedor.languages[k]?.label ?? k) === alvo) ?? "";
+  };
   const proibidos = new Set(IDIOMAS_PROIBIDOS.map(normalizarTexto));
-  const vistos = new Set();
-  return lista.filter(l => incluirProibidos || !proibidos.has(normalizarTexto(l.label)))
-    .map(l => ({ ...l, proibido: proibidos.has(normalizarTexto(l.label)) }))
-    .filter(l => { const k = l.key || `t:${normalizarTexto(l.label)}`; return !vistos.has(k) && vistos.add(k); })
+  return [...IDIOMAS_EPM, ...(incluirProibidos ? IDIOMAS_PROIBIDOS : [])]
+    .map(label => ({ key: polyglotAtivo() ? doProvedor(label) : "", label, proibido: proibidos.has(normalizarTexto(label)) }))
     .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 }
 

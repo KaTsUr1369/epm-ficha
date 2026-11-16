@@ -33,6 +33,7 @@
     <header class="epm-painel-titulo"><h3>Ataque</h3></header>
     <div class="epm-item-editor-campos">
       <label class="epm-campo"><span>Perícia de ataque</span><select name="flags.epm-ficha.periciaAtaque">{{#each opcoesPericia}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
+      <label class="epm-campo" title="Decide quais bônus valem: os de corpo a corpo (ex.: Corpo Destruidor, Pele em Chamas, Força acima de 4) ou os de distância (penalidades de ataques à distância). Uma sniper fica À distância mesmo que use outra perícia."><span>Alcance</span><select name="flags.epm-ficha.alcanceCat">{{#each opcoesAlcance}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <label class="epm-campo"><span>Bônus de acerto</span><input type="number" name="flags.epm-ficha.bonusAcerto" value="{{ataque.bonusAcerto}}" /></label>
       <label class="epm-campo"><span>Dano</span><input type="text" name="flags.epm-ficha.dano" value="{{ataque.dano}}" placeholder="2d10" /></label>
       <label class="epm-campo" title="O valor do atributo é somado ao dano em todo ataque com esta arma (e nos modos extras)"><span>Somar atributo no dano</span><select name="flags.epm-ficha.atributoDano">{{#each opcoesAtributoDano}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
@@ -84,6 +85,19 @@
       <button type="button" class="epm-botao epm-botao-sutil" data-action="novoModo"><i class="fa-solid fa-plus" aria-hidden="true"></i> Modo de ataque</button>
     </div>
     <p class="epm-dica">Fórmulas aceitam os atalhos @for, @des, @con, @apa, @car, @int, @aut, @nuc (valor final do atributo), além de @per.luta, @nivel…</p>
+  </section>
+  {{/if}}
+
+  {{#if formasItem.pode}}
+  <section class="epm-painel epm-formas-item">
+    <header class="epm-painel-titulo"><h3>Formas</h3><span class="epm-dica">Poderes do item que você escolhe ao usar (ex.: as cabeças de um cajado). Cada forma tem ação, custo, uso por turno/combate, teste e dano, como as formas de habilidade.</span></header>
+    {{#if formasItem.tem}}
+    <ul class="epm-formas-item-lista">{{#each formasItem.lista}}<li><strong>{{this.nome}}</strong>{{#if meta}} <span class="epm-dica">{{this.meta}}</span>{{/if}}</li>{{/each}}</ul>
+    {{else}}<p class="epm-vazio">Sem formas. O item é usado do jeito normal.</p>{{/if}}
+    {{#if editavel}}<div class="epm-linha-campos">
+      <button type="button" class="epm-botao epm-botao-sutil" data-action="novaFormaItem"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova forma</button>
+      {{#if formasItem.tem}}<button type="button" class="epm-botao epm-botao-sutil" data-action="editarFormasItem"><i class="fa-solid fa-shapes" aria-hidden="true"></i> Editar formas</button>{{/if}}
+    </div>{{/if}}
   </section>
   {{/if}}
 

@@ -2,6 +2,7 @@
  * Escudo do Mestre: monta o contexto das abas a partir de dados simples (testável fora do Foundry).
  * Quem chama (escudo.mjs) junta o combate, os personagens, os itens do mundo e o estado da janela.
  */
+import { ITENS_PRONTOS } from "./itens-prontos.mjs";
 import { TRANSFORMACOES_PRONTAS } from "./config.mjs";
 import {
   TIPOS_DANO, GRUPOS_DANO, NIVEIS_DANO,
@@ -9,13 +10,16 @@ import {
 } from "./config.mjs";
 import { lerAtor } from "./context.mjs";
 import { ARQUETIPOS } from "./arquetipos.mjs";
+import { HABILIDADES_PRONTAS, opcoesCriarPoder } from "./habilidades-prontas.mjs";
 
 export const ABAS_ESCUDO = [
   { id: "combate",   label: "Combate",   icone: "fa-solid fa-khanda" },
   { id: "grupo",     label: "Grupo",     icone: "fa-solid fa-people-group" },
   { id: "condicoes", label: "Condições", icone: "fa-solid fa-skull-crossbones" },
   { id: "itens",     label: "Itens",     icone: "fa-solid fa-sack-dollar" },
+  { id: "habilidades", label: "Habilidades", icone: "fa-solid fa-wand-sparkles" },
   { id: "testes",    label: "Testes",    icone: "fa-solid fa-dice-d20" },
+  { id: "opcionais", label: "Opcionais", icone: "fa-solid fa-toggle-on" },
   { id: "regras",    label: "Regras",    icone: "fa-solid fa-book" },
   { id: "notas",     label: "Notas",     icone: "fa-solid fa-feather" },
   { id: "mundo",     label: "Mundo",     icone: "fa-solid fa-earth-americas" },
@@ -126,6 +130,16 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
     ...grupo.map(a => ({ id: a.id, label: a.name, selected: !paraMarcados && a.id === ui.alvoItem }))
   ];
   ctx.moedas = MOEDAS.map(m => ({ id: m.id, label: m.label, abrev: m.abrev, img: m.img }));
+
+  /* Habilidades: prontas (dar só a quem deve ter), criar de qualquer categoria e as do mundo */
+  ctx.itensProntos = ITENS_PRONTOS.map(x => ({ id: x.id, nome: x.nome, resumo: x.resumo, categoria: "Mítico" }));
+  ctx.habilidadesProntas = HABILIDADES_PRONTAS.map(h => ({ id: h.id, nome: h.nome, resumo: h.resumo, categoria: h.tipoHab || h.origem }));
+  ctx.criarPoder = { ...opcoesCriarPoder(), ...(ui.criarPoder ?? {}) };
+  const buscaH = norm(ui.buscaHab);
+  ctx.habilidadesMundo = itensMundo.filter(i => ["feat", "spell"].includes(i.type) && (!buscaH || norm(i.name).includes(buscaH)))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")).slice(0, 120)
+    .map(i => ({ ...i, tipoLabel: TIPOS_ITEM[i.type] }));
+  ctx.buscaHab = ui.buscaHab ?? "";
 
   /* Testes do grupo */
   ctx.testes = ui.testes ?? null;

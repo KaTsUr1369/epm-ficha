@@ -9,6 +9,7 @@ import { num, int, pagarMoedas, formatarMoedas, valorEmCobre } from "./data.mjs"
 import { fvtt, escapar } from "./helpers.mjs";
 import { afinidadeEntre } from "./cooperacao.mjs";
 import { regra } from "./opcionais.mjs";
+import { especiaisDaFicha, ARTESAO, REPARO_CAMPO, ARMEIRO_PERDA } from "./treinamentos-lista.mjs";
 
 const P = `flags.${FLAG}`;
 const M = () => import("./mecanicas.mjs");
@@ -37,6 +38,8 @@ export const quebrado = item => durabilidadeDe(item) === 0;
 export async function gastarDurabilidade(item, quanto = PERDA_CRITICO, motivo = "") {
   const atual = durabilidadeDe(item);
   if (atual === null || atual === 0 || !item.isOwner) return "";
+  // Armeiro (treino): as armas e armaduras dele perdem 5 em vez de 10 nos críticos e falhas críticas
+  if (quanto === PERDA_CRITICO && item.parent?.flags?.[FLAG] && especiaisDaFicha(item.parent.flags[FLAG]).has("armeiro")) { quanto = ARMEIRO_PERDA; motivo = motivo ? `${motivo}, Armeiro` : "Armeiro"; }
   const novo = Math.max(0, atual - quanto);
   await item.update({ [`${P}.durabilidade`]: novo });
   return novo === 0 ? `${item.name} quebrou${motivo ? ` (${motivo})` : ""}: perde os efeitos até ser consertado.` : `${item.name}: durabilidade ${atual} → ${novo}${motivo ? ` (${motivo})` : ""}.`;
@@ -59,13 +62,15 @@ export async function consertarItem(ator, item) {
   if (!ferramentas.length) return ui.notifications.warn(`Para consertar precisa de um item da categoria ${CATEGORIAS_ITEM.find(c => c.id === "ferramentas")?.label ?? "Ferramentas"} no inventário.`);
   const { estadoAtor, rolarTeste } = await M();
   const { ficha } = estadoAtor(ator);
+  // Reparo de Campo (treino): 1 minuto e recupera 75
+  const CONS = especiaisDaFicha(ator.flags?.[FLAG]).has("reparoCampo") ? { ...CONSERTO, ...REPARO_CAMPO } : CONSERTO;
   // Teste de Ofício (com a especialidade que o personagem tiver); sem Ofício na ficha, escolhe outra perícia
   const oficios = ficha.pericias.filter(p => /^oficio/.test(p.id) || /^of[ií]cio/i.test(p.nome));
   const pericias = oficios.length ? oficios : ficha.pericias;
   const sugestao = pericias.slice().sort((a, b) => b.testeTotal - a.testeTotal)[0]?.id;
   const r = await fvtt.DialogV2.wait({
     window: { title: `Consertar: ${item.name}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
-    content: `<p>Durabilidade ${atual} de 100. Leva <strong>${CONSERTO.minutos} minutos</strong> e pede um teste de <strong>Ofício DT ${CONSERTO.dt}</strong>. O sucesso recupera ${CONSERTO.recupera}.</p>
+    content: `<p>Durabilidade ${atual} de 100. Leva <strong>${CONS.minutos} minutos</strong> e pede um teste de <strong>Ofício DT ${CONSERTO.dt}</strong>. O sucesso recupera ${CONS.recupera}.</p>
       <div class="epm-dialogo-linha">
         <label class="epm-campo"><span>Ferramenta</span><select name="ferramenta">${ferramentas.map(f => `<option value="${f.id}">${escapar(f.name)}</option>`).join("")}</select></label>
         <label class="epm-campo"><span>${oficios.length ? "Ofício" : "Perícia (sem Ofício na ficha)"}</span><select name="pericia">${pericias.map(p => `<option value="${escapar(p.id)}" ${p.id === sugestao ? "selected" : ""}>${escapar(p.nome)} (${p.testeTotal >= 0 ? "+" : ""}${p.testeTotal})</option>`).join("")}</select></label>
@@ -84,11 +89,11 @@ export async function consertarItem(ator, item) {
   if (!roll) return;
   const ferr = ator.items.get(r.ferramenta)?.name ?? "ferramenta";
   if (roll.total >= CONSERTO.dt) {
-    const novo = Math.min(100, atual + CONSERTO.recupera);
+    const novo = Math.min(100, atual + CONS.recupera);
     await item.update({ [`${P}.durabilidade`]: novo });
-    return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> consertou <strong>${escapar(item.name)}</strong> com ${escapar(ferr)} (${CONSERTO.minutos} min): durabilidade ${atual} → <strong>${novo}</strong>.</p>`, "#7A8C99");
+    return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> consertou <strong>${escapar(item.name)}</strong> com ${escapar(ferr)} (${CONS.minutos} min): durabilidade ${atual} → <strong>${novo}</strong>.</p>`, "#7A8C99");
   }
-  return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> tentou consertar <strong>${escapar(item.name)}</strong> (${CONSERTO.minutos} min), mas não conseguiu (${roll.total} contra DT ${CONSERTO.dt}).</p>`, "#7A8C99");
+  return nota(ator, `<p><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> <strong>${escapar(ator.name)}</strong> tentou consertar <strong>${escapar(item.name)}</strong> (${CONS.minutos} min), mas não conseguiu (${roll.total} contra DT ${CONSERTO.dt}).</p>`, "#7A8C99");
 }
 
 /* -------------------------------------------- */
@@ -157,11 +162,12 @@ export async function registrarTreinoEmGrupo(parceiro, horas, deUuid) {
 export const TIPOS_CRIACAO = { weapon: "Arma", equipment: "Armadura ou escudo", consumable: "Consumível", tool: "Ferramenta", loot: "Loot" };
 
 /** Projeto de criação com padrões. */
-export function lerCriacao(id, c = {}) {
+export function lerCriacao(id, c = {}, { artesao = false } = {}) {
   const materiais = Object.entries(c.materiais ?? {}).filter(([, m]) => m)
     .map(([mid, m]) => ({ id: mid, itemId: m.itemId ?? "", nome: m.nome ?? "Material", img: m.img ?? "", qtd: Math.max(1, int(m.qtd, 1)), criado: num(m.criado) }))
     .sort((a, b) => a.criado - b.criado);
-  const horas = Math.max(1, int(c.horas, 6));
+  // Mestre Artesão (treino): 25% menos horas
+  const horas = Math.max(1, artesao ? Math.ceil(int(c.horas, 6) * ARTESAO.horas) : int(c.horas, 6));
   const feitas = Math.max(0, Math.min(horas, num(c.horasFeitas)));
   const estado = ["andamento", "pronto", "concluido"].includes(c.estado) ? c.estado : (feitas >= horas ? "pronto" : "andamento");
   return {
@@ -197,7 +203,7 @@ export async function soltarNaCriacao(ator, id, zona, item) {
 export async function trabalharCriacao(ator, id) {
   const bruto = ator.flags?.[FLAG]?.criacoes?.[id];
   if (!bruto) return;
-  const c = lerCriacao(id, bruto);
+  const c = lerCriacao(id, bruto, { artesao: especiaisDaFicha(ator.flags?.[FLAG]).has("mestreArtesao") });
   if (c.estado !== "andamento") return;
   const { horasLivres, estadoAtor } = await M();
   if (c.requisitos) {
@@ -253,7 +259,7 @@ async function gastarMateriais(ator, c, fracao) {
 export async function testarCriacao(ator, id) {
   const bruto = ator.flags?.[FLAG]?.criacoes?.[id];
   if (!bruto) return;
-  const c = lerCriacao(id, bruto);
+  const c = lerCriacao(id, bruto, { artesao: especiaisDaFicha(ator.flags?.[FLAG]).has("mestreArtesao") });
   if (c.estado !== "pronto") return ui.notifications.warn("Termine as horas do projeto antes do teste.");
   const faltando = materiaisFaltando(ator, c);
   if (faltando.length) return ui.notifications.warn(`Faltam materiais: ${faltando.map(m => `${m.falta} ${m.nome}`).join(", ")}.`);
@@ -262,7 +268,7 @@ export async function testarCriacao(ator, id) {
   const per = ficha.periciaPorId[c.pericia];
   if (!per) return ui.notifications.warn("Escolha a perícia do projeto.");
   const roll = await rolarTeste(ator, {
-    rotulo: `Criar ${c.nome} (${per.nome} DT ${c.dt})`, bonus: per.testeTotal ?? 0,
+    rotulo: `Criar ${c.nome} (${per.nome} DT ${c.dt})${especiaisDaFicha(ator.flags?.[FLAG]).has("mestreArtesao") ? " · Mestre Artesão +2" : ""}`, bonus: (per.testeTotal ?? 0) + (especiaisDaFicha(ator.flags?.[FLAG]).has("mestreArtesao") ? ARTESAO.teste : 0),
     desvantagens: [...ficha.desvantagens.testes, ...(per.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(per.vantagem ?? [])], penalidades: per.testeFontes ?? []
   });
   if (!roll) return;

@@ -279,6 +279,9 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
   out.meditacaoNucleo = temEspecial("meditacaoNucleo");
   out.memoriaTreinada = temEspecial("memoriaTreinada");
   out.especiaisTreino = [...espSet];
+  // Imunidades de treinos (Foco Inabalável, Palácio Mental)
+  if (temEspecial("focoInabalavel")) out.imunidades.push({ tipo: "Abalado", fonte: "Foco Inabalável" });
+  if (temEspecial("palacioMental")) out.imunidades.push({ tipo: "Confuso", fonte: "Palácio Mental" });
   out.tecnologia = nivelTecPersonagem(d);
   out.regiaoOrigem = idRegiao(d.regiaoOrigem);
 
@@ -355,6 +358,13 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
     if (superior || !naCa) rd.push({ valor: Math.floor(numBonus("treino.auraProtecaoRd") * nuc), tipos: "todos os danos", fonte: "Aura de Proteção" });
     if (superior || naCa) mods.push({ alvo: "ca", valor: Math.floor(numBonus("treino.auraProtecaoCa") * nuc), fonte: "Aura de Proteção" });
   }
+  // Pele Calejada (RD 2 físico) e Pele de Pedra (RD físico = Constituição, no lugar da Calejada)
+  if (esp.has("peleDePedra")) { const con = Math.floor(n(totais.constituicao)); if (con > 0) rd.push({ valor: con, tipos: "dano físico", fonte: "Pele de Pedra" }); }
+  else if (esp.has("peleCalejada")) rd.push({ valor: 2, tipos: "dano físico", fonte: "Pele Calejada" });
+  // Reserva de Mana: PM máximo + Núcleo
+  if (esp.has("reservaMana") && nuc) mods.push({ alvo: "recurso.pm", valor: nuc, fonte: "Reserva de Mana" });
+  // Aura Cortante: o Núcleo da Aura Iniciante vale também com armas corpo a corpo
+  if (nuc && esp.has("auraIniciante") && esp.has("auraCortante")) extrasAtaque.armado.push({ formula: String(Math.floor(nuc * numBonus("treino.auraIniciante"))), fonte: "Aura Cortante" });
   const grau = grauNucleo(totais.nucleo);
 
   // Teto: 8 até o nível 20 de arquétipo, 10 no 21, 12 no 31, 15 no 41 (o maior arquétipo manda)
@@ -378,6 +388,63 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   if (esp.has("apostador")) treinosInfo.push("Apostador Experiente: vantagem em Intuição ligada a jogos de azar.");
   if (esp.has("estrategista")) treinosInfo.push(`Estrategista: quem segue seu plano tem +${numBonus("treino.estrategista")} nos testes.`);
   if (esp.has("musculosAco")) treinosInfo.push("Músculos de Aço: a CA pode usar Força ou Constituição no lugar da Destreza (Combate → CA).");
+  // Catálogo de treinamentos (17/11): o que depende da cena aparece como lembrete
+  const con = Math.floor(n(totais.constituicao)), des = Math.floor(n(totais.destreza)), aut = Math.floor(n(totais.autocontrole));
+  const INFO = {
+    velocista: "Velocista: a Disparada não provoca ataques de oportunidade.",
+    saltoAtletico: "Salto Atlético: saltos com o dobro de distância e altura; salta parado como se tivesse corrido.",
+    quedaControlada: `Queda Controlada: −${5 * des} no dano de queda (5 × Destreza); não fica Caído em quedas de até 9 m.`,
+    escalador: "Escalador: escalada igual ao deslocamento e não fica Desprevenido escalando.",
+    nadador: `Nadador: natação igual ao deslocamento; segura o fôlego por ${Math.max(2, con * 2)} minutos.`,
+    resistenciaClima: "Resistência ao Clima: vantagem contra o calor e o frio do ambiente.",
+    marchaForcada: "Marcha Forçada: viaja até 4 h a mais por dia sem Exaustão.",
+    peleCalejada: esp.has("peleDePedra") ? "" : "Pele Calejada: RD 2 contra dano físico.",
+    peleDePedra: `Pele de Pedra: RD ${con} (Constituição) contra dano físico.`,
+    saqueRapido: "Saque Rápido: 1 vez por turno, saca, guarda ou troca de arma sem gastar ação.",
+    armasImprovisadas: "Armas Improvisadas: proficiência; causam 1d6 + atributo.",
+    recargaVeloz: "Recarga Veloz: 1 vez por turno, recarrega arma de fogo ou besta sem gastar ação.",
+    arremessador: "Arremessador: armas leves corpo a corpo podem ser arremessadas (6/18 m), com Luta ou Pontaria.",
+    guardaFirme: "Guarda Firme: +2 no Bloqueio com escudo (já somado); 1 vez por combate o Bloqueio não gasta ação (habilidade).",
+    tiroCerteiro: "Tiro Certeiro: sem penalidade de acerto no alcance longo.",
+    duasArmas: "Combate com Duas Armas: ataque extra com a arma leve da outra mão como ação bônus, sem atributo no dano.",
+    dominioFavorita: "Domínio da Favorita: margem de ameaça da arma favorita −1 (já entra no ataque; a margem não garante o acerto).",
+    estudoExotica: "Estudo de Arma Exótica: −2 pontos para liberar a Maestria da arma estudada (já conta).",
+    pesAura: "Pés de Aura: corre sobre água e paredes durante a Aura de Deslocamento.",
+    ocultarAura: `Ocultar Aura: some para quem sente aura e soma +${nuc} (Núcleo) em Furtividade contra essas criaturas.`,
+    auraCortante: "Aura Cortante: o Núcleo da Aura Iniciante vale também com armas corpo a corpo (já entra no dano).",
+    auraRecuperacao: `Aura de Recuperação: o descanso curto recupera +${nuc} PV e +${nuc} PE (automático).`,
+    ritualista: "Ritualista: fora de combate, lança uma magia como ritual (+10 minutos, metade dos PM).",
+    menteConcentrada: "Mente Concentrada: +3 nos testes de Vontade para manter Concentrado.",
+    alcanceAmpliado: "Alcance Ampliado: magias com alcance de 9 m ou mais ganham +50% de alcance.",
+    reservaMana: `Reserva de Mana: PM máximo +${nuc} (Núcleo, já somado).`,
+    canalEstavel: "Canal Estável: o teste de Núcleo da Sobrecarga é feito com vantagem (automático).",
+    conjuracaoSutil: "Conjuração Sutil: as magias escolhidas perdem o componente verbal ou o gestual.",
+    sonoLeve: "Sono Leve: não fica Surpreendido Dormindo e acorda com qualquer barulho.",
+    ator: "Ator: vantagem em disfarce e para se passar por outra pessoa.",
+    leituraCorporal: "Leitura Corporal: vantagem em Intuição para perceber mentiras e intenções.",
+    negociante: "Negociante: compra 10% mais barato e vende 10% mais caro com NPCs comerciantes.",
+    mentor: "Mentor: pode treinar os outros nos treinamentos que já concluiu; quem treina junto ganha +1 PT por dia.",
+    protagonista: "Protagonista: começa cada sessão com 1 Inspiração de Tema (o Mestre dá ao marcar o início da sessão).",
+    forrageador: `Forrageador: em viagem, comida e água para ${con + 2} pessoas sem teste, fora de terreno hostil.`,
+    cozinheiroCampo: "Cozinheiro de Campo: refeição no descanso longo dá 5 PV temporários para até 6 pessoas.",
+    reparoCampo: "Reparo de Campo: consertar leva 1 minuto e recupera 75 de durabilidade (automático).",
+    rastreador: "Rastreador: vantagem para seguir rastros; descobre número e tipo das criaturas.",
+    envenenador: "Envenenador: aplica veneno como ação bônus; seus venenos têm CD +2.",
+    armeiro: "Armeiro: suas armas e armaduras perdem 5 de durabilidade (em vez de 10) em críticos e falhas críticas (automático).",
+    mestreArtesao: "Mestre Artesão: Criação com 25% menos horas e +2 no teste (automático).",
+    menteFria: "Mente Fria: 1 vez por combate, rola de novo uma Vontade que falhou (a ficha pergunta).",
+    meditacaoProfunda: `Meditação Profunda: o descanso curto recupera +${aut} PS (automático).`,
+    memoriaEidetica: "Memória Eidética: lembra tudo do último mês; vantagem em Investigação para comparar detalhes.",
+    menteBlindada: "Mente Blindada: +3 nos testes contra Apavorado, Abalado, Confuso e Dominado.",
+    coragemContagiante: "Coragem Contagiante: aliados a até 9 m que te veem ganham +2 contra Apavorado.",
+    resistenciaHorror: `Resistência ao Horror: perdas de PS por horrores diminuem ${aut} (mínimo 1).`,
+    focoInabalavel: "Foco Inabalável: imune a Abalado.",
+    palacioMental: "Palácio Mental: imune a Confuso; vantagem contra leitura de mente e efeitos de memória.",
+    passosSilenciosos: "Passos Silenciosos: deslocamento normal sem penalidade em Furtividade.",
+    arrombador: "Arrombador: +3 para abrir fechaduras e desarmar armadilhas, na metade do tempo.",
+    sombra: "Sombra: pode se esconder como ação bônus."
+  };
+  for (const [id, txt] of Object.entries(INFO)) if (txt && esp.has(id)) treinosInfo.push(txt);
   return { altos, mods, rd, extrasAtaque, teto, acima, avisos, grau, treinosInfo, magiaPotente: esp.has("magiaPotente") ? Math.floor(n(totais.inteligencia) * numBonus("treino.magiaPotente")) : 0, fortalecimentoMental: esp.has("fortalecimentoMental") ? Math.floor(nuc * numBonus("treino.fortalecimentoMental")) : 0 };
 }
 
@@ -455,6 +522,7 @@ export function armaSintonizada(d, itemId) {
 
 export function especialDoTreino(t) {
   if (t?.especial) return t.especial;
+  if (t?.modelo) { const e = TREINAMENTOS_NOTION.find(x => x.modelo === t.modelo); if (e) return e.especial ?? ""; }
   const nome = norm(t?.nome);
   if (nome.includes("familiaridade tecnologica")) return "familiaridade";
   return TREINAMENTOS_NOTION.find(x => norm(x.nome) === nome)?.especial ?? "";
@@ -489,6 +557,9 @@ export function maximosAutomaticos(d, atributos, raca) {
 /** Movimentos (terrestre, voo, nado, escalada, escavação) e sentidos. "igual" = deslocamento final. */
 export function movimentosESentidos(d, deslocamentoFinal, raca) {
   const m = d.movimentos ?? {};
+  // Treinos Escalador e Nadador: escalada e natação iguais ao deslocamento normal
+  const espM = especiaisConcluidos(d);
+  if (espM.has("escalador") || espM.has("nadador")) raca = { ...(raca ?? {}), ...(espM.has("escalador") ? { escalada: "igual" } : {}), ...(espM.has("nadador") ? { nado: "igual" } : {}) };
   const val = (manual, daRaca) => {
     if (n(manual) > 0) return n(manual);
     if (daRaca === "igual") return deslocamentoFinal;

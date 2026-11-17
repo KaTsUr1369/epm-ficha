@@ -331,17 +331,9 @@
 {{/if}}
 <div class="epm-060-grade">
   <section class="epm-painel epm-060-catalogo-treinos">
-    <header class="epm-painel-titulo"><h3>Treinamentos do Notion</h3>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="compendioPegar" data-tipo="treinamentos" title="Treinos cadastrados pelo Mestre no compêndio do mundo"><i class="fa-solid fa-book-atlas"></i> Do compêndio</button>{{/if}}</header>
-    {{#each v.catalogoTreinos}}
-    <details class="epm-060-categoria"><summary><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}} <span class="epm-contador">{{itens.length}}</span></summary>
-      {{#each itens}}
-      <div class="epm-060-item" title="{{this.beneficios}}">
-        <span><strong>{{this.nome}}</strong>{{#if modelo}} <span class="epm-tag" title="Modelo da 0.6.0 (a categoria estava vazia no Notion)">modelo</span>{{/if}}<br><span class="epm-dica">{{this.resumo}}. {{this.beneficios}}</span></span>
-        {{#if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="treinoCatalogo" data-indice="{{this.indice}}">Adicionar</button>{{/if}}
-      </div>
-      {{/each}}
-    </details>
-    {{/each}}
+    <header class="epm-painel-titulo"><h3>Catálogo de treinamentos</h3>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="compendioPegar" data-tipo="treinamentos" title="Treinos cadastrados pelo Mestre no compêndio do mundo"><i class="fa-solid fa-book-atlas"></i> Do compêndio</button>{{/if}}</header>
+    <p class="epm-dica">{{v.totalCatalogoTreinos}} treinamentos em {{v.catalogoTreinos.length}} categorias: {{#each v.catalogoTreinos}}{{this.label}} ({{itens.length}}){{#unless @last}}, {{/unless}}{{/each}}.</p>
+    {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="catalogoTreinos"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Adicionar da lista</button>{{/if}}
   </section>
   <section class="epm-painel epm-060-talentos">
     <header class="epm-painel-titulo"><h3>Talentos</h3><span class="epm-contador">{{v.talentos.pev}} PEv</span>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="novoTalento"><i class="fa-solid fa-plus"></i> Talento</button>{{/if}}</header>

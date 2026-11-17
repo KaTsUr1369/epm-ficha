@@ -149,6 +149,7 @@ export const ORIGENS_HABILIDADE = {
   customizada: "Customizada",
   transformacao: "Transformação",
   maestria: "Domínio",
+  treinamento: "Treinamento",
   meme: "Meme"
 };
 

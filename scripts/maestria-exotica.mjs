@@ -83,7 +83,11 @@ export function estadoMaestria(item, dados = {}) {
   const origem = idRegiao(dados.regiaoOrigem ?? "");
   // Sem região conhecida (arma feita à mão ou personagem sem origem), conta como mesma região
   const outra = !!(regiaoArma && origem && regiaoArma !== origem);
-  const precisa = outra ? PONTOS_MAESTRIA.outraRegiao : PONTOS_MAESTRIA.mesmaRegiao;
+  // Estudo de Arma Exótica (treino, repetível): −2 pontos para cada estudo concluído desta arma
+  const catItem = item?.flags?.[FLAG]?.catalogo ?? "";
+  const estudos = Object.values(dados.treinamentos ?? {}).filter(t => t?.estado === "concluido" && (t.modelo === "estudoExotica" || norm(t.nome) === "estudo de arma exotica")
+    && t.armaExotica && ((catItem && t.armaExotica === catItem) || norm(t.armaExotica) === norm(item?.name))).length;
+  const precisa = Math.max(0, (outra ? PONTOS_MAESTRIA.outraRegiao : PONTOS_MAESTRIA.mesmaRegiao) - 2 * estudos);
   let motivo = "";
   if (eArmaFavorita(item, dados)) motivo = "arma favorita";
   else if (eTipoFavoritoCombatente(item, dados)) motivo = "Arma Favorita do Combatente";

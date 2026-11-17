@@ -9,6 +9,8 @@ import {
   MARCOS_MAESTRIA, tabelaTraumas
 } from "./opcionais.mjs";
 import { INSPIRACAO_MAX } from "./cooperacao.mjs";
+import { maestriaDoItem } from "./maestria-exotica.mjs";
+import { especiaisDaFicha, treinoModelo, cumpreRequisitos, baseRequisitos } from "./treinamentos-lista.mjs";
 import { lerCriacao, TIPOS_CRIACAO, durabilidadeDe, textoPreco, avaliarRequisitos } from "./oficina.mjs";
 import { ESTADOS_JURAMENTO, TIPOS_ANCORA, MAX_ANCORAS } from "./vinculos.mjs";
 import { lerFasesChefe, ACOES_ESPECIAIS, DADOS_AURA } from "./opcionais-acoes.mjs";
@@ -114,7 +116,7 @@ export function contextoNovas({ actor, dados, ficha, itens = [], edicao = false,
   n.treinoAba = { treinos: aba === "treinos" ? "active" : "", criacao: aba === "criacao" ? "active" : "" };
   const pericias = (ficha?.pericias ?? []).map(p => ({ id: p.id, nome: p.nome }));
   n.criacoes = Object.entries(dados.criacoes ?? {}).filter(([, c]) => c).map(([id, c]) => {
-    const cr = lerCriacao(id, c);
+    const cr = lerCriacao(id, c, { artesao: especiaisDaFicha(dados).has("mestreArtesao") });
     const materiais = cr.materiais.map(m => {
       const it = itens.find(i => i.id === m.itemId);
       const tem = it ? int(it.system?.quantity, 1) : 0;
@@ -128,8 +130,10 @@ export function contextoNovas({ actor, dados, ficha, itens = [], edicao = false,
       andamento: cr.estado === "andamento", pronto: cr.estado === "pronto", concluido: cr.estado === "concluido"
     };
   }).sort((a, b) => (a.concluido - b.concluido) || a.criado - b.criado);
-  n.requisitos = Object.fromEntries(Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t?.requisitos && t.estado !== "concluido")
-    .map(([id, t]) => [id, avaliarRequisitos(t.requisitos, ficha, dados, id)]));
+  // Treinos do catálogo: requisitos estruturados (atributos, pontos em perícias, treinos, favorita); os outros pelo texto
+  const baseReq = baseRequisitos(dados, { temExotica: (actor?.items?.contents ?? actor?.items ?? []).some(i => i.type === "weapon" && !!maestriaDoItem(i)) });
+  n.requisitos = Object.fromEntries(Object.entries(dados.treinamentos ?? {}).filter(([, t]) => (t?.requisitos || treinoModelo(t?.modelo)) && t.estado !== "concluido")
+    .map(([id, t]) => [id, treinoModelo(t.modelo) ? cumpreRequisitos(treinoModelo(t.modelo), ficha, baseReq) : avaliarRequisitos(t.requisitos, ficha, dados, id)]));
   n.precos = Object.fromEntries(Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t).map(([id, t]) => [id, {
     texto: textoPreco(t), valor: num(t.precoHora), moedas: MOEDAS.filter(m => m.id !== "dr").map(m => ({ id: m.id, label: m.abrev, selected: m.id === (t.precoMoeda || "po") }))
   }]));

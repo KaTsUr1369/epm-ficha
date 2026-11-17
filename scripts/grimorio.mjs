@@ -86,8 +86,10 @@ export const EXECUCOES = { acao: "1 Ação", bonus: "Ação Bônus", acaoBonus: 
 const PERICIA_RES = [["reflexo", "reflexos"], ["fortitude", "fortitude"], ["vontade", "vontade"]];
 
 /** Tipo de dano (rótulo da ficha) citado num trecho: "Gelo" → "Frio", "Raio" → "Relâmpago", "Luz" → "Radiante". */
+/** "raio de 6 m" é área, não o tipo Raio (Relâmpago). */
+const semRaioDeArea = t => t.replace(/ raio de \d+/g, " ").replace(/ (?:num|em um|no) raio /g, " ");
 export function tipoDanoNoTexto(trecho) {
-  const t = ` ${norm(trecho).replace(/[^a-z0-9]+/g, " ")} `;
+  const t = semRaioDeArea(` ${norm(trecho).replace(/[^a-z0-9]+/g, " ")} `);
   let melhor = null;
   for (const tipo of TIPOS_DANO) {
     if (tipo.extra || tipo.grupo === "tecnologicos") continue;
@@ -106,7 +108,7 @@ export function tiposDanoGrimorio(m) {
   const frases = [...(m.mecanica ?? []), ...String(m.texto ?? "").split(/(?<=[.;:])\s+|\n/)].filter(f => /dano/i.test(f));
   const tipos = new Set();
   for (const f of frases) {
-    const t = ` ${norm(f).replace(/[^a-z0-9]+/g, " ")} `;
+    const t = semRaioDeArea(` ${norm(f).replace(/[^a-z0-9]+/g, " ")} `);
     for (const tipo of TIPOS_DANO) {
       if (tipo.extra || tipo.grupo === "tecnologicos") continue;
       if ([tipo.label, ...(tipo.aliases ?? [])].some(n => { const x = norm(n).replace(/[^a-z0-9]+/g, " ").trim(); return x.length > 2 && t.includes(` ${x} `); })) tipos.add(tipo.label);

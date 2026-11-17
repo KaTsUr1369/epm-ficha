@@ -3454,10 +3454,10 @@ button.epm-npcv-pill { cursor: pointer; }
 
 /* Grimório de Magias (janela) */
 .epm-gri-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--epm-linha, #2c3d3b); }
-.application.epm-grimorio .epm-gri-chip { flex: 0 0 auto; width: auto; height: auto; line-height: 1.4; padding: 3px 12px; border-radius: 999px; border: 1px solid var(--epm-linha, #2c3d3b);
+.application.epm-grimorio .epm-gri-chip, .application.epm-treinos-catalogo .epm-gri-chip { flex: 0 0 auto; width: auto; height: auto; line-height: 1.4; padding: 3px 12px; border-radius: 999px; border: 1px solid var(--epm-linha, #2c3d3b);
   background: transparent; color: inherit; font-size: 0.85em; cursor: pointer; }
-.application.epm-grimorio .epm-gri-chip:hover { border-color: #8B5CC7; }
-.application.epm-grimorio .epm-gri-chip.ativo { background: rgba(109, 63, 169, 0.35); border-color: #8B5CC7; color: #ded5e4; }
+.application.epm-grimorio .epm-gri-chip:hover, .application.epm-treinos-catalogo .epm-gri-chip:hover { border-color: #8B5CC7; }
+.application.epm-grimorio .epm-gri-chip.ativo, .application.epm-treinos-catalogo .epm-gri-chip.ativo { background: rgba(109, 63, 169, 0.35); border-color: #8B5CC7; color: #ded5e4; }
 .epm-gri-linha { display: grid; grid-template-columns: 18px minmax(170px, 1.5fr) 104px 104px minmax(80px, 1fr) 64px; gap: 6px; align-items: center;
   padding: 2px 4px; border-radius: 4px; font-size: 0.85em; }
 .epm-gri-linha[hidden], .epm-gri-detalhe[hidden], .epm-gri-vazio[hidden] { display: none !important; }
@@ -3465,9 +3465,9 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-gri-linha.marcado { background: rgba(109, 63, 169, 0.18); }
 .epm-gri-linha.aberta { background: rgba(255, 255, 255, 0.05); }
 .epm-gri-linha.na-ficha .epm-gri-nome { opacity: 0.75; }
-.application.epm-grimorio .epm-gri-nome { display: flex; align-items: center; gap: 4px; min-width: 0; width: auto; height: auto; padding: 0; margin: 0; border: 0;
+.application.epm-grimorio .epm-gri-nome, .application.epm-treinos-catalogo .epm-gri-nome { display: flex; align-items: center; gap: 4px; min-width: 0; width: auto; height: auto; padding: 0; margin: 0; border: 0;
   background: none; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; line-height: 1.3; }
-.application.epm-grimorio .epm-gri-nome:hover { color: #b98ce8; box-shadow: none; }
+.application.epm-grimorio .epm-gri-nome:hover, .application.epm-treinos-catalogo .epm-gri-nome:hover { color: #b98ce8; box-shadow: none; }
 .epm-gri-nome .epm-tag { font-size: 0.8em; font-weight: 400; }
 .epm-gri-escola, .epm-gri-exec, .epm-gri-alcance { opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .epm-gri-custo { text-align: right; white-space: nowrap; }
@@ -3475,3 +3475,19 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-gri-detalhe p { margin: 0 0 6px; }
 .epm-gri-detalhe ul { margin: 0 0 6px; padding-left: 18px; }
 .epm-gri-vazio { padding: 16px; text-align: center; }
+
+/* ---------- Catálogo de treinamentos (janela) ---------- */
+.epm-treinos-catalogo .epm-tre-linha { display: grid; grid-template-columns: 18px minmax(0, 1.6fr) 4.5em 3.5em minmax(0, 2fr) 1.5em; gap: 4px 10px; align-items: center; padding: 3px 6px; border-bottom: 1px solid var(--epm-linha); font-size: 0.9em; }
+.epm-tre-linha[hidden] { display: none !important; }
+.epm-treinos-catalogo .epm-tre-linha .epm-cat-marca { width: 14px; height: 14px; margin: 0; }
+.epm-treinos-catalogo .epm-tre-linha.falta .epm-gri-nome { opacity: 0.75; }
+.epm-treinos-catalogo .epm-tre-linha .epm-gri-detalhe { grid-column: 2 / -1; font-size: 12.5px; }
+.epm-treinos-catalogo .epm-tre-num { font-family: var(--epm-fonte-num, monospace); font-size: 12px; text-align: right; color: var(--epm-fraco); }
+.epm-treinos-catalogo .epm-tre-req { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.epm-treinos-catalogo .epm-tre-req.ok i { color: #4E9A5B; }
+.epm-treinos-catalogo .epm-tre-req.falta { color: #E05A4E; }
+.epm-treinos-catalogo .epm-tre-treinador { color: var(--epm-fraco); text-align: center; }
+.epm-treinos-catalogo .epm-cat-grupo > .epm-dica { margin: -2px 0 4px; }
+.epm-tre-regras { margin: 0 0 8px; font-size: 12.5px; }
+.epm-tre-regras ul { margin: 4px 0 0; padding-left: 18px; }
+.epm-treino-pendente { margin: 6px 0; font-size: 12.5px; }

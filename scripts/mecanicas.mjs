@@ -26,6 +26,7 @@ import { custoRecurso, turnoTransformacao, destransformar, cliqueChatExtra, regi
 import { htmlDupla, prepararDupla, prepararConjunta, inspiracaoDe, consumirVantagemArmada, gastarInspiracao } from "./cooperacao.mjs";
 import { recuperadoNoNovoTurno, encerrarRecuperado } from "./automacoes.mjs";
 import { regra, bonusMaestria, subirNivelDano } from "./opcionais.mjs";
+import { eArmaFavorita } from "./maestria-exotica.mjs";
 import { htmlAtividades, lerAtividade, fimDaReza, fazerAtividade, falhaCritica, fimDesprevenidoDaFalha } from "./opcionais-acoes.mjs";
 import { recarregarAncoras } from "./vinculos.mjs";
 import { gastarDurabilidade, armaduraEquipada, PERDA_CRITICO, quebrado } from "./oficina.mjs";
@@ -851,16 +852,25 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
     if (forma.uso && forma.uso !== "livre") linhas.push({ rotulo: "Uso", valor: USOS_FORMA[forma.uso] });
     const per = ficha.periciaPorId[forma.teste.pericia];
     if (forma.teste.tipo === "resistencia") {
-      linhas.push({ rotulo: "Resistência", valor: `${per?.nome ?? "teste do alvo"} contra DT ${ficha.cd.valor}` });
+      // DT própria da forma (ex.: "10 + @atr.nucleo" dos treinamentos); sem ela, a CD da ficha
+      let dtF = ficha.cd.valor;
+      if (String(forma.teste.nd ?? "").trim()) {
+        try {
+          const t = Roll.replaceFormulaData(String(forma.teste.nd), rolagem, { missing: "0" }).replace(/\bfloor\b/g, "Math.floor");
+          const v = /^[\d\s+\-*/().Mathflorceilmaxn,]+$/.test(t) ? Function(`"use strict"; return (${t});`)() : NaN;
+          if (Number.isFinite(v)) dtF = Math.floor(v);
+        } catch { /* fica a CD da ficha */ }
+      }
+      linhas.push({ rotulo: "Resistência", valor: `${per?.nome ?? "teste do alvo"} contra DT ${dtF}` });
       // Cada alvo marcado (ou quem clicar) rola a perícia pedida contra a DT; gasta a Reação
       const alvosRes = [...(game.user?.targets ?? [])].map(t => t.actor).filter(a => a && a.uuid !== actor.uuid && a.flags?.[FLAG]);
       const perRes = forma.teste.pericia || "vontade";
       if (alvosRes.length) {
-        for (const a of alvosRes) botoes.push({ acao: "resistir", pericia: perRes, dt: ficha.cd.valor, defensor: a.uuid, rotulo: `Resistência: ${item.name}`,
-          label: `${a.name} resiste (${per?.nome ?? perRes}, DT ${ficha.cd.valor})`, icone: "fa-solid fa-shield-heart" });
+        for (const a of alvosRes) botoes.push({ acao: "resistir", pericia: perRes, dt: dtF, defensor: a.uuid, rotulo: `Resistência: ${item.name}`,
+          label: `${a.name} resiste (${per?.nome ?? perRes}, DT ${dtF})`, icone: "fa-solid fa-shield-heart" });
       } else {
-        botoes.push({ acao: "resistir", pericia: perRes, dt: ficha.cd.valor, rotulo: `Resistência: ${item.name}`,
-          label: `Resistir (${per?.nome ?? perRes}, DT ${ficha.cd.valor})`, icone: "fa-solid fa-shield-heart" });
+        botoes.push({ acao: "resistir", pericia: perRes, dt: dtF, rotulo: `Resistência: ${item.name}`,
+          label: `Resistir (${per?.nome ?? perRes}, DT ${dtF})`, icone: "fa-solid fa-shield-heart" });
       }
     } else if ((forma.teste.tipo === "ataque" || forma.teste.tipo === "pericia") && per) {
       const ataque = forma.teste.tipo === "ataque";
@@ -1411,6 +1421,26 @@ export async function descanso(actor, tipo) {
     const base = updates[`${P}.recursos.pm.value`] ?? ficha.recursos.pm.value;
     updates[`${P}.recursos.pm.value`] = Math.min(ficha.recursos.pm.max, base + rol.total);
     feitos.push(`Meditação de Núcleo: +${rol.total} PM`);
+  }
+  // Treinos: Meditação Profunda (curto: + Autocontrole de PS) e Aura de Recuperação (curto: + Núcleo de PV e de PE)
+  const espT = ficha.extras?.especiaisTreino ?? [];
+  if (!longo && espT.includes("meditacaoProfunda")) {
+    const v = Math.max(0, Math.floor(num(ficha.atributos?.autocontrole?.total)));
+    if (v) {
+      const base = updates[`${P}.recursos.ps.value`] ?? ficha.recursos.ps.value;
+      updates[`${P}.recursos.ps.value`] = Math.min(ficha.recursos.ps.max, base + v);
+      feitos.push(`Meditação Profunda: +${v} PS`);
+    }
+  }
+  if (!longo && espT.includes("auraRecuperacao")) {
+    const v = Math.max(0, Math.floor(num(ficha.atributos?.nucleo?.total)));
+    if (v) {
+      const pv = updates["system.attributes.hp.value"] ?? ficha.recursos.pv.value;
+      updates["system.attributes.hp.value"] = Math.min(ficha.recursos.pv.max, pv + v);
+      const pe = updates[`${P}.recursos.pe.value`] ?? ficha.recursos.pe.value;
+      updates[`${P}.recursos.pe.value`] = Math.min(ficha.recursos.pe.max, pe + v);
+      feitos.push(`Aura de Recuperação: +${v} PV e +${v} PE`);
+    }
   }
   if (longo) {
     for (const [iid, ins] of Object.entries(dados.insanidades ?? {})) {
@@ -2081,7 +2111,11 @@ export async function rolarAtaque(actor, at, {
   }
   // Sem o diálogo (margem não veio), a margem dos bônus de cena entra aqui
   const margemCena = margem === undefined || margem === null || margem === "" ? cena.margem : 0;
-  const margemFinal = limitar(int(margem, at.critMargem) - int(margemBonus) - margemCena, 2, 20);
+  // Domínio da Favorita (treino): a margem da arma favorita cai 1 (a margem não garante o acerto)
+  const itemArma = actor.items?.get?.(at.itemId ?? at.id);
+  const dominio = (ficha.extras?.especiaisTreino ?? []).includes("dominioFavorita") && itemArma && eArmaFavorita(itemArma, dados) ? 1 : 0;
+  if (dominio) notas.push("Domínio da Favorita: margem de ameaça −1.");
+  const margemFinal = limitar(int(margem, at.critMargem) - int(margemBonus) - margemCena - dominio, 2, 20);
   const multCena = mult === undefined || mult === null || mult === "" ? cena.critMult ?? 0 : 0;
   const multFinal = Math.max(2, int(mult, at.critMult) + int(multCena));
   const natural = atk.dice[0]?.total ?? 0;
@@ -2600,6 +2634,7 @@ export async function fimDeCombate(combate) {
     // 0.6.0: Fúria dura 1 cena; Projeto Ágil e pacotes de munição valem por combate
     if (dados.classeEpm?.furiaAtiva) updates[`${P}.classeEpm.furiaAtiva`] = false;
     if (dados.usos?.projetoAgil) updates[`${P}.usos.projetoAgil`] = false;
+    if (dados.usos?.menteFria) updates[`${P}.usos.menteFria`] = false;
     if (dados.usos?.pacotes && Object.keys(dados.usos.pacotes).length) updates[`${P}.usos.-=pacotes`] = null;
     Object.assign(updates, limparBonusDaCena(dados), liberarUsosFormas(actor.flags?.[FLAG], ["combate", "cena"]));
     for (const [id, b] of Object.entries(dados.bencaos ?? {})) {
@@ -2770,14 +2805,21 @@ export async function treinarHoras(actor, id, horasPedidas = null, { grupo = nul
   const agora = Math.min(total, Math.round((feitas + ganho) * 10) / 10);
   const concluiu = agora >= total;
   const usadas = TREINO.horasDia - livres;
+  // Mentor (treino): quem treina junto com um Mentor ganha +1 PT por dia de treino
+  const { especiaisDaFicha, MENTOR_PT_POR_DIA } = await import("./treinamentos-lista.mjs");
+  const mentores = comQuem.map(u => { try { return fromUuidSync(u); } catch { return null; } })
+    .filter(a => a?.flags?.[FLAG] && especiaisDaFicha(a.flags[FLAG]).has("mentor"));
+  const ptMentor = mentores.length ? MENTOR_PT_POR_DIA * Math.max(1, Math.round(horas / TREINO.horasDia)) : 0;
   await actor.update({
     ...pago.updates,
+    ...(ptMentor ? { [`${P}.pontos.pt`]: int(estadoAtor(actor).ficha.pontos.pt) + ptMentor } : {}),
     [`${P}.treinamentos.${id}.horasFeitas`]: agora, [`${P}.treinoDia.horas`]: usadas + horas,
     ...(concluiu ? { [`${P}.treinamentos.${id}.estado`]: "concluido" } : {})
   });
   const nomes = comQuem.map(u => { try { return fromUuidSync(u)?.name; } catch { return null; } }).filter(Boolean);
   const extra = [
     nomes.length ? `Treinou com ${nomes.join(", ")}: +25% (${horas} h contam ${ganho} h).` : "",
+    ptMentor ? `Mentor (${mentores.map(a => a.name).join(", ")}): +${ptMentor} PT.` : "",
     pago.texto ? `${pago.texto[0].toUpperCase()}${pago.texto.slice(1)}.` : ""
   ].filter(Boolean).map(x => `<br><span class="epm-dica">${escapar(x)}</span>`).join("");
   const botoes = Array.isArray(grupo) ? "" : comQuem.map(u => {

@@ -221,6 +221,14 @@ export function textoCritico(margem, mult) {
 }
 
 /** Troca @atr.x, @per.y… pelos valores atuais, só para exibir ("2d8 + @atr.nucleo" → "2d8 + 6"). */
+/** DT do teste de resistência de uma forma: a própria (ex.: "10 + @atr.nucleo") ou a CD da ficha. */
+export function dtDaForma(fo, ficha) {
+  const nd = String(fo?.teste?.nd ?? "").trim();
+  if (!nd) return ficha?.cd?.valor ?? 10;
+  const t = limparFormulaTexto(resolverReferencias(nd, ficha)).replace(/\bfloor\b/g, "Math.floor").replace(/\bmax\b/g, "Math.max");
+  try { const v = /^[\d\s+\-*/().Mathflorceilxn,]+$/.test(t) ? Function(`"use strict"; return (${t});`)() : NaN; return Number.isFinite(v) ? Math.floor(v) : (ficha?.cd?.valor ?? 10); } catch { return ficha?.cd?.valor ?? 10; }
+}
+
 export function resolverReferencias(formula, ficha) {
   const dados = dadosRolagemEPM(ficha);
   return String(formula ?? "").replace(/@([\w.]+)/g, (_, caminho) => {
@@ -1128,14 +1136,14 @@ export function montarContexto({
         usoGasto: !!(fo.uso && fo.uso !== "livre" && dados.usosFormas?.[`${item.id}_${fo.id}`]),
         dano: fo.dano.formula ? limparFormulaTexto(resolverReferencias(fo.dano.formula, ficha)) : "",
         danoDica: fo.dano.formula ? dicaHtml(`Dano (${fo.dano.formula})`, linhasDaFormula(fo.dano.formula, item.name, ficha)) : "",
-        resistencia: fo.teste.tipo === "resistencia",
+        resistencia: fo.teste.tipo === "resistencia", dt: dtDaForma(fo, ficha),
         requisitos: Object.entries(fo.requisitos).filter(([, v]) => v).map(([k]) => REQUISITOS[k]?.label ?? k)
       };
     });
     const r = RARIDADES_PODER[p.raridade];
     const alertas = [];
-    if (formas.some(f => f.excedeDano)) alertas.push(`Dano acima do teto da raridade ${r.label} (${r.danoMax})`);
-    if (formas.some(f => f.excedeEfeitos)) alertas.push(`Mais efeitos adicionais do que a raridade ${r.label} permite (${r.efeitos})`);
+    if (p.origem !== "treinamento" && formas.some(f => f.excedeDano)) alertas.push(`Dano acima do teto da raridade ${r.label} (${r.danoMax})`);
+    if (p.origem !== "treinamento" && formas.some(f => f.excedeEfeitos)) alertas.push(`Mais efeitos adicionais do que a raridade ${r.label} permite (${r.efeitos})`);
     const tVinculo = p.origem === "transformacao" && p.transformacao && dados.transformacoes?.[p.transformacao] ? p.transformacao : "";
     const tNome = tVinculo ? (dados.transformacoes[tVinculo].nome || "Transformação") : "";
     const presaTransf = !!tVinculo && tAtivaId !== tVinculo;
@@ -1358,7 +1366,7 @@ export function montarContexto({
         id, nome: t.nome || "Treinamento sem nome", nomeBruto: t.nome ?? "", tempo: qtd, unidade, horas, feitas,
         tempoTexto: `${arredondar(qtd, 2)} ${qtd === 1 ? UNIDADES_TEMPO[unidade].umLabel : UNIDADES_TEMPO[unidade].label}`,
         unidades: Object.entries(UNIDADES_TEMPO).map(([uid, u]) => ({ id: uid, label: u.label, selected: uid === unidade })),
-        pt, requisitos: t.requisitos ?? "", treinador: !!t.treinador, beneficios: t.beneficios ?? "", estado,
+        pt, requisitos: t.requisitos ?? "", treinador: !!t.treinador, modeloPendente: !t.modelo && !!t.modeloPendente, beneficios: t.beneficios ?? "", estado,
         estadoLabel: ESTADOS_TREINO[estado].label, estadoIcone: ESTADOS_TREINO[estado].icone,
         pct: Math.round((feitas / horas) * 100), faltam: horas - feitas,
         podeComecar: editavel && estado === "planejado", semPT: pt > ficha.pontos.pt,

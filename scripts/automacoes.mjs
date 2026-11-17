@@ -153,11 +153,23 @@ export async function resolverPedido(ator, botao) {
   const { ficha } = estadoAtor(ator);
   const [qual, id] = p.alvo.split(":");
   const base = qual === "atributo" ? ficha.atributos[id] : ficha.periciaPorId[id];
-  const roll = await rolarTeste(ator, {
+  const espT = ficha.extras?.especiaisTreino ?? [];
+  const extraVant = p.tipo === "sobrecarga" && espT.includes("canalEstavel") ? ["Canal Estável"] : [];
+  const rolar = () => rolarTeste(ator, {
     rotulo: `${ROTULO_PEDIDO[p.tipo] ?? "Teste"}: ${qual === "atributo" ? base?.label : base?.nome} DT ${p.dt}`, bonus: base?.testeTotal ?? base?.total ?? 0, penalidades: base?.testeFontes ?? [],
-    desvantagens: [...ficha.desvantagens.testes, ...(base?.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(base?.vantagem ?? [])]
+    desvantagens: [...ficha.desvantagens.testes, ...(base?.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(base?.vantagem ?? []), ...extraVant]
   });
+  let roll = await rolar();
   if (!roll) return;
+  // Mente Fria (treino): 1 vez por combate, rola de novo uma Vontade que falhou (fica o novo resultado)
+  if (id === "vontade" && roll.total < p.dt && espT.includes("menteFria") && !ator.flags?.[FLAG]?.usos?.menteFria) {
+    const { confirmar } = await M();
+    if (await confirmar("Mente Fria", `<p>Falhou na Vontade (${roll.total} contra DT ${p.dt}). Usar a Mente Fria (1 vez por combate) e rolar de novo?</p>`)) {
+      await ator.update({ [`${P}.usos.menteFria`]: true });
+      const novo = await rolar();
+      if (novo) roll = novo;
+    }
+  }
   botao.disabled = true;
   try { if (msg.isAuthor || game.user.isGM) await msg.update({ [`flags.${FLAG}.pedido.feito`]: true }); else await (await import("./cooperacao.mjs")).pedirAoMestreNovas("pedidoFeito", { mensagem: msg.id }); } catch { /* segue */ }
   const passou = roll.total >= p.dt;
@@ -173,9 +185,13 @@ export async function resolverPedido(ator, botao) {
     const { calcularPerda } = await M();
     const dano = new Roll(p.extra?.dado || "1d6");
     await dano.evaluate();
-    const perda = calcularPerda(estadoAtor(ator).ficha, "ps", dano.total);
+    // Resistência ao Horror (treino): a perda diminui em Autocontrole (mínimo 1)
+    const fAura = estadoAtor(ator).ficha;
+    const corte = (fAura.extras?.especiaisTreino ?? []).includes("resistenciaHorror") ? Math.max(0, Math.floor(Number(fAura.atributos?.autocontrole?.total) || 0)) : 0;
+    const perdeu = corte ? Math.max(1, dano.total - corte) : dano.total;
+    const perda = calcularPerda(fAura, "ps", perdeu);
     await ator.update(perda.updates);
-    return dano.toMessage({ speaker: ChatMessage.getSpeaker({ actor: ator }), flags: { [FLAG]: { automatico: true } }, flavor: `<span class="epm-flavor"><strong>Aura de Horror${p.extra?.criatura ? ` (${escapar(p.extra.criatura)})` : ""}</strong><em>Falhou (${roll.total}): −${dano.total} de Sanidade${perda.doTemp ? `, ${perda.doTemp} da temporária` : ""}</em></span>` });
+    return dano.toMessage({ speaker: ChatMessage.getSpeaker({ actor: ator }), flags: { [FLAG]: { automatico: true } }, flavor: `<span class="epm-flavor"><strong>Aura de Horror${p.extra?.criatura ? ` (${escapar(p.extra.criatura)})` : ""}</strong><em>Falhou (${roll.total}): −${perdeu} de Sanidade${corte ? ` (Resistência ao Horror −${corte})` : ""}${perda.doTemp ? `, ${perda.doTemp} da temporária` : ""}</em></span>` });
   }
   if (passou) await nota(ator, `<p><strong>${escapar(ator.name)}</strong> passou (${roll.total} contra DT ${p.dt}).</p>`, "#4E9A5B");
 }

@@ -13,7 +13,7 @@
         {{#if gatilho}}<span class="epm-tag epm-tag-gatilho" title="Ativação condicional: entra sozinha, uma vez por cena"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{this.gatilho}}</span>{{/if}}
         {{#if elemento}}<span class="epm-tag epm-tag-elemento"><i class="fa-solid fa-fire-flame-curved" aria-hidden="true"></i> {{this.elemento}}</span>{{/if}}
         {{#if passiva}}<span class="epm-tag">Passiva</span>{{/if}}
-        {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{this.motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{this.nome}}</strong> {{/if}}{{this.acaoLabel}}, {{this.custoTexto}}{{#if resistencia}}, DT {{@root.ficha.cd.valor}}{{/if}}{{#if usoLabel}}, <span class="epm-uso-forma{{#if usoGasto}} gasto{{/if}}" title="{{#if usoGasto}}Já usada; volta conforme o limite{{else}}Disponível{{/if}}">{{this.usoLabel}}{{#if usoGasto}} (usada){{/if}}</span>{{/if}}</span>{{/each}}
+        {{#each formas}}<span class="epm-forma-chip{{#if bloqueada}} bloqueada{{/if}}{{#if semRecurso}} sem-recurso{{/if}}" {{#if bloqueada}}title="Bloqueada: {{this.motivosTexto}}"{{else if semRecurso}}title="Recurso insuficiente"{{/if}}>{{#if ../variasFormas}}<strong>{{this.nome}}</strong> {{/if}}{{this.acaoLabel}}, {{this.custoTexto}}{{#if resistencia}}, DT {{this.dt}}{{/if}}{{#if usoLabel}}, <span class="epm-uso-forma{{#if usoGasto}} gasto{{/if}}" title="{{#if usoGasto}}Já usada; volta conforme o limite{{else}}Disponível{{/if}}">{{this.usoLabel}}{{#if usoGasto}} (usada){{/if}}</span>{{/if}}</span>{{/each}}
         {{#unless nFormas}}{{#unless passiva}}<span class="epm-tag fraca">sem formas</span>{{/unless}}{{/unless}}
         {{#if alertas.length}}<span class="epm-alerta" title="{{this.alertasTexto}}"><i class="fa-solid fa-triangle-exclamation" aria-label="Acima dos limites da raridade"></i></span>{{/if}}
       </div>
@@ -39,7 +39,7 @@
       <strong>{{this.nome}}</strong>
       <span class="epm-tag">{{this.acaoLabel}}</span>
       <span class="epm-tag">{{this.custoTexto}}</span>
-      {{#if resistencia}}<span class="epm-tag" title="{{@root.ficha.cd.formula}}">DT {{@root.ficha.cd.valor}}</span>{{/if}}
+      {{#if resistencia}}<span class="epm-tag" title="{{@root.ficha.cd.formula}}">DT {{this.dt}}</span>{{/if}}
       {{#if dano}}<span class="epm-tag epm-tag-dano" data-tooltip="{{this.danoDica}}" data-tooltip-class="epm-dica-tooltip">{{this.dano}}</span>{{/if}}
       {{#if requisitos.length}}<span class="epm-tag fraca">{{epmJoin requisitos}}</span>{{/if}}
       {{#if duracao}}<span class="epm-tag" title="Duração">{{this.duracao}}</span>{{/if}}

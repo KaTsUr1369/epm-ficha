@@ -24,7 +24,7 @@ let pendente = null;
 const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
-  "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia", "avancarRelogio",
+  "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia", "avancarRelogio", "inicioSessao",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "abrirGrimorio", "rolarTestes", "rolarLivre", "abrirItem",
   "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
   "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo"
@@ -385,6 +385,12 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const fim = somarTempo(t, r.unidade === "minutos" ? { minutos: qtd } : { horas: r.unidade === "dias" ? qtd * 24 : qtd });
     await game.time.advance(fim - t);
     ui.notifications.info(`Relógio do mundo: +${qtd} ${r.unidade}.`);
+  }
+
+  /** Marca o início da sessão: Protagonista (treino) ganha 1 Inspiração de Tema. */
+  async _inicioSessao() {
+    const { inicioDaSessao } = await import("./treinos-conclusao.mjs");
+    await inicioDaSessao();
   }
 
   async _recarregarRessonancia() {

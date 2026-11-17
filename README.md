@@ -14,6 +14,17 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.17
+
+- **Catálogo de treinamentos** (EPM/treinamentos.md): 95 treinos em 9 categorias (Físicos, De Arma, De Aura, De Magias, Extras, Ofício e Sobrevivência, Mente e Sanidade, Furtividade e Infiltração, e os modelos de adaptação tecnológica).
+  - Botão **Adicionar da lista** na aba Treinamentos: categorias, busca sem acento, filtro **Só os que eu cumpro**, cadeia de pré-requisitos e o que cada treino libera. Os modelos continuam editáveis e dá para criar treinos à mão.
+  - Requisitos conferidos pela ficha: atributos (com "ou"), pontos em perícias, treinos concluídos, arma favorita e arma Exótica.
+  - **Ao concluir**: os números entram sozinhos (deslocamento, Esquiva, iniciativa, RD física, PM + Núcleo, Núcleo no dano com armas, margem da favorita, imunidade a Abalado e Confuso, escalada e natação iguais ao deslocamento…). As ações com custo (Fôlego de Batalha, Explosão de Aura, Flash Step, Aura Intimidadora, Punho de Aura, Selo de Aura, Discurso de Guerra, Primeiros Socorros, Contramagia Instintiva…) viram habilidades na sub-aba Geral, com origem Treinamento, formas, custo, frequência e DT própria.
+  - Poliglota abre a escolha de idioma; Protagonista ganha 1 Inspiração no novo botão **Início da sessão** do Escudo.
+  - Automáticos: Canal Estável, Mente Fria (rerrolar Vontade), Meditação Profunda, Aura de Recuperação, Resistência ao Horror, Reparo de Campo, Armeiro, Mestre Artesão, Estudo de Arma Exótica e Mentor (+1 PT por dia no treino em grupo). O que depende do Mestre fica como lembrete.
+  - Fichas antigas: treinos com o nome de um modelo são ligados a ele sem perder horas nem estado (números diferentes pedem confirmação), e os já concluídos ganham as habilidades.
+- **Grimório de Magias** (0.8.16) com os nomes de dano da ficha (Frio, Relâmpago, Radiante); "raio de 6 m" não conta mais como Relâmpago.
+
 ## Novidades da 0.8.16
 
 - **Grimório de Magias dentro do Foundry** (substitui o Códex do Vazio):

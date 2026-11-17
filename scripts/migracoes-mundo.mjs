@@ -152,6 +152,21 @@ async function valoresAntigos() {
   return n;
 }
 
+/** Catálogo de treinamentos (0.8.17): liga os treinos antigos ao modelo e cria as habilidades dos já concluídos. */
+async function ligarTreinosAoCatalogo() {
+  const { trocasLigacaoModelos, aplicarConclusoes } = await import("./treinos-conclusao.mjs");
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.treinosCatalogoV1) continue;
+    const upd = trocasLigacaoModelos(f);
+    await a.update({ ...upd, [`${P}.treinosCatalogoV1`]: true }, { render: false });
+    await aplicarConclusoes(a, { perguntar: false, avisar: false });
+    if (Object.keys(upd).length) n++;
+  }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -160,6 +175,7 @@ export async function migrarMundo() {
   try { const n = await atualizarItensProntos(itens); if (n) feitos.push(`${n} item(ns) pronto(s) atualizado(s)`); } catch (err) { console.warn("EPM | migração dos itens prontos", err); }
   try { const n = await renomearTiposDano(itens); if (n) feitos.push(`${n} ficha(s)/item(ns) com tipos de dano renomeados`); } catch (err) { console.warn("EPM | migração dos tipos de dano", err); }
   try { const n = await sincronizarHabilidadesArquetipo(itens); if (n) feitos.push(`${n} habilidade(s) de arquétipo com o texto e o nível do livro atual`); } catch (err) { console.warn("EPM | habilidades de arquétipo", err); }
+  try { const n = await ligarTreinosAoCatalogo(); if (n) feitos.push(`${n} ficha(s) com treinos ligados ao catálogo`); } catch (err) { console.warn("EPM | treinos do catálogo", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

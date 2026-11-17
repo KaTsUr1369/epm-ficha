@@ -236,7 +236,8 @@ export async function danoSanidade(actor, { formula = "", motivo = "" } = {}) {
   const notas = [`Dano rolado: ${dano}`];
   if (r.teste) {
     const atr = ficha.atributos.autocontrole;
-    const blindada = ficha.extras?.menteBlindada ? numBonus("treino.menteBlindada") : 0;
+    // Mente Blindada mudou (17/11): agora é +3 contra Apavorado, Abalado, Confuso e Dominado, não no teste de Sanidade
+    const blindada = 0;
     const tituloSan = int(ficha.extras?.titulos?.ativo?.sanidade) + int(ficha.extras?.fortalecimentoMental);
     const extrasTxt = [blindada ? "Mente Blindada +5" : "", tituloSan ? `títulos e treinos +${tituloSan}` : ""].filter(Boolean).join(", ");
     const t = await rolarTeste(actor, { rotulo: `Resistir (Autocontrole) DT ${dt}${extrasTxt ? ` · ${extrasTxt}` : ""}`, bonus: (atr?.testeTotal ?? atr?.total ?? 0) + blindada + tituloSan });
@@ -372,22 +373,53 @@ export async function sincronizarMaximos(actor) {
 /*  Catálogos do Notion                         */
 /* -------------------------------------------- */
 
-export async function treinoDoCatalogo(actor, indice) {
-  const e = TREINAMENTOS_NOTION[int(indice)];
-  if (!e) return;
+/** Adiciona um treino do catálogo (pelo id do modelo ou, nas chamadas antigas, pelo índice). */
+export async function treinoDoCatalogo(actor, indiceOuId, { silencioso = false } = {}) {
+  const e = typeof indiceOuId === "string" && !/^\d+$/.test(indiceOuId) ? TREINAMENTOS_NOTION.find(x => x.modelo === indiceOuId) : TREINAMENTOS_NOTION[int(indiceOuId)];
+  if (!e || e.legado) return null;
+  const { treinoModelo } = await import("./treinamentos-lista.mjs");
+  const modelo = treinoModelo(e.modelo);
+  // Não repetível: um só por ficha
+  const jaTem = Object.values(actor.flags?.[FLAG]?.treinamentos ?? {}).some(t => t && (t.modelo === e.modelo || norm060(t.nome) === norm060(e.nome)));
+  if (jaTem && modelo && !modelo.repetivel) { ui.notifications.warn(`${actor.name} já tem "${e.nome}" (não é repetível).`); return null; }
   let troca = null;
   if (e.especial === "trocarFavorita") {
     troca = await escolherTrocaFavorita(actor);
-    if (!troca) return;
+    if (!troca) return null;
+  }
+  // Estudo de Arma Exótica: escolhe a arma estudada
+  let armaExotica = "";
+  if (e.especial === "estudoExotica") {
+    armaExotica = await escolherArmaExotica(actor);
+    if (armaExotica === null) return null;
   }
   const mods = {};
   for (const m of e.mods ?? []) mods[novoId()] = { alvo: m.alvo, valor: m.valor };
-  await actor.update({ [`${P}.treinamentos.${novoId()}`]: {
+  const id = novoId();
+  await actor.update({ [`${P}.treinamentos.${id}`]: {
     nome: e.nome, categoria: e.categoria, tempo: e.tempo, unidade: e.unidade, pt: e.pt, requisitos: e.requisitos,
-    treinador: !!e.treinador, beneficios: troca ? `${e.beneficios} Sai: ${troca.saiNome}. Entra: ${troca.nova.nome}.` : e.beneficios,
-    especial: e.especial ?? "", estado: "planejado", horasFeitas: 0, mods, criado: Date.now(), ...(troca ? { trocaFavorita: { sai: troca.sai, nova: troca.nova } } : {})
+    treinador: !!e.treinador, tipoTreinador: modelo?.tipoTreinador ?? "", repetivel: !!modelo?.repetivel,
+    beneficios: troca ? `${e.beneficios} Sai: ${troca.saiNome}. Entra: ${troca.nova.nome}.` : armaExotica ? `${e.beneficios} Arma: ${armaExotica.nome}.` : e.beneficios,
+    especial: e.especial ?? "", modelo: e.modelo ?? "", estado: "planejado", horasFeitas: 0, mods, criado: Date.now(),
+    ...(troca ? { trocaFavorita: { sai: troca.sai, nova: troca.nova } } : {}), ...(armaExotica ? { armaExotica: armaExotica.id } : {})
   } });
-  ui.notifications.info(`Treinamento "${e.nome}" adicionado (planejado).`);
+  if (!silencioso) ui.notifications.info(`Treinamento "${e.nome}" adicionado (planejado).`);
+  return id;
+}
+const norm060 = t => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** Arma Exótica estudada (catálogo ou da ficha). */
+async function escolherArmaExotica(actor) {
+  const { maestriaDoItem } = await import("./maestria-exotica.mjs");
+  const { ITENS_CATALOGO } = await import("./itens-catalogo.mjs");
+  const daFicha = actor.items.filter(i => i.type === "weapon" && maestriaDoItem(i)).map(i => ({ id: i.flags?.[FLAG]?.catalogo || i.name, nome: i.name }));
+  const doCatalogo = ITENS_CATALOGO.filter(x => x.categoria === "armas" && maestriaDoItem({ name: x.nome, flags: { [FLAG]: { catalogo: x.id } } })).map(x => ({ id: x.id, nome: x.nome }));
+  const lista = [...new Map([...daFicha, ...doCatalogo].map(x => [x.id, x])).values()];
+  if (!lista.length) { ui.notifications.warn("Nenhuma arma Exótica encontrada."); return null; }
+  const r = await formulario("Estudo de Arma Exótica", `<label class="epm-campo"><span>Arma estudada</span><select name="arma">${lista.map(x => `<option value="${escapar(x.id)}">${escapar(x.nome)}</option>`).join("")}</select></label>
+    <p class="epm-dica">Ao concluir, a Maestria dessa arma pede 2 pontos a menos de Luta ou Pontaria. Precisa de um treinador da região de origem da arma.</p>`, { botao: "Planejar" });
+  if (!r?.arma) return null;
+  return lista.find(x => x.id === r.arma) ?? null;
 }
 
 /** Pergunta qual favorita sai e qual arma entra (treinamento "Trocar arma favorita"). */
@@ -634,7 +666,7 @@ export function fimDeCombate060(dados) {
 
 export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
-  "rolarNiveisRecursos", "treinoCatalogo", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
+  "rolarNiveisRecursos", "treinoCatalogo", "catalogoTreinos", "ligarModeloTreino", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
   "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
   "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
@@ -662,6 +694,8 @@ export const METODOS_060 = {
   },
   acaoRolarNiveisRecursos() { return rolarNiveisRecursos(this.actor); },
   acaoTreinoCatalogo(ev, alvo) { return treinoDoCatalogo(this.actor, alvo.dataset.indice); },
+  async acaoCatalogoTreinos() { return (await import("./treinos-app.mjs")).abrirCatalogoTreinos(this.actor); },
+  async acaoLigarModeloTreino(ev, alvo) { return (await import("./treinos-conclusao.mjs")).confirmarLigacao(this.actor, alvo.dataset.id); },
   acaoCatalogoItens() { return catalogoItens(this.actor); },
   async acaoPuxarCompendio() { const { puxarDoCompendio } = await import("./compendio-busca.mjs"); return puxarDoCompendio(this.actor); },
   async acaoCatalogoCompleto() { const { abrirCatalogo } = await import("./catalogo-app.mjs"); return abrirCatalogo({ actor: this.actor }); },

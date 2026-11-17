@@ -646,12 +646,13 @@ export async function pularHoras(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
   // Treinamentos e criações (Oficina) em andamento: as duas dividem as horas do dia, e o timeskip vale para as duas
   const { lerCriacao } = await import("./oficina.mjs");
+  const artesao = (await import("./treinamentos-lista.mjs")).especiaisDaFicha(dados).has("mestreArtesao");
   const emAndamento = [
     ...Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t && t.estado === "andamento").map(([id, t]) => {
       const total = horasDoTreino(t);
       return { chave: `t-${id}`, tipo: "treino", id, t, nome: t.nome || "Treinamento", total, feitas: Math.min(total, Math.max(0, num(t.horasFeitas))) };
     }),
-    ...Object.entries(dados.criacoes ?? {}).filter(([, c]) => c).map(([id, c]) => ({ id, c: lerCriacao(id, c) })).filter(x => x.c.estado === "andamento").map(({ id, c }) => {
+    ...Object.entries(dados.criacoes ?? {}).filter(([, c]) => c).map(([id, c]) => ({ id, c: lerCriacao(id, c, { artesao }) })).filter(x => x.c.estado === "andamento").map(({ id, c }) => {
       const total = Math.max(1, Math.ceil(num(c.horas)));
       return { chave: `t-c${id}`, tipo: "criacao", id, nome: `Criação: ${c.nome || "projeto"}`, total, feitas: Math.min(total, Math.max(0, num(c.feitas))) };
     })

@@ -221,10 +221,11 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
 
   /* Catálogo de treinos do Notion por categoria */
   v.catalogoTreinos = CATEGORIAS_TREINO.map(cat => ({
-    ...cat, itens: TREINAMENTOS_NOTION.map((t, indice) => ({ ...t, indice })).filter(t => t.categoria === cat.id)
+    ...cat, itens: TREINAMENTOS_NOTION.map((t, indice) => ({ ...t, indice })).filter(t => t.categoria === cat.id && !t.legado)
       .map(t => ({ indice: t.indice, nome: t.nome, resumo: `${t.tempo} ${t.unidade} · ${t.pt} PT · ${t.requisitos}`, beneficios: t.beneficios, modelo: !!t.modelo }))
   })).filter(cat => cat.itens.length);
   v.categoriasTreino = CATEGORIAS_TREINO;
+  v.totalCatalogoTreinos = v.catalogoTreinos.reduce((s, c) => s + c.itens.length, 0);
 
   /* Títulos e conquistas */
   const tit = ex.titulos ?? { lista: [], ativo: null };

@@ -7,63 +7,22 @@
 /*  Treinamentos (categorias como no Notion)    */
 /* -------------------------------------------- */
 
-export const CATEGORIAS_TREINO = [
-  { id: "aura",    label: "Aura",    icone: "fa-solid fa-sun" },
-  { id: "fisicos", label: "Físicos", icone: "fa-solid fa-person-running" },
-  { id: "arma",    label: "Arma",    icone: "fa-solid fa-khanda" },
-  { id: "extras",  label: "Extras",  icone: "fa-solid fa-dice" },
-  { id: "magias",  label: "Magias",  icone: "fa-solid fa-hat-wizard" },
-  { id: "mental",  label: "Mental",  icone: "fa-solid fa-brain" },
-  { id: "outros",  label: "Outros",  icone: "fa-solid fa-dumbbell" }
-];
+import { CATEGORIAS_TREINOS, TREINAMENTOS_LISTA, TREINOS_LEGADO, textoRequisitos } from "./treinamentos-lista.mjs";
 
-/** Formato igual ao do treinamento da ficha (nome, tempo, unidade, pt, requisitos, treinador, beneficios, mods). */
+/** Categorias do catálogo de treinamentos (EPM/treinamentos.md). */
+export const CATEGORIAS_TREINO = CATEGORIAS_TREINOS;
+
+/**
+ * Compatível com o formato antigo (nome, tempo, unidade, pt, requisitos, treinador, beneficios, mods, especial),
+ * gerado do catálogo novo (scripts/treinamentos-lista.mjs). `modelo` = id do catálogo.
+ */
 export const TREINAMENTOS_NOTION = [
-  { categoria: "aura", nome: "Aura Iniciante", tempo: 12, unidade: "horas", pt: 2, requisitos: "—", treinador: false,
-    beneficios: "Soma sua Aura (Núcleo) em todo ataque corpo a corpo desarmado.", mods: [] , especial: "auraIniciante" },
-  { categoria: "aura", nome: "Aura de Deslocamento", tempo: 24, unidade: "horas", pt: 5, requisitos: "3 de Núcleo e Destreza; Aura Iniciante", treinador: false,
-    beneficios: "Move 9 m com a Ação Bônus, +3 m para cada ponto de Aura (Núcleo) acima de 3.", mods: [] , especial: "auraDeslocamento" },
-  { categoria: "aura", nome: "Aura de Deslocamento Superior", tempo: 24, unidade: "horas", pt: 5, requisitos: "3 de Núcleo e Destreza; Aura de Deslocamento", treinador: false,
-    beneficios: "O movimento de Aura de Deslocamento aumenta em 9 m.", mods: [] , especial: "auraDeslocamentoSuperior" },
-  { categoria: "aura", nome: "Aura de Proteção", tempo: 24, unidade: "horas", pt: 5, requisitos: "3 de Núcleo e Constituição; Aura Iniciante", treinador: false,
-    beneficios: "Recebe 2 × Núcleo de RD. Alternativamente, soma o Núcleo na CA.", mods: [], especial: "auraProtecao" },
-  { categoria: "aura", nome: "Aura de Proteção Superior", tempo: 24, unidade: "horas", pt: 5, requisitos: "Aura de Proteção", treinador: false,
-    beneficios: "Os dois benefícios da Aura de Proteção valem ao mesmo tempo.", mods: [], especial: "auraProtecaoSuperior" },
-  { categoria: "aura", nome: "Fortalecimento Mental por Aura", tempo: 20, unidade: "horas", pt: 3, requisitos: "3 de Núcleo e Autocontrole; Aura Iniciante", treinador: false,
-    beneficios: "Soma o Núcleo nos testes de resistência de Autocontrole.", mods: [] , especial: "fortalecimentoMental" },
-  { categoria: "fisicos", nome: "Corredor", tempo: 48, unidade: "horas", pt: 5, requisitos: "4 de Destreza", treinador: false,
-    beneficios: "Seu deslocamento aumenta em 3 metros e você pode realizar a ação Disparada como Ação Bônus.", mods: [{ alvo: "deslocamento", valor: 3 }], especial: "corredor" },
-  { categoria: "fisicos", nome: "Músculos de Aço", tempo: 36, unidade: "horas", pt: 5, requisitos: "4 de Força ou Constituição", treinador: false,
-    beneficios: "A CA troca a Destreza por Força ou Constituição (escolha em Combate → CA).", mods: [] , especial: "musculosAco" },
-  { categoria: "fisicos", nome: "Flash Step", tempo: 1, unidade: "meses", pt: 100, requisitos: "12 de Destreza ou Força, 8 de Núcleo", treinador: true,
-    beneficios: "Defina com o Mestre (em branco no Notion).", mods: [] },
-  { categoria: "arma", nome: "Sintonização com Arma", tempo: 48, unidade: "horas", pt: 3, requisitos: "3 de Núcleo e proficiência com a arma", treinador: false,
-    beneficios: "A arma vira extensão do corpo: o que exige ataque desarmado pode ser usado com ela.", mods: [] , especial: "sintonizacao" },
-  { categoria: "arma", nome: "Mira Rápida", tempo: 24, unidade: "horas", pt: 5, requisitos: "Proficiência em armas à distância", treinador: false,
-    beneficios: "A ação de Mira pode ser feita como Ação Bônus.", mods: [] , especial: "miraRapida" },
-  { categoria: "arma", nome: "Versatilidade Armada", tempo: 36, unidade: "horas", pt: 5, requisitos: "Proficiência em armas corpo a corpo e 4 de Destreza ou Força", treinador: false,
-    beneficios: "Com armas de dois tipos de dano, usa sempre o maior; pode usar seu maior atributo mesmo que a arma diga outro.", mods: [] , especial: "versatilidade" },
-  { categoria: "arma", nome: "Trocar arma favorita", tempo: 56, unidade: "horas", pt: 10, requisitos: "Ter uma arma favorita", treinador: false,
-    beneficios: "Troca a arma favorita por outra (1 semana de treino, 8 h por dia). Ao concluir, a ficha troca sozinha e avisa no chat.", mods: [], especial: "trocarFavorita" },
-  { categoria: "extras", nome: "Delinquente Briguento", tempo: 5, unidade: "dias", pt: 5, requisitos: "8 de Destreza ou Força e 5 de Constituição", treinador: false,
-    beneficios: "Quando uma briga começa por sua causa, seu primeiro ataque da cena causa o dobro de dano.", mods: [] , especial: "delinquente" },
-  { categoria: "extras", nome: "Apostador Experiente", tempo: 5, unidade: "dias", pt: 5, requisitos: "5 de Intelecto e 3 de Autocontrole", treinador: true,
-    beneficios: "Vantagem em testes de Intuição ligados a jogos de azar (descobrir manipulação, ler jogadores, estimar chances).", mods: [] , especial: "apostador" },
-  { categoria: "extras", nome: "Estrategista", tempo: 10, unidade: "dias", pt: 15, requisitos: "5 de Intelecto e 5 em Liderança", treinador: false,
-    beneficios: "Quem seguir um plano seu recebe +3 em todos os testes enquanto estiver dentro do plano.", mods: [] , especial: "estrategista" },
-  { categoria: "magias", nome: "Magia Potente", tempo: 48, unidade: "horas", pt: 10, requisitos: "6 de Núcleo e 5 de Intelecto", treinador: false,
-    beneficios: "Soma a Inteligência no dano ou na cura das magias (se já somava, soma de novo).", mods: [], especial: "magiaPotente" },
-  // Modelos para a categoria Mental (vazia no Notion) e Familiaridade tecnológica (0.6.0, ajustáveis)
-  { categoria: "mental", nome: "Mente Blindada", tempo: 24, unidade: "horas", pt: 3, requisitos: "4 de Autocontrole", treinador: false, modelo: true,
-    beneficios: "+5 nos testes de Sanidade (o teste de Autocontrole para resistir ao dano de Sanidade).", mods: [], especial: "menteBlindada" },
-  { categoria: "mental", nome: "Memória Treinada", tempo: 36, unidade: "horas", pt: 5, requisitos: "5 de Inteligência", treinador: false, modelo: true,
-    beneficios: "Uma vez por sessão, relembra os detalhes de uma cena (o Mestre descreve).", mods: [], especial: "memoriaTreinada" },
-  { categoria: "mental", nome: "Meditação de Núcleo", tempo: 48, unidade: "horas", pt: 5, requisitos: "4 de Núcleo", treinador: false, modelo: true,
-    beneficios: "O descanso curto também recupera 1d6 PM.", mods: [], especial: "meditacaoNucleo" },
-  { categoria: "outros", nome: "Adaptação tecnológica: nível 2", tempo: 48, unidade: "horas", pt: 5, requisitos: "", treinador: false, modelo: true,
-    beneficios: "Passa a dominar a tecnologia de Briavoterna (nível 2): armas, itens e proteções de lá deixam de ter penalidade.", mods: [], especial: "adaptacao2" },
-  { categoria: "outros", nome: "Adaptação tecnológica: nível 3", tempo: 56, unidade: "horas", pt: 10, requisitos: "nível de tecnologia 2", treinador: false, modelo: true,
-    beneficios: "Passa a dominar a tecnologia de Genesis (nível 3). Precisa já dominar o nível 2 (origem em Briavoterna ou a adaptação ao nível 2).", mods: [], especial: "adaptacao3" }
+  ...TREINAMENTOS_LISTA.map(e => ({
+    categoria: e.categoria, nome: e.nome, tempo: e.horas, unidade: "horas", pt: e.pt, requisitos: textoRequisitos(e),
+    treinador: e.precisaTreinador, beneficios: e.beneficios, mods: e.auto?.mods ?? [], especial: e.auto?.especial ?? "", modelo: e.id
+  })),
+  // Legado: não aparecem no catálogo, mas os efeitos continuam nas fichas que já têm
+  ...TREINOS_LEGADO.map(t => ({ categoria: "legado", nome: t.nome, tempo: 1, unidade: "horas", pt: 0, requisitos: "", treinador: false, beneficios: "", mods: [], especial: t.especial, legado: true }))
 ];
 
 /* -------------------------------------------- */

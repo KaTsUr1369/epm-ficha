@@ -64,7 +64,8 @@
       <div class="epm-projetos-topo">
         <span class="epm-contador">{{this.criadosHoje}}/{{../artifice.porDia}} hoje</span>
         {{#if this.calendario}}<span class="epm-contador" title="O tempo segue o Simple Calendar"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Simple Calendar</span>{{/if}}
-        {{#if this.podeUsar}}<button type="button" class="epm-botao" data-action="criarProjeto" {{#unless this.podeCriar}}disabled{{/unless}}><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Criar projeto</button>{{/if}}
+        {{#if this.podeUsar}}<button type="button" class="epm-botao" data-action="criarProjeto" {{#unless this.podeCriar}}disabled{{/unless}}><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Criar projeto</button>
+        {{#if @root.edicao}}<button type="button" class="epm-botao" data-action="pularTempoProjetos" title="Timeskip: termina a produção e a volta dos projetos, encerra efeitos ou começa um dia novo"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>{{/if}}{{/if}}
       </div>
       {{#each this.efeitos}}
       <div class="epm-projeto-efeito"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> <span><strong>{{this.nome}}</strong>: +{{this.valor}} {{this.alvo}}</span> <span class="epm-dica">falta {{this.faltamTexto}}</span>
@@ -78,7 +79,7 @@
         {{#if ../podeUsar}}
         <button type="button" class="epm-botao" data-action="usarProjeto" data-projeto="{{this.id}}" {{#unless this.pronto}}disabled{{/unless}}>Usar</button>
         {{#if ../limiteLivro}}<button type="button" class="epm-link" data-action="guardarProjeto" data-projeto="{{this.id}}" title="Guardar no Livro de Projetos"><i class="fa-solid fa-book-bookmark" aria-hidden="true"></i></button>{{/if}}
-        <button type="button" class="epm-link" data-action="apagarProjeto" data-projeto="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+        <button type="button" class="epm-link" data-action="apagarProjeto" data-projeto="{{this.id}}" title="Cancelar (não conta no limite se ainda não foi usado)"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
         {{/if}}
       </div>
       {{else}}

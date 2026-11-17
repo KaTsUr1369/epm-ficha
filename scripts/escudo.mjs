@@ -24,7 +24,7 @@ let pendente = null;
 const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
-  "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia",
+  "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia", "avancarRelogio",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "rolarTestes", "rolarLivre", "abrirItem",
   "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
   "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo"
@@ -367,6 +367,24 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     const partes = [["pev", "PEv"], ["pt", "PT"], ["ph", "PH"]].filter(([k]) => v[k]).map(([k, r]) => `${v[k] > 0 ? "+" : ""}${v[k]} ${r}`);
     return ChatMessage.create({ content: `<div class="epm-chat epm-chat-nota"><p><strong>O Mestre deu</strong> ${partes.join(", ")} para ${atores.map(a => escapar(a.name)).join(", ")}${motivo ? ` (${escapar(motivo)})` : ""}.</p></div>` });
+  }
+
+  /** Pular tempo no relógio do mundo (Simple Calendar junto): projetos, produção, Ressonância e efeitos com hora andam sozinhos. */
+  async _avancarRelogio() {
+    const { formulario, opcoes } = await import("./mundo.mjs");
+    const r = await formulario("Pular tempo no relógio do mundo", `
+      <p class="epm-dica">Avança o relógio do mundo (e o Simple Calendar). Projetos do Artífice, produções, a Troca de lugar e os efeitos com hora acompanham.
+      Horas de treino e criação são por ficha: use "Pular tempo" na aba Treinamentos.</p>
+      <div class="epm-dialogo-linha"><label class="epm-campo"><span>Quanto</span><input type="number" name="qtd" min="0" step="any" value="1"></label>
+      <label class="epm-campo"><span>Unidade</span><select name="unidade">${opcoes([["minutos", "minutos"], ["horas", "horas"], ["dias", "dias"]], "horas")}</select></label></div>`, { botao: "Avançar" });
+    if (!r) return;
+    const qtd = Math.max(0, Number(r.qtd) || 0);
+    if (!qtd) return;
+    const { somarTempo, agora } = await import("./projetos.mjs");
+    const t = agora();
+    const fim = somarTempo(t, r.unidade === "minutos" ? { minutos: qtd } : { horas: r.unidade === "dias" ? qtd * 24 : qtd });
+    await game.time.advance(fim - t);
+    ui.notifications.info(`Relógio do mundo: +${qtd} ${r.unidade}.`);
   }
 
   async _recarregarRessonancia() {

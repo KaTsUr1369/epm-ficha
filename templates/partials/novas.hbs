@@ -163,7 +163,7 @@
 
 {{#if (epmEq ../secao "criacao")}}
 <section class="epm-painel epm-novas-criacao">
-  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> Criação de itens</h3>{{#if n.editavel}}<button type="button" class="epm-link" data-action="novaCriacao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo projeto</button>{{/if}}</header>
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> Criação de itens</h3>{{#if n.editavel}}<button type="button" class="epm-link" data-action="novaCriacao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo projeto</button>{{/if}}{{#if n.editavel}}{{#if @root.edicao}}<button type="button" class="epm-link" data-action="pularHoras" title="Timeskip: passa horas de criação (e de treino) de uma vez, sem o limite do dia"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>{{/if}}{{/if}}</header>
   <p class="epm-dica">As horas saem das mesmas 8 h por dia dos treinos. No fim, teste da perícia: sucesso cria o item e gasta os materiais; falha gasta metade dos materiais e pede metade das horas de novo.</p>
   {{#unless n.criacoes.length}}<p class="epm-vazio">Nenhum projeto.</p>{{/unless}}
   {{#each n.criacoes}}

@@ -71,7 +71,8 @@ export function painelProjetos(dados, nivel, intel, podeUsar) {
   const t = agora();
   const dia = chaveDia(t);
   const valores = projetosDoNivel(nivel, intel, dados.ajustesBonus);
-  const todos = estadoProjetos(dados, t, dia);
+  // Projeto cancelado antes de ser usado não conta no dia (fichas antigas: os que ficaram só marcados como apagados)
+  const todos = estadoProjetos(dados, t, dia).filter(p => !(p.apagado && !p.usado));
   const lista = todos.filter(p => !p.apagado).map(p => ({
     ...p,
     valor: valores ? (p.tipo === "dano" ? valores.dano : p.tipo === "cura" ? valores.cura : `+${valores[p.tipo]}`) : "",
@@ -119,7 +120,7 @@ export async function criarProjeto(actor) {
   const t = agora();
   const dia = chaveDia(t);
   const porDia = projetosDoNivel(nivelArquetipo(dados, "artifice"), estadoAtor(actor).ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus)?.porDia ?? ARQUETIPOS.artifice.projetosPorDia;
-  const hoje = estadoProjetos(dados, t, dia).length;
+  const hoje = estadoProjetos(dados, t, dia).filter(p => !(p.apagado && !p.usado)).length;
   if (hoje >= porDia) return ui.notifications.warn(`Você já criou ${porDia} projetos hoje. Eles voltam a ficar disponíveis quando o dia muda.`);
   const livro = Object.entries(dados.livroProjetos ?? {}).filter(([, l]) => l && TIPOS_PROJETO[l.tipo]);
   const opcoesTipo = Object.entries(TIPOS_PROJETO).map(([id, x]) => `<option value="${id}">${x.label}</option>`).join("");
@@ -196,9 +197,44 @@ export async function usarProjeto(actor, id) {
   });
 }
 
-/** Apaga da lista, mas continua contando no limite do dia (some de vez quando o dia muda). */
+/**
+ * Cancelar um projeto que ainda não foi usado: sai de vez e não conta no limite do dia nem no Livro de Projetos
+ * (se ele foi guardado no livro a partir deste projeto, sai do livro também). Um projeto já usado só some da lista
+ * e continua contando no dia.
+ */
 export async function apagarProjeto(actor, id) {
-  return actor.update({ [`${P}.projetos.${id}.apagado`]: true });
+  const dados = actor.flags?.[FLAG] ?? {};
+  const p = dados.projetos?.[id];
+  if (!p) return;
+  if (Number(p.voltaEm) > 0) return actor.update({ [`${P}.projetos.${id}.apagado`]: true });
+  const up = { [`${P}.projetos.-=${id}`]: null };
+  for (const [lid, l] of Object.entries(dados.livroProjetos ?? {})) if (l?.projeto === id) up[`${P}.livroProjetos.-=${lid}`] = null;
+  return actor.update(up);
+}
+
+/** Timeskip dos projetos: termina produção e volta agora, encerra os efeitos ou começa um dia novo (libera o limite). */
+export async function pularTempoProjetos(actor) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  const r = await perguntar({
+    titulo: "Pular tempo (projetos)", ok: "Aplicar", icone: "fa-solid fa-forward",
+    content: `<p class="epm-dica">Para quando o tempo passa fora de cena sem mexer no relógio do mundo.</p>
+      <label class="epm-check"><input type="checkbox" name="prontos" checked> Projetos em produção ficam prontos e os usados voltam agora</label>
+      <label class="epm-check"><input type="checkbox" name="efeitos"> Soma e Proteção ligadas terminam</label>
+      <label class="epm-check"><input type="checkbox" name="dia"> Começa um dia novo (os projetos de hoje terminam e o limite do dia volta)</label>`,
+    callback: f => ({ prontos: !!f.prontos?.checked, efeitos: !!f.efeitos?.checked, dia: !!f.dia?.checked })
+  });
+  if (!r) return;
+  const t = agora();
+  const up = {};
+  for (const [id, p] of Object.entries(dados.projetos ?? {})) {
+    if (!p) continue;
+    if (r.dia) { up[`${P}.projetos.-=${id}`] = null; continue; }
+    if (r.prontos) { if (Number(p.prontoEm) > t) up[`${P}.projetos.${id}.prontoEm`] = t; if (Number(p.voltaEm) > t) up[`${P}.projetos.${id}.voltaEm`] = t; }
+  }
+  if (r.efeitos || r.dia) for (const id of Object.keys(dados.projetosEfeitos ?? {})) up[`${P}.projetosEfeitos.-=${id}`] = null;
+  if (!Object.keys(up).length) return ui.notifications.info("Nada para mudar.");
+  await actor.update(up);
+  ui.notifications.info(r.dia ? "Dia novo: os projetos de hoje terminaram e o limite voltou." : "Tempo passado nos projetos.");
 }
 
 export async function encerrarEfeitoProjeto(actor, id) {
@@ -216,7 +252,7 @@ export async function guardarNoLivro(actor, id) {
   const livro = Object.values(dados.livroProjetos ?? {}).filter(Boolean);
   if (livro.some(l => l.nome === p.nome && l.tipo === p.tipo)) return ui.notifications.info(`${p.nome} já está no livro.`);
   if (livro.length >= limite) return ui.notifications.warn(`O livro está cheio (${limite}). Apague um projeto dele primeiro.`);
-  await actor.update({ [`${P}.livroProjetos.${novoId()}`]: { nome: p.nome, tipo: p.tipo } });
+  await actor.update({ [`${P}.livroProjetos.${novoId()}`]: { nome: p.nome, tipo: p.tipo, projeto: id } });
   ui.notifications.info(`${p.nome} guardado no Livro de Projetos.`);
 }
 

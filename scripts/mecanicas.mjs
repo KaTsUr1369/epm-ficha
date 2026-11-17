@@ -2049,6 +2049,7 @@ export async function rolarAtaque(actor, at, {
   const cena = bonusCenaAtivos(dados);
   const per = ficha.periciaPorId[at.periciaId];
   const m = modsDoAtaque(at, ficha);
+  const notas = [];
   const rd = dadosRolagem(actor, ficha);
   const d20 = formulaD20({ vantagem: modo === "vantagem", desvantagem: modo === "desvantagem" });
   const bonusArq = bonusFontes.reduce((s, b) => s + int(b.valor), 0);
@@ -2085,12 +2086,13 @@ export async function rolarAtaque(actor, at, {
   const multFinal = Math.max(2, int(mult, at.critMult) + int(multCena));
   const natural = atk.dice[0]?.total ?? 0;
   const critico = natural >= margemFinal;
+  // A margem de ameaça não garante o acerto: o crítico só vale se o total passar a defesa do alvo
+  if (critico) notas.push("Crítico só se o ataque acertar: a margem de ameaça não garante o acerto (o total ainda precisa passar a CA ou a defesa).");
   // Ativação condicional "ao acertar um crítico" (depois do cartão do ataque)
   if (critico) setTimeout(() => dispararGatilhos(actor, "critico").catch(err => console.warn("EPM | gatilho de crítico", err)), 50);
   const falhaCrit = (atk.dice[0]?.results ?? []).filter(r => r.active !== false).some(r => r.result === 1) && natural === 1;
   let dmg = null;
   let dmgDescartado = null;
-  const notas = [];
   if (comDano) {
     let danoArmaFormula = semModDano ? semModificadorDeDano(at.dano) : at.dano;
     danoArmaFormula = somarDadosDaArma(danoArmaFormula, int(dadosExtra));

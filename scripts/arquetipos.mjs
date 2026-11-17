@@ -23,11 +23,11 @@ export const ARQUETIPOS = {
     id: "combatente", nome: "Combatente", icone: "fa-solid fa-shield-halved", cor: "#D9775A",
     funcao: "Transforma PE em desempenho físico, ataques adicionais, precisão, proteção e feitos lendários. Continua podendo usar magia normalmente.",
     recursos: "PE Máximo = PE de Raça + PE de Classe + Constituição (Vigor).",
-    progressao: progressao(`1 Arma Favorita • 2 AS • 3 Classe • 4 AS + Ataque Extra • 5 Estilo + Perícia • 6 AS + Classe • 7 Reflexos • 8 AS • 9 Classe • 10 AS + Ataque Extra 2.0 + Perícia • 11 Arma Favorita 2.0 • 12 AS + Classe • 13 Movimento Cauteloso • 14 AS • 15 Classe + Perícia • 16 AS • 17 Caçador Natural • 18 AS + Classe • 19 Ataque Extra 3.0 • 20 AS + Perícias • 21 Classe + Arma Favorita 3.0 • 22 AS • 23 Especialista em Campo • 24 AS + Classe • 25 Estilo 2.0 + Perícia • 26 AS • 27 Classe • 28 AS • 29 Ataque Extra 4.0 • 30 AS + Classe + Perícia • 31 Arma Favorita 4.0 • 32 AS • 33 Classe • 34 AS • 35 Perícia • 36 AS + Classe • 37 Ataque Extra 5.0 • 38 AS • 39 Classe • 40 AS + Herói + Perícia • 41 Arma Favorita 5.0 • 42 AS + Classe • 43 Especialista 2.0 • 44 AS • 45 Classe + Perícia • 46 AS • 47 Ataque Extra 6.0 • 48 AS + Classe • 49 Estilo 3.0 • 50 AS x2 + Perícia + Ímpeto Lendário`),
+    progressao: progressao(`1 Arma Favorita • 2 AS • 3 Classe • 4 AS + Ataque Extra + Estilo • 5 Perícia • 6 AS + Classe • 7 Reflexos • 8 AS • 9 Classe • 10 AS + Ataque Extra 2.0 + Perícia • 11 Arma Favorita 2.0 • 12 AS + Classe • 13 Movimento Cauteloso • 14 AS • 15 Classe + Perícia • 16 AS • 17 Caçador Natural • 18 AS + Classe • 19 Ataque Extra 3.0 • 20 AS + Perícias • 21 Classe + Arma Favorita 3.0 • 22 AS • 23 Especialista em Campo • 24 AS + Classe • 25 Estilo 2.0 + Perícia • 26 AS • 27 Classe • 28 AS • 29 Ataque Extra 4.0 • 30 AS + Classe + Perícia • 31 Arma Favorita 4.0 • 32 AS • 33 Classe • 34 AS • 35 Perícia • 36 AS + Classe • 37 Ataque Extra 5.0 • 38 AS • 39 Classe • 40 AS + Herói + Perícia • 41 Arma Favorita 5.0 • 42 AS + Classe • 43 Especialista 2.0 • 44 AS • 45 Classe + Perícia • 46 AS • 47 Ataque Extra 6.0 • 48 AS + Classe • 49 Estilo 3.0 • 50 AS x2 + Perícia + Ímpeto Lendário`),
     habilidades: [
       { nivel: 1, nome: "Arma Favorita", resumo: "Escolha uma arma e uma Maestria. Os custos e efeitos crescem nos níveis 1, 11, 21, 31 e 41." },
       { nivel: 4, nome: "Ataque Extra", resumo: "Ao usar a Ação de Ataque, gaste 5 PE para +1 ataque. Só pode ativar uma vez por turno." },
-      { nivel: 5, nome: "Estilo de Combate", resumo: "Escolha um estilo: Duelista, Atirador, Arma Dupla, Combate Defensivo, Arma Pesada, Arma Leve, Bêbado ou Armamento Longo." },
+      { nivel: 4, nome: "Estilo de Combate", resumo: "Escolha um estilo: Duelista, Atirador, Arma Dupla, Combate Defensivo, Arma Pesada, Arma Leve, Bêbado ou Armamento Longo." },
       { nivel: 7, nome: "Reflexos de Combate", resumo: "+5 em Testes de Resistência de Destreza." },
       { nivel: 10, nome: "Ataque Extra 2.0", resumo: "10 PE por +2 ataques." },
       { nivel: 11, nome: "Arma Favorita 2.0", resumo: "A Maestria evolui para a etapa 2." },
@@ -72,8 +72,8 @@ export const ARQUETIPOS = {
         mult: [{ nivel: 11, valor: 3 }, { nivel: 41, valor: 4 }],
         texto: "Margem de crítico +1 (+2 no Nv. 21, +3 no Nv. 41). Multiplicador do crítico ×3 no Nv. 11 e ×4 no Nv. 41." }
     },
-    /** Estilos de Combate (1 no Nv. 5, 2 no Nv. 25, 3 no Nv. 49). */
-    estilosPorNivel: [{ nivel: 5, qtd: 1 }, { nivel: 25, qtd: 2 }, { nivel: 49, qtd: 3 }],
+    /** Estilos de Combate (1 no Nv. 4, 2 no Nv. 25, 3 no Nv. 49). */
+    estilosPorNivel: [{ nivel: 4, qtd: 1 }, { nivel: 25, qtd: 2 }, { nivel: 49, qtd: 3 }],
     estilos: {
       defensivo: { nome: "Combate Defensivo", texto: "Usando Escudo ou Armadura: +2 Defesa (Bloqueio) e +1 CA.", defesa: 2, ca: 1 },
       pesada:    { nome: "Combate com Arma Pesada", texto: "Crítico com arma Pesada ou maior: pode fazer +1 ataque, uma vez por turno." },
@@ -464,7 +464,7 @@ export function estadoProjetos(dados = {}, agora = 0, dia = "") {
       const voltaEm = Number(p.voltaEm) || 0;
       const estado = agora < prontoEm ? "producao" : (agora < voltaEm ? "recarga" : "pronto");
       return { id, nome: p.nome || TIPOS_PROJETO[p.tipo].label, tipo: p.tipo, tipoLabel: TIPOS_PROJETO[p.tipo].label,
-        icone: TIPOS_PROJETO[p.tipo].icone, estado, apagado: !!p.apagado, faltam: estado === "producao" ? prontoEm - agora : (estado === "recarga" ? voltaEm - agora : 0) };
+        icone: TIPOS_PROJETO[p.tipo].icone, estado, apagado: !!p.apagado, usado: voltaEm > 0, faltam: estado === "producao" ? prontoEm - agora : (estado === "recarga" ? voltaEm - agora : 0) };
     });
 }
 

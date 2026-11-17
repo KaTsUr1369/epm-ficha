@@ -76,7 +76,7 @@ const ACOES_FICHA = [
   "novaRd", "removerRd",
   "novaReceita", "apagarReceita", "alternarProfissao", "novoIngrediente", "removerIngrediente", "ligarResultado",
   "produzir", "testarProducao", "terminarProducao", "apagarProducao",
-  "criarProjeto", "usarProjeto", "apagarProjeto", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto",
+  "criarProjeto", "usarProjeto", "apagarProjeto", "pularTempoProjetos", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto",
   // 0.6.0
   ...NOMES_ACOES_060,
   // Novas mecânicas
@@ -1995,9 +1995,14 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoCriarProjeto() { return PJ.criarProjeto(this.actor); }
   acaoUsarProjeto(ev, alvo) { return PJ.usarProjeto(this.actor, alvo.dataset.projeto); }
   async acaoApagarProjeto(ev, alvo) {
-    if (!(await M.confirmar("Apagar projeto", "<p>Apagar este projeto? Ele continua contando no limite do dia.</p>"))) return;
+    const p = this.actor.flags?.[FLAG]?.projetos?.[alvo.dataset.projeto];
+    const usado = Number(p?.voltaEm) > 0;
+    if (!(await M.confirmar(usado ? "Apagar projeto" : "Cancelar projeto", usado
+      ? "<p>Apagar este projeto da lista? Ele já foi usado, então continua contando no limite do dia.</p>"
+      : "<p>Cancelar este projeto? Ele não conta no limite do dia e, se foi guardado no Livro de Projetos a partir daqui, sai do livro também.</p>"))) return;
     return PJ.apagarProjeto(this.actor, alvo.dataset.projeto);
   }
+  acaoPularTempoProjetos() { return PJ.pularTempoProjetos(this.actor); }
   acaoGuardarProjeto(ev, alvo) { return PJ.guardarNoLivro(this.actor, alvo.dataset.projeto); }
   acaoApagarDoLivro(ev, alvo) { return PJ.apagarDoLivro(this.actor, alvo.dataset.livro); }
   acaoEncerrarEfeitoProjeto(ev, alvo) { return PJ.encerrarEfeitoProjeto(this.actor, alvo.dataset.efeito); }

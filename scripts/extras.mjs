@@ -644,13 +644,20 @@ export async function ressonanciaDeAlma(actor) {
 
 export async function pularHoras(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
-  const emAndamento = Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t && t.estado === "andamento");
-  const linhas = emAndamento.map(([id, t]) => {
-    const total = horasDoTreino(t);
-    const feitas = Math.min(total, Math.max(0, num(t.horasFeitas)));
-    return `<label class="epm-campo epm-pular-linha"><span>${escapar(t.nome || "Treinamento")} <em class="epm-dica">faltam ${total - feitas} h</em></span>
-      <input type="number" min="0" step="1" name="t-${id}" data-falta="${total - feitas}" value="0"></label>`;
-  }).join("");
+  // Treinamentos e criações (Oficina) em andamento: as duas dividem as horas do dia, e o timeskip vale para as duas
+  const { lerCriacao } = await import("./oficina.mjs");
+  const emAndamento = [
+    ...Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t && t.estado === "andamento").map(([id, t]) => {
+      const total = horasDoTreino(t);
+      return { chave: `t-${id}`, tipo: "treino", id, t, nome: t.nome || "Treinamento", total, feitas: Math.min(total, Math.max(0, num(t.horasFeitas))) };
+    }),
+    ...Object.entries(dados.criacoes ?? {}).filter(([, c]) => c).map(([id, c]) => ({ id, c: lerCriacao(id, c) })).filter(x => x.c.estado === "andamento").map(({ id, c }) => {
+      const total = Math.max(1, Math.ceil(num(c.horas)));
+      return { chave: `t-c${id}`, tipo: "criacao", id, nome: `Criação: ${c.nome || "projeto"}`, total, feitas: Math.min(total, Math.max(0, num(c.feitas))) };
+    })
+  ];
+  const linhas = emAndamento.map(e => `<label class="epm-campo epm-pular-linha"><span>${escapar(e.nome)} <em class="epm-dica">faltam ${e.total - e.feitas} h</em></span>
+      <input type="number" min="0" step="1" name="${e.chave}" data-falta="${e.total - e.feitas}" value="0"></label>`).join("");
   const unidades = Object.entries(UNIDADES_TEMPO).map(([id, u]) => `<option value="${id}" ${id === "dias" ? "selected" : ""}>${u.label}</option>`).join("");
   const r = await dialogo({
     titulo: "Pular tempo (timeskip)", ok: "Aplicar", icone: "fa-solid fa-forward",
@@ -658,8 +665,8 @@ export async function pularHoras(actor) {
       <div class="epm-dialogo-linha"><label class="epm-campo"><span>Tempo de treino</span><input type="number" min="0" step="any" name="qtd" value="1"></label>
       <label class="epm-campo"><span>Unidade</span><select name="unidade">${unidades}</select></label></div>
       <p class="epm-dica epm-pular-total">= <strong data-total-horas>8</strong> h para distribuir</p>
-      ${emAndamento.length ? `<fieldset class="epm-aquisicao"><legend>Quanto vai para cada treinamento em andamento</legend>${linhas}
-        <button type="button" class="epm-link" data-dividir>Dividir igualmente</button></fieldset>` : `<p class="epm-dica">Nenhum treinamento em andamento: as horas podem virar PT de estudo.</p>`}
+      ${emAndamento.length ? `<fieldset class="epm-aquisicao"><legend>Quanto vai para cada treinamento ou criação em andamento</legend>${linhas}
+        <button type="button" class="epm-link" data-dividir>Dividir igualmente</button></fieldset>` : `<p class="epm-dica">Nenhum treinamento ou criação em andamento: as horas podem virar PT de estudo.</p>`}
       <label class="epm-check"><input type="checkbox" name="estudo" ${emAndamento.length ? "" : "checked"}> As horas que sobrarem viram PT de estudo (${TREINO.acao.pt} PT a cada ${TREINO.acao.horas} h)</label>`,
     render: (ev, dlg) => {
       const raiz = dlg?.element ?? ev?.target?.element ?? ev?.target;
@@ -688,7 +695,7 @@ export async function pularHoras(actor) {
     },
     callback: f => {
       const horas = Math.max(0, Math.round(num(f.qtd?.value) * (UNIDADES_TEMPO[f.unidade?.value]?.horas ?? 1)));
-      const porTreino = Object.fromEntries(emAndamento.map(([id]) => [id, Math.max(0, Math.round(num(f[`t-${id}`]?.value)))]));
+      const porTreino = Object.fromEntries(emAndamento.map(e => [e.chave, Math.max(0, Math.round(num(f[e.chave]?.value)))]));
       return { horas, porTreino, estudo: !!f.estudo?.checked };
     }
   });
@@ -696,16 +703,20 @@ export async function pularHoras(actor) {
   const updates = {};
   const feitos = [];
   let usadas = 0;
-  for (const [id, t] of emAndamento) {
-    const total = horasDoTreino(t);
-    const feitas = Math.min(total, Math.max(0, num(t.horasFeitas)));
-    const pedidas = Math.min(r.porTreino[id] ?? 0, total - feitas, Math.max(0, r.horas - usadas));
+  for (const e of emAndamento) {
+    const { total, feitas } = e;
+    const pedidas = Math.min(r.porTreino[e.chave] ?? 0, total - feitas, Math.max(0, r.horas - usadas));
     if (!pedidas) continue;
     usadas += pedidas;
     const agora = feitas + pedidas;
-    updates[`${P}.treinamentos.${id}.horasFeitas`] = agora;
-    if (agora >= total) updates[`${P}.treinamentos.${id}.estado`] = "concluido";
-    feitos.push(`${t.nome || "Treinamento"}: +${pedidas} h${agora >= total ? " (concluído!)" : ` (${agora} de ${total} h)`}`);
+    if (e.tipo === "treino") {
+      updates[`${P}.treinamentos.${e.id}.horasFeitas`] = agora;
+      if (agora >= total) updates[`${P}.treinamentos.${e.id}.estado`] = "concluido";
+    } else {
+      updates[`${P}.criacoes.${e.id}.horasFeitas`] = agora;
+      if (agora >= total) updates[`${P}.criacoes.${e.id}.estado`] = "pronto";
+    }
+    feitos.push(`${e.nome}: +${pedidas} h${agora >= total ? (e.tipo === "treino" ? " (concluído!)" : " (pronto para o teste)") : ` (${agora} de ${total} h)`}`);
   }
   const sobra = Math.max(0, r.horas - usadas);
   if (r.estudo && sobra >= TREINO.acao.horas) {
@@ -714,7 +725,7 @@ export async function pularHoras(actor) {
     updates[`${P}.pontos.pt`] = ficha.pontos.pt + pt;
     feitos.push(`Estudo: +${pt} PT (${Math.floor(sobra / TREINO.acao.horas) * TREINO.acao.horas} h)`);
   }
-  if (!Object.keys(updates).length) return ui.notifications.info("Nada para aplicar: distribua as horas entre os treinamentos ou marque o estudo.");
+  if (!Object.keys(updates).length) return ui.notifications.info("Nada para aplicar: distribua as horas entre os treinamentos e criações ou marque o estudo.");
   await actor.update(updates);
   return nota(actor, `<p><strong>Passou o tempo</strong> (${r.horas} h de treino):</p><ul>${feitos.map(f => `<li>${escapar(f)}</li>`).join("")}</ul>`);
 }

@@ -14,6 +14,17 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.15
+
+- **Artífice**: cancelar um projeto que ainda não foi usado tira ele do limite do dia e, se ele foi guardado no Livro de Projetos a partir dali, do livro também (fichas antigas: os projetos apagados sem uso deixam de contar). Projeto já usado continua contando.
+- **Pular tempo em tudo que depende de tempo**:
+  - Projetos do Artífice: termina a produção e a volta agora, encerra Soma/Proteção ou começa um dia novo (modo edição).
+  - Treinamentos e **criações da Oficina** no mesmo "Pular tempo" (as horas vão para cada um), com botão também na sub-aba Criação.
+  - Escudo do Mestre: **Pular tempo** no relógio do mundo (e no Simple Calendar), para projetos, produções, Troca de lugar e efeitos com hora.
+- **Estilo de Combate** no nível 4 (as habilidades de arquétipo já criadas acompanham).
+- **Margem de ameaça não garante o acerto** (sistema todo): o cartão do crítico avisa que o total ainda precisa passar a defesa.
+- Correção: atacar com um bônus "só no próximo teste" ligado travava a rolagem.
+
 ## Novidades da 0.8.14
 
 - **Fichas antigas acompanham as mudanças da 0.8.13** (roda sozinho quando o Mestre abre o mundo):

@@ -14,6 +14,16 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.16
+
+- **Grimório de Magias dentro do Foundry** (substitui o Códex do Vazio):
+  - Botão **Grimório** na aba Magias: as 390 magias e rituais do grimório do EPM, com busca, círculo, escola, ação e tipo de dano. Clique no nome para ler a magia inteira.
+  - Marque e clique em **Adicionar à ficha**: a magia entra no círculo certo, com custo em PM, ação, alcance, alvo, área, duração, teste (ataque com Arcanismo ou resistência) e dano já preenchidos. Não precisa abrir o site nem copiar nada.
+  - **Atualizar as da ficha** reescreve as magias que vieram do Grimório quando o texto dele mudar (raridade, favorito e formas extras ficam).
+  - No Escudo do Mestre (aba Itens): **Grimório** para dar magias a qualquer ficha ou **importar para o mundo** (pasta "EPM · Grimório de Magias", uma subpasta por círculo).
+  - Macro: `game.modules.get("epm-ficha").api.grimorio()`.
+  - O **Colar texto / Códex** continua lendo o botão "Copiar registro" do site novo e do Códex antigo.
+
 ## Novidades da 0.8.15
 
 - **Artífice**: cancelar um projeto que ainda não foi usado tira ele do limite do dia e, se ele foi guardado no Livro de Projetos a partir dali, do livro também (fichas antigas: os projetos apagados sem uso deixam de contar). Projeto já usado continua contando.

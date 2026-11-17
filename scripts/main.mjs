@@ -73,7 +73,8 @@ Hooks.once("init", () => {
   });
 
   const modulo = game.modules.get(MODULE_ID);
-  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo, mundo };
+  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo, mundo,
+    grimorio: async (opcoes = {}) => (await import("./grimorio-app.mjs")).abrirGrimorio(opcoes) };
 });
 
 Hooks.once("setup", () => registrarCondicoes());

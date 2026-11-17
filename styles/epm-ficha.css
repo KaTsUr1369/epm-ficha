@@ -3451,3 +3451,27 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-alma-ganhos ul, .epm-alma-esquecidas ul, .epm-alma-historico ul { margin: 4px 0 0; padding-left: 18px; font-size: 12.5px; }
 .epm-chat-alma { border-left: 3px solid var(--epm-cor-cartao, #7FB3E0); }
 .epm-chat-alma .epm-alma-resposta { border-top: 1px dashed currentColor; padding-top: 4px; font-style: italic; }
+
+/* Grimório de Magias (janela) */
+.epm-gri-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--epm-linha, #2c3d3b); }
+.application.epm-grimorio .epm-gri-chip { flex: 0 0 auto; width: auto; height: auto; line-height: 1.4; padding: 3px 12px; border-radius: 999px; border: 1px solid var(--epm-linha, #2c3d3b);
+  background: transparent; color: inherit; font-size: 0.85em; cursor: pointer; }
+.application.epm-grimorio .epm-gri-chip:hover { border-color: #8B5CC7; }
+.application.epm-grimorio .epm-gri-chip.ativo { background: rgba(109, 63, 169, 0.35); border-color: #8B5CC7; color: #ded5e4; }
+.epm-gri-linha { display: grid; grid-template-columns: 18px minmax(170px, 1.5fr) 104px 104px minmax(80px, 1fr) 64px; gap: 6px; align-items: center;
+  padding: 2px 4px; border-radius: 4px; font-size: 0.85em; }
+.epm-gri-linha[hidden], .epm-gri-detalhe[hidden], .epm-gri-vazio[hidden] { display: none !important; }
+.epm-gri-linha:hover { background: rgba(255, 255, 255, 0.04); }
+.epm-gri-linha.marcado { background: rgba(109, 63, 169, 0.18); }
+.epm-gri-linha.aberta { background: rgba(255, 255, 255, 0.05); }
+.epm-gri-linha.na-ficha .epm-gri-nome { opacity: 0.75; }
+.application.epm-grimorio .epm-gri-nome { display: flex; align-items: center; gap: 4px; min-width: 0; width: auto; height: auto; padding: 0; margin: 0; border: 0;
+  background: none; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; line-height: 1.3; }
+.application.epm-grimorio .epm-gri-nome:hover { color: #b98ce8; box-shadow: none; }
+.epm-gri-nome .epm-tag { font-size: 0.8em; font-weight: 400; }
+.epm-gri-escola, .epm-gri-exec, .epm-gri-alcance { opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.epm-gri-custo { text-align: right; white-space: nowrap; }
+.epm-gri-detalhe { grid-column: 2 / -1; margin: 4px 0 8px; padding: 8px 10px; border-left: 2px solid #6D3FA9; background: rgba(0, 0, 0, 0.18); border-radius: 0 4px 4px 0; line-height: 1.4; }
+.epm-gri-detalhe p { margin: 0 0 6px; }
+.epm-gri-detalhe ul { margin: 0 0 6px; padding-left: 18px; }
+.epm-gri-vazio { padding: 16px; text-align: center; }

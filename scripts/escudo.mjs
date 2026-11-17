@@ -25,7 +25,7 @@ const acao = nome => function (ev, alvo) { return this[`_${nome}`](ev, alvo); };
 const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia", "avancarRelogio",
-  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "rolarTestes", "rolarLivre", "abrirItem",
+  "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "abrirGrimorio", "rolarTestes", "rolarLivre", "abrirItem",
   "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
   "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo"
 ];
@@ -595,6 +595,11 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       } });
     }
     ui.notifications.info(`${t.nome} foi para ${destinos.map(d => d.name).join(", ")} (aba Habilidades → Transformações).`);
+  }
+
+  async _abrirGrimorio() {
+    const { abrirGrimorio } = await import("./grimorio-app.mjs");
+    return abrirGrimorio({ destino: this._destinosItem()[0]?.id ?? "" });
   }
 
   async _abrirCatalogo() {

@@ -642,93 +642,10 @@ export async function ressonanciaDeAlma(actor) {
 /*  Treino: pular tempo (timeskip)              */
 /* -------------------------------------------- */
 
+/** Pular tempo: o diálogo único (treinos, criações, projetos, produções, pacto, Ressonância, cena e usos por dia). */
 export async function pularHoras(actor) {
-  const dados = actor.flags?.[FLAG] ?? {};
-  // Treinamentos e criações (Oficina) em andamento: as duas dividem as horas do dia, e o timeskip vale para as duas
-  const { lerCriacao } = await import("./oficina.mjs");
-  const artesao = (await import("./treinamentos-lista.mjs")).especiaisDaFicha(dados).has("mestreArtesao");
-  const emAndamento = [
-    ...Object.entries(dados.treinamentos ?? {}).filter(([, t]) => t && t.estado === "andamento").map(([id, t]) => {
-      const total = horasDoTreino(t);
-      return { chave: `t-${id}`, tipo: "treino", id, t, nome: t.nome || "Treinamento", total, feitas: Math.min(total, Math.max(0, num(t.horasFeitas))) };
-    }),
-    ...Object.entries(dados.criacoes ?? {}).filter(([, c]) => c).map(([id, c]) => ({ id, c: lerCriacao(id, c, { artesao }) })).filter(x => x.c.estado === "andamento").map(({ id, c }) => {
-      const total = Math.max(1, Math.ceil(num(c.horas)));
-      return { chave: `t-c${id}`, tipo: "criacao", id, nome: `Criação: ${c.nome || "projeto"}`, total, feitas: Math.min(total, Math.max(0, num(c.feitas))) };
-    })
-  ];
-  const linhas = emAndamento.map(e => `<label class="epm-campo epm-pular-linha"><span>${escapar(e.nome)} <em class="epm-dica">faltam ${e.total - e.feitas} h</em></span>
-      <input type="number" min="0" step="1" name="${e.chave}" data-falta="${e.total - e.feitas}" value="0"></label>`).join("");
-  const unidades = Object.entries(UNIDADES_TEMPO).map(([id, u]) => `<option value="${id}" ${id === "dias" ? "selected" : ""}>${u.label}</option>`).join("");
-  const r = await dialogo({
-    titulo: "Pular tempo (timeskip)", ok: "Aplicar", icone: "fa-solid fa-forward",
-    content: `<p class="epm-dica">Para quando o tempo passa fora de cena. Não usa o limite de ${TREINO.horasDia} h do dia. 1 dia de treino = ${TREINO.horasDia} h.</p>
-      <div class="epm-dialogo-linha"><label class="epm-campo"><span>Tempo de treino</span><input type="number" min="0" step="any" name="qtd" value="1"></label>
-      <label class="epm-campo"><span>Unidade</span><select name="unidade">${unidades}</select></label></div>
-      <p class="epm-dica epm-pular-total">= <strong data-total-horas>8</strong> h para distribuir</p>
-      ${emAndamento.length ? `<fieldset class="epm-aquisicao"><legend>Quanto vai para cada treinamento ou criação em andamento</legend>${linhas}
-        <button type="button" class="epm-link" data-dividir>Dividir igualmente</button></fieldset>` : `<p class="epm-dica">Nenhum treinamento ou criação em andamento: as horas podem virar PT de estudo.</p>`}
-      <label class="epm-check"><input type="checkbox" name="estudo" ${emAndamento.length ? "" : "checked"}> As horas que sobrarem viram PT de estudo (${TREINO.acao.pt} PT a cada ${TREINO.acao.horas} h)</label>`,
-    render: (ev, dlg) => {
-      const raiz = dlg?.element ?? ev?.target?.element ?? ev?.target;
-      const el = raiz?.querySelector ? raiz : document;
-      const total = () => Math.max(0, Math.round(num(el.querySelector('[name="qtd"]')?.value) * (UNIDADES_TEMPO[el.querySelector('[name="unidade"]')?.value]?.horas ?? 1)));
-      const atualizar = () => { const t = el.querySelector("[data-total-horas]"); if (t) t.textContent = String(total()); };
-      el.querySelector('[name="qtd"]')?.addEventListener("input", atualizar);
-      el.querySelector('[name="unidade"]')?.addEventListener("change", atualizar);
-      el.querySelector("[data-dividir]")?.addEventListener("click", () => {
-        const campos = [...el.querySelectorAll('input[name^="t-"]')];
-        let resto = total();
-        let abertos = campos.filter(c => num(c.dataset.falta) > 0);
-        for (const c of campos) c.value = "0";
-        while (resto > 0 && abertos.length) {
-          const parte = Math.max(1, Math.floor(resto / abertos.length));
-          for (const c of abertos) {
-            const cabe = Math.min(parte, num(c.dataset.falta) - num(c.value), resto);
-            c.value = String(num(c.value) + cabe);
-            resto -= cabe;
-          }
-          abertos = abertos.filter(c => num(c.value) < num(c.dataset.falta));
-          if (parte === 0) break;
-        }
-      });
-      atualizar();
-    },
-    callback: f => {
-      const horas = Math.max(0, Math.round(num(f.qtd?.value) * (UNIDADES_TEMPO[f.unidade?.value]?.horas ?? 1)));
-      const porTreino = Object.fromEntries(emAndamento.map(e => [e.chave, Math.max(0, Math.round(num(f[e.chave]?.value)))]));
-      return { horas, porTreino, estudo: !!f.estudo?.checked };
-    }
-  });
-  if (!r) return;
-  const updates = {};
-  const feitos = [];
-  let usadas = 0;
-  for (const e of emAndamento) {
-    const { total, feitas } = e;
-    const pedidas = Math.min(r.porTreino[e.chave] ?? 0, total - feitas, Math.max(0, r.horas - usadas));
-    if (!pedidas) continue;
-    usadas += pedidas;
-    const agora = feitas + pedidas;
-    if (e.tipo === "treino") {
-      updates[`${P}.treinamentos.${e.id}.horasFeitas`] = agora;
-      if (agora >= total) updates[`${P}.treinamentos.${e.id}.estado`] = "concluido";
-    } else {
-      updates[`${P}.criacoes.${e.id}.horasFeitas`] = agora;
-      if (agora >= total) updates[`${P}.criacoes.${e.id}.estado`] = "pronto";
-    }
-    feitos.push(`${e.nome}: +${pedidas} h${agora >= total ? (e.tipo === "treino" ? " (concluído!)" : " (pronto para o teste)") : ` (${agora} de ${total} h)`}`);
-  }
-  const sobra = Math.max(0, r.horas - usadas);
-  if (r.estudo && sobra >= TREINO.acao.horas) {
-    const pt = Math.floor(sobra / TREINO.acao.horas) * TREINO.acao.pt;
-    const { ficha } = estadoAtor(actor);
-    updates[`${P}.pontos.pt`] = ficha.pontos.pt + pt;
-    feitos.push(`Estudo: +${pt} PT (${Math.floor(sobra / TREINO.acao.horas) * TREINO.acao.horas} h)`);
-  }
-  if (!Object.keys(updates).length) return ui.notifications.info("Nada para aplicar: distribua as horas entre os treinamentos e criações ou marque o estudo.");
-  await actor.update(updates);
-  return nota(actor, `<p><strong>Passou o tempo</strong> (${r.horas} h de treino):</p><ul>${feitos.map(f => `<li>${escapar(f)}</li>`).join("")}</ul>`);
+  const { dialogoPularTempo } = await import("./pular-tempo.mjs");
+  return dialogoPularTempo(actor, { unidade: "dias", qtd: 1 });
 }
 
 /* -------------------------------------------- */

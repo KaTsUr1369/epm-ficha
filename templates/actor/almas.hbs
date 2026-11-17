@@ -24,7 +24,8 @@
   <div class="epm-alma-banner troca">
     <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
     <div><strong>{{almas.trocaAtiva.alma}} está no controle do corpo.</strong> Termina {{almas.trocaAtiva.termina}}. Ao voltar: +1 de Exaustão.</div>
-    {{#if editavel}}<button type="button" class="epm-botao" data-action="almaEncerrarTroca">Encerrar a troca</button>{{/if}}
+    {{#if editavel}}<button type="button" class="epm-botao" data-action="pularHoras" title="Pular tempo: a troca acaba quando passar 1 hora (fora de combate)"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>
+    <button type="button" class="epm-botao" data-action="almaEncerrarTroca">Encerrar a troca</button>{{/if}}
   </div>
   {{/if}}
   {{#if almas.manifestacao}}

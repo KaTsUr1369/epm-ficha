@@ -14,6 +14,19 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.18
+
+- **Pular tempo único.** Um só diálogo para tudo o que depende de tempo ou do calendário. Fica na aba Treinamentos, no painel de projetos do Artífice, em Produção e na Troca de lugar da Ressonância. Escolha quanto tempo passou (minutos, horas, dias, semanas ou meses de 30 dias) e a ficha acompanha:
+  - **Treinos e criações da Oficina:** 8 h de treino por dia, divididas igualmente; a sobra vai primeiro para quem está mais perto de terminar. Dá para escolher quanto vai para cada um, e as horas que sobrarem podem virar PT de estudo.
+  - **Projetos do Artífice:** produção e volta andam; passando 1 dia, o limite do dia volta; Soma e Proteção acabam no prazo.
+  - **Produções:** ficam prontas para os testes.
+  - **Pacto quebrado:** o bloqueio por horas acaba.
+  - **Ressonância de Alma:** a Troca de lugar acaba depois de 1 hora fora de combate, a manifestação se recolhe e, sem o Simple Calendar, a Conversa volta depois de 1 semana e a Troca depois de 1 mês.
+  - **A cena acaba:** os bônus de cena e por turnos saem; passando 1 dia, os usos por dia, cena e combate voltam.
+  - **Descanso** curto ou longo no fim, se marcado.
+  - Um cartão no chat lista o que mudou.
+- **O Mestre** pode avançar junto o relógio do mundo (e o Simple Calendar). No Escudo, "Pular tempo" faz isso para o grupo: avança o relógio e aplica o tempo nas fichas marcadas (personagens de jogadores vêm marcados).
+
 ## Novidades da 0.8.17
 
 - **Catálogo de treinamentos** (EPM/treinamentos.md): 95 treinos em 9 categorias (Físicos, De Arma, De Aura, De Magias, Extras, Ofício e Sobrevivência, Mente e Sanidade, Furtividade e Infiltração, e os modelos de adaptação tecnológica).

@@ -369,22 +369,10 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     return ChatMessage.create({ content: `<div class="epm-chat epm-chat-nota"><p><strong>O Mestre deu</strong> ${partes.join(", ")} para ${atores.map(a => escapar(a.name)).join(", ")}${motivo ? ` (${escapar(motivo)})` : ""}.</p></div>` });
   }
 
-  /** Pular tempo no relógio do mundo (Simple Calendar junto): projetos, produção, Ressonância e efeitos com hora andam sozinhos. */
+  /** Pular tempo para o grupo: relógio do mundo e as fichas (treinos, projetos, produções, Ressonância…). */
   async _avancarRelogio() {
-    const { formulario, opcoes } = await import("./mundo.mjs");
-    const r = await formulario("Pular tempo no relógio do mundo", `
-      <p class="epm-dica">Avança o relógio do mundo (e o Simple Calendar). Projetos do Artífice, produções, a Troca de lugar e os efeitos com hora acompanham.
-      Horas de treino e criação são por ficha: use "Pular tempo" na aba Treinamentos.</p>
-      <div class="epm-dialogo-linha"><label class="epm-campo"><span>Quanto</span><input type="number" name="qtd" min="0" step="any" value="1"></label>
-      <label class="epm-campo"><span>Unidade</span><select name="unidade">${opcoes([["minutos", "minutos"], ["horas", "horas"], ["dias", "dias"]], "horas")}</select></label></div>`, { botao: "Avançar" });
-    if (!r) return;
-    const qtd = Math.max(0, Number(r.qtd) || 0);
-    if (!qtd) return;
-    const { somarTempo, agora } = await import("./projetos.mjs");
-    const t = agora();
-    const fim = somarTempo(t, r.unidade === "minutos" ? { minutos: qtd } : { horas: r.unidade === "dias" ? qtd * 24 : qtd });
-    await game.time.advance(fim - t);
-    ui.notifications.info(`Relógio do mundo: +${qtd} ${r.unidade}.`);
+    const { pularTempoGrupo } = await import("./pular-tempo.mjs");
+    await pularTempoGrupo();
   }
 
   /** Marca o início da sessão: Protagonista (treino) ganha 1 Inspiração de Tema. */

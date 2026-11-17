@@ -167,6 +167,46 @@ async function ligarTreinosAoCatalogo() {
   return n;
 }
 
+/**
+ * Talentos (0.8.19): os antigos (comprados com PEv) viram talentos da sub-aba Talentos.
+ * Liga ao modelo do catálogo pelo nome; os que não tinham sido comprados ficam desligados (não contam).
+ */
+export function trocasTalentosAntigos(f = {}) {
+  const up = {};
+  const { modeloDoTalento } = TAL ?? {};
+  for (const [id, t] of Object.entries(f.talentos ?? {})) {
+    if (!t || t.versao) continue;
+    const modelo = modeloDoTalento?.(t);
+    up[`${P}.talentos.${id}.versao`] = 2;
+    if (modelo) {
+      up[`${P}.talentos.${id}.modelo`] = modelo.id;
+      up[`${P}.talentos.${id}.categoria`] = modelo.categoria;
+      up[`${P}.talentos.${id}.faixa`] = modelo.faixa;
+      if (!String(t.descricao ?? "").trim()) up[`${P}.talentos.${id}.descricao`] = modelo.beneficio;
+    } else if (!t.faixa) up[`${P}.talentos.${id}.faixa`] = "comum";
+    if (!t.comprado && "comprado" in t) up[`${P}.talentos.${id}.inativo`] = true;
+  }
+  return up;
+}
+let TAL = null;
+
+async function talentosAntigos() {
+  TAL = await import("./talentos-lista.mjs");
+  const { aplicarTalentos } = await import("./talentos.mjs");
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.talentosV2) continue;
+    const upd = trocasTalentosAntigos(f);
+    await a.update({ ...upd, [`${P}.talentosV2`]: true }, { render: false });
+    if (Object.keys(f.talentos ?? {}).length) await aplicarTalentos(a);
+    if (Object.keys(upd).length) n++;
+  }
+  return n;
+}
+
+export async function prepararTalentosAntigos() { TAL = await import("./talentos-lista.mjs"); }
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -176,6 +216,7 @@ export async function migrarMundo() {
   try { const n = await renomearTiposDano(itens); if (n) feitos.push(`${n} ficha(s)/item(ns) com tipos de dano renomeados`); } catch (err) { console.warn("EPM | migração dos tipos de dano", err); }
   try { const n = await sincronizarHabilidadesArquetipo(itens); if (n) feitos.push(`${n} habilidade(s) de arquétipo com o texto e o nível do livro atual`); } catch (err) { console.warn("EPM | habilidades de arquétipo", err); }
   try { const n = await ligarTreinosAoCatalogo(); if (n) feitos.push(`${n} ficha(s) com treinos ligados ao catálogo`); } catch (err) { console.warn("EPM | treinos do catálogo", err); }
+  try { const n = await talentosAntigos(); if (n) feitos.push(`${n} ficha(s) com os talentos antigos na sub-aba Talentos`); } catch (err) { console.warn("EPM | talentos antigos", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

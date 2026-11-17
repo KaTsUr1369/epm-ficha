@@ -666,7 +666,7 @@ export function fimDeCombate060(dados) {
 
 export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
-  "rolarNiveisRecursos", "treinoCatalogo", "catalogoTreinos", "ligarModeloTreino", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento",
+  "rolarNiveisRecursos", "treinoCatalogo", "catalogoTreinos", "ligarModeloTreino", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento", "talentosCatalogo", "alternarTalento", "irTalentos",
   "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
   "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
@@ -700,11 +700,16 @@ export const METODOS_060 = {
   async acaoPuxarCompendio() { const { puxarDoCompendio } = await import("./compendio-busca.mjs"); return puxarDoCompendio(this.actor); },
   async acaoCatalogoCompleto() { const { abrirCatalogo } = await import("./catalogo-app.mjs"); return abrirCatalogo({ actor: this.actor }); },
   acaoKitInicial() { return kitInicial(this.actor); },
-  acaoNovoTalento() { return this.actor.update({ [`${P}.talentos.${novoId()}`]: { nome: "Novo talento", custo: 5, descricao: "", comprado: false, mods: {}, criado: Date.now() } }); },
+  async acaoNovoTalento() { const T = await import("./talentos.mjs"); return T.novoTalentoManual(this.actor); },
   async acaoExcluirTalento(ev, alvo) {
-    if (!(await confirmar("Excluir talento", "<p>Apagar este talento? (Os PEv gastos não voltam.)</p>"))) return;
-    return this.actor.update({ [`${P}.talentos.-=${alvo.dataset.id}`]: null });
+    const nome = this.actor.flags?.[FLAG]?.talentos?.[alvo.dataset.id]?.nome ?? "este talento";
+    if (!(await confirmar("Remover talento", `<p>Remover ${escapar(nome)}? A habilidade ligada a ele também sai da ficha.</p>`))) return;
+    const T = await import("./talentos.mjs");
+    return T.excluirTalento(this.actor, alvo.dataset.id);
   },
+  async acaoTalentosCatalogo() { const { abrirCatalogoTalentos } = await import("./talentos-app.mjs"); return abrirCatalogoTalentos(this.actor); },
+  async acaoAlternarTalento(ev, alvo) { const T = await import("./talentos.mjs"); return T.alternarTalento(this.actor, alvo.dataset.id); },
+  acaoIrTalentos() { this._mudarAba("primary", "habilidades"); this._mudarAba("habilidades", "talentos"); },
   acaoComprarTalento(ev, alvo) { return comprarTalento(this.actor, alvo.dataset.id); },
   acaoAdicionarModTalento(ev, alvo) { return this.actor.update({ [`${P}.talentos.${alvo.dataset.id}.mods.${novoId()}`]: { alvo: "atributo.forca", valor: 1 } }); },
   acaoRemoverModTalento(ev, alvo) { return this.actor.update({ [`${P}.talentos.${alvo.dataset.id}.mods.-=${alvo.dataset.mod}`]: null }); },

@@ -137,7 +137,10 @@ export function efeitosDoTempo(dados = {}, { seg, horas, agora = 0, relogio = fa
   if (horas >= 24) {
     for (const [k, v] of Object.entries(dados.usosFormas ?? {})) if (v === "dia" || v === "cena" || v === "combate") up[`${P}.usosFormas.-=${k}`] = null;
     if (num(dados.treinoDia?.horas)) up[`${P}.treinoDia.horas`] = 0;
+    if (num(dados.sorte?.usados)) { up[`${P}.sorte.usados`] = 0; feitos.push("Sortudo: a Sorte do dia voltou"); }
   }
+  // Passou uma semana: usos "1× por semana" (Imortal Teimoso) voltam
+  if (horas >= 168) for (const [k, v] of Object.entries(dados.usosFormas ?? {})) if (v === "semana") up[`${P}.usosFormas.-=${k}`] = null;
   return { updates: up, feitos, encerrarTroca, encerrarManifestacao };
 }
 

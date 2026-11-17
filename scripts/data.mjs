@@ -1005,11 +1005,13 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   });
 
   // Iniciativa (é um teste de Destreza)
+  // Tático (talento): a Inteligência entra no lugar da Destreza
+  const atrIni = (extrasFicha.especiaisTalento ?? []).includes("tatico") ? "inteligencia" : "destreza";
   const iniciativa = {
-    fonte: ATRIBUTOS.destreza.label,
-    base: atributos.destreza.total,
+    fonte: ATRIBUTOS[atrIni].label + (atrIni === "inteligencia" ? " (Tático)" : ""),
+    base: atributos[atrIni].total,
     bonus: int(d.iniciativa?.bonus), mod: mod("iniciativa"), fontes: fontes("iniciativa"),
-    testeMod: atributos.destreza.testeMod, testeFontes: atributos.destreza.testeFontes,
+    testeMod: atributos[atrIni].testeMod, testeFontes: atributos[atrIni].testeFontes,
     zero: especiais.iniciativaZero
   };
   iniciativa.total = iniciativa.base + iniciativa.bonus + iniciativa.mod;
@@ -1092,6 +1094,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       corrupcao: extrasFicha.corrupcao,
       menteBlindada: extrasFicha.menteBlindada, meditacaoNucleo: extrasFicha.meditacaoNucleo, memoriaTreinada: extrasFicha.memoriaTreinada,
       especiaisTreino: extrasFicha.especiaisTreino, tecnologia: extrasFicha.tecnologia, titulos: extrasFicha.titulos, grau: posAtr.grau,
+      especiaisTalento: extrasFicha.especiaisTalento ?? [], talentosInfo: extrasFicha.talentosInfo ?? [], afinidades: extrasFicha.afinidades ?? [],
       treinosInfo: posAtr.treinosInfo ?? [], magiaPotente: posAtr.magiaPotente ?? 0, fortalecimentoMental: posAtr.fortalecimentoMental ?? 0
     },
     extrasAtaque: {

@@ -1,0 +1,57 @@
+{{#with @root.talentosPainel as |tp|}}
+<section class="epm-painel epm-talentos-painel" data-busca-escopo>
+  <header class="epm-painel-titulo">
+    <h3>Talentos</h3>
+    <span class="epm-contador{{#if tp.excedido}} excedido{{/if}}" title="{{tp.doNivel}} pelo nível total {{tp.nivelTotal}}{{#if tp.extras}} + {{tp.extras}} extras{{/if}}">{{tp.usados}} / {{tp.disponiveis}}</span>
+    <label class="epm-mini epm-talentos-extras" title="Talentos extras dados por raça, classe, bênção ou pelo Mestre. Só o Mestre muda.">
+      <span>Extras</span><input type="number" min="0" step="1" name="flags.epm-ficha.talentosExtras" value="{{tp.extras}}" {{#unless @root.isGM}}disabled{{/unless}} />
+    </label>
+    {{#if tp.sorte}}<span class="epm-contador" title="Sortudo: pontos de Sorte de hoje (voltam no descanso longo)"><i class="fa-solid fa-clover" aria-hidden="true"></i> Sorte {{tp.sorte.restante}} / {{tp.sorte.total}}</span>{{/if}}
+    {{#if @root.editavel}}
+    <span class="epm-painel-acoes">
+      <button type="button" class="epm-botao epm-botao-mini" data-action="talentosCatalogo"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Adicionar da lista</button>
+      <button type="button" class="epm-botao epm-botao-mini" data-action="novoTalento" title="Talento feito à mão (sem modelo)"><i class="fa-solid fa-plus" aria-hidden="true"></i> À mão</button>
+    </span>
+    {{/if}}
+  </header>
+  <p class="epm-dica">Dons e jeitos de lutar escolhidos ao subir de nível: não custam PT nem tempo. 1 no nível 1 e +1 a cada 10 níveis totais; faixas Comum 1, Avançado 25, Superior 50 e Lendário 75 (no máximo 1 Lendário).</p>
+  {{#each tp.avisos}}<p class="epm-aviso"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{this}}</p>{{/each}}
+  {{#if (epmMenor 6 tp.lista.length)}}{{> "epm-busca" chave="talentos" dica="Buscar talento"}}{{/if}}
+  {{#unless tp.lista.length}}<p class="epm-vazio">Nenhum talento ainda.{{#if @root.editavel}} Use "Adicionar da lista".{{/if}}</p>{{/unless}}
+  <ul class="epm-talentos-lista">
+    {{#each tp.lista}}
+    <li class="epm-talento{{#if inativo}} inativo{{/if}}" style="--cor: {{cor}}" data-talento-id="{{id}}" data-busca="{{busca}}">
+      <div class="epm-talento-topo">
+        <i class="{{icone}}" aria-hidden="true"></i>
+        {{#if (epmAnd manual @root.edicao)}}<input type="text" class="epm-talento-nome-campo" name="flags.epm-ficha.talentos.{{id}}.nome" value="{{nome}}" aria-label="Nome do talento" />
+        {{else}}<strong class="epm-talento-nome">{{nome}}</strong>{{/if}}
+        <span class="epm-tag epm-tag-faixa">{{faixaLabel}}</span>
+        {{#if categoriaLabel}}<span class="epm-tag">{{categoriaLabel}}</span>{{/if}}
+        {{#if freq}}<span class="epm-tag">{{freq}}</span>{{/if}}
+        {{#each tags}}<span class="epm-tag epm-tag-suave">{{this}}</span>{{/each}}
+        {{#if inativo}}<span class="epm-tag epm-tag-alerta" title="Não conta e não aplica nada">desligado</span>{{/if}}
+        {{#if @root.editavel}}
+        <span class="epm-talento-acoes">
+          <button type="button" class="epm-icone-botao" data-action="alternarTalento" data-id="{{id}}" title="{{#if inativo}}Ligar{{else}}Desligar{{/if}}" aria-label="{{#if inativo}}Ligar{{else}}Desligar{{/if}} {{nome}}"><i class="fa-solid fa-power-off" aria-hidden="true"></i></button>
+          <button type="button" class="epm-icone-botao perigo" data-action="excluirTalento" data-id="{{id}}" title="Remover" aria-label="Remover {{nome}}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+        </span>
+        {{/if}}
+      </div>
+      {{#if (epmAnd manual @root.edicao)}}
+      <div class="epm-talento-edicao">
+        <label class="epm-mini"><span>Faixa</span><select name="flags.epm-ficha.talentos.{{id}}.faixa">{{#each opcoesFaixa}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+        <textarea name="flags.epm-ficha.talentos.{{id}}.descricao" rows="2" placeholder="O que o talento faz">{{descricao}}</textarea>
+        <div class="epm-talento-mods">
+          {{#each mods}}<span class="epm-060-mod"><input type="text" name="flags.epm-ficha.talentos.{{../id}}.mods.{{this.id}}.alvo" value="{{this.alvo}}" title="Alvo (ex.: atributo.forca, pericia.percepcao, recurso.pv, deslocamento, iniciativa)" /><input type="number" name="flags.epm-ficha.talentos.{{../id}}.mods.{{this.id}}.valor" value="{{this.valor}}" /><button type="button" class="epm-icone-botao" data-action="removerModTalento" data-id="{{../id}}" data-mod="{{this.id}}" title="Tirar"><i class="fa-solid fa-xmark"></i></button></span>{{/each}}
+          <button type="button" class="epm-link" data-action="adicionarModTalento" data-id="{{id}}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Bônus fixo</button>
+        </div>
+      </div>
+      {{else}}
+      <p class="epm-talento-texto">{{descricao}}</p>
+      {{/if}}
+      {{#if requisitos}}<p class="epm-dica">Requisitos: {{requisitos}}{{#if cadeia}} · Cadeia: {{cadeia}}{{/if}}</p>{{/if}}
+    </li>
+    {{/each}}
+  </ul>
+</section>
+{{/with}}

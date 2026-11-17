@@ -233,9 +233,9 @@ export function horasDoTexto(texto) {
   return Math.round(n);
 }
 
-const ATRS = { forca: "Força", destreza: "Destreza", constituicao: "Constituição", aparencia: "Aparência", carisma: "Carisma", inteligencia: "Inteligência", autocontrole: "Autocontrole", nucleo: "Núcleo" };
+export const ATRS = { forca: "Força", destreza: "Destreza", constituicao: "Constituição", aparencia: "Aparência", carisma: "Carisma", inteligencia: "Inteligência", autocontrole: "Autocontrole", nucleo: "Núcleo" };
 const ATR_POR_NOME = Object.fromEntries(Object.entries(ATRS).map(([id, l]) => [normTreino(l), id]));
-const PERICIAS_REQ = { luta: "Luta", pontaria: "Pontaria", arcanismo: "Arcanismo", lideranca: "Liderança", oficio: "Ofício", furtividade: "Furtividade" };
+export const PERICIAS_REQ = { luta: "Luta", pontaria: "Pontaria", arcanismo: "Arcanismo", lideranca: "Liderança", oficio: "Ofício", furtividade: "Furtividade", acrobacia: "Acrobacia", percepcao: "Percepção", investigacao: "Investigação" };
 const PER_POR_NOME = Object.fromEntries(Object.entries(PERICIAS_REQ).map(([id, l]) => [normTreino(l), id]));
 
 /**

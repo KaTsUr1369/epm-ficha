@@ -2,6 +2,7 @@
  * Ficha de personagem EPM (ApplicationV2), registrada para atores "character" do dnd5e.
  * Os dados ficam em actor.flags["epm-ficha"]; a Vida usa system.attributes.hp do dnd5e.
  */
+import { ligarBuscas } from "./busca-lista.mjs";
 import {
   FLAG, CAMINHO, TIPOS_IGNORADOS, CONDICOES, TEXTOS_SOBRE, PERICIAS_OBSOLETAS, ABAS, CATEGORIAS_ITEM,
   CATEGORIA_MOCHILAS, COMBINACOES, CONDICOES_RENOMEADAS, COR_PADRAO, BRILHO_PADRAO, TIPOS_EFEITO_ITEM,
@@ -375,6 +376,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     this.element.classList.toggle("epm-npc-visual", this.actor.type === "npc");
     try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
     try { this._restaurarDetalhes(); } catch (err) { console.warn("EPM | detalhes abertos", err); }
+    try { ligarBuscas(this.element, this._buscasListas ??= {}); } catch (err) { console.warn("EPM | barras de busca", err); }
     if (options.isFirstRender || options.parts?.includes("header")) {
       try { this._animarBarras(); } catch (err) { console.error("EPM | Falha ao animar as barras", err); }
     }

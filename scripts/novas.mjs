@@ -57,6 +57,7 @@ export function prepararNovas() {
 /** Botões dos cartões de chat das novas mecânicas. */
 export async function cliqueChatNovas(acao, actor, botao) {
   if (await C.cliqueInspiracao(acao, actor, botao)) return true;
+  if (acao === "talSorte" || acao === "talVinte") { const T = await import("./talentos.mjs"); return T.cliqueTalento(acao, actor, botao); }
   if (await R.cliqueOpcionais(acao, actor, botao)) return true;
   if (acao === "testePedido") { await A.resolverPedido(actor, botao); return true; }
   if (acao === "treinoPtGrupo") {

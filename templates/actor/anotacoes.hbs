@@ -6,12 +6,13 @@
     {{/each}}
     {{#if editavel}}<button type="button" class="epm-subnav-item epm-nova-pagina" data-action="novaPagina"><i class="fa-solid fa-plus" aria-hidden="true"></i> Página</button>{{/if}}
   </nav>
-  <section class="tab epm-pagina epm-diario {{diario.cls}}" data-group="notas" data-tab="diario">
+  <section class="tab epm-pagina epm-diario {{diario.cls}}" data-group="notas" data-tab="diario" data-busca-escopo>
     <header class="epm-pagina-topo">
       <h3>Diário de sessões</h3>
       {{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="novaSessao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova sessão</button>{{/if}}
     </header>
     {{#if diario.vazio}}<p class="epm-vazio">Anote o que aconteceu em cada sessão e o que o personagem ganhou. Os PEv, PT e PH podem ser somados na ficha com um clique.</p>{{/if}}
+    {{#unless diario.vazio}}{{> "epm-busca" chave="diario" dica="Buscar no diário de sessões"}}{{/unless}}
     <ol class="epm-diario-lista">
       {{#each diario.entradas}}
       <li class="epm-sessao" data-sessao="{{this.id}}">

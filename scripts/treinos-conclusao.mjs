@@ -96,6 +96,8 @@ export async function inicioDaSessao() {
   const { especiaisDaFicha } = await import("./treinamentos-lista.mjs");
   const protagonistas = game.actors.filter(a => a.flags?.[FLAG] && especiaisDaFicha(a.flags[FLAG]).has("protagonista"));
   if (protagonistas.length) await darInspiracao(protagonistas, 1);
+  // Talentos "1× por sessão" (Escolhido do Multiverso) voltam
+  try { const { sessaoNova } = await import("./talentos.mjs"); await sessaoNova(); } catch (err) { console.warn("EPM | sessão dos talentos", err); }
   await ChatMessage.create({ content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:#E8C547"><p><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i> <strong>Começou a sessão.</strong>${protagonistas.length ? ` Protagonista: +1 Inspiração para ${escapar(protagonistas.map(a => a.name).join(", "))}.` : ""}</p></div>` });
   return protagonistas.length;
 }

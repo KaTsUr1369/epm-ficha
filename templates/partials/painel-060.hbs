@@ -336,24 +336,9 @@
     {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="catalogoTreinos"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Adicionar da lista</button>{{/if}}
   </section>
   <section class="epm-painel epm-060-talentos">
-    <header class="epm-painel-titulo"><h3>Talentos</h3><span class="epm-contador">{{v.talentos.pev}} PEv</span>{{#if @root.editavel}}<button type="button" class="epm-link" data-action="novoTalento"><i class="fa-solid fa-plus"></i> Talento</button>{{/if}}</header>
-    <p class="epm-dica">Comprados com PEv. Talentos, treinos e habilidades dão no máximo +2 pontos de atributo.</p>
-    {{#unless v.talentos.lista.length}}<p class="epm-vazio">Nenhum talento.</p>{{/unless}}
-    {{#each v.talentos.lista}}
-    <div class="epm-060-item{{#if comprado}} comprado{{/if}}">
-      {{#if @root.edicao}}
-      <input type="text" name="flags.epm-ficha.talentos.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome" />
-      <label class="epm-mini"><span>PEv</span><input type="number" min="0" name="flags.epm-ficha.talentos.{{this.id}}.custo" value="{{this.custo}}" /></label>
-      <input type="text" name="flags.epm-ficha.talentos.{{this.id}}.descricao" value="{{this.descricao}}" placeholder="O que faz" />
-      {{#each mods}}<span class="epm-060-mod"><input type="text" name="flags.epm-ficha.talentos.{{../id}}.mods.{{this.id}}.alvo" value="{{this.alvo}}" title="Alvo (atributo.forca, pericia.atletismo, ca, deslocamento…)" /><input type="number" name="flags.epm-ficha.talentos.{{../id}}.mods.{{this.id}}.valor" value="{{this.valor}}" /><button type="button" class="epm-icone-botao" data-action="removerModTalento" data-id="{{../id}}" data-mod="{{this.id}}"><i class="fa-solid fa-xmark"></i></button></span>{{/each}}
-      <button type="button" class="epm-icone-botao" data-action="adicionarModTalento" data-id="{{this.id}}" title="Modificador"><i class="fa-solid fa-plus"></i></button>
-      <button type="button" class="epm-icone-botao perigo" data-action="excluirTalento" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>
-      {{else}}
-      <span><strong>{{this.nome}}</strong> <span class="epm-dica">{{this.descricao}}</span></span>
-      {{#if comprado}}<span class="epm-tag">comprado</span>{{else if @root.editavel}}<button type="button" class="epm-botao epm-botao-mini" data-action="comprarTalento" data-id="{{this.id}}" {{#if semPev}}disabled title="PEv insuficientes"{{/if}}>Comprar ({{this.custo}} PEv)</button>{{/if}}
-      {{/if}}
-    </div>
-    {{/each}}
+    <header class="epm-painel-titulo"><h3>Talentos</h3><span class="epm-contador">{{@root.talentosPainel.usados}} / {{@root.talentosPainel.disponiveis}}</span></header>
+    <p class="epm-dica">Os talentos agora ficam na aba Habilidades, sub-aba Talentos: escolhidos ao subir de nível, sem PT nem tempo.</p>
+    <button type="button" class="epm-botao epm-botao-mini" data-action="irTalentos"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Abrir os talentos</button>
   </section>
 </div>
 {{/if}}

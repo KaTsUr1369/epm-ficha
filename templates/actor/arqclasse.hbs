@@ -1,4 +1,5 @@
 <section class="tab epm-aba epm-arqclasse {{cls.arqclasse}}" data-group="primary" data-tab="arqclasse">
+{{> "epm-busca" chave="arqclasse" dica="Buscar habilidade de arquétipo ou classe"}}
   <nav class="epm-subnav" aria-label="Arquétipo e Classe">
     {{#each arqclasse.subabas}}
     <button type="button" class="epm-subnav-item {{this.cls}}" data-action="aba" data-group="arqclasse" data-tab="{{this.id}}">{{this.label}}<span class="epm-subnav-qtd">{{this.total}}</span></button>

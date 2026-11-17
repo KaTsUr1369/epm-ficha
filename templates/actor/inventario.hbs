@@ -25,6 +25,7 @@
     {{/if}}
   </section>
 
+{{> "epm-busca" chave="inventario" dica="Buscar item, inclusive dentro das mochilas"}}
   <section class="epm-mochilas-area" data-zona-inventario="mochilas">
     <header class="epm-categoria-titulo">
       <i class="{{categoriaMochilas.icone}}" aria-hidden="true"></i>
@@ -35,7 +36,7 @@
     {{#unless temMochilas}}<p class="epm-vazio">Nenhuma mochila. Crie uma{{#unless edicao}} no modo edição{{/unless}} ou arraste uma para a ficha; depois é só arrastar os itens para dentro dela.</p>{{/unless}}
     <div class="epm-mochilas">
       {{#each mochilas}}
-      <article class="epm-mochila{{#if aberta}} aberta{{/if}}{{#if cheia}} cheia{{/if}}" data-container-id="{{this.id}}" data-item-id="{{this.id}}" draggable="true" style="--cor: {{this.raridadeCor}}">
+      <article class="epm-mochila{{#if aberta}} aberta{{/if}}{{#if cheia}} cheia{{/if}}" data-busca="{{this.busca}}" data-container-id="{{this.id}}" data-item-id="{{this.id}}" draggable="true" style="--cor: {{this.raridadeCor}}">
         <header class="epm-mochila-topo">
           <img class="epm-item-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{this.id}}" title="Trocar imagem"{{/if}} />
           <button type="button" class="epm-mochila-nome" data-action="abrirMochila" data-item-id="{{this.id}}" aria-expanded="{{#if aberta}}true{{else}}false{{/if}}">

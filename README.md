@@ -14,6 +14,36 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.19
+
+- **Talentos.** Nova sub-aba **Talentos** na aba Habilidades. São dons e estilos de luta escolhidos ao subir de nível: não custam PT nem tempo.
+  - **Contador "usados / disponíveis"** pelo nível total: 1 no nível 1 e +1 nos níveis 10, 20… 100. O campo **Extras** (só o Mestre muda) soma os talentos dados por raça, classe, bênção ou pelo Mestre.
+  - **Avisos, sem bloquear:** talentos a mais, mais de 1 Lendário, faixa acima do nível ou talento repetido.
+  - **Adicionar da lista:** 55 talentos em 8 categorias e 4 faixas (Comum 1, Avançado 25, Superior 50, Lendário 75). Tem busca sem acento, filtro por faixa, "só os que eu cumpro" (atributos, perícias, outros talentos, treinos concluídos, arquétipo e nível), a cadeia de pré-requisitos e o que cada um libera.
+  - **Talento à mão:** nome, faixa, texto e bônus fixos. Qualquer talento pode ser desligado sem apagar.
+  - **Bônus automáticos:**
+    - Pés Leves +1,5 m;
+    - Robusto +2 PV por nível total;
+    - Força de Vontade +10 PS;
+    - Alerta +3 na iniciativa e imune a Surpreendido;
+    - Tático (iniciativa com Inteligência);
+    - Olhos de Águia +2 em Percepção;
+    - Inventor Nato +2 em Ofício;
+    - Vontade de Ferro imune a Dominado;
+    - Afinidade Elemental +2 no dano das magias do tipo escolhido (pergunta o tipo ao adicionar).
+  - **Opções no diálogo de ataque**, para marcar quando valer: Golpe Pesado, Duelista (também no Contra-ataque), Atirador Paciente, Matador de Gigantes, Executor e Investida.
+  - **Ações limitadas viram habilidades** na sub-aba, com origem Talento, botão de usar e recarga: Teimoso, Segundo Fôlego, Fúria Controlada, Golpe Devastador, Tempestade de Lâminas, Sombra Veloz, Magia Persistente e Gêmea, Sobrecarga Domada, Engenhoca de Bolso, Inspirador, Lábia, Voz de Comando, Alma Resiliente e os Lendários.
+    - 1× por sessão volta no **Início da sessão** do Escudo;
+    - 1× por semana volta com o Pular tempo.
+  - **Sortudo:** 3 pontos de Sorte por dia e botão **Rerrolar** nos seus testes. Voltam no descanso longo.
+  - **Escolhido do Multiverso:** botão **Tornar 20 natural** nos testes seus e dos aliados, 1× por sessão. Não garante o acerto.
+  - **Sangue Mágico** paga com Vida o PM que faltar. **Fúria Controlada** oferece sozinha o PV temporário e o dano ao cair para metade da Vida.
+  - **Presença Marcante / Lenda Viva** sugerem ao Mestre a afinidade inicial ao conectar um NPC novo.
+  - **Fichas antigas:** os talentos comprados com PEv vão para a sub-aba e se ligam ao catálogo pelo nome. Os que não tinham sido comprados ficam desligados.
+- **Barra de pesquisa** nas listas longas: perícias, treinamentos, magias (todos os círculos), habilidades (todas as sub-abas), arquétipo e classe, inventário (inclusive dentro das mochilas), receitas, relações, diário e talentos.
+  - Procura também na descrição e não liga para acento.
+  - Esc limpa a busca, e o termo continua depois que a ficha redesenha.
+
 ## Novidades da 0.8.18
 
 - **Pular tempo único.** Um só diálogo para tudo o que depende de tempo ou do calendário. Fica na aba Treinamentos, no painel de projetos do Artífice, em Produção e na Troca de lugar da Ressonância. Escolha quanto tempo passou (minutos, horas, dias, semanas ou meses de 30 dias) e a ficha acompanha:

@@ -33,6 +33,7 @@ import { registrarPolyglot } from "./polyglot-epm.mjs";
 import { registrarTiposNpc } from "./tipos-npc.mjs";
 registrarPolyglot();
 import("./treinos-conclusao.mjs").then(m => m.registrarConclusoes()).catch(err => console.warn("EPM | Treinamentos", err));
+import("./talentos.mjs").then(m => m.registrarTalentos()).catch(err => console.warn("EPM | Talentos", err));
 import("./ressonancia.mjs").then(m => m.registrarRessonancia()).catch(err => console.warn("EPM | Ressonância de Alma", err));
 // Fichas e itens antigos recebem as mudanças das versões novas (Mestre ativo, ao abrir o mundo)
 Hooks.once("ready", () => { import("./migracoes-mundo.mjs").then(m => m.migrarMundo()).catch(err => console.warn("EPM | migração do mundo", err)); });
@@ -61,6 +62,8 @@ Hooks.once("init", () => {
   fvtt.loadTemplates({
     "epm-item-linha": `${CAMINHO}/partials/item-linha.hbs`,
     "epm-poder-linha": `${CAMINHO}/partials/poder-linha.hbs`,
+    "epm-busca": `${CAMINHO}/partials/busca.hbs`,
+    "epm-talentos-painel": `${CAMINHO}/partials/talentos-painel.hbs`,
     "epm-exaustao": `${CAMINHO}/partials/exaustao.hbs`,
     "epm-bencao": `${CAMINHO}/partials/bencao.hbs`,
     "epm-arquetipo-painel": `${CAMINHO}/partials/arquetipo-painel.hbs`,

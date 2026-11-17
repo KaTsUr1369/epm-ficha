@@ -79,7 +79,7 @@
     <button type="button" class="epm-subnav-item {{novas.treinoAba.treinos}}" data-action="aba" data-group="treinos" data-tab="treinos">Treinos</button>
     <button type="button" class="epm-subnav-item {{novas.treinoAba.criacao}}" data-action="aba" data-group="treinos" data-tab="criacao">Criação<span class="epm-subnav-qtd">{{novas.criacoes.length}}</span></button>
   </nav>
-  <div class="epm-subaba-treinos {{novas.treinoAba.treinos}}" data-group="treinos" data-tab="treinos">
+  <div class="epm-subaba-treinos {{novas.treinoAba.treinos}}" data-group="treinos" data-tab="treinos" data-busca-escopo>
 
   <section class="epm-painel epm-minijogos">
     <header class="epm-painel-titulo"><h3>Treino rápido</h3><span class="epm-contador">1 h · até 2 PT</span></header>
@@ -93,6 +93,7 @@
     </div>
   </section>
 
+  {{#if treinos.total}}{{> "epm-busca" chave="treinos" dica="Buscar treinamento, benefício ou requisito"}}{{/if}}
   {{#unless treinos.total}}
   <section class="epm-painel">
     <header class="epm-painel-titulo"><h3>Treinamentos</h3></header>

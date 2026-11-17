@@ -45,6 +45,7 @@
     <span class="epm-dica">{{ficha.cd.formula}}. A perícia entra sem o próprio atributo.</span>
   </div>
   {{/if}}
+{{> "epm-busca" chave="magias" dica="Buscar magia em todos os círculos: nome, efeito, dano…"}}
   <nav class="epm-subnav" aria-label="Círculos de magia">
     {{#each magias.circulos}}
     <button type="button" class="epm-subnav-item {{this.cls}}{{#if trancado}} trancado{{/if}}" data-action="aba" data-group="magias" data-tab="{{this.chave}}" {{#if trancado}}title="Conjurador: libera no nível {{this.conj.liberaEm}}"{{/if}}>{{#if trancado}}<i class="fa-solid fa-lock" aria-hidden="true"></i> {{/if}}{{this.curto}}<span class="epm-subnav-qtd">{{this.total}}</span></button>

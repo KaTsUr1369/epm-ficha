@@ -10,6 +10,7 @@
     </div>
   </header>
   {{#if edicao}}{{#unless isGM}}{{#unless podeAfinidade}}{{#if relacoes.length}}<p class="epm-dica epm-afinidade-nota"><i class="fa-solid fa-lock" aria-hidden="true"></i> Neste mundo a afinidade é definida pelo Mestre.</p>{{/if}}{{/unless}}{{/unless}}{{/if}}
+  {{#if (epmOr relacoes.length faccoes.length)}}{{> "epm-busca" chave="relacoes" dica="Buscar pessoa, facção ou anotação"}}{{/if}}
   {{#unless relacoes.length}}<div class="epm-vazio-grande epm-zona-soltar"><p>Nenhuma relação ainda.</p></div>{{/unless}}
   {{#each gruposRelacao}}
   <section class="epm-pasta-relacao{{#if fechada}} fechada{{/if}}{{#if semTitulo}} sem-titulo{{/if}}" data-pasta="{{this.id}}">

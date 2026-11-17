@@ -150,6 +150,7 @@ export const ORIGENS_HABILIDADE = {
   transformacao: "Transformação",
   maestria: "Domínio",
   treinamento: "Treinamento",
+  talento: "Talento",
   meme: "Meme"
 };
 
@@ -229,7 +230,9 @@ export const USOS_FORMA = {
   cena:    "1× por cena",
   curto:   "1× por descanso curto",
   longo:   "1× por descanso longo",
-  dia:     "1× por dia"
+  dia:     "1× por dia",
+  semana:  "1× por semana",
+  sessao:  "1× por sessão"
 };
 
 export const RECARGAS = {
@@ -569,6 +572,7 @@ export const SUBABAS_HABILIDADE = [
   { id: "raca",      label: "Raça",      origem: "raca" },
   { id: "arquetipo", label: "Arquétipo", origem: "arquetipo" },
   { id: "classe",    label: "Classe",    origem: "classe" },
+  { id: "talentos",  label: "Talentos",  origem: "talento" },
   { id: "transformacoes", label: "Transformações", origem: "transformacao" },
   { id: "meme",      label: "Memes",     origem: "meme" }
 ];

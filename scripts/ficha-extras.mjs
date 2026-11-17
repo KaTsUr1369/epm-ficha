@@ -2,6 +2,7 @@ import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import { bonusDaRessonancia } from "./ressonancia.mjs";
 import { ARQUETIPOS, estilosEscolhidos, nivelArquetipo, valorPessoal } from "./arquetipos.mjs";
 import { NIVEIS_REGIAO, idRegiao } from "./tecnologia.mjs";
+import { talentosAtivos } from "./talentos-lista.mjs";
 /**
  * Partes da ficha que vieram na 0.6.0 (raça pronta, Sanidade com estados e insanidades, idade opcional,
  * classes do Notion, votos, pactos, talentos, atributos acima de 4, teto de atributo e máximos automáticos).
@@ -179,10 +180,43 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
     for (const [alvo, valor] of Object.entries(p.penalidade?.atributos ?? {})) if (n(valor)) out.mods.push({ alvo: `atributo.${alvo}`, valor: -Math.abs(n(valor)), fonte: `Pacto quebrado: ${p.nome || ""}` });
   }
 
-  // Talentos comprados
-  for (const t of Object.values(d.talentos ?? {})) {
-    if (!t?.comprado) continue;
-    for (const m of Object.values(t.mods ?? {})) if (m?.alvo && n(m.valor)) out.mods.push({ alvo: m.alvo, valor: n(m.valor), fonte: `Talento: ${t.nome || "sem nome"}` });
+  // Talentos (catálogo e feitos à mão): bônus fixos, imunidades e efeitos especiais
+  {
+    const nivelTotal = Math.max(1, Math.floor(n(d.nivel) || 1)) + (String(d.arquetipo2 ?? "").trim() ? Math.max(0, Math.floor(n(d.nivel2))) : 0);
+    const esp = new Set();
+    out.afinidades = [];
+    out.talentosInfo = [];
+    for (const { t, modelo } of talentosAtivos(d)) {
+      const fonte = `Talento: ${t.nome || modelo?.nome || "sem nome"}`;
+      for (const m of Object.values(t.mods ?? {})) if (m?.alvo && n(m.valor)) out.mods.push({ alvo: m.alvo, valor: n(m.valor), fonte });
+      if (!modelo) continue;
+      for (const m of modelo.auto?.mods ?? []) {
+        const valor = m.porNivel ? m.porNivel * nivelTotal : n(m.valor);
+        if (valor) out.mods.push({ alvo: m.alvo, valor, fonte });
+      }
+      for (const im of modelo.auto?.imune ?? []) out.imunidades.push({ tipo: im, fonte: modelo.nome });
+      if (modelo.auto?.especial) esp.add(modelo.auto.especial);
+      if (modelo.auto?.escolha === "elemento" && t.escolha) out.afinidades.push({ tipo: t.escolha, valor: n(modelo.auto.afinidade) || 2, fonte: modelo.nome });
+    }
+    out.especiaisTalento = [...esp];
+    const INFO_TALENTO = {
+      ambidestria: "Ambidestria: duas armas de uma mão sem penalidade de mão inábil; consumível como ação bônus ou de movimento." + (especiaisConcluidos(d).has("duasArmas") ? " Com Combate com Duas Armas, o ataque da segunda arma soma o atributo no dano." : ""),
+      esquivo: "Esquivo: +2 na Esquiva contra ataques à distância; área com teste para metade: passou, sem dano; falhou, metade.",
+      pesLeves: "Pés Leves: terreno difícil não reduz o deslocamento (+1,5 m já somado).",
+      sangueMagico: "Sangue Mágico: sem PM suficiente, paga o resto com Vida (2 PV por PM), sem o teste da Sobrecarga.",
+      conjuradorCombate: "Conjurador de Combate: sem penalidade com inimigos ao lado; vantagem na Vontade para manter Concentrado.",
+      inventorNato: "Inventor Nato: os itens que cria começam com +10 de durabilidade (+2 em Ofício já somado).",
+      maosFirmes: "Mãos Firmes: dá uma poção ou consumível a um aliado a até 1,5 m como ação bônus.",
+      alquimistaEficiente: "Alquimista Eficiente: a cada 3 consumíveis feitos de uma vez, ganha 1 a mais.",
+      presencaMarcante: "Presença Marcante: NPCs novos começam com afinidade +1 (a ficha sugere ao Mestre ao conectar).",
+      lendaViva: "Lenda Viva: NPCs que conhecem sua fama começam com afinidade +2; vantagem nos testes sociais com eles.",
+      sortudo: "Sortudo: pontos de Sorte por dia; botão \"Rerrolar\" nos seus testes. Voltam no descanso longo.",
+      tatico: "Tático: a iniciativa usa a Inteligência no lugar da Destreza (já entra na ficha).",
+      furiaControlada: "Fúria Controlada: a ficha oferece sozinha na primeira vez do combate em metade da Vida ou menos.",
+      escolhido: "Escolhido do Multiverso: botão \"Tornar 20 natural\" nos testes (seus e dos aliados), 1× por sessão."
+    };
+    for (const id of esp) if (INFO_TALENTO[id]) out.talentosInfo.push(INFO_TALENTO[id]);
+    for (const a of out.afinidades) out.talentosInfo.push(`Afinidade Elemental: magias de ${a.tipo} causam +${a.valor} de dano (já entra no cartão).`);
   }
 
   // Classes completas do Notion (tudo o que entra aqui fica marcado como bônus da classe, ajustável na ficha)

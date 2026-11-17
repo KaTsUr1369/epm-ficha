@@ -32,6 +32,7 @@
   </div>
   {{/if}}
 
+{{> "epm-busca" chave="habilidades" dica="Buscar habilidade em todas as sub-abas: nome, efeito, custo…"}}
   <nav class="epm-subnav" aria-label="Tipos de habilidade">
     {{#each habilidades.subabas}}
     <button type="button" class="epm-subnav-item {{this.cls}}" data-action="aba" data-group="habilidades" data-tab="{{this.id}}">{{this.label}}<span class="epm-subnav-qtd">{{this.total}}</span></button>
@@ -44,6 +45,7 @@
     {{else}}
     {{#if eArquetipo}}{{#each @root.arquetiposPainel}}{{> "epm-arquetipo-painel"}}{{/each}}{{/if}}
     {{#if eClasse}}{{> "epm-classe-painel"}}{{/if}}
+    {{#if eTalentos}}{{> "epm-talentos-painel"}}{{/if}}
     {{#if origem}}<p class="epm-dica">Habilidades de {{this.label}} usam só Passiva e Comum.{{#if (epmOr eArquetipo eClasse)}}{{#if @root.dados.personalizacao.abasExtras.arqclasse}} Elas também aparecem na aba Arquétipo e Classe.{{/if}}{{/if}}</p>{{/if}}
     {{#each secoes}}
     {{#unless (epmAnd destaque vazia)}}

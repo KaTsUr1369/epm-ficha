@@ -48,6 +48,7 @@ export function listaPropriedades(f = {}) {
 }
 import { contextoProducao } from "./producao.mjs";
 import { contextoAlmas } from "./ressonancia.mjs";
+import { situacaoTalentos, talentosAtivos, modeloDoTalento, FAIXAS_TALENTO, CATEGORIAS_TALENTOS, FREQUENCIAS_TALENTO, textoRequisitosTalento, cadeiaTalento, talentoModelo, temTalento, SORTE_POR_DIA, REGRAS_TALENTO } from "./talentos-lista.mjs";
 import { normalizarHex, posicaoNaRoda, estiloPaleta } from "./cores.mjs";
 
 /** Dados de rolagem do EPM (@atr.forca, @per.luta, @nivel, @cd …). */
@@ -461,6 +462,48 @@ const temTexto = html => !!String(html ?? "").replace(/<[^>]*>/g, "").trim();
  * O que cada parte do background de um personagem mostra para quem tem a relação liberada.
  * `enriquecidos` traz o HTML já enriquecido dos textos longos (a ficha faz isso antes).
  */
+/** Sub-aba Talentos: contador pelo nível total, avisos (sem bloquear), Sorte e a lista. */
+export function painelTalentos(dados = {}, ficha = {}) {
+  const nivelTotal = Math.max(1, int(ficha.nivelTotal) || 1);
+  const sit = situacaoTalentos(dados, nivelTotal);
+  const todos = Object.entries(dados.talentos ?? {}).filter(([, t]) => t);
+  const lista = todos.map(([id, t]) => {
+    const modelo = modeloDoTalento(t);
+    const faixa = t.faixa || modelo?.faixa || "comum";
+    const fx = FAIXAS_TALENTO[faixa] ?? FAIXAS_TALENTO.comum;
+    const cat = CATEGORIAS_TALENTOS.find(c => c.id === (t.categoria || modelo?.categoria));
+    const tags = modelo ? [
+      modelo.auto?.mods?.length || modelo.auto?.especial || modelo.auto?.imune?.length || modelo.auto?.escolha ? "automático" : "",
+      modelo.auto?.ataque ? "opção no ataque" : "",
+      modelo.auto?.acoes?.length ? "vira habilidade" : "",
+      modelo.auto?.texto ? "o Mestre decide" : "",
+      modelo.repetivel ? "repetível" : ""
+    ].filter(Boolean) : ["feito à mão"];
+    const cadeia = modelo ? cadeiaTalento(modelo.id) : [];
+    return {
+      id, nome: t.nome || modelo?.nome || "Talento", descricao: t.descricao || modelo?.beneficio || "", manual: !modelo, inativo: !!t.inativo,
+      faixa, faixaLabel: fx.label, cor: fx.cor, categoriaLabel: cat?.label ?? "", icone: cat?.icone ?? "fa-solid fa-star",
+      freq: modelo && modelo.frequencia !== "livre" ? FREQUENCIAS_TALENTO[modelo.frequencia] ?? "" : "",
+      requisitos: modelo && textoRequisitosTalento(modelo) !== "—" ? textoRequisitosTalento(modelo) : "", tags,
+      cadeia: cadeia.length > 1 ? cadeia.map(x => talentoModelo(x)?.nome ?? x).join(" → ") : "",
+      antigo: !!t.custo && !t.versao, criado: num(t.criado),
+      opcoesFaixa: Object.entries(FAIXAS_TALENTO).map(([k, f]) => ({ id: k, label: f.label, selected: k === faixa })),
+      mods: Object.entries(t.mods ?? {}).filter(([, m]) => m).map(([mid, m]) => ({ id: mid, alvo: m.alvo, valor: num(m.valor) })),
+      busca: textoDeBusca(t.nome, modelo?.nome, t.descricao, modelo?.beneficio, cat?.label, fx.label)
+    };
+  }).sort((a, b) => (a.inativo - b.inativo) || a.criado - b.criado);
+  return {
+    ...sit, nivelTotal, lista, excedido: sit.usados > sit.disponiveis || sit.lendarios > 1,
+    sorte: temTalento(dados, "sortudo") ? { restante: Math.max(0, SORTE_POR_DIA - int(dados.sorte?.usados)), total: SORTE_POR_DIA } : null,
+    regras: REGRAS_TALENTO
+  };
+}
+
+/** Texto de busca (sem acento, sem HTML, sem caixa) para a barra de pesquisa das listas. */
+export function textoDeBusca(...partes) {
+  return normalizarTexto(partes.flat().map(p => String(p ?? "")).join(" ").replace(/<[^>]*>/g, " ").replace(/&[a-z#0-9]+;/gi, " ")).replace(/\s+/g, " ").slice(0, 4000);
+}
+
 export function conteudoRevelacoes(dadosParceiro = {}, enriquecidos = {}) {
   const sobre = dadosParceiro?.sobre ?? {};
   const out = {};
@@ -1162,7 +1205,8 @@ export function montarContexto({
       motivosTexto: [...new Set([...(presaTransf ? [`só transformado em ${tNome}`] : []), ...formas.filter(f => f.bloqueada).flatMap(f => f.motivosTexto.split(", "))])].filter(Boolean).join(", "),
       selecionado: selecao.ids.has(item.id),
       alertas, alertasTexto: alertas.join("\n"),
-      expandido: expandidos.has(item.id), descricao: enriquecidos.itens?.[item.id] ?? ""
+      expandido: expandidos.has(item.id), descricao: enriquecidos.itens?.[item.id] ?? "",
+      busca: textoDeBusca(item.name, item.system?.description?.value)
     };
   }, falhas);
   const ordenarPoderes = (a, b) => (b.favorito - a.favorito) || a.name.localeCompare(b.name, "pt-BR");
@@ -1191,8 +1235,11 @@ export function montarContexto({
   const subAtual = SUBABAS_HABILIDADE.some(s => s.id === ui.abas?.habilidades) ? ui.abas.habilidades : "geral";
   const subabas = SUBABAS_HABILIDADE.map(sub => ({
     ...sub, ...secoesDe(sub), ativa: sub.id === subAtual, cls: sub.id === subAtual ? "active" : "",
-    eTransformacoes: sub.id === "transformacoes", eArquetipo: sub.id === "arquetipo", eClasse: sub.id === "classe"
+    eTransformacoes: sub.id === "transformacoes", eArquetipo: sub.id === "arquetipo", eClasse: sub.id === "classe", eTalentos: sub.id === "talentos"
   }));
+  ctx.talentosPainel = painelTalentos(dados, ficha);
+  const subTalentos = subabas.find(s => s.eTalentos);
+  if (subTalentos) subTalentos.total = ctx.talentosPainel.usados;
   const geral = daSubaba(SUBABAS_HABILIDADE[0]);
   ctx.habilidades = {
     subabas, total: habilidades.length,
@@ -1448,6 +1495,7 @@ export function montarContexto({
       containerNome: item.system?.container ? (nomes[item.system.container] ?? "") : "",
       expandido: expandidos.has(item.id),
       descricao: enriquecidos.itens?.[item.id] ?? "",
+      busca: textoDeBusca(item.name, item.system?.description?.value),
       opcoesRaridade: Object.entries(RARIDADES_ITEM).map(([id, rr]) => ({ id, label: rr.label, selected: id === raridade })),
       opcoesPericia: eArma ? opcoesPericia(ataque.periciaId) : [],
       efeitosAtivos: ativo || item.type === "consumable",
@@ -1501,6 +1549,7 @@ export function montarContexto({
     const pesoDentro = arredondar(conteudo.reduce((s, x) => s + x.pesoLinha, 0), 2);
     return {
       ...base, conteudo, qtdDentro: conteudo.length, pesoDentro,
+      busca: textoDeBusca(base.busca, ...conteudo.map(x => x.name)),
       moedas: moedasDaMochila(item), temMoedas: moedasDaMochila(item).length > 0,
       capacidade, cheia: capacidade > 0 && pesoDentro > capacidade,
       organizar: Object.entries(ORGANIZAR_MOCHILA).map(([id, label]) => ({ id, label, selected: id === modo })), organizarAtual: modo,

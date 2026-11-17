@@ -31,6 +31,7 @@ import { htmlAtividades, lerAtividade, fimDaReza, fazerAtividade, falhaCritica, 
 import { recarregarAncoras } from "./vinculos.mjs";
 import { gastarDurabilidade, armaduraEquipada, PERDA_CRITICO, quebrado } from "./oficina.mjs";
 import { penalidadeTec, DT_COMPLEXO } from "./tecnologia.mjs";
+import { temTalento, talentosAtivos, SANGUE_PV_POR_PM } from "./talentos-lista.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -324,6 +325,10 @@ export async function usarItem(actor, item) {
     avisos.push(`${b.texto || "Bônus"} pela cena (aba Combate → Bônus de cena).`);
   }
   if (tecUso && !tecUso.protecao) avisos.push(`${tecUso.fonte}: os testes com o item têm desvantagem${tecUso.penal ? ` e ${tecUso.penal}` : ""}.`);
+  if (item.type === "consumable") {
+    if (temTalento(actor.flags?.[FLAG], "ambidestria")) avisos.push("Ambidestria: usar o consumível pode ser ação bônus ou de movimento.");
+    if (temTalento(actor.flags?.[FLAG], "maosFirmes")) avisos.push("Mãos Firmes: dar a um aliado a até 1,5 m é ação bônus.");
+  }
   return cartaoItem(actor, item, { avisos });
 }
 
@@ -472,6 +477,11 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     pvPerdidos += ficha.especiais.pvPorHabilidade.valor;
     avisos.push(`−${ficha.especiais.pvPorHabilidade.valor} PV por ${ficha.especiais.pvPorHabilidade.fontes.join(", ")}.`);
   }
+  if (sobrecarga?.via === "sangue") {
+    pvPerdidos += sobrecarga.falta * SANGUE_PV_POR_PM;
+    avisos.push(`Sangue Mágico: faltaram ${sobrecarga.falta} PM, pagos com ${sobrecarga.falta * SANGUE_PV_POR_PM} PV (sem o teste da Sobrecarga).`);
+    sobrecarga = null;
+  }
   if (sobrecarga?.via === "pv") {
     pvPerdidos += sobrecarga.falta * 2;
     avisos.push(`Sobrecarga de Núcleo: faltaram ${sobrecarga.falta} PM, pagos com ${sobrecarga.falta * 2} PV.`);
@@ -486,7 +496,7 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
   }
   if (chaveUso) {
     updates[`${P}.usosFormas.${chaveUso}`] = forma.uso;
-    avisos.push(`${USOS_FORMA[forma.uso]}: volta ${{ turno: "no seu próximo turno", combate: "no fim do combate", cena: "no fim da cena (combate) ou descanso", curto: "no descanso curto", longo: "no descanso longo", dia: "no descanso longo" }[forma.uso]}.`);
+    avisos.push(`${USOS_FORMA[forma.uso]}: volta ${{ turno: "no seu próximo turno", combate: "no fim do combate", cena: "no fim da cena (combate) ou descanso", curto: "no descanso curto", longo: "no descanso longo", dia: "no descanso longo", semana: "depois de uma semana (Pular tempo)", sessao: "no Início da sessão" }[forma.uso] ?? "depois"}.`);
   }
   if (eSustentada(forma)) {
     updates[`${P}.sustentadas.${item.id}`] = { nome, recurso: forma.porTurno.recurso, valor: forma.porTurno.valor, forma: forma.id };
@@ -539,13 +549,14 @@ async function escolherSobrecarga(actor, ficha, custo, tem, nome) {
       <p><strong>Sobrecarga de Núcleo</strong>: a Mana que você tem vai primeiro e os <strong>${falta} PM</strong> que faltam saem em <strong>${falta * 2} PV</strong> (você tem ${pv}) ou <strong>${falta} PS</strong> (você tem ${ps}).</p>
       <p class="epm-dica">Depois vem um teste de Núcleo DT 15. Se falhar, fica com Mana Instável.</p>`,
     buttons: [
-      { action: "pv", label: `${falta * 2} PV`, icon: "fa-solid fa-heart", default: true },
+      ...(temTalento(actor.flags?.[FLAG], "sangueMagico") ? [{ action: "sangue", label: `Sangue Mágico: ${falta * SANGUE_PV_POR_PM} PV (sem teste)`, icon: "fa-solid fa-droplet", default: true }] : []),
+      { action: "pv", label: `${falta * 2} PV`, icon: "fa-solid fa-heart", default: !temTalento(actor.flags?.[FLAG], "sangueMagico") },
       { action: "ps", label: `${falta} PS`, icon: "fa-solid fa-brain" },
       ...(game.user.isGM ? [{ action: "mestre", label: "Sem pagar (Mestre)", icon: "fa-solid fa-crown" }] : []),
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
   });
-  if (!["pv", "ps", "mestre"].includes(r)) return null;
+  if (!["pv", "ps", "mestre", "sangue"].includes(r)) return null;
   return { via: r, falta };
 }
 
@@ -884,11 +895,15 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
     if (forma.dano.formula) {
       const cura = /cura/i.test(forma.dano.tipo);
       const potente = p.tipo === "magia" && ficha.extras?.magiaPotente ? ficha.extras.magiaPotente : 0;
-      const formulaDano = potente ? `${forma.dano.formula} + ${potente}` : forma.dano.formula;
+      // Afinidade Elemental (talento): +2 nas magias do tipo escolhido
+      const tiposMagia = !cura && p.tipo === "magia" ? lerTipoDano(forma.dano.tipo ?? "").tipos : new Set();
+      const afin = (ficha.extras?.afinidades ?? []).filter(a => [...lerTipoDano(a.tipo).tipos].some(t => tiposMagia.has(t)));
+      const somaAfin = afin.reduce((s, a) => s + int(a.valor), 0);
+      const formulaDano = [forma.dano.formula, potente ? String(potente) : "", somaAfin ? String(somaAfin) : ""].filter(Boolean).join(" + ");
       botoes.push({
         acao: "formula", formula: formulaDano,
         rotulo: `${cura ? "Cura" : "Dano"}: ${item.name}${forma.dano.tipo && !cura ? ` (${forma.dano.tipo})` : ""}`,
-        label: `${cura ? "Cura" : "Dano"} ${formulaDano}${potente ? " (Magia Potente)" : ""}`, icone: cura ? "fa-solid fa-heart" : "fa-solid fa-burst"
+        label: `${cura ? "Cura" : "Dano"} ${formulaDano}${potente ? " (Magia Potente)" : ""}${somaAfin ? " (Afinidade Elemental)" : ""}`, icone: cura ? "fa-solid fa-heart" : "fa-solid fa-burst"
       });
     }
     for (const [k, ligado] of Object.entries(forma.requisitos)) if (ligado) requisitos.push(REQUISITOS[k]?.label ?? k);
@@ -1363,6 +1378,8 @@ export async function descanso(actor, tipo) {
   });
   if (!escolha || typeof escolha !== "object") return;
   const updates = { ...limparBonusDaCena(actor.flags?.[FLAG], { descanso: true }), ...liberarUsosFormas(actor.flags?.[FLAG], longo ? ["combate", "cena", "curto", "longo", "dia"] : ["combate", "cena", "curto"]) };
+  // Sortudo: os pontos de Sorte voltam no descanso longo
+  if (longo && int(actor.flags?.[FLAG]?.sorte?.usados)) updates[`${P}.sorte.usados`] = 0;
   const feitos = [];
   let ganhoPv = 0;
   for (const id of ["pv", "pm", "pe", "ps"]) {
@@ -1821,6 +1838,17 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (estilos.includes("atirador")) opcoesArq.push(chk("atirador", `Atirador: abrir mão do modificador de dano para reduzir a margem de crítico em ${estiloVal(dados, "atirador", "margem")}`));
   if (estilos.includes("dupla") && armasEquipadas >= 2) notas.push(`Arma Dupla: +${estiloVal(dados, "dupla", "acerto")} de Acerto (duas armas equipadas)`);
   if (presa) opcoesArq.push(chk("presa", `Contra a Presa (${escapar(presa)}): +${ARQUETIPOS.combatente.cacador.acerto} de Acerto e +1 dado de dano`));
+  // Talentos com bônus de situação: a pessoa marca quando a condição vale
+  const propsTal = item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])]].map(x => normalizarTexto(x)) : [];
+  const duasMaosTal = propsTal.some(x => ["duas maos", "duas-maos", "two", "versatil", "ver"].includes(x));
+  const distTal = at.alcanceCat === "distancia" || (at.alcanceCat !== "corpo" && at.periciaId === "pontaria");
+  const opcoesTal = talentosAtivos(dados).map(x => x.modelo).filter(e => e?.auto?.ataque).filter((e, i, l) => l.indexOf(e) === i).filter(e => {
+    const a = e.auto.ataque;
+    if (a.duasMaos && !duasMaosTal) return false;
+    if (a.distancia && !distTal) return false;
+    if (a.corpo && distTal) return false;
+    return true;
+  }).map(e => chk(`tal_${e.id}`, escapar(e.auto.ataque.rotulo + (contra && e.id === "duelista" ? " (vale no Contra-ataque)" : ""))));
   // Manobra do Combatente (Notion): 1 vez por turno, ao atacar
   const manobraUsada = !!dados.usos?.manobraTurno;
   if (comb > 0 && !oportunidade) {
@@ -1850,6 +1878,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     ${extras.length ? `<fieldset class="epm-aquisicao"><legend>Ataques adicionais</legend>${extras.join("")}</fieldset>` : ""}
     ${!oportunidade && !contra ? htmlDupla(actor) : ""}
     ${opcoesArq.length ? `<fieldset class="epm-aquisicao"><legend>${ef ? `Maestria e estilo` : "Estilo e Presa"}</legend>${opcoesArq.join("")}</fieldset>` : ""}
+    ${opcoesTal.length ? `<fieldset class="epm-aquisicao epm-opcoes-talento"><legend>Talentos (marque se valer neste ataque)</legend>${opcoesTal.join("")}</fieldset>` : ""}
     <div class="epm-dialogo-linha">
       <label class="epm-campo"><span>Bônus externo no acerto</span><input type="text" name="extraAcerto" placeholder="2 ou 1d4"></label>
       <label class="epm-campo"><span>Bônus externo no dano</span><input type="text" name="extraDano" placeholder="3 ou 1d6"></label>
@@ -1871,7 +1900,8 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
             modo: f.modo.value, extraAcerto: f.extraAcerto.value.trim(), extraDano: f.extraDano.value.trim(), margem: f.margem.value, mult: f.mult.value, comDano: f.comDano.checked,
             extraComum: marcado(f, "extraComum"), extraAcao: f.extraAcao?.value ?? "", extraComb: marcado(f, "extraComb"), gemea: marcado(f, "gemea"),
             manobra: f.manobra && !f.manobra.disabled ? f.manobra.value : "", certeiro: marcado(f, "certeiro"), longa: marcado(f, "longa"), duelista: marcado(f, "duelista"), atirador: marcado(f, "atirador"), presa: marcado(f, "presa"),
-            dupla: marcado(f, "dupla") ? (f.duplaParceiro?.value ?? "") : "", inspiracao: marcado(f, "inspiracao")
+            dupla: marcado(f, "dupla") ? (f.duplaParceiro?.value ?? "") : "", inspiracao: marcado(f, "inspiracao"),
+            talentos: [...b.form.querySelectorAll('input[name^="tal_"]')].filter(c => c.checked && !c.disabled).map(c => c.name.slice(4))
           };
         }
       },
@@ -1999,6 +2029,20 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     if (bm.nivelDano) { at = { ...at, tipoDano: subirNivelDano(at.tipoDano) }; base.notasExtra.push(`Domínio de arma (${tipoArma}, ${bm.acertos} acertos): +1 nível de dano.`); }
   }
   base.tipoArma = tipoArma;
+  // Talentos marcados no diálogo
+  for (const tid of escolha.talentos ?? []) {
+    const e = talentosAtivos(dados).map(x => x.modelo).find(m => m?.id === tid);
+    const a = e?.auto?.ataque;
+    if (!a) continue;
+    if (a.acerto) base.bonusFontes.push({ valor: a.acerto, fonte: e.nome, hab: a.acerto > 0 });
+    if (a.dano) base.extraDano = [base.extraDano, String(a.dano)].filter(Boolean).join(" + ");
+    if (a.margem) base.margemBonus = int(base.margemBonus) + a.margem;
+    if (a.nivelDano) at = { ...at, tipoDano: subirNivelDano(at.tipoDano) };
+    const partes = [a.acerto ? `${sinalCurto(a.acerto)} no acerto` : "", a.dano ? `+${a.dano} no dano` : "", a.nivelDano ? "+1 nível de dano" : "", a.margem ? `margem de ameaça −${a.margem} (não garante o acerto)` : ""].filter(Boolean);
+    base.notasExtra.push(a.investida
+      ? `Investida: ${partes.join(", ")}. O alvo faz Fortitude CD ${10 + int(ficha.atributos?.forca?.total)} (10 + Força); se falhar, fica Caído.`
+      : `Talento ${e.nome}: ${partes.join(", ")}.`);
+  }
   if (dupla) {
     at = { ...at, dano: [at.dano, dupla.danoParceiro].filter(Boolean).join(" + "), tipoDano: subirNivelDano(at.tipoDano || dupla.tipoDanoParceiro || "") };
     base.bonusFontes.push(...dupla.bonusFontes);
@@ -2201,7 +2245,7 @@ export async function rolarAtaque(actor, at, {
     });
   }
   // Manobra Derrubar: botão para deixar o alvo Caído
-  if (notasExtra.some(t => String(t).startsWith("Manobra: Derrubar"))) {
+  if (notasExtra.some(t => String(t).startsWith("Manobra: Derrubar") || String(t).startsWith("Investida:"))) {
     botoes.push({ acao: "condicaoAlvo", condicao: "epm-caido", rotulo: "Manobra", label: "Acertou? Alvo fica Caído", icone: "fa-solid fa-person-falling" });
   }
   // Árvore elemental (Guerreiro Elemental): golpe com 20+ de dano de um elemento aplica o efeito (Fortitude DT 20)

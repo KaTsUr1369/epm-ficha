@@ -57,7 +57,10 @@ export async function conectar(actor, outro, { tipo = "aliado" } = {}) {
     ui.notifications.info(`${outro.name} já está nas relações.`);
     return false;
   }
-  await actor.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(outro, tipo) });
+  const idRel = novoId();
+  await actor.update({ [`${P}.relacoes.${idRel}`]: novaEntrada(outro, tipo) });
+  // Presença Marcante / Lenda Viva: afinidade inicial sugerida com NPC novo (o Mestre confirma)
+  try { const { sugerirAfinidade } = await import("./talentos.mjs"); await sugerirAfinidade(actor, outro, idRel); } catch (err) { console.warn("EPM | afinidade dos talentos", err); }
   if (ajustes().relacaoMutua && usaFichaEPM(outro) && !temRelacao(outro, actor.uuid)) {
     if (outro.isOwner) {
       await outro.update({ [`${P}.relacoes.${novoId()}`]: novaEntrada(actor, tipo) });

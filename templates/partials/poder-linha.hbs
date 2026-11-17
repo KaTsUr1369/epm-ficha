@@ -1,4 +1,4 @@
-<li class="epm-poder{{#if ativa}} ativa{{/if}}{{#if bloqueada}} bloqueada{{/if}}{{#if expandido}} expandido{{/if}}{{#if selecionado}} selecionado{{/if}}" data-item-id="{{this.id}}" draggable="true" style="--cor: {{this.raridadeCor}}">
+<li class="epm-poder{{#if ativa}} ativa{{/if}}{{#if bloqueada}} bloqueada{{/if}}{{#if expandido}} expandido{{/if}}{{#if selecionado}} selecionado{{/if}}" data-item-id="{{this.id}}" data-busca="{{this.busca}}" draggable="true" style="--cor: {{this.raridadeCor}}">
   <div class="epm-poder-linha{{#if selecionando}} com-selecao{{/if}}">
     {{#if selecionando}}<label class="epm-selecionar" title="Selecionar"><input type="checkbox" data-selecionar-poder="{{this.id}}" {{#if selecionado}}checked{{/if}} aria-label="Selecionar {{this.name}}" /></label>{{/if}}
     <img class="epm-poder-img" src="{{this.img}}" alt="" {{#if @root.edicao}}data-action="imagemItem" data-item-id="{{this.id}}" title="Trocar imagem"{{/if}} />

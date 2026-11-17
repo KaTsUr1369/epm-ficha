@@ -3491,3 +3491,41 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-tre-regras { margin: 0 0 8px; font-size: 12.5px; }
 .epm-tre-regras ul { margin: 4px 0 0; padding-left: 18px; }
 .epm-treino-pendente { margin: 6px 0; font-size: 12.5px; }
+
+/* Barra de pesquisa das listas longas (perícias, treinos, magias, habilidades, inventário…) */
+.epm-busca-barra { display: flex; margin: 0 0 8px; }
+.epm-busca-barra .epm-busca { flex: 1 1 auto; width: 100%; max-width: none; }
+.application.epm .epm-busca-barra .epm-busca input { flex: 1 1 auto; width: 100%; padding-right: 110px; }
+.epm-busca-lista .epm-busca-qtd { position: absolute; right: 30px; font-size: 11px; color: var(--epm-fraco); pointer-events: none; white-space: nowrap; }
+.application.epm .epm-busca-oculto { display: none !important; }
+.application.epm .epm-buscando > .tab.epm-circulo:not(.epm-busca-oculto),
+.application.epm .epm-buscando > .tab.epm-subaba-habilidades:not(.epm-busca-oculto),
+.application.epm .epm-buscando > .tab.epm-subaba-arqclasse:not(.epm-busca-oculto) { display: block !important; }
+.application.epm .epm-buscando > .epm-subnav { opacity: .45; pointer-events: none; }
+.application.epm .epm-buscando > .tab.epm-circulo + .tab.epm-circulo,
+.application.epm .epm-buscando > .tab.epm-subaba-habilidades + .tab.epm-subaba-habilidades { margin-top: 10px; }
+
+/* Talentos (sub-aba Talentos em Habilidades) */
+.epm-talentos-painel .epm-painel-titulo { flex-wrap: wrap; gap: 8px; }
+.epm-talentos-painel .epm-contador.excedido { color: var(--epm-perigo, #D9534F); border-color: currentColor; }
+.application.epm .epm-talentos-extras { display: inline-flex; align-items: center; gap: 6px; }
+.application.epm .epm-talentos-extras input { width: 56px; height: 26px; text-align: center; }
+.epm-talentos-painel .epm-painel-acoes { display: inline-flex; gap: 6px; margin-left: auto; }
+.application.epm .epm-talentos-lista { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.epm-talento { border: 1px solid var(--epm-borda, #2c3d3b); border-left: 3px solid var(--cor, #93A9A3); border-radius: 6px; padding: 8px 10px; background: rgba(255, 255, 255, .02); }
+.epm-talento.inativo { opacity: .55; }
+.epm-talento-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-talento-topo > i { color: var(--cor, #93A9A3); width: 16px; text-align: center; }
+.epm-talento-nome { font-size: 14px; }
+.epm-talento .epm-tag-faixa { color: var(--cor); border-color: var(--cor); }
+.epm-talento .epm-tag-suave { opacity: .8; }
+.epm-talento-acoes { margin-left: auto; display: inline-flex; gap: 2px; }
+.epm-talento-texto { margin: 6px 0 2px; }
+.epm-talento .epm-dica { margin: 2px 0 0; }
+.epm-talento-edicao { display: grid; gap: 6px; margin-top: 6px; }
+.application.epm .epm-talento-nome-campo { flex: 1 1 180px; min-width: 160px; height: 26px; }
+.epm-talento-mods { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.epm-talentos-catalogo .epm-tal-faixa { color: var(--cor); }
+.epm-talentos-catalogo .epm-tre-linha { grid-template-columns: 18px minmax(0, 1.5fr) 5.5em 7.5em minmax(0, 2fr) 0; }
+.epm-talentos-catalogo .epm-tre-num { font-family: inherit; white-space: nowrap; text-align: left; }
+.epm-talentos-catalogo .epm-tal-situacao { margin: 4px 0; }

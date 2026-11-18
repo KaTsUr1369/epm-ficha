@@ -14,6 +14,33 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.20
+
+- **Os Talentos viraram Treinamentos.** A sub-aba e a janela de Talentos saíram. Os 55 agora estão no catálogo de treinamentos ("Adicionar da lista"), nas categorias de treino, com tempo e PT pela antiga faixa:
+  - Comum: 24 h, 5 PT, sem treinador;
+  - Avançado: 1 semana, 10 PT, com treinador, nível total 25;
+  - Superior: 2 semanas, 15 PT, com treinador, nível total 50;
+  - Lendário: 1 mês, 20 PT, com treinador, nível total 75.
+- **Requisitos novos no catálogo:** nível total e arquétipo (ex.: Avatar da Guerra pede Combatente).
+- **A automação vale ao concluir o treino:** bônus fixos, opções no diálogo de ataque, Sortudo (Rerrolar), Escolhido do Multiverso, Fúria Controlada, Sangue Mágico, Presença Marcante / Lenda Viva. As ações viram habilidades de Treinamento.
+- **Robusto:** +3 PV por nível total, contando os níveis anteriores (concluído no nível 10 = +30). Ao rolar o dado de Vida de um nível novo, rola 2 vezes e fica o maior.
+- **Sortudo** passou para Avançado. **Afinidade Elemental** pede o tipo de dano ao adicionar e pode ser feita mais de uma vez.
+- **Ambidestria:** com o treino Combate com Duas Armas, o diálogo de ataque ganha a opção "Ataque da segunda arma". Sem Ambidestria, o dano não soma o atributo. Com ela, soma.
+- **Nova cena** (modo edição, aba Habilidades): recarrega os usos de 1× por cena, por turno e por rodada da ficha.
+- **Raridade na Criação:** cada projeto da Oficina tem raridade. A ficha avisa quando passa do que o nível total permite (Comum 1, Rara 10, Épica 25, Lendária 50, Mítica 75; Arcaica só com o Mestre) e pede confirmação no teste. O item criado já sai com essa raridade.
+- **Forja do Multiverso** (treino): na Criação, o limite de raridade sobe uma.
+- **Arquétipos balanceados** (PDFs de Combatente, Conjurador e Artífice):
+  - **Combatente:** Ataque Extra com custo por ataque (escolha quantos no diálogo; Arma Gêmea usa a Ação Bônus e dá desconto); **Fôlego de Combate** (botão em Combate); Reflexos +3 no 7 e +5 no 17; Maestrias com números novos (Protetora dá CA e Defesa, Leve dá Esquiva, Perigosa dá dados no crítico); Estilos Duelista +2, Atirador margem +2, Dupla +1; **Caçador Natural** em 3 etapas (19, 29, 47) por 12 PE; **Comando de Campo** no lugar de Especialista em Campo; sem Ataque Extra 6.0.
+  - **Conjurador:** Reserva Arcana +10 no 26, +25 no 41 e +40 no 49; Recuperar Mana 4.0 no 43; Sobrecarga por nível (37 e 49); Domínio de Conjuração no 34; Zona de Mana no 50.
+  - **Artífice:** tabela de Projetos nova (dano e cura usam Inteligência; Soma e Livro de Projetos não); Itens Encantados com valores fixos; Modificações Permanentes 2.0; Pequeno Autômato +2/+10 no 29 e +4/+25 no 41.
+- **Classes balanceadas** (16 habilidades cada, do nível 3 ao 50):
+  - **Novas:** Bastião e Guerreiro do Vazio (Combatente), Vitalista (Conjurador) e Mecânico de Guerra (Artífice).
+  - **Reescritas:** Guerreiro Elemental (Arma Elemental 1d4 a 1d10 em todo ataque; Núcleo Vermelho no primeiro acerto do turno; margem a partir do 12; efeito do elemento a partir do 39 com crítico ou 15+ de dano; Pele de Mana no lugar de Revestimento Elemental), Alice (Histeria com um quarto dos PV: +3 de Acerto e +1d10, 2d10 no 45), Trovador (Inspiração por 3 PE para vários aliados) e Caçador (Pistola com Balas de Mercúrio por descanso).
+  - Bárbaro, Guardião e Lutador continuam iguais.
+- **Os bônus continuam ajustáveis por ficha:** em "Ajustar bônus" o Mestre ou o jogador troca qualquer número dado pelo arquétipo ou pela classe, inclusive os novos. Fichas que tinham gravado o padrão antigo (ex.: Duelista +3) passam a seguir o livro; valores pessoais diferentes ficam.
+- **Fichas antigas:** as habilidades de arquétipo e de classe criadas pelo modelo são renomeadas e ganham o texto novo; as que saíram do livro somem (as escritas pelo jogador ficam); as novas liberadas entram uma vez.
+- **Fichas antigas:** os talentos da 0.8.19 (e os antigos comprados com PEv) viram treinos. Os que estavam valendo ficam concluídos; os desligados ou não comprados ficam planejados.
+
 ## Novidades da 0.8.19
 
 - **Talentos.** Nova sub-aba **Talentos** na aba Habilidades. São dons e estilos de luta escolhidos ao subir de nível: não custam PT nem tempo.

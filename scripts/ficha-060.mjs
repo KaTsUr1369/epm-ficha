@@ -296,6 +296,9 @@ export async function rolarNiveisRecursos(actor) {
   const niveis = niveisArquetipos(dados);
   const upd = {};
   const linhas = [];
+  // Robusto (talento): o dado de Vida rola 2 vezes e fica o maior
+  const { temTalento } = await import("./talentos-lista.mjs");
+  const robusto = temTalento(dados, "robusto");
   niveis.forEach((n, idx) => {
     const extras = idx === 0 ? n.nivel - 1 : n.nivel;
     const cfg = tabelaRecursos(dados.recursosAuto?.tabela)[n.arquetipo];
@@ -303,11 +306,20 @@ export async function rolarNiveisRecursos(actor) {
     for (const r of ["pv", "pe", "pm"]) {
       const atuais = [...listaRolagens(dados.recursosAuto?.rolagens?.[n.arquetipo]?.[r])];
       const faltam = Math.max(0, extras - atuais.length);
+      const duplas = [];
       for (let i = 0; i < faltam; i++) {
         const faces = int(cfg[r].dado.split("d")[1], 6);
-        atuais.push(1 + Math.floor(Math.random() * faces));
+        const a = 1 + Math.floor(Math.random() * faces);
+        if (r === "pv" && robusto) {
+          const b = 1 + Math.floor(Math.random() * faces);
+          atuais.push(Math.max(a, b));
+          duplas.push(`${a}/${b}→${Math.max(a, b)}`);
+        } else atuais.push(a);
       }
-      if (faltam) { upd[`${P}.recursosAuto.rolagens.${n.arquetipo}.${r}`] = atuais; linhas.push(`${RECURSOS[r]?.abrev ?? r} (${n.arquetipo}): ${atuais.slice(-faltam).join(", ")}`); }
+      if (faltam) {
+        upd[`${P}.recursosAuto.rolagens.${n.arquetipo}.${r}`] = atuais;
+        linhas.push(`${RECURSOS[r]?.abrev ?? r} (${n.arquetipo}): ${duplas.length ? `${duplas.join(", ")} (Robusto: 2 dados, fica o maior)` : atuais.slice(-faltam).join(", ")}`);
+      }
     }
   });
   if (!linhas.length) return ui.notifications.info("Todos os níveis já têm rolagem.");
@@ -393,11 +405,21 @@ export async function treinoDoCatalogo(actor, indiceOuId, { silencioso = false }
     armaExotica = await escolherArmaExotica(actor);
     if (armaExotica === null) return null;
   }
+  // Afinidade Elemental (antigo talento, repetível): escolhe o tipo de dano
+  let escolha = "";
+  const { talentoModelo } = await import("./talentos-lista.mjs");
+  if (talentoModelo(e.modelo)?.auto?.escolha === "elemento") {
+    const { escolherElemento } = await import("./talentos.mjs");
+    escolha = await escolherElemento(actor, e.nome);
+    if (!escolha) return null;
+    if (Object.values(actor.flags?.[FLAG]?.treinamentos ?? {}).some(t => t?.modelo === e.modelo && t.escolha === escolha)) { ui.notifications.warn(`${actor.name} já tem ${e.nome} (${escolha}).`); return null; }
+  }
   const mods = {};
   for (const m of e.mods ?? []) mods[novoId()] = { alvo: m.alvo, valor: m.valor };
   const id = novoId();
   await actor.update({ [`${P}.treinamentos.${id}`]: {
-    nome: e.nome, categoria: e.categoria, tempo: e.tempo, unidade: e.unidade, pt: e.pt, requisitos: e.requisitos,
+    ...(escolha ? { escolha } : {}),
+    nome: escolha ? `${e.nome} (${escolha})` : e.nome, categoria: e.categoria, tempo: e.tempo, unidade: e.unidade, pt: e.pt, requisitos: e.requisitos,
     treinador: !!e.treinador, tipoTreinador: modelo?.tipoTreinador ?? "", repetivel: !!modelo?.repetivel,
     beneficios: troca ? `${e.beneficios} Sai: ${troca.saiNome}. Entra: ${troca.nova.nome}.` : armaExotica ? `${e.beneficios} Arma: ${armaExotica.nome}.` : e.beneficios,
     especial: e.especial ?? "", modelo: e.modelo ?? "", estado: "planejado", horasFeitas: 0, mods, criado: Date.now(),
@@ -538,17 +560,6 @@ export async function quebrarPacto(actor, id) {
   return notaChat(actor, `<p><strong>Pacto quebrado:</strong> ${escapar(pacto.nome || "")}</p><p>Vida máxima ${int(hp.max)} → ${novoMax}; −${soma} pontos de atributo; habilidades bloqueadas${horas ? ` por ${horas} h` : " até o Mestre liberar"}.</p>`, "#B0479A");
 }
 
-export async function comprarTalento(actor, id) {
-  const t = actor.flags?.[FLAG]?.talentos?.[id];
-  if (!t || t.comprado) return;
-  const custo = Math.max(0, int(t.custo));
-  const pev = int(actor.flags[FLAG].pontos?.pev);
-  if (pev < custo) return ui.notifications.warn(`Faltam ${custo - pev} PEv para comprar ${t.nome || "o talento"}.`);
-  const extrasAtr = Object.values(t.mods ?? {}).filter(m => String(m?.alvo).startsWith("atributo.")).reduce((s, m) => s + Math.max(0, num(m.valor)), 0);
-  if (extrasAtr > 2) ui.notifications.warn("Talentos, treinos e habilidades dão no máximo +2 pontos de atributo (Notion).");
-  await actor.update({ [`${P}.talentos.${id}.comprado`]: true, [`${P}.pontos.pev`]: pev - custo });
-  ui.notifications.info(`Talento comprado: ${t.nome || "sem nome"} (−${custo} PEv).`);
-}
 
 /* -------------------------------------------- */
 /*  Nomeação de criaturas                       */
@@ -666,8 +677,8 @@ export function fimDeCombate060(dados) {
 
 export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
-  "rolarNiveisRecursos", "treinoCatalogo", "catalogoTreinos", "ligarModeloTreino", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novoTalento", "excluirTalento", "comprarTalento", "talentosCatalogo", "alternarTalento", "irTalentos",
-  "adicionarModTalento", "removerModTalento", "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
+  "rolarNiveisRecursos", "treinoCatalogo", "catalogoTreinos", "ligarModeloTreino", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novaCena",
+  "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
   "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
@@ -700,19 +711,13 @@ export const METODOS_060 = {
   async acaoPuxarCompendio() { const { puxarDoCompendio } = await import("./compendio-busca.mjs"); return puxarDoCompendio(this.actor); },
   async acaoCatalogoCompleto() { const { abrirCatalogo } = await import("./catalogo-app.mjs"); return abrirCatalogo({ actor: this.actor }); },
   acaoKitInicial() { return kitInicial(this.actor); },
-  async acaoNovoTalento() { const T = await import("./talentos.mjs"); return T.novoTalentoManual(this.actor); },
-  async acaoExcluirTalento(ev, alvo) {
-    const nome = this.actor.flags?.[FLAG]?.talentos?.[alvo.dataset.id]?.nome ?? "este talento";
-    if (!(await confirmar("Remover talento", `<p>Remover ${escapar(nome)}? A habilidade ligada a ele também sai da ficha.</p>`))) return;
-    const T = await import("./talentos.mjs");
-    return T.excluirTalento(this.actor, alvo.dataset.id);
+  async acaoNovaCena() {
+    const { liberarUsosFormas } = await import("./mecanicas.mjs");
+    const up = liberarUsosFormas(this.actor.flags?.[FLAG], ["cena", "turno", "rodada"]);
+    if (!Object.keys(up).length) return ui.notifications.info("Nenhum uso de 1× por cena gasto.");
+    await this.actor.update(up);
+    ui.notifications.info(`${this.actor.name}: usos de 1× por cena (e por turno/rodada) recarregados.`);
   },
-  async acaoTalentosCatalogo() { const { abrirCatalogoTalentos } = await import("./talentos-app.mjs"); return abrirCatalogoTalentos(this.actor); },
-  async acaoAlternarTalento(ev, alvo) { const T = await import("./talentos.mjs"); return T.alternarTalento(this.actor, alvo.dataset.id); },
-  acaoIrTalentos() { this._mudarAba("primary", "habilidades"); this._mudarAba("habilidades", "talentos"); },
-  acaoComprarTalento(ev, alvo) { return comprarTalento(this.actor, alvo.dataset.id); },
-  acaoAdicionarModTalento(ev, alvo) { return this.actor.update({ [`${P}.talentos.${alvo.dataset.id}.mods.${novoId()}`]: { alvo: "atributo.forca", valor: 1 } }); },
-  acaoRemoverModTalento(ev, alvo) { return this.actor.update({ [`${P}.talentos.${alvo.dataset.id}.mods.-=${alvo.dataset.mod}`]: null }); },
   acaoNovoVoto() { return this.actor.update({ [`${P}.votos.${novoId()}`]: { nome: "Novo voto", tipo: "ativavel", custo: "", efeito: "", usado: false, criado: Date.now() } }); },
   async acaoExcluirVoto(ev, alvo) {
     if (!(await confirmar("Excluir voto", "<p>Apagar este voto?</p>"))) return;

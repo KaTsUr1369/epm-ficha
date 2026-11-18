@@ -17,8 +17,7 @@ export const LISTAS = {
   inventario: { itens: "li.epm-item, .epm-mochila", grupos: [".epm-grupo-raridade", ".epm-categoria", ".epm-mochilas-area"] },
   receitas: { itens: ".epm-receita, .epm-producao-linha", grupos: [".epm-producoes"] },
   relacoes: { itens: ".epm-relacao, .epm-faccao", grupos: [".epm-pasta-relacao", ".epm-faccoes"] },
-  diario: { itens: ".epm-sessao", grupos: [] },
-  talentos: { itens: ".epm-talento", grupos: [] }
+  diario: { itens: ".epm-sessao", grupos: [] }
 };
 
 /** Texto de busca de um item: o data-busca dele ou o que aparece na tela. */

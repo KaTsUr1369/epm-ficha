@@ -66,7 +66,7 @@ const ACOES_FICHA = [
   // 0.5.4
   "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao", "abrirCompendioClasses",
   "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
-  "adicionarHabilidadeArq", "escolherClasse", "trocarClasse", "classeLivre", "adicionarHabilidadeClasse", "caminhoClasse", "alternarEstilo", "alternarUtensilio", "recuperarMana", "cacadorNatural",
+  "adicionarHabilidadeArq", "escolherClasse", "trocarClasse", "classeLivre", "adicionarHabilidadeClasse", "caminhoClasse", "alternarEstilo", "alternarUtensilio", "recuperarMana", "cacadorNatural", "folegoCombate",
   "novoCompanheiro", "excluirCompanheiro", "imagemCompanheiro", "ajustarCompanheiro", "novoAtaqueCompanheiro", "excluirAtaqueCompanheiro",
   "rolarAtaqueCompanheiro", "abrirLigado", "criarAutomato",
   "novaCriatura", "excluirCriatura", "imagemCriatura", "contarCriatura",
@@ -2009,6 +2009,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoApagarDoLivro(ev, alvo) { return PJ.apagarDoLivro(this.actor, alvo.dataset.livro); }
   acaoEncerrarEfeitoProjeto(ev, alvo) { return PJ.encerrarEfeitoProjeto(this.actor, alvo.dataset.efeito); }
   acaoCacadorNatural() { return X.cacadorNatural(this.actor); }
+  acaoFolegoCombate() { return X.folegoCombate(this.actor); }
 
   /* ---------- Companheiros ---------- */
 

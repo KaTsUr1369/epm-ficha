@@ -29,8 +29,9 @@
     {{#if combatente.estilosPermitidos}}
     <h4>Estilo de Combate <span class="epm-contador">{{combatente.estilosPermitidos}} no seu nível</span></h4>
     <div class="epm-chips">{{#each combatente.estilos}}<button type="button" class="epm-chip-botao{{#if escolhido}} ativo{{/if}}" data-action="alternarEstilo" data-estilo="{{this.id}}" title="{{this.texto}}" {{#unless podeMarcar}}disabled{{/unless}} aria-pressed="{{#if escolhido}}true{{else}}false{{/if}}">{{this.nome}}</button>{{/each}}</div>
-    {{#if combatente.estilosTexto}}<p class="epm-dica">Duelista, Atirador e Arma Dupla já valem no diálogo de ataque (Arma Dupla soma +1 de CA com duas armas equipadas).</p>{{/if}}
+    {{#if combatente.estilosTexto}}<p class="epm-dica">Duelista, Atirador e Arma Dupla já valem no diálogo de ataque (Arma Dupla soma Acerto e Esquiva com duas armas equipadas).</p>{{/if}}
     {{/if}}
+    {{#if combatente.folego}}<h4>Fôlego de Combate</h4><p>Ação Bônus: recupera {{combatente.folego.dado}} PE, {{combatente.folego.usos}}× por cena (usados nesta cena: {{combatente.folego.usados}}). Botão na aba Combate.</p>{{/if}}
     {{#if combatente.cacador}}<h4>Caçador Natural</h4><p>{{#if combatente.cacador.presa}}Presa: <strong>{{combatente.cacador.presa}}</strong> (até o fim do combate).{{else}}{{combatente.cacador.custo}} PE para marcar uma Presa. Botão na aba Combate.{{/if}}</p>{{/if}}
   </div>
   {{/if}}

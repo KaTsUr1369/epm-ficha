@@ -114,6 +114,87 @@ export async function sincronizarHabilidadesArquetipo(itens) {
   return n;
 }
 
+/** Habilidades de arquétipo que mudaram de nome ou saíram nos PDFs balanceados (0.8.20). null = saiu. */
+const ARQ_RENOMEADAS_0820 = {
+  "Especialista em Campo": "Comando de Campo", "Especialista em Campo 2.0": "Comando de Campo 2.0",
+  "Ataque Extra 6.0": null, "Reserva Arcana 2.0": "Reserva Arcana 2.0", "Reserva Arcana 3.0": "Sobrecarga 2.0 e Reserva Arcana 3.0"
+};
+
+/** Habilidades de arquétipo que só existem a partir dos PDFs balanceados: entram em quem já usa o modelo. */
+const ARQ_NOVAS_0820 = new Set(["Fôlego de Combate", "Fôlego de Combate 2.0", "Fôlego de Combate 3.0", "Comando de Campo", "Comando de Campo 2.0",
+  "Caçador Natural 2.0", "Caçador Natural 3.0", "Sobrecarga 2.0 e Reserva Arcana 3.0", "Modificações Permanentes 2.0"]);
+
+/**
+ * Arquétipos e classes balanceados (0.8.20), uma vez por ficha:
+ * - habilidades de arquétipo renomeadas acompanham; as que saíram somem (só se o texto ainda é o do modelo);
+ * - quem já usa as habilidades do modelo ganha as novas liberadas no nível (ex.: Fôlego de Combate, Caçador Natural 2.0);
+ * - habilidades de classe pronta acompanham a classe reescrita (pelo nível), com o texto novo; as liberadas que faltam entram.
+ */
+export async function arquetiposEClasses0820() {
+  const { ARQUETIPOS, nivelArquetipo } = await import("./arquetipos.mjs");
+  const { CLASSES_NOTION, habilidadesDaClasse } = await import("./regras-extras.mjs");
+  const X = await import("./extras.mjs");
+  const { escapar } = await import("./helpers.mjs");
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.classes0820) continue;
+    const upd = [], apagar = [], criar = [];
+    const itens = a.items?.contents ?? [];
+    // Arquétipo
+    const usaModelo = new Set();
+    for (const it of itens) {
+      const ref = it.flags?.[FLAG]?.arquetipoRef;
+      if (!ref) continue;
+      const [arqId] = String(ref).split(":");
+      usaModelo.add(arqId);
+      const desc = String(it.system?.description?.value ?? "");
+      const modelo = /\(modelo 0\.5\)/.test(desc);
+      const novo = it.name in ARQ_RENOMEADAS_0820 ? ARQ_RENOMEADAS_0820[it.name] : it.name;
+      const h = novo ? ARQUETIPOS[arqId]?.habilidades?.find(x => x.nome === novo) : null;
+      // Saiu do livro, ou agora só libera num nível acima do personagem: some (só a do modelo; a escrita pelo jogador fica).
+      if (!h || h.nivel > nivelArquetipo(f, arqId)) { if (modelo) apagar.push(it.id); continue; }
+      const textoNovo = X.dadosHabilidadeArquetipo(arqId, h).system.description.value;
+      if (it.name === h.nome && ref === `${arqId}:${h.nivel}` && (!modelo || desc === textoNovo)) continue;
+      upd.push({ _id: it.id, name: h.nome, ...(modelo ? { "system.description.value": textoNovo } : {}), [`${P}.arquetipoRef`]: `${arqId}:${h.nivel}` });
+    }
+    for (const arqId of usaModelo) {
+      const arq = ARQUETIPOS[arqId];
+      const nivel = nivelArquetipo(f, arqId);
+      const nomes = new Set([...itens.filter(i => !apagar.includes(i.id)).map(i => i.name), ...upd.map(u => u.name)]);
+      for (const h of arq?.habilidades ?? []) if (ARQ_NOVAS_0820.has(h.nome) && h.nivel <= nivel && !nomes.has(h.nome)) criar.push(X.dadosHabilidadeArquetipo(arqId, h));
+    }
+    // Classe
+    const cl = X.classeDaFicha(f);
+    if (cl && ["guerreiroElemental", "alice", "cacador", "trovador", "bastiao", "guerreiroVazio", "vitalista", "mecanicoGuerra"].includes(cl.id)) {
+      const novas = habilidadesDaClasse(cl.id);
+      const def = CLASSES_NOTION[cl.id];
+      const vistas = new Set();
+      for (const it of itens) {
+        const ref = it.flags?.[FLAG]?.classeRef;
+        if (!ref || ref.split(":")[0] !== cl.id) continue;
+        const desc = String(it.system?.description?.value ?? "");
+        const nivelVelho = Number(desc.match(/nível (\d+)/)?.[1]) || novas.find(h => h.ref === ref)?.nivel;
+        const h = novas.find(x => x.ref === ref) ?? novas.find(x => x.nivel === nivelVelho && !x.caminho);
+        if (!h) continue;
+        vistas.add(h.ref);
+        const modelo = desc.includes(`${escapar(def.nome)}, nível`);
+        if (it.name === h.nome && ref === h.ref && !modelo) continue;
+        upd.push({ _id: it.id, name: h.nome, [`${P}.classeRef`]: h.ref, ...(modelo ? { "system.description.value": X.dadosHabilidadeClasse(cl.id, h).system.description.value } : {}) });
+      }
+      const jaTem = new Set([...itens.map(i => i.flags?.[FLAG]?.classeRef).filter(Boolean), ...vistas]);
+      const dispensadas = new Set(Array.isArray(f.classeDispensadas) ? f.classeDispensadas : []);
+      for (const h of novas) if (h.nivel <= cl.nivel && !h.caminho && !jaTem.has(h.ref) && !dispensadas.has(h.ref)) criar.push(X.dadosHabilidadeClasse(cl.id, h));
+    }
+    if (apagar.length) await a.deleteEmbeddedDocuments("Item", apagar, { epmMigracao: true });
+    if (upd.length) await a.updateEmbeddedDocuments("Item", upd, { render: false });
+    if (criar.length) await a.createEmbeddedDocuments("Item", criar, { render: false });
+    await a.update({ [`${P}.classes0820`]: true }, { render: false });
+    if (apagar.length || upd.length || criar.length) n++;
+  }
+  return n;
+}
+
 /** Valores que eram o padrão antigo do livro e ficaram gravados na ficha: voltam a seguir o livro novo (0.8.13). */
 const ANTIGOS_0813 = {
   tabela: { combatente: { pv: 20, pe: 16, pm: 12 } },
@@ -122,6 +203,41 @@ const ANTIGOS_0813 = {
   numeros: { "estilo.duelista.acertoIsolado": 5, "estilo.bebado.acerto": 5, "estilo.bebado.esquiva": 2, "estilo.bebado.ca": 2,
     "estilo.atirador.margem": 2, "estilo.dupla.acerto": 3, "estilo.dupla.ca": 2 }
 };
+/** Padrões da 0.8.13 que mudaram nos PDFs balanceados (0.8.20): quem tinha o padrão gravado passa a seguir o livro. */
+const ANTIGOS_0820 = {
+  ajustes: { "arq-estilo-duelista-acertoisolado": 3, "arq-estilo-dupla-acerto": 2, "arq-estilo-atirador-margem": 4, "arq-estilo-atirador-margemsempre": 1,
+    "arq-reflexos-de-combate": 5, "cla-ge-corpo-mente": 5, "cla-ge-efeito-dano": 20, "cla-alice-histeria-acerto": 5 },
+  numeros: { "estilo.duelista.acertoIsolado": 3, "estilo.dupla.acerto": 2, "estilo.atirador.margem": 4, "estilo.atirador.margemSempre": 1 }
+};
+export function trocasValores0820(f = {}) {
+  const upd = {};
+  for (const [k, velho] of Object.entries(ANTIGOS_0820.ajustes)) {
+    const v = f.ajustesBonus?.[k];
+    if (v !== undefined && v !== "" && Number(v) === velho) upd[`${P}.ajustesBonus.-=${k}`] = null;
+  }
+  return upd;
+}
+async function valores0820() {
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.migrado0820) continue;
+    const upd = trocasValores0820(f);
+    await a.update({ ...upd, [`${P}.migrado0820`]: true }, { render: false });
+    if (Object.keys(upd).length) n++;
+  }
+  try {
+    if (!game.settings.get(FLAG, "numeros0820")) {
+      const salvos = { ...(game.settings.get(FLAG, "numerosBonus") ?? {}) };
+      let mudou = false;
+      for (const [k, velho] of Object.entries(ANTIGOS_0820.numeros)) if (salvos[k] !== undefined && Number(salvos[k]) === velho) { delete salvos[k]; mudou = true; }
+      if (mudou) await game.settings.set(FLAG, "numerosBonus", salvos);
+      await game.settings.set(FLAG, "numeros0820", true);
+    }
+  } catch (err) { console.warn("EPM | números 0.8.20", err); }
+  return n;
+}
+
 export function trocasValoresAntigos(f = {}) {
   const upd = {};
   for (const [arq, recs] of Object.entries(ANTIGOS_0813.tabela)) for (const [r, velho] of Object.entries(recs)) {
@@ -168,44 +284,59 @@ async function ligarTreinosAoCatalogo() {
 }
 
 /**
- * Talentos (0.8.19): os antigos (comprados com PEv) viram talentos da sub-aba Talentos.
- * Liga ao modelo do catálogo pelo nome; os que não tinham sido comprados ficam desligados (não contam).
+ * Talentos viraram treinamentos (0.8.20). Cada talento da ficha vira um treino do catálogo:
+ * concluído se estava valendo, planejado se estava desligado ou não tinha sido comprado (PEv antigo).
+ * Talentos feitos à mão viram treinos à mão. As habilidades antigas (origem Talento) saem e voltam como de Treinamento.
  */
-export function trocasTalentosAntigos(f = {}) {
+export function trocasTalentosParaTreinos(f = {}, { talentoPorNome, talentoModelo, treinoCatalogo }) {
   const up = {};
-  const { modeloDoTalento } = TAL ?? {};
-  for (const [id, t] of Object.entries(f.talentos ?? {})) {
-    if (!t || t.versao) continue;
-    const modelo = modeloDoTalento?.(t);
-    up[`${P}.talentos.${id}.versao`] = 2;
-    if (modelo) {
-      up[`${P}.talentos.${id}.modelo`] = modelo.id;
-      up[`${P}.talentos.${id}.categoria`] = modelo.categoria;
-      up[`${P}.talentos.${id}.faixa`] = modelo.faixa;
-      if (!String(t.descricao ?? "").trim()) up[`${P}.talentos.${id}.descricao`] = modelo.beneficio;
-    } else if (!t.faixa) up[`${P}.talentos.${id}.faixa`] = "comum";
-    if (!t.comprado && "comprado" in t) up[`${P}.talentos.${id}.inativo`] = true;
+  const treinos = Object.values(f.treinamentos ?? {}).filter(Boolean);
+  let i = 0;
+  for (const [tid, t] of Object.entries(f.talentos ?? {})) {
+    if (!t) continue;
+    const ativo = !t.inativo && (!("comprado" in t) || !!t.comprado || !!t.versao);
+    const tal = talentoModelo(t.modelo) ?? talentoPorNome(t.nome);
+    const id = `tal${tid}`.slice(0, 16);
+    const base = { estado: ativo ? "concluido" : "planejado", criado: Number(t.criado) || Date.now() + i++, mods: {} };
+    if (tal) {
+      const e = treinoCatalogo(tal.id);
+      if (treinos.some(x => x.modelo === tal.id && (!tal.repetivel || (x.escolha ?? "") === (t.escolha ?? "")))) continue;
+      up[`${P}.treinamentos.${id}`] = {
+        ...base, nome: t.escolha ? `${tal.nome} (${t.escolha})` : tal.nome, categoria: e?.categoria ?? "extras", tempo: e?.tempo ?? 24, unidade: "horas",
+        pt: e?.pt ?? 5, requisitos: e?.requisitos ?? "", treinador: !!e?.treinador, repetivel: !!tal.repetivel, beneficios: tal.beneficio,
+        especial: "", modelo: tal.id, horasFeitas: ativo ? (e?.tempo ?? 24) : 0, ...(t.escolha ? { escolha: t.escolha } : {})
+      };
+    } else {
+      const mods = {};
+      for (const [mid, m] of Object.entries(t.mods ?? {})) if (m?.alvo) mods[mid] = { alvo: m.alvo, valor: Number(m.valor) || 0 };
+      up[`${P}.treinamentos.${id}`] = {
+        ...base, mods, nome: t.nome || "Treino (era talento)", categoria: "extras", tempo: 1, unidade: "horas", pt: 0, requisitos: "",
+        treinador: false, beneficios: t.descricao ?? "", especial: "", modelo: "", horasFeitas: ativo ? 1 : 0
+      };
+    }
   }
+  if (f.talentos) up[`${P}.-=talentos`] = null;
+  if ("talentosExtras" in f) up[`${P}.-=talentosExtras`] = null;
   return up;
 }
-let TAL = null;
 
-async function talentosAntigos() {
-  TAL = await import("./talentos-lista.mjs");
-  const { aplicarTalentos } = await import("./talentos.mjs");
+async function talentosParaTreinos() {
+  const TL = await import("./talentos-lista.mjs");
+  const { TREINAMENTOS_NOTION } = await import("./catalogos.mjs");
+  const { aplicarConclusoes } = await import("./treinos-conclusao.mjs");
+  const treinoCatalogo = id => TREINAMENTOS_NOTION.find(x => x.modelo === id);
   let n = 0;
   for (const a of game.actors ?? []) {
     const f = a.flags?.[FLAG];
-    if (!f || f.talentosV2) continue;
-    const upd = trocasTalentosAntigos(f);
-    await a.update({ ...upd, [`${P}.talentosV2`]: true }, { render: false });
-    if (Object.keys(f.talentos ?? {}).length) await aplicarTalentos(a);
-    if (Object.keys(upd).length) n++;
+    if (!f || f.talentosTreinosV1) continue;
+    const upd = trocasTalentosParaTreinos(f, { ...TL, treinoCatalogo });
+    const velhos = (a.items?.contents ?? []).filter(i => i.flags?.[FLAG]?.talentoRef).map(i => i.id);
+    if (velhos.length) await a.deleteEmbeddedDocuments("Item", velhos);
+    await a.update({ ...upd, [`${P}.talentosTreinosV1`]: true }, { render: false });
+    if (Object.keys(upd).length) { await aplicarConclusoes(a, { perguntar: false, avisar: false }); n++; }
   }
   return n;
 }
-
-export async function prepararTalentosAntigos() { TAL = await import("./talentos-lista.mjs"); }
 
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
@@ -216,7 +347,9 @@ export async function migrarMundo() {
   try { const n = await renomearTiposDano(itens); if (n) feitos.push(`${n} ficha(s)/item(ns) com tipos de dano renomeados`); } catch (err) { console.warn("EPM | migração dos tipos de dano", err); }
   try { const n = await sincronizarHabilidadesArquetipo(itens); if (n) feitos.push(`${n} habilidade(s) de arquétipo com o texto e o nível do livro atual`); } catch (err) { console.warn("EPM | habilidades de arquétipo", err); }
   try { const n = await ligarTreinosAoCatalogo(); if (n) feitos.push(`${n} ficha(s) com treinos ligados ao catálogo`); } catch (err) { console.warn("EPM | treinos do catálogo", err); }
-  try { const n = await talentosAntigos(); if (n) feitos.push(`${n} ficha(s) com os talentos antigos na sub-aba Talentos`); } catch (err) { console.warn("EPM | talentos antigos", err); }
+  try { const n = await talentosParaTreinos(); if (n) feitos.push(`${n} ficha(s) com os talentos passados para Treinamentos`); } catch (err) { console.warn("EPM | talentos para treinos", err); }
+  try { const n = await arquetiposEClasses0820(); if (n) feitos.push(`${n} ficha(s) com o arquétipo e a classe balanceados`); } catch (err) { console.warn("EPM | arquétipos e classes 0.8.20", err); }
+  try { const n = await valores0820(); if (n) feitos.push(`${n} ficha(s) com números padrão antigos de estilos e classes atualizados`); } catch (err) { console.warn("EPM | valores 0.8.20", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

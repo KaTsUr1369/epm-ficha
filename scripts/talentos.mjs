@@ -1,56 +1,19 @@
 /**
- * Talentos na ficha: adicionar do catálogo (ou à mão), habilidades das ações limitadas (origem "Talento"),
- * Sortudo (pontos de Sorte e "Rerrolar" nos testes), Escolhido do Multiverso ("Tornar 20 natural"),
- * Fúria Controlada (oferece sozinha na primeira vez do combate em metade da Vida) e as recargas por sessão e semana.
+ * Automação dos treinamentos que vieram dos antigos Talentos (0.8.20): Sortudo (pontos de Sorte e "Rerrolar"),
+ * Escolhido do Multiverso ("Tornar 20 natural"), Fúria Controlada, Afinidade Elemental (escolha do tipo),
+ * recarga por sessão e a afinidade inicial de Presença Marcante / Lenda Viva.
+ * As ações viram habilidade ao concluir o treino (treinos-conclusao.mjs).
  */
 import { FLAG } from "./config.mjs";
 import { novoId, formaPadrao, int, num } from "./data.mjs";
 import { escapar, fvtt } from "./helpers.mjs";
-import {
-  talentoModelo, modeloDoTalento, talentosAtivos, temTalento, SORTE_POR_DIA, FURIA, FAIXAS_TALENTO, CATEGORIAS_TALENTOS, AFINIDADE_INICIAL, talentoPorNome
-} from "./talentos-lista.mjs";
+import { talentosAtivos, temTalento, SORTE_POR_DIA, FURIA, AFINIDADE_INICIAL } from "./talentos-lista.mjs";
 
 const P = `flags.${FLAG}`;
 const COR = "#C58B3A";
 
-/** Dados do item de habilidade de um talento (formas vindas do catálogo). */
-export function dadosHabilidadeTalento(e, idTalento) {
-  const formas = {};
-  (e.auto?.acoes ?? []).forEach((a, ordem) => {
-    formas[novoId()] = { ...formaPadrao(ordem, a.nome), ...a, ordem, nome: a.nome, custo: { ...a.custo }, teste: { ...a.teste }, dano: { ...a.dano } };
-  });
-  const passiva = (e.auto?.acoes ?? []).every(a => a.acao === "passiva");
-  return {
-    name: e.nome, type: "feat", img: "icons/svg/aura.svg",
-    system: { description: { value: `<p>${escapar(e.beneficio)}</p><p class="epm-dica">Talento ${escapar(FAIXAS_TALENTO[e.faixa]?.label ?? "")}.</p>` } },
-    flags: { [FLAG]: { origem: "talento", raridade: "comum", foraDoLimite: true, talentoRef: idTalento, talentoModelo: e.id, formas, ...(passiva ? { passiva: true } : {}) } }
-  };
-}
-
-/** Cria e apaga as habilidades dos talentos (idempotente). */
-export async function aplicarTalentos(actor) {
-  if (!actor?.isOwner) return [];
-  const dados = actor.flags?.[FLAG] ?? {};
-  const itens = actor.items?.contents ?? actor.items ?? [];
-  const ativos = talentosAtivos(dados);
-  const criar = [];
-  const apagar = [];
-  for (const { id, modelo } of ativos) {
-    if (!modelo?.auto?.acoes?.length) continue;
-    if (!itens.some(i => i.flags?.[FLAG]?.talentoRef === id)) criar.push(dadosHabilidadeTalento(modelo, id));
-  }
-  const idsAtivos = new Set(ativos.map(x => x.id));
-  for (const i of itens) {
-    const ref = i.flags?.[FLAG]?.talentoRef;
-    if (ref && !idsAtivos.has(ref)) apagar.push(i.id);
-  }
-  if (criar.length) await actor.createEmbeddedDocuments("Item", criar);
-  if (apagar.length) await actor.deleteEmbeddedDocuments("Item", apagar);
-  return criar.map(c => c.name);
-}
-
 /** Tipos de dano para a Afinidade Elemental (os mágicos primeiro). */
-async function escolherElemento(actor, nome) {
+export async function escolherElemento(actor, nome) {
   const { TIPOS_DANO } = await import("./config.mjs");
   const tipos = [...TIPOS_DANO.filter(t => t.grupo === "magicos"), ...TIPOS_DANO.filter(t => t.grupo !== "magicos" && !t.extra)];
   const r = await fvtt.DialogV2.wait({
@@ -65,49 +28,6 @@ async function escolherElemento(actor, nome) {
   return typeof r === "string" && r !== "cancelar" && r !== "ok" ? r : null;
 }
 
-/** Adiciona um talento do catálogo. Devolve o id na ficha (ou null). */
-export async function adicionarTalento(actor, modeloId, { silencioso = false, escolha = null } = {}) {
-  const e = talentoModelo(modeloId);
-  if (!e || !actor?.isOwner) return null;
-  const dados = actor.flags?.[FLAG] ?? {};
-  if (!e.repetivel && talentosAtivos(dados).some(x => x.modelo?.id === e.id)) {
-    if (!silencioso) ui.notifications.warn(`${actor.name} já tem ${e.nome}.`);
-    return null;
-  }
-  let valor = escolha;
-  if (e.auto?.escolha === "elemento" && !valor) {
-    valor = await escolherElemento(actor, e.nome);
-    if (!valor) return null;
-  }
-  const id = novoId();
-  await actor.update({
-    [`${P}.talentos.${id}`]: {
-      modelo: e.id, nome: valor ? `${e.nome} (${valor})` : e.nome, categoria: e.categoria, faixa: e.faixa, descricao: e.beneficio,
-      ...(valor ? { escolha: valor } : {}), mods: {}, versao: 2, criado: Date.now()
-    }
-  });
-  await aplicarTalentos(actor);
-  if (!silencioso) ui.notifications.info(`${actor.name}: talento ${e.nome} adicionado.`);
-  return id;
-}
-
-/** Talento criado à mão (sem modelo). */
-export async function novoTalentoManual(actor) {
-  return actor.update({ [`${P}.talentos.${novoId()}`]: { nome: "Novo talento", categoria: "", faixa: "comum", descricao: "", mods: {}, versao: 2, criado: Date.now() } });
-}
-
-/** Ligar/desligar (talentos antigos não comprados vêm desligados). */
-export async function alternarTalento(actor, id) {
-  const t = actor.flags?.[FLAG]?.talentos?.[id];
-  if (!t) return;
-  await actor.update({ [`${P}.talentos.${id}.inativo`]: !t.inativo });
-  await aplicarTalentos(actor);
-}
-
-export async function excluirTalento(actor, id) {
-  await actor.update({ [`${P}.talentos.-=${id}`]: null });
-  await aplicarTalentos(actor);
-}
 
 /* -------------------------------------------- */
 /*  Sortudo e Escolhido do Multiverso (chat)    */
@@ -117,7 +37,7 @@ export const sorteRestante = dados => Math.max(0, SORTE_POR_DIA - int(dados?.sor
 
 /** Forma "1× por sessão" do Escolhido: { item, chave } ou null. */
 function usoEscolhido(actor) {
-  const item = (actor.items?.contents ?? []).find(i => i.flags?.[FLAG]?.talentoModelo === "escolhidoMultiverso");
+  const item = (actor.items?.contents ?? []).find(i => (i.flags?.[FLAG]?.treinoModelo ?? i.flags?.[FLAG]?.talentoModelo) === "escolhidoMultiverso");
   const formaId = item ? Object.keys(item.flags[FLAG].formas ?? {})[0] : null;
   return item && formaId ? { item, chave: `${item.id}_${formaId}` } : null;
 }
@@ -225,7 +145,7 @@ export async function verificarFuria(actor) {
     rejectClose: false, modal: false
   });
   if (!sim) return;
-  const item = (actor.items?.contents ?? []).find(i => i.flags?.[FLAG]?.talentoModelo === "furiaControlada");
+  const item = (actor.items?.contents ?? []).find(i => (i.flags?.[FLAG]?.treinoModelo ?? i.flags?.[FLAG]?.talentoModelo) === "furiaControlada");
   const formaId = item ? Object.keys(item.flags[FLAG].formas ?? {})[0] : null;
   await actor.update({
     "system.attributes.hp.temp": Math.max(num(hp.temp), temp),
@@ -284,13 +204,12 @@ export async function sugerirAfinidade(actor, outro, relacaoId) {
   });
 }
 
-/** Ganchos: habilidades dos talentos, Fúria Controlada e os botões no chat. */
+/** Ganchos: Fúria Controlada e os botões no chat. */
 export function registrarTalentos() {
   Hooks.on("updateActor", (ator, mud, _o, userId) => {
-    if (userId === game.user?.id && foundry.utils.hasProperty(mud, `flags.${FLAG}.talentos`)) aplicarTalentos(ator).catch(err => console.warn("EPM | talentos", err));
     if (foundry.utils.hasProperty(mud, "system.attributes.hp.value")) verificarFuria(ator).catch(err => console.warn("EPM | Fúria Controlada", err));
   });
   Hooks.on("renderChatMessageHTML", (msg, html) => { try { decorarTeste(msg, html); } catch (err) { console.warn("EPM | talentos no chat", err); } });
 }
 
-export { CATEGORIAS_TALENTOS, FAIXAS_TALENTO, modeloDoTalento, talentoPorNome };
+export { talentosAtivos };

@@ -2,7 +2,7 @@ import { TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import { bonusDaRessonancia } from "./ressonancia.mjs";
 import { ARQUETIPOS, estilosEscolhidos, nivelArquetipo, valorPessoal } from "./arquetipos.mjs";
 import { NIVEIS_REGIAO, idRegiao } from "./tecnologia.mjs";
-import { talentosAtivos } from "./talentos-lista.mjs";
+import { talentosAtivos, SORTE_POR_DIA } from "./talentos-lista.mjs";
 /**
  * Partes da ficha que vieram na 0.6.0 (raça pronta, Sanidade com estados e insanidades, idade opcional,
  * classes do Notion, votos, pactos, talentos, atributos acima de 4, teto de atributo e máximos automáticos).
@@ -13,7 +13,7 @@ import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
 import { efeitosDosTraumas, dotsDeAcumulos, DANO_ACUMULO_PADRAO, ROTULOS_ACUMULAVEIS } from "./opcionais.mjs";
 import {
-  bonusAtributosAltos, tetoAtributo, maximoRecurso, tabelaRecursos, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel,
+  bonusAtributosAltos, tetoAtributo, maximoRecurso, tabelaRecursos, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel, tipoDoElemento,
   faixaIdade, FAIXAS_IDADE, limiteVotos, TIPOS_PACTO, TAMANHO_EFEITOS, grauNucleo, MARCOS_CORRUPCAO, CONQUISTAS, META_CACADOR
 } from "./regras-extras.mjs";
 
@@ -104,6 +104,10 @@ export function idClasse(texto) {
   if (t.includes("alice") || t.includes("portadora") || t.includes("pais impossivel")) return "alice";
   if (t.includes("cacador") || t.includes("hunter")) return "cacador";
   if (t.includes("trovador") || t.includes("trovoador") || t.includes("bardo")) return "trovador";
+  if (t.includes("bastiao") || t.includes("inquebravel")) return "bastiao";
+  if (t.includes("vazio")) return "guerreiroVazio";
+  if (t.includes("vitalista")) return "vitalista";
+  if (t.includes("mecanico")) return "mecanicoGuerra";
   return "";
 }
 
@@ -180,15 +184,14 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
     for (const [alvo, valor] of Object.entries(p.penalidade?.atributos ?? {})) if (n(valor)) out.mods.push({ alvo: `atributo.${alvo}`, valor: -Math.abs(n(valor)), fonte: `Pacto quebrado: ${p.nome || ""}` });
   }
 
-  // Talentos (catálogo e feitos à mão): bônus fixos, imunidades e efeitos especiais
+  // Treinos que vieram dos antigos Talentos (concluídos): bônus fixos, imunidades e efeitos especiais
   {
     const nivelTotal = Math.max(1, Math.floor(n(d.nivel) || 1)) + (String(d.arquetipo2 ?? "").trim() ? Math.max(0, Math.floor(n(d.nivel2))) : 0);
     const esp = new Set();
     out.afinidades = [];
     out.talentosInfo = [];
     for (const { t, modelo } of talentosAtivos(d)) {
-      const fonte = `Talento: ${t.nome || modelo?.nome || "sem nome"}`;
-      for (const m of Object.values(t.mods ?? {})) if (m?.alvo && n(m.valor)) out.mods.push({ alvo: m.alvo, valor: n(m.valor), fonte });
+      const fonte = `Treino: ${t.nome || modelo?.nome || "sem nome"}`;
       if (!modelo) continue;
       for (const m of modelo.auto?.mods ?? []) {
         const valor = m.porNivel ? m.porNivel * nivelTotal : n(m.valor);
@@ -200,7 +203,7 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
     }
     out.especiaisTalento = [...esp];
     const INFO_TALENTO = {
-      ambidestria: "Ambidestria: duas armas de uma mão sem penalidade de mão inábil; consumível como ação bônus ou de movimento." + (especiaisConcluidos(d).has("duasArmas") ? " Com Combate com Duas Armas, o ataque da segunda arma soma o atributo no dano." : ""),
+      ambidestria: "Ambidestria: duas armas de uma mão sem penalidade de mão inábil; consumível como ação bônus ou de movimento." + (especiaisConcluidos(d).has("duasArmas") ? " Com Combate com Duas Armas, o ataque da segunda arma soma o atributo no dano (marque \"Ataque da segunda arma\" no diálogo de ataque)." : ""),
       esquivo: "Esquivo: +2 na Esquiva contra ataques à distância; área com teste para metade: passou, sem dano; falhou, metade.",
       pesLeves: "Pés Leves: terreno difícil não reduz o deslocamento (+1,5 m já somado).",
       sangueMagico: "Sangue Mágico: sem PM suficiente, paga o resto com Vida (2 PV por PM), sem o teste da Sobrecarga.",
@@ -210,8 +213,9 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
       alquimistaEficiente: "Alquimista Eficiente: a cada 3 consumíveis feitos de uma vez, ganha 1 a mais.",
       presencaMarcante: "Presença Marcante: NPCs novos começam com afinidade +1 (a ficha sugere ao Mestre ao conectar).",
       lendaViva: "Lenda Viva: NPCs que conhecem sua fama começam com afinidade +2; vantagem nos testes sociais com eles.",
-      sortudo: "Sortudo: pontos de Sorte por dia; botão \"Rerrolar\" nos seus testes. Voltam no descanso longo.",
+      sortudo: `Sortudo: ${Math.max(0, SORTE_POR_DIA - Math.floor(n(d.sorte?.usados)))} de ${SORTE_POR_DIA} pontos de Sorte hoje; botão "Rerrolar" nos seus testes. Voltam no descanso longo.`,
       tatico: "Tático: a iniciativa usa a Inteligência no lugar da Destreza (já entra na ficha).",
+      forja: "Forja do Multiverso: na Criação, o limite de raridade sobe uma (cada raridade pede o nível da de baixo).",
       furiaControlada: "Fúria Controlada: a ficha oferece sozinha na primeira vez do combate em metade da Vida ou menos.",
       escolhido: "Escolhido do Multiverso: botão \"Tornar 20 natural\" nos testes (seus e dos aliados), 1× por sessão."
     };
@@ -228,29 +232,57 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
   if (classe === "guerreiroElemental" && comb >= 3) {
     const def = CLASSES_NOTION.guerreiroElemental;
     const dado = valorPessoal(d, "cla-ge-arma-elemental", valorPorNivel(def.armaElemental, comb)?.[1]);
-    const verm0 = valorPorNivel(def.nucleoVermelho, comb);
-    const verm = verm0 ? [verm0[0], valorPessoal(d, "cla-ge-nucleo-dano", verm0[1]), valorPessoal(d, "cla-ge-nucleo-margem", verm0[2])] : null;
+    const nucleo = valorPessoal(d, "cla-ge-nucleo-dano", valorPorNivel(def.nucleoVermelho, comb)?.[1] ?? 0);
+    const margem = valorPessoal(d, "cla-ge-nucleo-margem", valorPorNivel(def.margem, comb)?.[1] ?? 0);
     const liberados = def.elementos.filter(([nv]) => nv <= comb).flatMap(([, l]) => l);
     const elemento = liberados.includes(opc.elemento) ? opc.elemento : liberados[0];
-    const tipo = elemento ? `[${elemento}]` : "";
+    const tipo = elemento ? `[${tipoDoElemento(elemento)}]` : "";
     if (dado) out.extrasAtaque.todos.push({ formula: `${dado}${tipo}`, fonte: "Arma Elemental" });
-    if (verm) out.extrasAtaque.todos.push({ formula: `${verm[1]}${tipo}`, fonte: "Núcleo Vermelho" });
-    out.classe.elemental = { dado, bonus: verm?.[1] ?? 0, margem: verm?.[2] ?? 0, elemento, liberados };
-    out.classe.elemental.efeitoDano = valorPessoal(d, "cla-ge-efeito-dano", 20);
+    // Núcleo Vermelho: só no primeiro acerto do turno (opção no diálogo de ataque), não multiplica no crítico
+    out.classe.elemental = { dado, nucleo, bonus: nucleo, margem, elemento, tipo: elemento ? tipoDoElemento(elemento) : "", liberados };
+    out.classe.elemental.efeitoNivel = def.efeitoNivel;
+    out.classe.elemental.efeitoDano = valorPessoal(d, "cla-ge-efeito-dano", def.efeitoDano);
     out.classe.elemental.efeitoDt = valorPessoal(d, "cla-ge-efeito-dt", 20);
-    if (comb >= 9) { const cmf = valorPessoal(d, "cla-ge-corpo-mente", 5); for (const alvo of ["acerto", "pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: cmf, fonte: "Corpo e Mente Fortificados" }); }
+    if (comb >= 9) { const cmf = valorPessoal(d, "cla-ge-corpo-mente", 2); for (const alvo of ["pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: cmf, fonte: "Corpo e Mente Fortificados" }); }
   }
   if (classe === "alice" && comb >= 3) {
     out.classe.formas = valorPessoal(d, "cla-alice-formas", valorPorNivel(CLASSES_NOTION.alice.formas, comb)?.[1] ?? 3);
-    const danoHist = valorPessoal(d, "cla-alice-histeria-dano", comb >= 45 ? "4d12" : "2d10");
+    const danoHist = valorPessoal(d, "cla-alice-histeria-dano", comb >= 45 ? "2d10" : "1d10");
     if (opc.histeria && comb >= 15) {
-      out.mods.push({ alvo: "acerto", valor: valorPessoal(d, "cla-alice-histeria-acerto", 5), fonte: "Histeria" });
+      if (comb < 45) out.mods.push({ alvo: "acerto", valor: valorPessoal(d, "cla-alice-histeria-acerto", 3), fonte: "Histeria" });
       out.extrasAtaque.todos.push({ formula: danoHist, fonte: comb >= 45 ? "Histeria Absoluta (Faca)" : "Histeria (Faca)" });
     }
-    out.classe.histeria = comb >= 15 ? { ativa: !!opc.histeria, dano: danoHist } : null;
+    out.classe.histeria = comb >= 15 ? { ativa: !!opc.histeria, dano: danoHist, limiar: "um quarto dos PV máximos", acerto: comb < 45 ? valorPessoal(d, "cla-alice-histeria-acerto", 3) : 0 } : null;
   }
-  if (classe === "cacador" && comb >= 3) out.classe.pistola = valorPessoal(d, "cla-cacador-pistola", valorPorNivel(CLASSES_NOTION.cacador.pistola, comb)?.[1]);
-  if (classe === "trovador" && comb >= 3) out.classe.inspiracao = valorPessoal(d, "cla-trovador-inspiracao", valorPorNivel(CLASSES_NOTION.trovador.inspiracao, comb)?.[1]);
+  if (classe === "cacador" && comb >= 3) {
+    out.classe.pistola = valorPessoal(d, "cla-cacador-pistola", valorPorNivel(CLASSES_NOTION.cacador.pistola, comb)?.[1]);
+    out.classe.balas = Math.max(0, valorPessoal(d, "cla-cacador-balas", valorPorNivel(CLASSES_NOTION.cacador.balas, comb)?.[1] ?? 5));
+  }
+  if (classe === "trovador" && comb >= 3) {
+    out.classe.inspiracao = valorPessoal(d, "cla-trovador-inspiracao", valorPorNivel(CLASSES_NOTION.trovador.inspiracao, comb)?.[1]);
+    out.classe.inspiracaoAliados = valorPessoal(d, "cla-trovador-aliados", valorPorNivel(CLASSES_NOTION.trovador.inspiracaoAliados, comb)?.[1] ?? 1);
+    out.classe.inspiracaoCusto = Math.max(0, valorPessoal(d, "cla-trovador-custo", CLASSES_NOTION.trovador.inspiracaoCusto));
+  }
+  if (classe === "bastiao" && comb >= 3) {
+    const nivelTotal = Math.max(1, Math.floor(n(d.nivel) || 1)) + (String(d.arquetipo2 ?? "").trim() ? Math.max(0, Math.floor(n(d.nivel2))) : 0);
+    out.mods.push({ alvo: "recurso.pv", valor: valorPessoal(d, "cla-bastiao-pv-por-nivel", 1) * nivelTotal, fonte: "Defesa Absoluta (+1 PV por nível)" });
+    const tr = valorPessoal(d, "cla-bastiao-tr", 1);
+    for (const alvo of ["pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: tr, fonte: "Defesa Absoluta" });
+    const ca = valorPessoal(d, "cla-bastiao-ca", (comb >= 12 ? 1 : 0) + (comb >= 33 ? 1 : 0));
+    if (ca) out.mods.push({ alvo: "ca", valor: ca, fonte: "Estrutura Reforçada / Colossal" });
+    out.classe.corpoInabalavel = comb >= 6 ? valorPessoal(d, "cla-bastiao-corpo", valorPorNivel(CLASSES_NOTION.bastiao.corpoInabalavel, comb)?.[1] ?? "") : "";
+  }
+  if (classe === "mecanicoGuerra" && comb >= 3) {
+    const def = CLASSES_NOTION.mecanicoGuerra;
+    out.mods.push({ alvo: "defesa.bloqueio", valor: valorPessoal(d, "cla-mecanico-defesa", 2), fonte: "Blindagem de Guerra (Chassi)" });
+    out.mods.push({ alvo: "ca", valor: valorPessoal(d, "cla-mecanico-ca", 1), fonte: "Blindagem de Guerra (Chassi)" });
+    out.classe.placas = valorPessoal(d, "cla-mecanico-placas", valorPorNivel(def.placas, comb)?.[1] ?? 2);
+    out.classe.escudoCerco = comb >= 6 ? valorPessoal(d, "cla-mecanico-escudo", valorPorNivel(def.escudoCerco, comb)?.[1] ?? "") : "";
+  }
+  if (classe === "vitalista" && comb >= 3) {
+    out.classe.toque = valorPessoal(d, "cla-vitalista-toque", valorPorNivel(CLASSES_NOTION.vitalista.toque, comb)?.[1] ?? "");
+    out.classe.protecaoVital = comb >= 6 ? valorPessoal(d, "cla-vitalista-protecao", valorPorNivel(CLASSES_NOTION.vitalista.protecaoVital, comb)?.[1] ?? "") : "";
+  }
   if (classe === "barbaro" && comb >= 3) {
     const f0 = valorPorNivel(CLASSES_NOTION.barbaro.furia.tabela, comb);
     const f = f0 ? [f0[0], valorPessoal(d, "cla-barbaro-furia-dano", f0[1]), valorPessoal(d, "cla-barbaro-furia-rd", f0[2])] : null;
@@ -631,18 +663,37 @@ export function valoresAjustaveisClasse(d = {}) {
   const nv = (tabela, i = 1) => valorPorNivel(tabela, comb)?.[i];
   if (classe === "guerreiroElemental" && comb >= 3) {
     add("cla-ge-arma-elemental", "Arma Elemental", "Dado de dano", nv(def.armaElemental));
-    add("cla-ge-nucleo-dano", "Núcleo Vermelho", "Dano elemental", nv(def.nucleoVermelho));
-    add("cla-ge-nucleo-margem", "Núcleo Vermelho", "Margem de ameaça", nv(def.nucleoVermelho, 2));
-    add("cla-ge-efeito-dano", "Efeito do elemento", "Dano mínimo para aplicar", 20);
-    add("cla-ge-efeito-dt", "Efeito do elemento", "DT da Fortitude", 20);
-    if (comb >= 9) add("cla-ge-corpo-mente", "Corpo e Mente Fortificados", "Acerto e resistências", 5);
+    add("cla-ge-nucleo-dano", "Núcleo Vermelho", "Dano no primeiro acerto do turno", nv(def.nucleoVermelho));
+    if (comb >= 12) add("cla-ge-nucleo-margem", "Arma Elemental", "Margem de ameaça", nv(def.margem));
+    if (comb >= def.efeitoNivel) { add("cla-ge-efeito-dano", "Efeito do elemento", "Dano mínimo para aplicar", def.efeitoDano); add("cla-ge-efeito-dt", "Efeito do elemento", "DT da Fortitude", 20); }
+    if (comb >= 9) add("cla-ge-corpo-mente", "Corpo e Mente Fortificados", "Testes de Resistência", 2);
   }
   if (classe === "alice" && comb >= 3) {
     add("cla-alice-formas", "Formas", "Quantidade", nv(CLASSES_NOTION.alice.formas) ?? 3);
-    if (comb >= 15) { add("cla-alice-histeria-acerto", "Histeria", "Acerto", 5); add("cla-alice-histeria-dano", "Histeria", "Dano da faca", comb >= 45 ? "4d12" : "2d10"); }
+    if (comb >= 15) { if (comb < 45) add("cla-alice-histeria-acerto", "Histeria", "Acerto", 3); add("cla-alice-histeria-dano", "Histeria", "Dano da faca", comb >= 45 ? "2d10" : "1d10"); }
   }
-  if (classe === "cacador" && comb >= 3) add("cla-cacador-pistola", "Pistola do Caçador", "Dano", nv(CLASSES_NOTION.cacador.pistola));
-  if (classe === "trovador" && comb >= 3) add("cla-trovador-inspiracao", "Inspiração", "Dado", nv(CLASSES_NOTION.trovador.inspiracao));
+  if (classe === "cacador" && comb >= 3) { add("cla-cacador-pistola", "Pistola do Caçador", "Dano", nv(CLASSES_NOTION.cacador.pistola)); add("cla-cacador-balas", "Balas de Mercúrio", "Por descanso", nv(CLASSES_NOTION.cacador.balas)); }
+  if (classe === "trovador" && comb >= 3) {
+    add("cla-trovador-inspiracao", "Inspiração", "Dado", nv(CLASSES_NOTION.trovador.inspiracao));
+    add("cla-trovador-custo", "Inspiração", "Custo (PE)", CLASSES_NOTION.trovador.inspiracaoCusto);
+    add("cla-trovador-aliados", "Inspiração", "Aliados ao mesmo tempo", nv(CLASSES_NOTION.trovador.inspiracaoAliados));
+  }
+  if (classe === "bastiao" && comb >= 3) {
+    add("cla-bastiao-pv-por-nivel", "Defesa Absoluta", "PV por nível", 1);
+    add("cla-bastiao-tr", "Defesa Absoluta", "Testes de Resistência", 1);
+    if (comb >= 12) add("cla-bastiao-ca", "Estrutura Reforçada / Colossal", "CA", (comb >= 12 ? 1 : 0) + (comb >= 33 ? 1 : 0));
+    if (comb >= 6) add("cla-bastiao-corpo", "Corpo Inabalável", "Redução de dano", nv(CLASSES_NOTION.bastiao.corpoInabalavel));
+  }
+  if (classe === "mecanicoGuerra" && comb >= 3) {
+    add("cla-mecanico-defesa", "Blindagem de Guerra", "Defesa (Bloqueio)", 2);
+    add("cla-mecanico-ca", "Blindagem de Guerra", "CA", 1);
+    add("cla-mecanico-placas", "Placas Reforçadas", "Redução no primeiro dano da rodada", nv(CLASSES_NOTION.mecanicoGuerra.placas));
+    if (comb >= 6) add("cla-mecanico-escudo", "Escudo de Cerco", "Redução", nv(CLASSES_NOTION.mecanicoGuerra.escudoCerco));
+  }
+  if (classe === "vitalista" && comb >= 3) {
+    add("cla-vitalista-toque", "Toque Restaurador", "Cura (+ Núcleo)", nv(CLASSES_NOTION.vitalista.toque));
+    if (comb >= 6) add("cla-vitalista-protecao", "Proteção Vital", "PV temporários (+ Núcleo)", nv(CLASSES_NOTION.vitalista.protecaoVital));
+  }
   if (classe === "barbaro" && comb >= 3) {
     const f = valorPorNivel(CLASSES_NOTION.barbaro.furia.tabela, comb);
     if (f) { add("cla-barbaro-furia-dano", "Fúria", "Dano", f[1]); add("cla-barbaro-furia-rd", "Fúria", "RD", f[2]); add("cla-barbaro-furia-usos", "Fúria", "Usos por descanso", CLASSES_NOTION.barbaro.furia.usos); }

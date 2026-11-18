@@ -572,7 +572,6 @@ export const SUBABAS_HABILIDADE = [
   { id: "raca",      label: "Raça",      origem: "raca" },
   { id: "arquetipo", label: "Arquétipo", origem: "arquetipo" },
   { id: "classe",    label: "Classe",    origem: "classe" },
-  { id: "talentos",  label: "Talentos",  origem: "talento" },
   { id: "transformacoes", label: "Transformações", origem: "transformacao" },
   { id: "meme",      label: "Memes",     origem: "meme" }
 ];

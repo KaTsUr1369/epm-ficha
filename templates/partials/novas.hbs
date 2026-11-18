@@ -179,7 +179,9 @@
       <label class="epm-campo curto"><span>Horas</span><input type="number" min="1" name="flags.epm-ficha.criacoes.{{this.id}}.horas" value="{{this.horas}}" /></label>
       <label class="epm-campo"><span>Perícia</span><select name="flags.epm-ficha.criacoes.{{this.id}}.pericia"><option value="">Escolha…</option>{{#each pericias}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select></label>
       <label class="epm-campo curto"><span>DT</span><input type="number" min="1" name="flags.epm-ficha.criacoes.{{this.id}}.dt" value="{{this.dt}}" /></label>
+      <label class="epm-campo" title="Até {{this.raridadeMax}} pelo nível total{{#if this.forja}} (com a Forja do Multiverso){{/if}}"><span>Raridade</span><select name="flags.epm-ficha.criacoes.{{this.id}}.raridade">{{#each raridades}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
     </div>
+    {{#if raridadeAcima}}<p class="epm-requisito-falta"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{raridadeAcima}}</p>{{/if}}
 <div class="epm-linha-campos">
     <label class="epm-campo"><span>Efeitos</span><input type="text" name="flags.epm-ficha.criacoes.{{this.id}}.efeitos" value="{{this.efeitos}}" placeholder="+1 de acerto, ilumina 6 m…" /></label>
     <label class="epm-campo"><span>Requisitos</span><input type="text" name="flags.epm-ficha.criacoes.{{this.id}}.requisitos" value="{{this.requisitos}}" placeholder="Ofício (Ferreiro) 4, Treinamento: Forja" title="A ficha confere atributos, perícias e treinamentos concluídos" /></label>

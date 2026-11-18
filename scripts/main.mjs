@@ -63,7 +63,6 @@ Hooks.once("init", () => {
     "epm-item-linha": `${CAMINHO}/partials/item-linha.hbs`,
     "epm-poder-linha": `${CAMINHO}/partials/poder-linha.hbs`,
     "epm-busca": `${CAMINHO}/partials/busca.hbs`,
-    "epm-talentos-painel": `${CAMINHO}/partials/talentos-painel.hbs`,
     "epm-exaustao": `${CAMINHO}/partials/exaustao.hbs`,
     "epm-bencao": `${CAMINHO}/partials/bencao.hbs`,
     "epm-arquetipo-painel": `${CAMINHO}/partials/arquetipo-painel.hbs`,

@@ -9,9 +9,9 @@ import {
 } from "./config.mjs";
 import { num, int, novoId, formaPadrao } from "./data.mjs";
 import {
-  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato, recuperarManaDe
+  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato, recuperarManaDe, cacadorDe, folegoDe, usosFolego, sobrecargaDe
 } from "./arquetipos.mjs";
-import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas } from "./regras-extras.mjs";
+import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas, tipoDoElemento } from "./regras-extras.mjs";
 import { idClasse } from "./ficha-extras.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
 import { dataDoMundo } from "./calendario.mjs";
@@ -200,14 +200,14 @@ export function classeDaFicha(dados = {}) {
  * Ex.: Revestimento Elemental (Guerreiro Elemental, nível 6): resistência a um elemento desbloqueado.
  */
 export function formaEspecialClasse(ref) {
-  if (ref === "guerreiroElemental:revestimento-elemental") {
+  if (ref === "guerreiroElemental:pele-de-mana" || ref === "guerreiroElemental:revestimento-elemental") {
     const forma = formaPadrao(0, "Escolher elemento");
     forma.acao = "livre"; forma.uso = "curto";
     forma.efeito = "<p>Escolha um elemento desbloqueado: resistência a ele até o próximo descanso. Depois do descanso, pode escolher de novo.</p>";
     const elementos = (CLASSES_NOTION.guerreiroElemental?.elementos ?? []).flatMap(([nivel, lista]) => lista.map(e => [nivel, e]));
     forma.bonus = {
       gatilho: "uso", escolha: "escolher", duracao: "descanso",
-      opcoes: Object.fromEntries(elementos.map(([nivel, e], i) => [`el${i}`, { tipo: "resistencia", valor: e, nivel, criado: i + 1 }]))
+      opcoes: Object.fromEntries(elementos.map(([nivel, e], i) => [`el${i}`, { tipo: "resistencia", valor: tipoDoElemento(e), rotulo: e, nivel, criado: i + 1 }]))
     };
     return { forma, passiva: false };
   }
@@ -396,17 +396,34 @@ export async function recuperarMana(actor) {
   return nota(actor, `<p><strong>Recuperar Mana</strong>: −${rec.pe} PE. ${escapar(r.texto || `+${qtd} PM`)}</p><p class="epm-dica">Usa uma ação. Uma vez por cena.</p>`, "#8A7CE0");
 }
 
-/** Caçador Natural (Combatente 17): marca a Presa até o fim do combate (20 PE; trocar custa 8 PE). */
+/** Fôlego de Combate (Combatente 10/22/35): Ação Bônus, recupera PE; 1× por cena (2× no 35). */
+export async function folegoCombate(actor) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  const nivel = nivelArquetipo(dados, "combatente");
+  const fol = folegoDe(nivel, dados);
+  if (!fol) return ui.notifications.warn("Fôlego de Combate libera no nível 10 de Combatente.");
+  const usados = usosFolego(dados);
+  if (usados >= fol.usos) return ui.notifications.warn(`Fôlego de Combate já usado ${fol.usos}× nesta cena.`);
+  const { estadoAtor } = await import("./mecanicas.mjs");
+  const { ficha } = estadoAtor(actor);
+  const roll = await new Roll(String(fol.dado)).evaluate();
+  const pe = ficha.recursos.pe;
+  const novo = Math.min(pe.max, pe.value + roll.total);
+  await actor.update({ [`${P}.recursos.pe.value`]: novo, [`${P}.usosFormas.arq-folego-${usados + 1}`]: "cena", ...(game.combat?.started ? { [`${P}.acoes.bonus`]: true } : {}) });
+  await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<strong>Fôlego de Combate</strong> (Ação Bônus): +${novo - pe.value} PE${fol.usos > 1 ? ` · ${usados + 1}/${fol.usos} nesta cena` : ""}` });
+}
+
+/** Caçador Natural (Combatente 19/29/47): marca a Presa até o fim do combate; transferir custa (ou é grátis do 29 em diante). */
 export async function cacadorNatural(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
-  const cfg = ARQUETIPOS.combatente.cacador;
-  if (nivelArquetipo(dados, "combatente") < cfg.nivel) return ui.notifications.warn(`Caçador Natural libera no nível ${cfg.nivel} de Combatente.`);
+  const cfg = cacadorDe(nivelArquetipo(dados, "combatente"), dados);
+  if (!cfg) return ui.notifications.warn(`Caçador Natural libera no nível ${ARQUETIPOS.combatente.cacador.nivel} de Combatente.`);
   const atual = dados.usos?.presa ?? "";
   const alvoMarcado = [...(game.user?.targets ?? [])][0];
   const sugestao = alvoMarcado?.name ?? "";
   const r = await dialogo({
     titulo: "Caçador Natural", ok: atual ? "Trocar a Presa" : "Marcar a Presa", icone: "fa-solid fa-crosshairs",
-    content: `<p class="epm-dica">${atual ? `Presa atual: <strong>${escapar(atual)}</strong>. Trocar custa ${cfg.transferir} PE (quando ela chega a 0 PV).` : `Custa ${cfg.custo} PE. Contra a Presa: +5 Acerto, +1 dado de dano, +2 Esquiva, +2 Defesa e +1 CA, até o fim do combate.`}</p>
+    content: `<p class="epm-dica">${atual ? `Presa atual: <strong>${escapar(atual)}</strong>. Trocar ${cfg.transferir ? `custa ${cfg.transferir} PE` : "é grátis"} (quando ela chega a 0 PV).` : `Custa ${cfg.custo} PE. Contra a Presa: +${cfg.acerto} Acerto, +${cfg.ca} CA${cfg.esquiva ? `, +${cfg.esquiva} Esquiva` : ""}, ignora a Resistência dela${cfg.imunidadeVira ? " (a Imunidade vira Resistência)" : ""} e ${cfg.todoAcerto ? "todo acerto" : "1 acerto por turno"} causa +1 dado de dano, até o fim do combate.`}</p>
       <label class="epm-campo"><span>Presa</span><input type="text" name="presa" value="${escapar(sugestao)}" placeholder="nome da criatura (o alvo marcado vem sozinho)"></label>
       ${atual ? `<label class="epm-check"><input type="checkbox" name="encerrar"> Encerrar (sem custo)</label>` : ""}`,
     callback: f => ({ presa: String(f.presa?.value ?? "").trim(), encerrar: !!f.encerrar?.checked })
@@ -946,7 +963,7 @@ export async function cliqueChatExtra(acao, actor, botao) {
   }
   if (acao === "sobrecarga") {
     const dado = botao.dataset.formula || "1d6";
-    const opcoes = cfg.sobrecarga.opcoes;
+    const opcoes = sobrecargaDe(nivel);
     const { ficha } = estadoAtor(actor);
     const pe = ficha.recursos.pe.value + Math.max(0, ficha.recursos.pe.temp ?? 0);
     const r = await dialogo({

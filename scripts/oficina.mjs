@@ -4,8 +4,9 @@
  *   7. Criação de itens: sub-aba Criação em Treinamentos, com as mesmas 8 h por dia dos treinos.
  *   8. Durabilidade: 0 a 100 em armas, armaduras e ferramentas; quebra em 0; conserto com ferramenta.
  */
-import { FLAG, MOEDAS, TREINO, CATEGORIAS_ITEM } from "./config.mjs";
-import { num, int, pagarMoedas, formatarMoedas, valorEmCobre } from "./data.mjs";
+import { FLAG, MOEDAS, TREINO, CATEGORIAS_ITEM, RARIDADES_ITEM } from "./config.mjs";
+import { num, int, pagarMoedas, formatarMoedas, valorEmCobre, raridadeItem } from "./data.mjs";
+import { temTalento } from "./talentos-lista.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
 import { afinidadeEntre } from "./cooperacao.mjs";
 import { regra } from "./opcionais.mjs";
@@ -162,6 +163,31 @@ export async function registrarTreinoEmGrupo(parceiro, horas, deUuid) {
 export const TIPOS_CRIACAO = { weapon: "Arma", equipment: "Armadura ou escudo", consumable: "Consumível", tool: "Ferramenta", loot: "Loot" };
 
 /** Projeto de criação com padrões. */
+/**
+ * Raridade que o personagem consegue criar pelo nível total (Arcaica só com o Mestre).
+ * Forja do Multiverso (talento): uma raridade acima.
+ */
+export const RARIDADE_CRIACAO_NIVEL = { comum: 1, rara: 10, epica: 25, lendaria: 50, mitica: 75 };
+export function raridadeMaxCriacao(nivelTotal, { forja = false } = {}) {
+  const ordem = Object.entries(RARIDADE_CRIACAO_NIVEL).filter(([, n]) => (Number(nivelTotal) || 0) >= n).map(([id]) => RARIDADES_ITEM[id].ordem);
+  const max = Math.max(1, ...ordem) + (forja ? 1 : 0);
+  return Object.entries(RARIDADES_ITEM).filter(([, r]) => r.ordem <= max).sort((a, b) => b[1].ordem - a[1].ordem)[0][0];
+}
+/** A raridade da criação passa do que o nível permite? { acima, max, texto }. */
+export function limiteRaridadeCriacao(raridade, nivelTotal, dados = {}) {
+  const forja = temTalento(dados, "forjaMultiverso");
+  const max = raridadeMaxCriacao(nivelTotal, { forja });
+  const r = RARIDADES_ITEM[raridade] ?? RARIDADES_ITEM.comum;
+  const acima = r.ordem > RARIDADES_ITEM[max].ordem;
+  // Com a Forja, cada raridade pede o nível da raridade de baixo
+  const abaixo = Object.keys(RARIDADE_CRIACAO_NIVEL).find(k => RARIDADES_ITEM[k].ordem === r.ordem - 1);
+  const pede = forja ? RARIDADE_CRIACAO_NIVEL[abaixo] : RARIDADE_CRIACAO_NIVEL[raridade];
+  return {
+    acima, max, forja,
+    texto: acima ? `${r.label} ${pede ? `pede nível total ${pede}${forja ? " com a Forja do Multiverso" : ""}` : "só com o Mestre"}; o nível ${nivelTotal} cria até ${RARIDADES_ITEM[max].label}.` : ""
+  };
+}
+
 export function lerCriacao(id, c = {}, { artesao = false } = {}) {
   const materiais = Object.entries(c.materiais ?? {}).filter(([, m]) => m)
     .map(([mid, m]) => ({ id: mid, itemId: m.itemId ?? "", nome: m.nome ?? "Material", img: m.img ?? "", qtd: Math.max(1, int(m.qtd, 1)), criado: num(m.criado) }))
@@ -173,7 +199,8 @@ export function lerCriacao(id, c = {}, { artesao = false } = {}) {
   return {
     id, nome: c.nome || "Projeto sem nome", nomeBruto: c.nome ?? "", tipo: TIPOS_CRIACAO[c.tipo] ? c.tipo : "loot", efeitos: c.efeitos ?? "",
     modelo: c.modelo?.uuid ? { uuid: c.modelo.uuid, nome: c.modelo.nome ?? "", img: c.modelo.img ?? "" } : null,
-    materiais, horas, feitas, pct: Math.round((feitas / horas) * 100), pericia: c.pericia ?? "", dt: Math.max(1, int(c.dt, 15)), estado, criado: num(c.criado), requisitos: c.requisitos ?? ""
+    materiais, horas, feitas, pct: Math.round((feitas / horas) * 100), pericia: c.pericia ?? "", dt: Math.max(1, int(c.dt, 15)), estado, criado: num(c.criado), requisitos: c.requisitos ?? "",
+    raridade: RARIDADES_ITEM[c.raridade] ? c.raridade : "comum"
   };
 }
 
@@ -191,6 +218,7 @@ export async function soltarNaCriacao(ator, id, zona, item) {
   if (zona === "modelo") {
     const tipo = TIPOS_CRIACAO[item.type] ? item.type : undefined;
     return ator.update({ [`${P}.criacoes.${id}.modelo`]: { uuid: item.uuid, nome: item.name, img: item.img }, ...(tipo ? { [`${P}.criacoes.${id}.tipo`]: tipo } : {}),
+      [`${P}.criacoes.${id}.raridade`]: raridadeItem(item),
       ...(!ator.flags[FLAG].criacoes[id].nome ? { [`${P}.criacoes.${id}.nome`]: item.name } : {}) });
   }
   if (item.parent?.uuid !== ator.uuid) return ui.notifications.warn("Os materiais vêm do inventário deste personagem.");
@@ -267,6 +295,11 @@ export async function testarCriacao(ator, id) {
   const { ficha } = estadoAtor(ator);
   const per = ficha.periciaPorId[c.pericia];
   if (!per) return ui.notifications.warn("Escolha a perícia do projeto.");
+  const lim = limiteRaridadeCriacao(c.raridade, ficha.nivelTotal, ator.flags?.[FLAG]);
+  if (lim.acima && !(await fvtt.DialogV2.confirm({
+    window: { title: "Raridade acima do nível" }, rejectClose: false, modal: true,
+    content: `<p>${escapar(lim.texto)}</p><p>Seguir mesmo assim (o Mestre liberou)?</p>`
+  }))) return;
   const roll = await rolarTeste(ator, {
     rotulo: `Criar ${c.nome} (${per.nome} DT ${c.dt})${especiaisDaFicha(ator.flags?.[FLAG]).has("mestreArtesao") ? " · Mestre Artesão +2" : ""}`, bonus: (per.testeTotal ?? 0) + (especiaisDaFicha(ator.flags?.[FLAG]).has("mestreArtesao") ? ARTESAO.teste : 0),
     desvantagens: [...ficha.desvantagens.testes, ...(per.desvantagem ?? [])], vantagens: [...ficha.vantagens.testes, ...(per.vantagem ?? [])], penalidades: per.testeFontes ?? []
@@ -286,6 +319,7 @@ export async function testarCriacao(ator, id) {
       dadosItem = { name: c.nome, type: c.tipo, img: "icons/svg/item-bag.svg", system: { quantity: 1, description: { value: c.efeitos ? `<p>${escapar(c.efeitos)}</p>` : "" } } };
     }
     foundry.utils.setProperty(dadosItem, `flags.${FLAG}.criadoPor`, ator.name);
+    foundry.utils.setProperty(dadosItem, `flags.${FLAG}.raridade`, c.raridade);
     const gastos = await gastarMateriais(ator, c, "tudo");
     await ator.createEmbeddedDocuments("Item", [dadosItem]);
     await ator.update({ [`${P}.criacoes.${id}.estado`]: "concluido" });

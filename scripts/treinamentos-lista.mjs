@@ -12,6 +12,8 @@
  *   texto     true                depende do Mestre ou da cena: fica como texto no cartão
  */
 
+import { treinosDosTalentos } from "./treinos-talentos.mjs";
+
 export const HORAS_DIA = 8;
 export const HORAS_SEMANA = 56;
 export const HORAS_MES = 240;
@@ -233,6 +235,7 @@ export function horasDoTexto(texto) {
   return Math.round(n);
 }
 
+const ARQ_LABEL = { combatente: "Combatente", conjurador: "Conjurador", artifice: "Artífice" };
 export const ATRS = { forca: "Força", destreza: "Destreza", constituicao: "Constituição", aparencia: "Aparência", carisma: "Carisma", inteligencia: "Inteligência", autocontrole: "Autocontrole", nucleo: "Núcleo" };
 const ATR_POR_NOME = Object.fromEntries(Object.entries(ATRS).map(([id, l]) => [normTreino(l), id]));
 export const PERICIAS_REQ = { luta: "Luta", pontaria: "Pontaria", arcanismo: "Arcanismo", lideranca: "Liderança", oficio: "Ofício", furtividade: "Furtividade", acrobacia: "Acrobacia", percepcao: "Percepção", investigacao: "Investigação" };
@@ -243,7 +246,7 @@ const PER_POR_NOME = Object.fromEntries(Object.entries(PERICIAS_REQ).map(([id, l
  * { atributos: [{ ids, min }], pericias: [{ ids, min }], treinos: [id], itens: [texto], tecnologia }
  */
 export function lerRequisitos(texto, porNome = new Map()) {
-  const out = { atributos: [], pericias: [], treinos: [], itens: [], tecnologia: 0 };
+  const out = { atributos: [], pericias: [], treinos: [], itens: [], tecnologia: 0, nivel: 0, arquetipo: "" };
   const t = String(texto ?? "").trim();
   if (!t || t === "—" || t === "-") return out;
   // separa por vírgula e pelo " e " final (sem quebrar "Força ou Constituição 4")
@@ -256,12 +259,19 @@ export function lerRequisitos(texto, porNome = new Map()) {
     if (m && m[2].split(/\s+ou\s+/).every(x => PER_POR_NOME[x])) { out.pericias.push({ ids: m[2].split(/\s+ou\s+/).map(x => PER_POR_NOME[x]), min: Number(m[1]) }); continue; }
     m = n.match(/^nivel de tecnologia (\d+)$/);
     if (m) { out.tecnologia = Number(m[1]); continue; }
+    m = n.match(/^nivel total (\d+)$/);
+    if (m) { out.nivel = Number(m[1]); continue; }
+    m = n.match(/^arquetipo (combatente|conjurador|artifice)$/);
+    if (m) { out.arquetipo = m[1]; continue; }
     const treino = porNome.get(n);
     if (treino) { out.treinos.push(treino); continue; }
     out.itens.push(parte);
   }
   return out;
 }
+
+// Os antigos Talentos (0.8.20) entram no catálogo como treinamentos
+LISTA.push(...treinosDosTalentos());
 
 const porNome = new Map(LISTA.map(e => [normTreino(e.nome), e.id]));
 
@@ -300,6 +310,8 @@ export function textoRequisitos(e) {
     ...r.pericias.map(p => `${p.min} pontos em ${p.ids.map(i => PERICIAS_REQ[i]).join(" ou ")}`),
     ...r.treinos.map(t => treinoModelo(t)?.nome ?? t),
     ...(r.tecnologia ? [`nível de tecnologia ${r.tecnologia}`] : []),
+    ...(r.arquetipo ? [`arquétipo ${ARQ_LABEL[r.arquetipo]}`] : []),
+    ...(r.nivel ? [`nível total ${r.nivel}`] : []),
     ...r.itens
   ];
   return partes.join(", ") || "—";
@@ -311,9 +323,17 @@ export function textoRequisitos(e) {
  * concluidos: Set de ids de modelo (e nomes normalizados) já concluídos; temFavorita / armasExoticas para os itens.
  * Devolve { ok, faltas[], cumpridos[], manuais[] }. Itens que a ficha não sabe conferir ficam em "manuais" (não bloqueiam).
  */
-export function cumpreRequisitos(e, ficha, { concluidos = new Set(), temFavorita = false, temExotica = false } = {}) {
+export function cumpreRequisitos(e, ficha, { concluidos = new Set(), temFavorita = false, temExotica = false, arquetipos = null } = {}) {
   const out = { cumpridos: [], faltas: [], manuais: [] };
   const r = e?.req ?? { atributos: [], pericias: [], treinos: [], itens: [] };
+  if (r.nivel) {
+    const nv = Number(ficha?.nivelTotal) || 1;
+    (nv >= r.nivel ? out.cumpridos : out.faltas).push(nv >= r.nivel ? `nível ${nv}` : `nível total ${r.nivel} (tem ${nv})`);
+  }
+  if (r.arquetipo) {
+    if (!arquetipos) out.manuais.push(`arquétipo ${ARQ_LABEL[r.arquetipo]}`);
+    else (arquetipos.has(r.arquetipo) ? out.cumpridos : out.faltas).push(`arquétipo ${ARQ_LABEL[r.arquetipo]}`);
+  }
   for (const a of r.atributos) {
     const vals = a.ids.map(i => ({ i, v: Number(ficha?.atributos?.[i]?.total) || 0 }));
     const bom = vals.find(x => x.v >= a.min);
@@ -369,5 +389,6 @@ export function baseRequisitos(dados = {}, { temExotica = false } = {}) {
     concluidos.add(normTreino(t.nome));
   }
   const temFavorita = Object.values(dados?.armasFavoritas ?? {}).some(v => v && (v.catalogo || v.nome)) || !!dados?.arquetipoOpcoes?.combatente?.tipoFavorito;
-  return { concluidos, temFavorita, temExotica };
+  const arquetipos = new Set([dados?.arquetipo, dados?.arquetipo2].map(a => normTreino(a)).map(a => ["combatente", "conjurador", "artifice"].find(x => a.includes(x))).filter(Boolean));
+  return { concluidos, temFavorita, temExotica, arquetipos };
 }

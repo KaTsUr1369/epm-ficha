@@ -11,7 +11,8 @@ import {
 import { INSPIRACAO_MAX } from "./cooperacao.mjs";
 import { maestriaDoItem } from "./maestria-exotica.mjs";
 import { especiaisDaFicha, treinoModelo, cumpreRequisitos, baseRequisitos } from "./treinamentos-lista.mjs";
-import { lerCriacao, TIPOS_CRIACAO, durabilidadeDe, textoPreco, avaliarRequisitos } from "./oficina.mjs";
+import { lerCriacao, TIPOS_CRIACAO, durabilidadeDe, textoPreco, avaliarRequisitos, limiteRaridadeCriacao } from "./oficina.mjs";
+import { RARIDADES_ITEM } from "./config.mjs";
 import { ESTADOS_JURAMENTO, TIPOS_ANCORA, MAX_ANCORAS } from "./vinculos.mjs";
 import { lerFasesChefe, ACOES_ESPECIAIS, DADOS_AURA } from "./opcionais-acoes.mjs";
 
@@ -123,7 +124,10 @@ export function contextoNovas({ actor, dados, ficha, itens = [], edicao = false,
       return { ...m, tem, falta: Math.max(0, m.qtd - tem), sumiu: !it };
     });
     const rq = cr.requisitos ? avaliarRequisitos(cr.requisitos, ficha, dados) : null;
+    const lim = limiteRaridadeCriacao(cr.raridade, ficha?.nivelTotal ?? 1, dados);
     return {
+      raridades: Object.entries(RARIDADES_ITEM).map(([rid, r]) => ({ id: rid, label: r.label, selected: rid === cr.raridade })),
+      raridadeAcima: lim.acima ? lim.texto : "", raridadeMax: RARIDADES_ITEM[lim.max].label, forja: lim.forja,
       ...cr, requisitosFaltam: rq?.faltas ?? [], materiais, faltam: materiais.some(m => m.falta > 0), restante: Math.round((cr.horas - cr.feitas) * 10) / 10,
       tipos: Object.entries(TIPOS_CRIACAO).map(([tid, label]) => ({ id: tid, label, selected: tid === cr.tipo })),
       pericias: pericias.map(p => ({ ...p, selected: p.id === cr.pericia })), periciaNome: pericias.find(p => p.id === cr.pericia)?.nome ?? "",

@@ -19,6 +19,7 @@ import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos
 import { fvtt, enriquecer, escapar } from "./helpers.mjs";
 import { ajustes, listaPericias } from "./settings.mjs";
 import { num as numBonus } from "./numeros.mjs";
+import { cacadorDe } from "./arquetipos.mjs";
 import { ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, estilosEscolhidos, custoMagiaCirculo, eTipoFavorito, ataqueExtraDe, estiloVal, recuperarManaDe } from "./arquetipos.mjs";
 import { listaPropriedades as listaPropriedadesItem, ataqueDesarmado } from "./context.mjs";
 import { EFEITO_ELEMENTO, DANO_EFEITO_ELEMENTO, DT_EFEITO_ELEMENTO } from "./regras-extras.mjs";
@@ -32,6 +33,7 @@ import { recarregarAncoras } from "./vinculos.mjs";
 import { gastarDurabilidade, armaduraEquipada, PERDA_CRITICO, quebrado } from "./oficina.mjs";
 import { penalidadeTec, DT_COMPLEXO } from "./tecnologia.mjs";
 import { temTalento, talentosAtivos, SANGUE_PV_POR_PM } from "./talentos-lista.mjs";
+import { especiaisDaFicha } from "./treinamentos-lista.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -1730,6 +1732,12 @@ export function fonteAtaque(actor, tipo, ref) {
 }
 
 /** Diálogo antes do ataque: modo, bônus externos, crítico, ataques adicionais, Maestria, Estilo, Presa, munição e cargas. */
+/** Chave do turno atual no combate (fora de combate, sempre nova): para usos de 1× por turno que não zeram no Novo turno. */
+export function chaveTurnoAtual() {
+  const c = globalThis.game?.combat;
+  return c?.started ? `${c.id}:${c.round}:${c.turn}` : `fora-${Date.now()}`;
+}
+
 export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, contra = false } = {}) {
   let at = fonteAtaque(actor, tipo, ref);
   if (!at) return null;
@@ -1772,7 +1780,9 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const ae = ataqueExtraDe(comb, dados);
   const estilos = estilosEscolhidos(dados, comb);
   const armasEquipadas = actor.items.filter(i => i.type === "weapon" && i.system?.equipped).length;
-  const presa = comb >= ARQUETIPOS.combatente.cacador.nivel ? (dados.usos?.presa ?? "") : "";
+  const cac = cacadorDe(comb, dados);
+  const presa = cac ? (dados.usos?.presa ?? "") : "";
+  const elem = ficha.extras?.classe?.elemental ?? null;
   const penalExtra = Math.abs(int(ajustes().penalidadeAtaqueExtra ?? 0));
   const peDisp = ficha.recursos.pe.value + Math.max(0, ficha.recursos.pe.temp ?? 0);
   const md = municaoDaArma(fi);
@@ -1817,14 +1827,16 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     extras.push(`<label class="epm-check epm-check-linha"><input type="checkbox" name="extraComum" ${acoesLivres.length ? "" : "disabled"}> Ataque extra: gasta a
       <select name="extraAcao" ${acoesLivres.length ? "" : "disabled"}>${acoesLivres.map(a => `<option value="${a}">${a === "bonus" ? "Ação Bônus" : "Ação de Movimento"}</option>`).join("") || "<option>sem ação livre</option>"}</select>
       ${penalExtra ? `(−${penalExtra} no acerto)` : ""}</label>`);
-    if (ae) {
+    if (ae && ae.ataques > 0) {
       const usado = !!dados.usos?.ataqueExtraTurno;
-      extras.push(chk("extraComb", `Ataque Extra (Combatente): ${ae.custo} PE → +${ae.ataques} ataque${ae.ataques > 1 ? "s" : ""}${usado ? " <em>(já usado neste turno)</em>" : ""}`,
-        { desabilitado: usado || peDisp < ae.custo, dica: "Uma vez por turno" }));
+      const opcoesAE = Array.from({ length: ae.ataques }, (_, k) => k + 1).map(k => `<option value="${k}" ${peDisp < ae.custoDe(k) ? "disabled" : ""}>+${k} ataque${k > 1 ? "s" : ""} (${ae.custoDe(k)} PE)</option>`).join("");
+      extras.push(`<label class="epm-check epm-check-linha" title="Uma vez por turno; o custo é por ataque adicional${ae.desconto ? ` (Gêmea: −${ae.desconto} PE no total, mínimo 3)` : ""}"><input type="checkbox" name="extraComb" ${usado || peDisp < ae.custoDe(1) ? "disabled" : ""}> Ataque Extra (Combatente):
+        <select name="extraCombQtd" ${usado ? "disabled" : ""}>${opcoesAE}</select>${usado ? " <em>(já usado neste turno)</em>" : ""}</label>`);
     }
     if (ef?.id === "gemea") {
       const usado = !!dados.usos?.gemeaTurno;
-      extras.push(chk("gemea", `Gêmea: ${ef.custo} PE → +${ef.ataques} ataque${ef.ataques > 1 ? "s" : ""} com a arma gêmea${usado ? " <em>(já usado)</em>" : ""}`, { desabilitado: usado || peDisp < ef.custo }));
+      const semBonus = !acoesLivres.includes("bonus");
+      extras.push(chk("gemea", `Gêmea (Ação Bônus): ${ef.custo} PE → +${ef.ataques} ataque${ef.ataques > 1 ? "s" : ""} com a segunda arma${ef.semMod ? " (sem modificador no dano)" : ""}${usado ? " <em>(já usado)</em>" : ""}`, { desabilitado: usado || semBonus || peDisp < ef.custo, dica: semBonus ? "A Ação Bônus já foi usada" : "1× por turno" }));
     }
   }
   const opcoesArq = [];
@@ -1833,11 +1845,17 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const jaTxt = maestriaUsada ? " <em>(já usada neste turno)</em>" : "";
   if (ef?.id === "certeiro") opcoesArq.push(chk("certeiro", `Ataque Certeiro: ${ef.custo} PE → +${ef.acerto} de Acerto${jaTxt}`, { desabilitado: maestriaUsada || peDisp < ef.custo }));
   if (ef?.id === "longa") opcoesArq.push(chk("longa", `Arma Longa: ${ef.custo} PE → +${String(ef.alcance).replace(".", ",")} m de alcance${jaTxt}`, { desabilitado: maestriaUsada || peDisp < ef.custo }));
-  if (ef?.id === "leve" && ef.danoDex) notas.push("Arma Leve: +3 de dano se a arma já usa Destreza (some no bônus externo)");
+  if (ef?.id === "leve" && ef.danoDex) notas.push(`Arma Leve: +${ef.danoDex} de dano se a arma já usa Destreza (some no bônus externo)`);
+  if (ef?.id === "perigosa" && ef.dadosCritico) notas.push(`Arma Perigosa: o crítico causa +${ef.dadosCritico} dado${ef.dadosCritico > 1 ? "s" : ""} de dano.`);
+  // Núcleo Vermelho (Guerreiro Elemental): fixo no primeiro acerto do turno, sem multiplicar no crítico
+  if (elem?.nucleo && !oportunidade) {
+    const usadoNV = dados.usos?.nucleoTurno === chaveTurnoAtual();
+    opcoesArq.push(`<label class="epm-check" title="Só no primeiro acerto de cada turno; não multiplica no crítico"><input type="checkbox" name="nucleo" ${usadoNV ? "" : "checked"}> Núcleo Vermelho: primeiro acerto do turno (+${elem.nucleo} de ${escapar(elem.tipo || "dano elemental")})${usadoNV ? " <em>(já usado neste turno)</em>" : ""}</label>`);
+  }
   if (estilos.includes("duelista")) opcoesArq.push(chk("duelista", `Duelista: alvo é um único inimigo isolado (+${estiloVal(dados, "duelista", "acertoIsolado")})`));
   if (estilos.includes("atirador")) opcoesArq.push(chk("atirador", `Atirador: abrir mão do modificador de dano para reduzir a margem de crítico em ${estiloVal(dados, "atirador", "margem")}`));
   if (estilos.includes("dupla") && armasEquipadas >= 2) notas.push(`Arma Dupla: +${estiloVal(dados, "dupla", "acerto")} de Acerto (duas armas equipadas)`);
-  if (presa) opcoesArq.push(chk("presa", `Contra a Presa (${escapar(presa)}): +${ARQUETIPOS.combatente.cacador.acerto} de Acerto e +1 dado de dano`));
+  if (presa) opcoesArq.push(chk("presa", `Contra a Presa (${escapar(presa)}): +${cac.acerto} de Acerto e +1 dado de dano${cac.todoAcerto ? "" : " (1×/turno)"}`));
   // Talentos com bônus de situação: a pessoa marca quando a condição vale
   const propsTal = item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])]].map(x => normalizarTexto(x)) : [];
   const duasMaosTal = propsTal.some(x => ["duas maos", "duas-maos", "two", "versatil", "ver"].includes(x));
@@ -1849,6 +1867,13 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     if (a.corpo && distTal) return false;
     return true;
   }).map(e => chk(`tal_${e.id}`, escapar(e.auto.ataque.rotulo + (contra && e.id === "duelista" ? " (vale no Contra-ataque)" : ""))));
+  // Combate com Duas Armas (treino): o ataque da segunda arma não soma atributo no dano; com Ambidestria (talento), soma
+  const ambidestro = temTalento(dados, "ambidestria");
+  if (item && !distTal && !oportunidade && !contra && especiaisDaFicha(dados).has("duasArmas")) {
+    opcoesTal.unshift(chk("segundaArma", ambidestro
+      ? "Ataque da segunda arma (ação bônus, Combate com Duas Armas): soma o atributo no dano pela Ambidestria"
+      : "Ataque da segunda arma (ação bônus, Combate com Duas Armas): o dano não soma o atributo"));
+  }
   // Manobra do Combatente (Notion): 1 vez por turno, ao atacar
   const manobraUsada = !!dados.usos?.manobraTurno;
   if (comb > 0 && !oportunidade) {
@@ -1898,9 +1923,10 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
           const f = b.form.elements;
           return {
             modo: f.modo.value, extraAcerto: f.extraAcerto.value.trim(), extraDano: f.extraDano.value.trim(), margem: f.margem.value, mult: f.mult.value, comDano: f.comDano.checked,
-            extraComum: marcado(f, "extraComum"), extraAcao: f.extraAcao?.value ?? "", extraComb: marcado(f, "extraComb"), gemea: marcado(f, "gemea"),
+            extraComum: marcado(f, "extraComum"), extraAcao: f.extraAcao?.value ?? "", extraComb: marcado(f, "extraComb"), extraCombQtd: int(f.extraCombQtd?.value) || 1, gemea: marcado(f, "gemea"), nucleo: marcado(f, "nucleo"),
             manobra: f.manobra && !f.manobra.disabled ? f.manobra.value : "", certeiro: marcado(f, "certeiro"), longa: marcado(f, "longa"), duelista: marcado(f, "duelista"), atirador: marcado(f, "atirador"), presa: marcado(f, "presa"),
             dupla: marcado(f, "dupla") ? (f.duplaParceiro?.value ?? "") : "", inspiracao: marcado(f, "inspiracao"),
+            segundaArma: marcado(f, "segundaArma"),
             talentos: [...b.form.querySelectorAll('input[name^="tal_"]')].filter(c => c.checked && !c.disabled).map(c => c.name.slice(4))
           };
         }
@@ -1909,6 +1935,11 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     ]
   });
   if (!escolha || typeof escolha !== "object") return null;
+  // Núcleo Vermelho num ataque só: entra no dano extra (não multiplica no crítico: fica fora do dado da arma)
+  if (escolha.nucleo && elem?.nucleo && !escolha.extraComb && !escolha.gemea && !escolha.extraComum) {
+    const nv = `${elem.nucleo}${elem.tipo ? `[${elem.tipo}]` : ""}`;
+    escolha.extraDano = escolha.extraDano ? `${escolha.extraDano} + ${nv}` : nv;
+  }
 
   // Ataque em dupla: confirmação do parceiro antes de gastar qualquer coisa (um ataque só)
   let dupla = null;
@@ -1929,7 +1960,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
 
   // Quantos ataques e o que cada escolha custa
   const extrasComuns = escolha.extraComum ? 1 : 0;
-  const extrasComb = escolha.extraComb && ae ? ae.ataques : 0;
+  const extrasComb = escolha.extraComb && ae ? Math.max(1, Math.min(ae.ataques, escolha.extraCombQtd || 1)) : 0;
   const extrasGemea = escolha.gemea && ef?.id === "gemea" ? ef.ataques : 0;
   const total = 1 + extrasComuns + extrasComb + extrasGemea;
   const updates = {};
@@ -1942,8 +1973,12 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     updates[`${P}.acoes.${escolha.extraAcao}`] = true;
     gastos.push(escolha.extraAcao === "bonus" ? "Ação Bônus" : "Ação de Movimento");
   }
-  if (extrasComb) { pe += ae.custo; updates[`${P}.usos.ataqueExtraTurno`] = true; }
-  if (extrasGemea) { pe += ef.custo; updates[`${P}.usos.gemeaTurno`] = true; }
+  if (extrasComb) { pe += ae.custoDe(extrasComb); updates[`${P}.usos.ataqueExtraTurno`] = true; gastos.push(`Ataque Extra +${extrasComb}`); }
+  if (extrasGemea) {
+    if (!acoesLivres.includes("bonus")) return ui.notifications.warn("Gêmea usa a Ação Bônus, que já foi gasta.");
+    pe += ef.custo; updates[`${P}.usos.gemeaTurno`] = true; updates[`${P}.acoes.bonus`] = true; gastos.push("Ação Bônus (Gêmea)");
+  }
+  if (escolha.nucleo && elem?.nucleo) updates[`${P}.usos.nucleoTurno`] = chaveTurnoAtual();
   if (escolha.certeiro && ef?.id === "certeiro") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
   if (escolha.longa && ef?.id === "longa") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
   if (pe) {
@@ -1992,14 +2027,21 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (escolha.certeiro && ef?.id === "certeiro") bonusFontes.push({ valor: ef.acerto, fonte: "Ataque Certeiro", hab: true });
   if (escolha.duelista) bonusFontes.push({ valor: estiloVal(dados, "duelista", "acertoIsolado"), fonte: "Duelista", hab: true });
   if (estilos.includes("dupla") && armasEquipadas >= 2) bonusFontes.push({ valor: estiloVal(dados, "dupla", "acerto"), fonte: "Arma Dupla", hab: true });
-  if (escolha.presa) bonusFontes.push({ valor: ARQUETIPOS.combatente.cacador.acerto, fonte: `Presa (${presa})`, hab: true });
+  if (escolha.presa && cac) bonusFontes.push({ valor: cac.acerto, fonte: `Presa (${presa})`, hab: true });
+  if (favorita && ef?.id === "leve" && ef.acerto) bonusFontes.push({ valor: ef.acerto, fonte: "Arma Leve (Maestria)", hab: true });
   if (tec?.penal) bonusFontes.push({ valor: tec.penal, fonte: tec.fonte });
   const base = {
-    ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador, margemBonus: escolha.atirador ? estiloVal(dados, "atirador", "margem")
+    ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador || (!!escolha.segundaArma && !ambidestro),
+    notaSemMod: !escolha.atirador && escolha.segundaArma ? "Segunda arma (Combate com Duas Armas): o dano não soma o atributo." : "",
+    margemBonus: escolha.atirador ? estiloVal(dados, "atirador", "margem")
       : (estilos.includes("atirador") && (at?.alcanceCat === "distancia" || (at?.alcanceCat !== "corpo" && at?.periciaId === "pontaria")) ? int(estiloVal(dados, "atirador", "margemSempre")) : 0),
     maestria: favorita && ef && ["destrutivo", "alongado"].includes(ef.id) ? ef : null,
     notasExtra: [
       ...(gastos.length ? [`Gastou: ${gastos.join(", ")}.`] : []),
+      ...(escolha.segundaArma && ambidestro ? ["Segunda arma (ação bônus): soma o atributo no dano pela Ambidestria."] : []),
+      ...(extrasGemea && ef?.semMod ? ["Gêmea: o ataque da segunda arma não soma o modificador ao dano (até o Nv. 11)."] : []),
+      ...(escolha.presa && cac ? [`Presa: +${cac.ca} CA contra ela${cac.esquiva ? ` e +${cac.esquiva} Esquiva` : ""}; ignora a Resistência dela${cac.imunidadeVira ? " e a Imunidade dela ao seu dano vira Resistência" : " (Imunidade não)"}.`] : []),
+      ...(escolha.nucleo && elem?.nucleo && total > 1 ? [`Núcleo Vermelho: +${elem.nucleo} de ${elem.tipo || "dano elemental"} só no primeiro ataque que acertar (some no dano dele).`] : []),
       ...(escolha.longa && ef?.id === "longa" ? [`Arma Longa: +${String(ef.alcance).replace(".", ",")} m de alcance.`] : []),
       ...(oportunidade ? ["Ataque de oportunidade (Reação)."] : []),
       ...(manobra ? [`Manobra: ${manobra.label}. ${manobra.texto}`] : []),
@@ -2117,7 +2159,7 @@ function poderesComoFonte(actor) {
 
 export async function rolarAtaque(actor, at, {
   modo = "normal", extraAcerto = "", extraDano = "", margem, mult, comDano = true,
-  bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestria = null, notasExtra = [], tipoArma = ""
+  bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestria = null, notasExtra = [], tipoArma = "", notaSemMod = ""
 } = {}) {
   const { ficha, dados } = estadoAtor(actor);
   const cena = bonusCenaAtivos(dados);
@@ -2222,7 +2264,8 @@ export async function rolarAtaque(actor, at, {
   if (bonusFontes.length) notas.push(`Acerto: ${bonusFontes.map(f => `${sinalCurto(int(f.valor))} ${f.fonte}`).join(", ")}.`);
   if (penalidade) notas.push(`Ataque extra: ${sinalCurto(int(penalidade))} no acerto.`);
   if (dadosExtra) notas.push(`+${dadosExtra} dado de dano (Presa).`);
-  if (semModDano) notas.push(`Atirador: sem o modificador de dano, margem de crítico −${int(margemBonus) || ARQUETIPOS.combatente.estilos.atirador.margem}.`);
+  if (semModDano && notaSemMod) notas.push(notaSemMod);
+  else if (semModDano) notas.push(`Atirador: sem o modificador de dano, margem de crítico −${int(margemBonus) || ARQUETIPOS.combatente.estilos.atirador.margem}.`);
   if (m.dano) notas.push(`Dano ${sinalCurto(m.dano)}: ${m.danoFontes.map(f => f.fonte).join(", ")}.`);
   if (m.danoMult > 1) notas.push(`Dano ×${m.danoMult}: ${ficha.ataquesGerais.danoMult.fontes.join(", ")}.`);
   if (cena.nomes.length) notas.push(`Bônus de cena: ${cena.nomes.join(", ")}.`);
@@ -2249,17 +2292,18 @@ export async function rolarAtaque(actor, at, {
     botoes.push({ acao: "condicaoAlvo", condicao: "epm-caido", rotulo: "Manobra", label: "Acertou? Alvo fica Caído", icone: "fa-solid fa-person-falling" });
   }
   // Árvore elemental (Guerreiro Elemental): golpe com 20+ de dano de um elemento aplica o efeito (Fortitude DT 20)
-  if (dmg && /elemental/i.test(String(dados.classe ?? ""))) {
+  const elemCls = ficha.extras?.classe?.elemental;
+  if (dmg && elemCls && (ficha.extras?.classe?.nivel ?? 0) >= (elemCls.efeitoNivel ?? 0)) {
     const valorEl = Math.max(0, Math.round(dmg.total));
-    const tipoEl = [...(lerTipoDano(at.tipoDano ?? "").tipos ?? [])][0] ?? normalizarTexto(at.tipoDano ?? "").replace(/\s+/g, "");
+    const tipoEl = normalizarTexto(elemCls.tipo ?? "").replace(/\s+/g, "") || ([...(lerTipoDano(at.tipoDano ?? "").tipos ?? [])][0] ?? normalizarTexto(at.tipoDano ?? "").replace(/\s+/g, ""));
     const efeito = EFEITO_ELEMENTO[tipoEl] ?? (/gravidade/i.test(at.tipoDano ?? "") ? EFEITO_ELEMENTO.gravidade : null);
     const limiarEl = ficha.extras?.classe?.elemental?.efeitoDano ?? DANO_EFEITO_ELEMENTO;
     const dtEl = ficha.extras?.classe?.elemental?.efeitoDt ?? DT_EFEITO_ELEMENTO;
-    if (efeito && valorEl >= limiarEl) {
+    if (efeito && (valorEl >= limiarEl || critico)) {
       if (efeito === "drenar") notas.push(`Necrótico ${valorEl}: recupera ${Math.floor(valorEl / 2)} de Vida (metade do dano).`);
       else {
         const cond = CONDICOES.find(c => c.id === efeito);
-        notas.push(`Golpe elemental (${valorEl} de dano): o alvo faz Fortitude DT ${dtEl}; se falhar, fica ${cond?.label ?? efeito}.`);
+        notas.push(`Golpe elemental (${critico ? "crítico" : `${valorEl} de dano`}): o alvo faz Fortitude DT ${dtEl}; se falhar, fica ${cond?.label ?? efeito} (1×/rodada por alvo).`);
         botoes.push({ acao: "condicaoAlvo", condicao: efeito, rotulo: "Efeito elemental", label: `Falhou na Fortitude: ${cond?.label ?? efeito}`, icone: "fa-solid fa-fire" });
       }
     }

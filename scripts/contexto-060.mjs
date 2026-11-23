@@ -175,11 +175,12 @@ export function contexto060({ actor = null, dados = {}, ficha, edicao = false, e
     }
     if (cl.atirador) {
       const a = cl.atirador;
-      const arma = (actor?.items?.contents ?? actor?.items ?? []).find(i => i.flags?.[FLAG]?.armaMagica);
+      const armas = (actor?.items?.contents ?? actor?.items ?? []).filter(i => i.flags?.[FLAG]?.armaMagica);
+      const arma = armas[0];
       const catArma = CATEGORIAS_ARMA_MAGICA[arma?.flags?.[FLAG]?.armaMagicaCategoria] ?? null;
       const starMax = a.nivel >= 15 ? usosStarlight(ficha.atributos?.nucleo?.total, a.nivelPersonagem) : 0;
       c.atirador = {
-        nivel: a.nivel,
+        nivel: a.nivel, variasArmas: a.variasArmas, isGM, outras: armas.slice(1).map(i => i.name).join(", "),
         arma: arma ? { nome: arma.name, img: arma.img, categoria: catArma?.label ?? "", municao: catArma?.municao ?? 0, sangue: !!arma.flags?.[FLAG]?.armaMagicaSangue, criada: !!arma.flags?.[FLAG]?.armaMagicaCriada } : null,
         ataque: a.pontaria ? "Arcanismo + Núcleo + Pontaria" : "Arcanismo + Núcleo",
         posicao: a.nivel >= 48 ? "Posição Tática III (margem +3, +3 dados 1×/turno); 4 PE: multiplicador +2; Absoluta, 10 PE: margem +7, multiplicador +4, +5 dados" : a.nivel >= 39 ? "Posição Tática III: margem +3 e +3 dados (1×/turno); 4 PE: multiplicador +2" : a.nivel >= 12 ? "Posição Tática: margem +1; 4 PE: margem +2 e multiplicador +2" : a.nivel >= 6 ? "Posição Tática: margem +1" : "",

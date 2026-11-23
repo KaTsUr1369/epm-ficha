@@ -683,7 +683,7 @@ export const NOMES_ACOES_060 = [
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
   "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias", "abrirGrimorio",
-  "armaMagica", "starlightStep", "circuitoAtirador", "sobrecargaArcana", "cargaCamara", "magiaAplicada"
+  "armaMagica", "starlightStep", "circuitoAtirador", "sobrecargaArcana", "cargaCamara", "magiaAplicada", "variasArmasMagicas"
 ];
 
 export const METODOS_060 = {
@@ -692,6 +692,7 @@ export const METODOS_060 = {
   async acaoCircuitoAtirador(ev, alvo) { return (await import("./atirador-acoes.mjs")).alternarCircuito(this.actor, alvo.dataset.id); },
   async acaoSobrecargaArcana(ev, alvo) { return (await import("./atirador-acoes.mjs")).sobrecargaArcana(this.actor, alvo.dataset.id); },
   async acaoCargaCamara(ev, alvo) { return (await import("./atirador-acoes.mjs")).cargaCamara(this.actor, int(alvo.dataset.delta, 1)); },
+  async acaoVariasArmasMagicas() { return (await import("./atirador-acoes.mjs")).variasArmasMagicas(this.actor); },
   async acaoMagiaAplicada() { return (await import("./atirador-acoes.mjs")).magiaAplicada(this.actor); },
   acaoEscolherRaca() { return escolherRaca(this.actor); },
   async acaoCaminho(ev, alvo) {

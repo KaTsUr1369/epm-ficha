@@ -84,10 +84,10 @@ function aplicarAjustesBonus(d, out) {
   for (const k of Object.keys(out.extrasAtaque)) out.extrasAtaque[k] = out.extrasAtaque[k].filter(x => x.origem !== "classe" || (x.formula && x.formula !== "0"));
 }
 
-/** Atirador Arcano da ficha: { nivel } da classe (nível de Artífice) ou null. */
+/** Atirador Arcano da ficha: { nivel } da classe (nível de Conjurador) ou null. */
 export function atiradorDaFicha(d = {}) {
   if (idClasse(d?.classe) !== ID_ATIRADOR) return null;
-  const nivel = nivelDe(d, "artifice");
+  const nivel = nivelDe(d, "conjurador");
   return nivel >= 3 ? { nivel } : null;
 }
 

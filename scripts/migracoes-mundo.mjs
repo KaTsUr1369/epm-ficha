@@ -408,6 +408,16 @@ async function temaAtlas() {
   return n;
 }
 
+/** 0.8.26: o Atirador Arcano passou de Artífice para Conjurador. Avisa o Mestre das fichas sem Conjurador. */
+function avisoAtiradorArcano() {
+  const nomes = (game.actors ?? []).filter(a => {
+    const f = a.flags?.[FLAG];
+    return f && /atirador arcano/i.test(String(f.classe ?? "")) && ![f.arquetipo, f.arquetipo2].some(x => /conjurador/i.test(String(x ?? "")));
+  }).map(a => a.name);
+  if (nomes.length) ui.notifications.warn(`EPM: o Atirador Arcano agora é classe de Conjurador. Ajuste o arquétipo de: ${nomes.join(", ")}.`, { permanent: true });
+  return nomes.length;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -423,6 +433,7 @@ export async function migrarMundo() {
   try { const n = await melhoriasAntigas(itens); if (n) feitos.push(`${n} item(ns) com as melhorias antigas no formato novo`); } catch (err) { console.warn("EPM | melhorias antigas", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   try { const n = await temaAtlas(); if (n) feitos.push(`${n} ficha(s) passaram para o visual Atlas`); } catch (err) { console.warn("EPM | tema Atlas", err); }
+  try { avisoAtiradorArcano(); } catch (err) { console.warn("EPM | aviso do Atirador Arcano", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;
 }

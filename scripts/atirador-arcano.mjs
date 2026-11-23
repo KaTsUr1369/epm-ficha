@@ -103,14 +103,12 @@ export function estadoAtirador(nivel, opc = {}, { nucleo = 0, nivelPersonagem = 
   const starMax = nivel >= 15 ? usosStarlight(nucleo, nivelPersonagem) : 0;
   const acertoFontes = [];
   if (circuitos.includes("mira")) acertoFontes.push({ valor: CIRCUITOS.mira.acerto, fonte: "Mira Estabilizada (circuito)" });
-  // Não acumula com circuito de benefício idêntico: o Acelerador de Mana (+3) cobre a Mira (+2)
+  // Acelerador de Mana (+3) acumula com a Mira Estabilizada (+2)
   if (sobrecarga === "acelerador") {
-    const i = acertoFontes.findIndex(f => f.fonte.startsWith("Mira"));
-    if (i >= 0) acertoFontes.splice(i, 1);
     acertoFontes.push({ valor: SOBRECARGAS.acelerador.acerto, fonte: "Acelerador de Mana (Sobrecarga)" });
   }
   return {
-    nivel, arcanismo: true, pontaria: nivel >= 36,
+    nivel, arcanismo: true, variasArmas: !!opc.variasArmas, pontaria: nivel >= 36,
     circuitos, maxCircuitos: max, sobrecarga, sobrecargaRodadas: Math.max(0, Number(opc.sobrecargaRodadas) || 0),
     cargas: nivel >= 21 ? Math.min(MAX_CARGAS_CAMARA, Math.max(0, Number(opc.cargas) || 0)) : 0, camara: nivel >= 21,
     starlight: nivel >= 15 ? { max: starMax, usados: Math.min(starMax, Math.max(0, Number(opc.starlightUsos) || 0)), aprimorado: nivel >= 42 } : null,

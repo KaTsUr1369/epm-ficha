@@ -14,11 +14,17 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.26
+
+- **Atirador Arcano é classe de Conjurador** (o nível da classe é o de Conjurador). Se alguma ficha escolheu a classe como Artífice na 0.8.25, o Mestre recebe um aviso com o nome dela para ajustar o arquétipo.
+- **Mais de uma Arma Mágica:** continua uma por vez, mas o Mestre pode liberar mais numa ficha (caixa "Mestre: permitir mais de uma Arma Mágica" no painel da classe). Com a permissão, criar outra arma não tira a anterior.
+- **Acelerador de Mana acumula com a Mira Estabilizada:** +3 e +2 nos ataques com a Arma Mágica.
+
 ## Novidades da 0.8.25
 
 - **Visual "Atlas do Multiverso" em todo o módulo:** a ficha virou uma carta celeste. O fundo é azul-noite com meridianos bem apagados, as abas formam uma constelação (a aba aberta é a estrela que brilha), os painéis são placas com fio e cantos de latão, e os títulos usam a Cormorant em versalete. Vale para a ficha, as fichas de NPC (a cor do tipo continua como destaque), o Escudo do Mestre, o grupo, o catálogo, os editores de item e poder, e as janelas de diálogo do módulo.
 - **Fichas que já existem:** quem estava na cor padrão antiga passa sozinho para o Atlas. Quem escolheu outra cor continua com ela, e o verde antigo ficou nas cores prontas da Personalização, como "Verdete (antigo)".
-- **Nova classe: Atirador Arcano (Artífice).** Todas as habilidades do nível 3 ao 48 estão na ficha e no compêndio de classes. O painel fica na aba Combate:
+- **Nova classe: Atirador Arcano (Conjurador desde a 0.8.26).** Todas as habilidades do nível 3 ao 48 estão na ficha e no compêndio de classes. O painel fica na aba Combate:
   - **Arma Mágica:** cria uma arma a partir de uma arma de disparo conhecida, rolando o custo em PM pelo porte, ou imbui uma arma do inventário. Tem a opção de Arma de Sangue, que paga também PV e atordoa se passar da metade dos PV máximos. Armas de Gênesis só com o Mestre.
   - **Ataques com a Arma Mágica:** usam Arcanismo + Núcleo, e a partir do nível 36 somam também a Pontaria.
   - **Diálogo de ataque:** traz a Posição Tática (I, II, III e Absoluta, com margem, multiplicador e dados), a Munição de Mana, o Núcleo Ressonante, a Câmara de Acúmulo, o Disparo Potencializado, o Disparo Espiral e o Amplificador. Tudo já cobra os PM e os PE.

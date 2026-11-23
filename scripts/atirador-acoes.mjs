@@ -53,7 +53,7 @@ async function pagar(actor, ficha, { pm = 0, pe = 0, pv = 0 }, motivo) {
  */
 export async function criarArmaMagica(actor) {
   const aa = atiradorDoAtor(actor);
-  if (!aa) return ui.notifications.warn("A Arma Mágica é do Atirador Arcano (Artífice nível 3+).");
+  if (!aa) return ui.notifications.warn("A Arma Mágica é do Atirador Arcano (Conjurador nível 3+).");
   const { ficha } = aa;
   const doInventario = actor.items.filter(i => i.type === "weapon" && !i.flags?.[FLAG]?.armaMagicaCriada && (i.flags?.[FLAG]?.periciaAtaque === "pontaria" || i.flags?.[FLAG]?.armaMagica));
   const liberaGenesis = game.user.isGM;
@@ -66,7 +66,7 @@ export async function criarArmaMagica(actor) {
   }).join("");
   const circuitos = aa.circuitos.length;
   const content = `
-    <p class="epm-dica">Crie uma arma de disparo com a sua mana (ela usa o dano, o alcance e o funcionamento da arma equivalente) ou imbua uma arma de disparo que você já tem. Só uma Arma Mágica por vez.</p>
+    <p class="epm-dica">Crie uma arma de disparo com a sua mana (ela usa o dano, o alcance e o funcionamento da arma equivalente) ou imbua uma arma de disparo que você já tem. ${aa.variasArmas ? "O Mestre permitiu mais de uma Arma Mágica: a atual continua." : "Só uma Arma Mágica por vez: a atual deixa de ser."}</p>
     <fieldset class="epm-aquisicao"><legend>Arma</legend>
       <label class="epm-check"><input type="radio" name="modo" value="criar" checked> Criar a partir de uma arma conhecida</label>
       <label class="epm-campo"><span>Arma equivalente</span><select name="catalogo">${porRegiao}</select></label>
@@ -105,7 +105,8 @@ export async function criarArmaMagica(actor) {
   });
   if (!escolha || typeof escolha !== "object") return null;
   const categoria = CATEGORIAS_ARMA_MAGICA[escolha.categoria] ? escolha.categoria : "pequena";
-  const anteriores = actor.items.filter(i => i.flags?.[FLAG]?.armaMagica);
+  // Só uma Arma Mágica por vez, a não ser que o Mestre permita mais (opção no painel da classe)
+  const anteriores = aa.variasArmas ? [] : actor.items.filter(i => i.flags?.[FLAG]?.armaMagica);
 
   if (escolha.modo === "imbuir") {
     const item = actor.items.get(escolha.item);
@@ -224,3 +225,10 @@ export async function magiaAplicada(actor) {
   });
 }
 
+
+/** O Mestre libera (ou não) mais de uma Arma Mágica ao mesmo tempo nesta ficha. */
+export async function variasArmasMagicas(actor) {
+  if (!game.user.isGM) return ui.notifications.warn("Só o Mestre libera mais de uma Arma Mágica.");
+  const atual = !!actor.flags?.[FLAG]?.classeEpm?.variasArmas;
+  return actor.update({ [`${P}.classeEpm.variasArmas`]: !atual });
+}

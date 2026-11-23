@@ -212,8 +212,10 @@
     <div class="epm-atirador-arma">
       {{#if aa.arma}}<img src="{{aa.arma.img}}" alt="" /><div><strong>{{aa.arma.nome}}</strong><span class="epm-dica">Arma Mágica {{aa.arma.categoria}} · Munição de Mana {{aa.arma.municao}} PM por disparo{{#if aa.arma.sangue}} · Arma de Sangue (Balístico e Sangue){{/if}}</span></div>
       {{else}}<i class="fa-solid fa-crosshairs" aria-hidden="true"></i><div><strong>Sem Arma Mágica</strong><span class="epm-dica">Crie uma a partir de uma arma de disparo conhecida ou imbua uma do inventário.</span></div>{{/if}}
-      <button type="button" class="epm-botao{{#unless aa.arma}} epm-botao-forte{{/unless}}" data-action="armaMagica" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-wand-sparkles"></i> {{#if aa.arma}}Trocar arma{{else}}Criar Arma Mágica{{/if}}</button>
+      <button type="button" class="epm-botao{{#unless aa.arma}} epm-botao-forte{{/unless}}" data-action="armaMagica" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-wand-sparkles"></i> {{#if aa.arma}}{{#if aa.variasArmas}}Outra arma{{else}}Trocar arma{{/if}}{{else}}Criar Arma Mágica{{/if}}</button>
     </div>
+    {{#if aa.outras}}<p class="epm-dica">Outras Armas Mágicas: {{aa.outras}}.</p>{{/if}}
+    {{#if aa.isGM}}<label class="epm-check" title="Só o Mestre muda"><input type="checkbox" data-action="variasArmasMagicas" {{#if aa.variasArmas}}checked{{/if}}> Mestre: permitir mais de uma Arma Mágica ao mesmo tempo</label>{{else}}{{#if aa.variasArmas}}<p class="epm-dica">O Mestre permitiu mais de uma Arma Mágica.</p>{{/if}}{{/if}}
     <p class="epm-dica">Ataque com a Arma Mágica: <strong>{{aa.ataque}}</strong>{{#if aa.posicao}} · {{aa.posicao}} (opção no diálogo de ataque){{/if}}.</p>
     {{#if aa.espiral}}<p class="epm-dica">{{aa.espiral}}. Opção no diálogo de ataque.</p>{{/if}}
     <div class="epm-atirador-linha">

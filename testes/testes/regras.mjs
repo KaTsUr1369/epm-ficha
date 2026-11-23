@@ -347,11 +347,11 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
   const RC = await import("/home/claude/epm-ficha/scripts/regras-extras.mjs");
   const FC = await import("/home/claude/epm-ficha/scripts/ficha-extras.mjs");
   const doArq = id => RC.classesDoArquetipo(id).map(c => c.id).join();
-  ok(doArq("combatente") === "barbaro,guardiao,lutador,guerreiroElemental,alice,bastiao,guerreiroVazio" && doArq("conjurador") === "vitalista,trovador" && doArq("artifice") === "mecanicoGuerra,cacador,atiradorArcano",
+  ok(doArq("combatente") === "barbaro,guardiao,lutador,guerreiroElemental,alice,bastiao,guerreiroVazio" && doArq("conjurador") === "vitalista,trovador,atiradorArcano" && doArq("artifice") === "mecanicoGuerra,cacador",
     `classes por arquétipo (${doArq("combatente")} | ${doArq("conjurador")} | ${doArq("artifice")})`);
   {
     const AA = await import("/home/claude/epm-ficha/scripts/atirador-arcano.mjs");
-    ok(FC.idClasse("Atirador Arcano") === "atiradorArcano" && FC.atiradorDaFicha({ classe: "Atirador Arcano", arquetipo: "Artífice", nivel: 20 })?.nivel === 20 && !FC.atiradorDaFicha({ classe: "Atirador Arcano", arquetipo: "Artífice", nivel: 2 }), "Atirador Arcano: reconhece a classe e o nível de Artífice");
+    ok(FC.idClasse("Atirador Arcano") === "atiradorArcano" && FC.atiradorDaFicha({ classe: "Atirador Arcano", arquetipo: "Conjurador", nivel: 20 })?.nivel === 20 && !FC.atiradorDaFicha({ classe: "Atirador Arcano", arquetipo: "Conjurador", nivel: 2 }) && !FC.atiradorDaFicha({ classe: "Atirador Arcano", arquetipo: "Artífice", nivel: 20 }), "Atirador Arcano: classe de Conjurador (o nível é o de Conjurador)");
     ok(AA.usosStarlight(4, 15) === 3 && AA.usosStarlight(5, 9) === 3, "Starlight Step: Núcleo ÷ 2 para cima + nível ÷ 10 (exemplo do livro: Nv. 15, Núcleo 4 → 3)");
     ok(AA.formulaCriacao("especial", 20) === "9d20 + 50" && AA.formulaCriacao("especial", 48) === "3d20" && AA.formulaCriacao("media", 48) === "1d20" && AA.formulaCriacao("pequena", 18, { circuitos: 2 }) === "1d20 + 10", "custo de criação: porte, Maestria (−2 categorias, mínimo Pequena) e +5 PM por circuito");
     ok(AA.formulaCriacao("pequena", 48, { melhorias: ["modificacoes", "encantamentos", "maldicao", "bencao"] }) === "1d20 + 64", "Maestria Arcana: as 4 melhorias somam 64 PM");
@@ -360,9 +360,9 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
     const p6 = AA.posicaoTatica(6), p12 = AA.posicaoTatica(12, "tatica2"), p39 = AA.posicaoTatica(39), p39b = AA.posicaoTatica(39, "tatica2"), p48 = AA.posicaoTatica(48, "absoluta");
     ok(!AA.posicaoTatica(5) && p6.margem === 1 && p12.margem === 2 && p12.mult === 2 && p12.pe === 4 && p39.margem === 3 && p39.dados === 3 && p39b.margem === 3 && p39b.mult === 2 && p48.margem === 7 && p48.mult === 4 && p48.dados === 5 && p48.pe === 10, "Posição Tática I, II, III e Absoluta (substituem, não somam)");
     const e30 = AA.estadoAtirador(30, { circuitos: ["mira", "acelerador", "ricochete", "ressonante"], sobrecarga: "acelerador" });
-    ok(e30.circuitos.length === 3 && e30.maxCircuitos === 3 && e30.alcanceExtra === 6 && e30.acertoFontes.length === 1 && e30.acertoFontes[0].valor === 3, "circuitos até o limite do nível; Acelerador de Mana (+3) não acumula com a Mira (+2)");
+    ok(e30.circuitos.length === 3 && e30.maxCircuitos === 3 && e30.alcanceExtra === 6 && e30.acertoFontes.reduce((t, f) => t + f.valor, 0) === 5, "circuitos até o limite do nível; Acelerador de Mana (+3) acumula com a Mira (+2)");
     ok(AA.maxCircuitos(17) === 0 && AA.maxCircuitos(18) === 1 && AA.maxCircuitos(24) === 2 && AA.maxCircuitos(30) === 3 && AA.categoriaSugerida("Pistola") === "pequena" && AA.categoriaSugerida("Rifle de Precisão") === "grande", "limite de circuitos e porte sugerido");
-    const ex = FC.fontesDaFicha({ classe: "Atirador Arcano", arquetipo: "Artífice", nivel: 36, classeEpm: { circuitos: ["mira"] } });
+    const ex = FC.fontesDaFicha({ classe: "Atirador Arcano", arquetipo: "Conjurador", nivel: 36, classeEpm: { circuitos: ["mira"] } });
     ok(ex.classe?.atirador?.pontaria && ex.classe.atirador.acertoFontes[0]?.valor === 2, "Nv. 36: Disparo Fortificado II soma Pontaria; Mira Estabilizada +2");
   }
   const ids = Object.keys(RC.CLASSES_NOTION);

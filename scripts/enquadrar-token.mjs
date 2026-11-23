@@ -100,15 +100,17 @@ export function bordaColorida(borda, cores) {
  * Desenha o token num canvas de lado `lado`. `recorte` = { x, y, lado } em pixels da imagem original:
  * esse quadrado ocupa o círculo de dentro da borda.
  */
-export function desenharToken(ctx, lado, img, borda, recorte, { comBorda = true } = {}) {
+export function desenharToken(ctx, lado, img, borda, recorte, { comBorda = true, circulo = true } = {}) {
   ctx.clearRect(0, 0, lado, lado);
   const c = comBorda ? CIRCULO_BORDA : { cx: 0.5, cy: 0.5, r: 0.5 };
   const cx = c.cx * lado, cy = c.cy * lado, r = c.r * lado;
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
+  if (circulo || comBorda) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+  }
   ctx.drawImage(img, recorte.x, recorte.y, recorte.lado, recorte.lado, cx - r, cy - r, 2 * r, 2 * r);
   ctx.restore();
   if (comBorda && borda) ctx.drawImage(borda, 0, 0, lado, lado);
@@ -171,60 +173,97 @@ function salvarCores(cores) {
   try { localStorage.setItem(CHAVE_COR, JSON.stringify(cores ?? {})); } catch { /* sem armazenamento */ }
 }
 
+/**
+ * Guarda de qual imagem original saiu cada imagem enquadrada (no usuário), para "Enquadrar de novo" partir
+ * da original, sem perder qualidade. Mantém as 300 mais recentes.
+ */
+const MAX_ORIGINAIS = 300;
+export function originalDe(caminho) {
+  const mapa = game.user?.getFlag?.("epm-ficha", "imagensOriginais") ?? {};
+  return mapa[chaveImagem(caminho)] ?? caminho;
+}
+const chaveImagem = c => String(c ?? "").replace(/[.]/g, "_");
+async function lembrarOriginal(novo, src) {
+  try {
+    const original = originalDe(src);
+    const mapa = { ...(game.user.getFlag("epm-ficha", "imagensOriginais") ?? {}) };
+    mapa[chaveImagem(novo)] = original;
+    const chaves = Object.keys(mapa);
+    const sobra = chaves.slice(0, Math.max(0, chaves.length - MAX_ORIGINAIS));
+    await game.user.setFlag("epm-ficha", "imagensOriginais", mapa);
+    if (sobra.length) await game.user.update(Object.fromEntries(sobra.map(k => [`flags.epm-ficha.imagensOriginais.-=${k}`, null])));
+  } catch (err) { console.warn("EPM |", err); }
+}
+
 const ALCAS = ["n", "s", "l", "o", "nl", "no", "sl", "so"];
 
 /**
  * Abre o enquadramento para a imagem `src`. Devolve o caminho do PNG salvo em Tokens/ (ou null se cancelar).
  * "Sem enquadrar" (ou sem permissão de enviar arquivos) devolve a imagem original.
  */
-export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar o token" } = {}) {
+export function enquadrarToken(src, { nome = "token", titulo = "Enquadrar o token" } = {}) {
+  return abrirEnquadramento(src, { nome, titulo, token: true });
+}
+
+/**
+ * Enquadrar qualquer imagem da ficha (ícone de item, retrato, companheiro...), com o mesmo editor do token,
+ * sem a borda. `forma` = "quadrado" ou "circulo" (só muda a guia e a prévia: o PNG sai quadrado, então serve
+ * nos dois). O PNG vai para `pasta`; devolve o caminho dele, a imagem original ("Sem enquadrar") ou null.
+ */
+export function enquadrarImagem(src, { nome = "imagem", titulo = "Enquadrar a imagem", forma = "quadrado", pasta = "epm-ficha-imagens" } = {}) {
+  return abrirEnquadramento(src, { nome, titulo, token: false, forma, pasta });
+}
+
+async function abrirEnquadramento(src, { nome, titulo, token = true, forma = "circulo", pasta = PASTA_TOKENS }) {
   if (!src) return null;
-  let img, borda;
-  try { [img, borda] = await Promise.all([carregar(src), carregar(BORDA_TOKEN)]); } catch (err) {
+  const circulo = token || forma === "circulo";
+  let img, borda = null;
+  try { [img, borda] = await Promise.all([carregar(src), token ? carregar(BORDA_TOKEN) : Promise.resolve(null)]); } catch (err) {
     console.warn("EPM |", err);
     ui.notifications.warn("Não deu para abrir a imagem para enquadrar. Ficou a imagem original.");
     return src;
   }
   const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  if (!W || !H) { ui.notifications.warn("Essa imagem não tem tamanho definido (SVG) e não dá para enquadrar. Ficou a imagem original."); return src; }
   const escala = Math.min(PALCO / W, PALCO / H);
   const vw = Math.round(W * escala), vh = Math.round(H * escala);
   const ladoInicial = Math.min(W, H) * 0.9;
   let recorte = limitarRecorte({ x: (W - ladoInicial) / 2, y: (H - ladoInicial) / 2, lado: ladoInicial }, W, H);
-  let comBorda = true;
-  const cores = { anel: "", chamas: "", runas: "", ...coresSalvas() };
-  let bordaPintada = bordaColorida(borda, cores);
+  let comBorda = token;
+  const cores = { anel: "", chamas: "", runas: "", ...(token ? coresSalvas() : {}) };
+  let bordaPintada = token ? bordaColorida(borda, cores) : null;
   const PADRAO = { anel: "#1c3a7a", chamas: "#2a2a2a", runas: "#dfe6f2" };
   let previa = null, caixa = null;
 
   const atualizar = () => {
     if (caixa) Object.assign(caixa.style, { left: `${recorte.x * escala}px`, top: `${recorte.y * escala}px`, width: `${recorte.lado * escala}px`, height: `${recorte.lado * escala}px` });
-    if (previa) desenharToken(previa.getContext("2d"), PREVIA, img, bordaPintada, recorte, { comBorda });
+    if (previa) desenharToken(previa.getContext("2d"), PREVIA, img, bordaPintada, recorte, { comBorda, circulo });
   };
 
   const r = await fvtt.DialogV2.wait({
-    window: { title: titulo, icon: "fa-solid fa-crop-simple" }, classes: ["epm-dialogo", "epm-enquadrar"], rejectClose: false, modal: true,
+    window: { title: titulo, icon: "fa-solid fa-crop-simple" }, classes: ["epm-dialogo", "epm-enquadrar", token ? "epm-enquadrar-token" : `epm-enquadrar-${circulo ? "circulo" : "quadrado"}`], rejectClose: false, modal: true,
     position: { width: 560 },
     content: `<div class="epm-enquadrar-corpo">
       <div class="epm-recorte-palco" style="width:${vw}px;height:${vh}px">
         <img src="${escapar(src)}" alt="" draggable="false">
         <div class="epm-recorte-caixa" data-alca="meio" title="Segure no meio para arrastar; puxe as laterais ou os cantos para mudar o tamanho">
           ${ALCAS.map(a => `<span class="epm-recorte-alca alca-${a}" data-alca="${a}"></span>`).join("")}
-          <span class="epm-recorte-circulo"></span>
+          ${circulo ? '<span class="epm-recorte-circulo"></span>' : ""}
         </div>
       </div>
       <div class="epm-enquadrar-lado">
-        <canvas width="${PREVIA}" height="${PREVIA}" data-previa aria-label="Prévia do token"></canvas>
-        <fieldset class="epm-cores-borda"><legend>Cores da borda</legend>
+        <canvas width="${PREVIA}" height="${PREVIA}" data-previa aria-label="Prévia"></canvas>
+        ${token ? `<fieldset class="epm-cores-borda"><legend>Cores da borda</legend>
           ${CAMADAS_BORDA.map(c => `<div class="epm-cor-camada"><label class="epm-campo"><span>${escapar(c.label)}</span><input type="color" data-cor="${c.id}" value="${escapar(cores[c.id] || PADRAO[c.id])}"></label>
             <button type="button" class="epm-icone-botao" data-cor-original="${c.id}" title="Voltar à cor original desta parte" ${cores[c.id] ? "" : "disabled"}><i class="fa-solid fa-rotate-left"></i></button></div>`).join("")}
         </fieldset>
-        <label class="epm-check"><input type="checkbox" data-borda checked> Com a borda</label>
+        <label class="epm-check"><input type="checkbox" data-borda checked> Com a borda</label>` : ""}
         <button type="button" class="epm-link" data-tudo>Pegar a imagem toda</button>
       </div>
-      <p class="epm-dica">O que fica dentro do quadrado vai para o círculo do token (o círculo tracejado mostra o que aparece). Segure no meio para arrastar e puxe as laterais ou os cantos para aumentar ou diminuir. O PNG vai para a pasta <strong>${escapar(PASTA_TOKENS)}</strong>.</p>
+      <p class="epm-dica">${token ? "O que fica dentro do quadrado vai para o círculo do token (o círculo tracejado mostra o que aparece)." : circulo ? "O que fica dentro do círculo tracejado é o que aparece." : "O que fica dentro do quadrado é o que aparece."} Segure no meio para arrastar, puxe as laterais ou os cantos para aumentar ou diminuir, ou use a roda do mouse. A imagem enquadrada vai para a pasta <strong>${escapar(pasta)}</strong>; a original não muda.</p>
     </div>`,
     buttons: [
-      { action: "ok", label: "Usar no token", icon: "fa-solid fa-check", default: true, callback: () => "ok" },
+      { action: "ok", label: token ? "Usar no token" : "Usar esta imagem", icon: "fa-solid fa-check", default: true, callback: () => "ok" },
       { action: "original", label: "Sem enquadrar", icon: "fa-solid fa-image", callback: () => "original" },
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ],
@@ -284,11 +323,12 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
   });
   if (r === "original") return src;
   if (r !== "ok") return null;
-  salvarCores(cores);
+  if (token) salvarCores(cores);
 
   const final = document.createElement("canvas");
-  final.width = final.height = TAMANHO_FINAL;
-  desenharToken(final.getContext("2d"), TAMANHO_FINAL, img, bordaPintada, recorte, { comBorda });
+  // Sem borda: não aumenta uma imagem pequena além do recorte
+  final.width = final.height = token ? TAMANHO_FINAL : Math.max(64, Math.min(TAMANHO_FINAL, Math.round(recorte.lado)));
+  desenharToken(final.getContext("2d"), final.width, img, bordaPintada, recorte, { comBorda, circulo: token ? true : false });
   let blob;
   try { blob = await new Promise((res, rej) => final.toBlob(b => (b ? res(b) : rej(new Error("toBlob vazio"))), "image/png")); } catch (err) {
     console.warn("EPM |", err);
@@ -296,19 +336,20 @@ export async function enquadrarToken(src, { nome = "token", titulo = "Enquadrar 
     return src;
   }
   if (!game.user.can("FILES_UPLOAD")) {
-    ui.notifications.warn('Para salvar o token enquadrado é preciso a permissão "Enviar arquivos" (o Mestre libera). Ficou a imagem original.');
+    ui.notifications.warn(`Para salvar ${token ? "o token enquadrado" : "a imagem enquadrada"} é preciso a permissão "Enviar arquivos" (o Mestre libera). Ficou a imagem original.`);
     return src;
   }
   const FP = fvtt.FilePicker;
-  try { await FP.createDirectory("data", PASTA_TOKENS, {}); } catch { /* já existe ou sem permissão */ }
+  try { await FP.createDirectory("data", pasta, {}); } catch { /* já existe ou sem permissão */ }
   try {
-    const resposta = await FP.upload("data", PASTA_TOKENS, new File([blob], nomeArquivo(nome), { type: "image/png" }), {}, { notify: false });
+    const resposta = await FP.upload("data", pasta, new File([blob], nomeArquivo(nome), { type: "image/png" }), {}, { notify: false });
     if (!resposta?.path) throw new Error(resposta?.message ?? "upload sem caminho");
-    ui.notifications.info(`Token salvo em ${PASTA_TOKENS}/.`);
+    ui.notifications.info(token ? `Token salvo em ${pasta}/.` : "Imagem enquadrada.");
+    if (!token) await lembrarOriginal(resposta.path, src);
     return resposta.path;
   } catch (err) {
-    console.warn("EPM | Falha ao salvar o token", err);
-    ui.notifications.error(`Não deu para salvar o token na pasta ${PASTA_TOKENS}. Confira a permissão "Enviar arquivos".`);
+    console.warn("EPM | Falha ao salvar a imagem enquadrada", err);
+    ui.notifications.error(`Não deu para salvar na pasta ${pasta}. Confira a permissão "Enviar arquivos".`);
     return src;
   }
 }

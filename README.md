@@ -14,6 +14,12 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.24
+
+- **Enquadrar imagens:** ao trocar o ícone de um item ou poder, o retrato, a imagem de um companheiro, criatura, facção, Marca ou da alma, abre o mesmo editor do token (sem a borda): arraste o quadrado, puxe as laterais e os cantos ou use a roda do mouse. O retrato, o companheiro e a alma usam a guia redonda; os ícones, a quadrada. A imagem enquadrada vai para a pasta `epm-ficha-imagens` e a original não muda.
+- **Enquadrar a atual:** quem já tem uma imagem pode só enquadrar de novo. O editor parte da imagem original, sem perder qualidade.
+- "Sem enquadrar" usa a imagem como veio. O fundo da ficha e a Aparência não passam pelo editor; a transformação e os tokens por estado continuam com o enquadramento na borda do token.
+
 ## Novidades da 0.8.23
 
 - **Manual dentro do Foundry:** compêndio "EPM · Manual" com o diário "Manual da Ficha EPM": Começando, Guia do jogador, Guia do Mestre, Regras rápidas e Patch notes (resumo de cada versão). Botão "Manual" na barra de abas da ficha. Ao atualizar o módulo, um aviso oferece abrir as Patch notes.

@@ -3548,3 +3548,6 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-abrir-manual { display: block; margin-top: 6px; font-size: .85em; }
 .epm-busca-global input[type="search"] { background: var(--epm-entrada); border: 1px solid var(--epm-linha); color: var(--epm-texto); padding: 4px 8px; font-size: .85em; height: auto; }
 .epm-busca-global input[type="search"]:focus { border-color: var(--epm-latao); outline: none; }
+/* Enquadrar imagens (ícones de item, retratos...): mesmo editor do token, sem a borda */
+.epm-enquadrar-circulo .epm-enquadrar-lado canvas[data-previa] { border-radius: 50%; }
+.epm-enquadrar-quadrado .epm-recorte-caixa { border-radius: 2px; }

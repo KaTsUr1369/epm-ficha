@@ -288,7 +288,7 @@ export async function imagemAlma(actor, id) {
   if (!game.user?.isGM) return;
   const { escolherImagem } = await import("./imagens.mjs");
   const atual = lerRessonancia(actor).almas?.[id]?.img ?? "";
-  const caminho = await escolherImagem({ atual, titulo: "Imagem da alma" });
+  const caminho = await escolherImagem({ atual, titulo: "Imagem da alma", forma: "circulo" });
   if (caminho) await actor.update({ [`${R}.almas.${id}.img`]: caminho });
 }
 

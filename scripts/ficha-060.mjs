@@ -747,7 +747,7 @@ export const METODOS_060 = {
   async acaoImagemTokenEstado(ev, alvo) {
     const { escolherImagem } = await import("./imagens.mjs");
     const e = alvo.dataset.estado;
-    const original = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.tokensOriginal?.[e] ?? this.actor.flags?.[FLAG]?.tokensEstado?.[e] ?? "", titulo: "Imagem do token" });
+    const original = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.tokensOriginal?.[e] ?? this.actor.flags?.[FLAG]?.tokensEstado?.[e] ?? "", titulo: "Imagem do token", enquadrar: false });
     if (!original) return;
     return this._enquadrarTokenEstado(e, original);
   },

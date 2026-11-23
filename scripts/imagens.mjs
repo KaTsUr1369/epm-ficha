@@ -63,8 +63,26 @@ function navegarArquivos(atual) {
   });
 }
 
-/** Pergunta a origem da imagem e devolve o caminho escolhido (ou null). */
-export async function escolherImagem({ atual = "", titulo = "Escolher imagem" } = {}) {
+/**
+ * Pergunta a origem da imagem e devolve o caminho escolhido (ou null). Com `enquadrar` (padrão), depois de
+ * escolher abre o enquadramento (o mesmo editor do token, sem a borda) na `forma` em que a imagem aparece.
+ * Se já há uma imagem, dá para só enquadrar de novo a atual (partindo da original, quando se sabe qual é).
+ */
+export async function escolherImagem({ atual = "", titulo = "Escolher imagem", enquadrar = true, forma = "quadrado", nome = "" } = {}) {
+  const caminho = await escolherOrigem({ atual, titulo, enquadrar });
+  if (!caminho || !enquadrar) return caminho;
+  const { enquadrarImagem, originalDe } = await import("./enquadrar-token.mjs");
+  const src = caminho === ENQUADRAR_ATUAL ? originalDe(atual) : caminho;
+  const final = await enquadrarImagem(src, { titulo: `Enquadrar: ${titulo}`, forma, nome: nome || titulo, pasta: PASTA_IMAGENS });
+  // Cancelar o enquadramento de uma imagem nova não perde a escolha: fica a imagem sem enquadrar
+  if (final === null) return caminho === ENQUADRAR_ATUAL ? null : caminho;
+  return final;
+}
+
+const ENQUADRAR_ATUAL = "\u0000enquadrar-atual";
+const imagemPadrao = c => !c || /^icons\/svg\/(mystery-man|item-bag|book)\.svg$/.test(c);
+
+async function escolherOrigem({ atual = "", titulo = "Escolher imagem", enquadrar = true } = {}) {
   const podeEnviar = game.user.can("FILES_UPLOAD");
   const podeNavegar = game.user.can("FILES_BROWSE");
   if (!podeEnviar && !podeNavegar) {
@@ -77,9 +95,11 @@ export async function escolherImagem({ atual = "", titulo = "Escolher imagem" } 
     buttons: [
       { action: "pc", label: "Do meu computador", icon: "fa-solid fa-upload", default: podeEnviar, callback: () => "pc" },
       { action: "foundry", label: "Dos arquivos do Foundry", icon: "fa-solid fa-folder-open", default: !podeEnviar, callback: () => "foundry" },
+      ...(enquadrar && podeEnviar && !imagemPadrao(atual) ? [{ action: "atual", label: "Enquadrar a atual", icon: "fa-solid fa-crop-simple", callback: () => "atual" }] : []),
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
   });
+  if (origem === "atual") return ENQUADRAR_ATUAL;
   if (origem === "pc") return enviarDoComputador();
   if (origem === "foundry") {
     if (!podeNavegar) { ui.notifications.warn(AVISO_PERMISSAO); return null; }

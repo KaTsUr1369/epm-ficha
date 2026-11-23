@@ -1038,21 +1038,21 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoEditarImagem() {
     if (!this.isEditable) return;
-    const caminho = await escolherImagem({ atual: this.actor.img, titulo: "Retrato" });
+    const caminho = await escolherImagem({ atual: this.actor.img, titulo: "Retrato", forma: "circulo", nome: this.actor.name });
     if (caminho) await this.actor.update({ img: caminho });
   }
 
   async acaoImagemItem(ev, alvo) {
     const item = this._item(alvo);
     if (!item || !this.isEditable) return;
-    const caminho = await escolherImagem({ atual: item.img, titulo: `Imagem de ${item.name}` });
+    const caminho = await escolherImagem({ atual: item.img, titulo: `Imagem de ${item.name}`, nome: item.name });
     if (caminho) await item.update({ img: caminho });
   }
 
   async acaoImagemSobre(ev, alvo) {
     if (!this.isEditable) return;
     const campo = alvo.dataset.campo;
-    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.sobre?.[campo] ?? "", titulo: campo === "imagemMarca" ? "Imagem da Marca" : "Aparência" });
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.sobre?.[campo] ?? "", titulo: campo === "imagemMarca" ? "Imagem da Marca" : "Aparência", enquadrar: campo === "imagemMarca" });
     if (caminho) await this.actor.update({ [`${P}.sobre.${campo}`]: caminho });
   }
 
@@ -1952,7 +1952,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoImagemTransformacao(ev, alvo) {
     const id = alvo.dataset.transformacao;
-    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.transformacoes?.[id]?.img ?? "", titulo: "Imagem da transformação" });
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.transformacoes?.[id]?.img ?? "", titulo: "Imagem da transformação", enquadrar: false });
     if (!caminho) return;
     // A imagem da transformação pode virar o token: oferece o enquadramento na borda (ou "Sem enquadrar")
     const { enquadrarToken } = await import("./enquadrar-token.mjs");
@@ -2066,7 +2066,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   async acaoImagemCompanheiro(ev, alvo) {
     const id = alvo.dataset.companheiro;
-    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.companheiros?.[id]?.img ?? "", titulo: "Imagem do companheiro" });
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.companheiros?.[id]?.img ?? "", titulo: "Imagem do companheiro", forma: "circulo" });
     if (caminho) await this.actor.update({ [`${P}.companheiros.${id}.img`]: caminho });
   }
 
@@ -2215,7 +2215,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   /* ---------- Personalização: fundo e visual ---------- */
 
   async acaoImagemFundo() {
-    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.personalizacao?.fundo ?? "", titulo: "Imagem de fundo da ficha" });
+    const caminho = await escolherImagem({ atual: this.actor.flags?.[FLAG]?.personalizacao?.fundo ?? "", titulo: "Imagem de fundo da ficha", enquadrar: false });
     if (caminho) await this.actor.update({ [`${P}.personalizacao.fundo`]: caminho });
   }
 

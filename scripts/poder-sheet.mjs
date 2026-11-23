@@ -138,7 +138,7 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
 
   async acaoEditarImagem() {
     if (!this.isEditable) return;
-    const caminho = await escolherImagem({ atual: this.item.img, titulo: `Imagem de ${this.item.name}` });
+    const caminho = await escolherImagem({ atual: this.item.img, titulo: `Imagem de ${this.item.name}`, nome: this.item.name });
     if (caminho) await this.item.update({ img: caminho });
   }
 }

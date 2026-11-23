@@ -24,6 +24,7 @@ import { cacadorDe } from "./arquetipos.mjs";
 import { ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, estilosEscolhidos, custoMagiaCirculo, eTipoFavorito, ataqueExtraDe, estiloVal, recuperarManaDe } from "./arquetipos.mjs";
 import { listaPropriedades as listaPropriedadesItem, ataqueDesarmado } from "./context.mjs";
 import { EFEITO_ELEMENTO, DANO_EFEITO_ELEMENTO, DT_EFEITO_ELEMENTO } from "./regras-extras.mjs";
+import { posicaoTatica, facesDaArma } from "./atirador-arcano.mjs";
 import { custoRecurso, turnoTransformacao, destransformar, cliqueChatExtra, registrarBestiario } from "./extras.mjs";
 import { htmlDupla, prepararDupla, prepararConjunta, inspiracaoDe, consumirVantagemArmada, gastarInspiracao } from "./cooperacao.mjs";
 import { recuperadoNoNovoTurno, encerrarRecuperado } from "./automacoes.mjs";
@@ -1443,6 +1444,10 @@ export async function descanso(actor, tipo) {
     feitos.push(`−${ficha.especiais.psPorDescansoLongo.valor} PS (${ficha.especiais.psPorDescansoLongo.fontes.join(", ")})`);
   }
   if (int(dados.classeEpm?.furiaUsos)) updates[`${P}.classeEpm.furiaUsos`] = 0;
+  // Atirador Arcano: Starlight Step volta no descanso longo; Sobrecarga e cargas da Câmara não passam do descanso
+  if (longo && int(dados.classeEpm?.starlightUsos)) updates[`${P}.classeEpm.starlightUsos`] = 0;
+  if (dados.classeEpm?.sobrecarga) updates[`${P}.classeEpm.sobrecarga`] = "";
+  if (int(dados.classeEpm?.cargas)) updates[`${P}.classeEpm.cargas`] = 0;
   // 0.6.0: Meditação de Núcleo (descanso curto +1d6 PM) e insanidades temporárias que acabam no descanso longo
   if (!longo && ficha.extras?.meditacaoNucleo) {
     const rol = new Roll(String(numBonus("treino.meditacaoNucleo")));
@@ -1866,6 +1871,26 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     const usadoNV = dados.usos?.nucleoTurno === chaveTurnoAtual();
     opcoesArq.push(`<label class="epm-check" title="Só no primeiro acerto de cada turno; não multiplica no crítico"><input type="checkbox" name="nucleo" ${usadoNV ? "" : "checked"}> Núcleo Vermelho: primeiro acerto do turno (+${elem.nucleo} de ${escapar(elem.tipo || "dano elemental")})${usadoNV ? " <em>(já usado neste turno)</em>" : ""}</label>`);
   }
+  // Atirador Arcano: Posição Tática, Munição de Mana, circuitos, Câmara de Acúmulo, Disparo Potencializado e Espiral
+  const aa = at.armaMagica?.ativa ? ficha.extras?.classe?.atirador : null;
+  const opcoesAa = [];
+  if (aa) {
+    const pmDisp = ficha.recursos.pm.value + Math.max(0, ficha.recursos.pm.temp ?? 0);
+    if (aa.nivel >= 6) {
+      const p1 = posicaoTatica(aa.nivel, ""), p2 = posicaoTatica(aa.nivel, "tatica2"), p3 = posicaoTatica(aa.nivel, "absoluta");
+      const desc = p => `margem +${p.margem}${p.mult ? `, multiplicador +${p.mult}` : ""}${p.dados ? `, +${p.dados} dados (1×/turno)` : ""}`;
+      opcoesAa.push(`<label class="epm-campo" title="O Mestre decide se a posição é vantajosa (terreno elevado, linha de visão privilegiada, alvo desprevenido, vantagem no ataque…)"><span>Posição vantajosa</span>
+        <select name="aaPosicao"><option value="">Não</option><option value="posicao">${escapar(p1.nome)}: ${desc(p1)}</option>
+        ${aa.nivel >= 12 ? `<option value="tatica2" ${peDisp < p2.pe ? "disabled" : ""}>Posição Tática II (${p2.pe} PE): ${desc(p2)}</option>` : ""}
+        ${aa.nivel >= 48 ? `<option value="absoluta" ${peDisp < p3.pe ? "disabled" : ""}>Posição Tática Absoluta (${p3.pe} PE): ${desc(p3)}</option>` : ""}</select></label>`);
+    }
+    opcoesAa.push(chk("aaMana", `Munição de Mana: ${at.armaMagica.municaoPm} PM por disparo (não gasta munição comum)`, { desabilitado: pmDisp < at.armaMagica.municaoPm }));
+    if (aa.circuitos.includes("ressonante")) opcoesAa.push(chk("aaRessonante", "Núcleo Ressonante (3 PM): +1d8 do tipo da arma, 1×/turno ao acertar", { desabilitado: pmDisp < 3 }));
+    if (aa.camara && aa.cargas > 0) opcoesAa.push(`<label class="epm-campo"><span>Câmara de Acúmulo (+1d10 por carga)</span><select name="aaCargas"><option value="0">Não usar</option>${Array.from({ length: aa.cargas }, (_, k) => `<option value="${k + 1}">${k + 1} carga${k ? "s" : ""}: +${k + 1}d10</option>`).join("")}</select></label>`);
+    if (aa.potencializado) opcoesAa.push(chk("aaPotencializado", "Disparo Potencializado (10 PE): + Núcleo no dano", { desabilitado: peDisp < 10 }));
+    if (aa.espiral) opcoesAa.push(chk("aaEspiral", `Disparo Espiral (20 PM, 1×/turno): ignora cobertura ${aa.espiral === "aprimorado" ? "de qualquer tipo, se houver abertura" : "parcial"}`, { desabilitado: pmDisp < 20 || dados.usos?.espiralTurno === chaveTurnoAtual() }));
+    if (aa.sobrecarga === "amplificador") opcoesAa.push(chk("aaAmplificador", "Amplificador: primeiro disparo que acertar no turno (+2d8)", { desabilitado: dados.usos?.amplificadorTurno === chaveTurnoAtual() }));
+  }
   if (estilos.includes("duelista")) opcoesArq.push(chk("duelista", `Duelista: alvo é um único inimigo isolado (+${estiloVal(dados, "duelista", "acertoIsolado")})`));
   if (estilos.includes("atirador")) opcoesArq.push(chk("atirador", `Atirador: abrir mão do modificador de dano para reduzir a margem de crítico em ${estiloVal(dados, "atirador", "margem")}`));
   if (estilos.includes("dupla") && armasEquipadas >= 2) notas.push(`Arma Dupla: +${estiloVal(dados, "dupla", "acerto")} de Acerto (duas armas equipadas)`);
@@ -1873,7 +1898,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   // Talentos com bônus de situação: a pessoa marca quando a condição vale
   const propsTal = item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])]].map(x => normalizarTexto(x)) : [];
   const duasMaosTal = propsTal.some(x => ["duas maos", "duas-maos", "two", "versatil", "ver"].includes(x));
-  const distTal = at.alcanceCat === "distancia" || (at.alcanceCat !== "corpo" && at.periciaId === "pontaria");
+  const distTal = at.alcanceCat === "distancia" || (at.alcanceCat !== "corpo" && (at.periciaId === "pontaria" || !!at.armaMagica));
   const opcoesTal = talentosAtivos(dados).map(x => x.modelo).filter(e => e?.auto?.ataque).filter((e, i, l) => l.indexOf(e) === i).filter(e => {
     const a = e.auto.ataque;
     if (a.duasMaos && !duasMaosTal) return false;
@@ -1917,6 +1942,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     ${extras.length ? `<fieldset class="epm-aquisicao"><legend>Ataques adicionais</legend>${extras.join("")}</fieldset>` : ""}
     ${!oportunidade && !contra ? htmlDupla(actor) : ""}
     ${opcoesArq.length ? `<fieldset class="epm-aquisicao"><legend>${ef ? `Maestria e estilo` : "Estilo e Presa"}</legend>${opcoesArq.join("")}</fieldset>` : ""}
+    ${opcoesAa.length ? `<fieldset class="epm-aquisicao epm-opcoes-atirador"><legend>Arma Mágica (Atirador Arcano)</legend>${opcoesAa.join("")}</fieldset>` : ""}
     ${opcoesTal.length ? `<fieldset class="epm-aquisicao epm-opcoes-talento"><legend>Talentos (marque se valer neste ataque)</legend>${opcoesTal.join("")}</fieldset>` : ""}
     <div class="epm-dialogo-linha">
       <label class="epm-campo"><span>Bônus externo no acerto</span><input type="text" name="extraAcerto" placeholder="2 ou 1d4"></label>
@@ -1941,6 +1967,8 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
             manobra: f.manobra && !f.manobra.disabled ? f.manobra.value : "", certeiro: marcado(f, "certeiro"), longa: marcado(f, "longa"), duelista: marcado(f, "duelista"), atirador: marcado(f, "atirador"), presa: marcado(f, "presa"),
             dupla: marcado(f, "dupla") ? (f.duplaParceiro?.value ?? "") : "", inspiracao: marcado(f, "inspiracao"),
             segundaArma: marcado(f, "segundaArma"),
+            aaPosicao: f.aaPosicao?.value ?? "", aaMana: marcado(f, "aaMana"), aaRessonante: marcado(f, "aaRessonante"), aaCargas: int(f.aaCargas?.value),
+            aaPotencializado: marcado(f, "aaPotencializado"), aaEspiral: marcado(f, "aaEspiral"), aaAmplificador: marcado(f, "aaAmplificador"),
             talentos: [...b.form.querySelectorAll('input[name^="tal_"]')].filter(c => c.checked && !c.disabled).map(c => c.name.slice(4))
           };
         }
@@ -1995,6 +2023,26 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (escolha.nucleo && elem?.nucleo) updates[`${P}.usos.nucleoTurno`] = chaveTurnoAtual();
   if (escolha.certeiro && ef?.id === "certeiro") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
   if (escolha.longa && ef?.id === "longa") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
+  // Atirador Arcano: PE da Posição Tática e do Disparo Potencializado; PM da munição, do circuito e do Espiral
+  let pmAa = 0;
+  const posAa = aa && escolha.aaPosicao ? posicaoTatica(aa.nivel, escolha.aaPosicao === "posicao" ? "" : escolha.aaPosicao) : null;
+  const notasAa = [];
+  if (aa) {
+    if (posAa?.pe) { pe += posAa.pe; gastos.push(posAa.nome); }
+    if (escolha.aaPotencializado && aa.potencializado) { pe += 10; gastos.push("Disparo Potencializado"); }
+    if (escolha.aaMana) { pmAa += at.armaMagica.municaoPm * total; gastos.push(`Munição de Mana (${at.armaMagica.municaoPm} PM × ${total})`); }
+    if (escolha.aaRessonante && aa.circuitos.includes("ressonante")) pmAa += 3;
+    if (escolha.aaEspiral && aa.espiral) { pmAa += 20; updates[`${P}.usos.espiralTurno`] = chaveTurnoAtual(); }
+    if (escolha.aaAmplificador) updates[`${P}.usos.amplificadorTurno`] = chaveTurnoAtual();
+    const nCargas = Math.min(aa.cargas, Math.max(0, escolha.aaCargas || 0));
+    if (nCargas) { updates[`${P}.classeEpm.cargas`] = aa.cargas - nCargas; escolha.aaCargasUsadas = nCargas; gastos.push(`${nCargas} Carga${nCargas > 1 ? "s" : ""} de Mana`); }
+    if (pmAa) {
+      const cpm = custoRecurso(ficha, "pm", pmAa);
+      if (!cpm.ok) return ui.notifications.warn(`Faltam ${cpm.falta} PM para essas opções (${pmAa} PM).`);
+      Object.assign(updates, cpm.updates);
+      gastos.push(`${pmAa} PM`);
+    }
+  }
   if (pe) {
     const c = custoRecurso(ficha, "pe", pe);
     if (!c.ok) return ui.notifications.warn(`Faltam ${c.falta} PE para essas opções (${pe} PE).`);
@@ -2002,8 +2050,8 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     gastos.push(`${pe} PE`);
   }
   const mudancasItens = [];
-  const pente = md.pente;
-  if (pente) {
+  const pente = escolha.aaMana && aa ? null : md.pente;
+  if (escolha.aaMana && aa) { /* Munição de Mana: os projéteis saem da mana */ } else if (pente) {
     // Arma de fogo: os tiros saem do pente; recarregar puxa da munição ligada
     const precisa = total * porAtaque;
     if (pente.atual < precisa) return ui.notifications.warn(`${item.name}: pente com ${pente.atual} de ${pente.max} (precisa de ${precisa}). Recarregue.`);
@@ -2066,7 +2114,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const props = (item ? [...listaPropriedadesItem(fi), ...[...(item.system?.properties ?? [])], ...(at.maestriaExotica?.liberada ? at.propriedades ?? [] : [])] : []).map(p => normalizarTexto(p));
   const ePesada = props.some(p => ["pesada", "enorme", "hvy"].includes(p));
   const eLeve = props.some(p => ["leve", "lgt", "light"].includes(p));
-  const aDistancia = at.periciaId === "pontaria" || /pontaria/.test(String(at.pericia ?? ""));
+  const aDistancia = at.periciaId === "pontaria" || !!at.armaMagica || /pontaria/.test(String(at.pericia ?? ""));
   const E = ARQUETIPOS.combatente.estilos;
   if (estilos.includes("leve") && eLeve && at.dano) at = { ...at, dano: String(at.dano).replace(/(\d*)d(\d+)(?![\dr])/g, "$1d$2ro<=2") };
   const extrasEstilo = [];
@@ -2104,6 +2152,28 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     base.bonusFontes.push(...dupla.bonusFontes);
     base.notasExtra.push(...dupla.notas);
     base.comDano = base.comDano || !!at.dano;
+  }
+  // Atirador Arcano: o que foi escolhido no diálogo entra na margem, no multiplicador e no dano
+  if (aa) {
+    const faces = facesDaArma(at.dano);
+    const extrasAa = [];
+    if (posAa) {
+      base.margemBonus = int(base.margemBonus) + posAa.margem;
+      if (posAa.mult) base.mult = String(int(base.mult, at.critMult) + posAa.mult);
+      if (posAa.dados) extrasAa.push(`${posAa.dados}d${faces}`);
+      base.notasExtra.push(`${posAa.nome}: margem de ameaça +${posAa.margem}${posAa.mult ? `, multiplicador +${posAa.mult}` : ""}${posAa.dados ? `, +${posAa.dados}d${faces} (1×/turno)` : ""}.`);
+    }
+    if (escolha.aaRessonante && aa.circuitos.includes("ressonante")) { extrasAa.push("1d8"); base.notasExtra.push("Núcleo Ressonante: +1d8 (1×/turno, ao acertar)."); }
+    if (escolha.aaCargasUsadas) { extrasAa.push(`${escolha.aaCargasUsadas}d10`); base.notasExtra.push(`Câmara de Acúmulo: ${escolha.aaCargasUsadas} carga${escolha.aaCargasUsadas > 1 ? "s" : ""}, +${escolha.aaCargasUsadas}d10.`); }
+    if (escolha.aaPotencializado && aa.potencializado) { extrasAa.push("@atr.nucleo"); base.notasExtra.push("Disparo Potencializado: + Núcleo no dano."); }
+    if (escolha.aaAmplificador) { extrasAa.push("2d8"); base.notasExtra.push("Amplificador: +2d8 no primeiro disparo que acertar no turno."); }
+    if (escolha.aaEspiral && aa.espiral) base.notasExtra.push(aa.espiral === "aprimorado" ? "Disparo Espiral Aprimorado: ignora cobertura de qualquer tipo, se houver alguma abertura e a trajetória for possível." : "Disparo Espiral: ignora cobertura parcial (com trajetória possível até o alvo).");
+    if (escolha.aaMana) base.notasExtra.push("Munição de Mana: projéteis de mana (sem gastar munição).");
+    if (aa.circuitos.includes("ricochete")) base.notasExtra.push("Ricochete: 1×/turno, ao acertar, 3 PM para 1d8 de dano arcano em outro inimigo a até 3 m.");
+    if (aa.sobrecarga === "fragmentador") base.notasExtra.push("Fragmentador: 1×/turno, ao acertar, 1d8 de dano arcano em outra criatura a até 1,5 m do alvo.");
+    if (aa.alcanceExtra) base.notasExtra.push(`Acelerador: +${aa.alcanceExtra} m de alcance.`);
+    if (at.armaMagica.sangue) base.notasExtra.push("Arma de Sangue: o dano se divide igualmente entre Balístico e Sangue.");
+    if (extrasAa.length) base.extraDano = [base.extraDano, ...extrasAa].filter(Boolean).join(" + ");
   }
   if (inspirado) base.notasExtra.push("Inspiração de Tema: vantagem (−1 Inspiração).");
   if (at.maestriaExotica?.liberada) base.notasExtra.push(`Maestria Exótica (${at.maestriaExotica.motivo}): ${at.maestriaExotica.texto}`);

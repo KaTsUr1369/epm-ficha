@@ -8,9 +8,9 @@ import { paletaDaCor, corDaRoda, posicaoNaRoda, normalizarHex, hexValido } from 
 const P = `flags.${FLAG}`;
 
 /** Aplica a paleta de uma cor num elemento (a janela da ficha ou do editor de poderes). */
-export function aplicarPaleta(elemento, cor = COR_PADRAO, brilho = BRILHO_PADRAO) {
+export function aplicarPaleta(elemento, cor = COR_PADRAO, brilho = BRILHO_PADRAO, destaque = "") {
   if (!elemento) return;
-  for (const [nome, valor] of Object.entries(paletaDaCor(cor, brilho))) elemento.style.setProperty(nome, valor);
+  for (const [nome, valor] of Object.entries(paletaDaCor(cor, brilho, destaque))) elemento.style.setProperty(nome, valor);
 }
 
 /** Desenha a roda (tom ao redor, saturação do centro para fora) num canvas. */

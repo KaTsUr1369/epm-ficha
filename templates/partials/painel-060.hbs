@@ -207,6 +207,34 @@
   {{#if v.classe.pistola}}<p class="epm-dica">{{v.classe.pistola}}</p>{{/if}}
   {{#if v.classe.inspiracao}}<p class="epm-dica">{{v.classe.inspiracao}}</p>{{/if}}
   {{#each v.classe.linhas}}<p class="epm-dica">{{this}}</p>{{/each}}
+  {{#with v.classe.atirador as |aa|}}
+  <div class="epm-atirador">
+    <div class="epm-atirador-arma">
+      {{#if aa.arma}}<img src="{{aa.arma.img}}" alt="" /><div><strong>{{aa.arma.nome}}</strong><span class="epm-dica">Arma Mágica {{aa.arma.categoria}} · Munição de Mana {{aa.arma.municao}} PM por disparo{{#if aa.arma.sangue}} · Arma de Sangue (Balístico e Sangue){{/if}}</span></div>
+      {{else}}<i class="fa-solid fa-crosshairs" aria-hidden="true"></i><div><strong>Sem Arma Mágica</strong><span class="epm-dica">Crie uma a partir de uma arma de disparo conhecida ou imbua uma do inventário.</span></div>{{/if}}
+      <button type="button" class="epm-botao{{#unless aa.arma}} epm-botao-forte{{/unless}}" data-action="armaMagica" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-wand-sparkles"></i> {{#if aa.arma}}Trocar arma{{else}}Criar Arma Mágica{{/if}}</button>
+    </div>
+    <p class="epm-dica">Ataque com a Arma Mágica: <strong>{{aa.ataque}}</strong>{{#if aa.posicao}} · {{aa.posicao}} (opção no diálogo de ataque){{/if}}.</p>
+    {{#if aa.espiral}}<p class="epm-dica">{{aa.espiral}}. Opção no diálogo de ataque.</p>{{/if}}
+    <div class="epm-atirador-linha">
+      {{#if aa.starlight}}<button type="button" class="epm-botao" data-action="starlightStep" {{#unless aa.starlight.restam}}disabled{{/unless}} title="Ação Livre ao terminar o deslocamento: teleporte de 1,5 m sem Ataques de Oportunidade"><i class="fa-solid fa-star"></i> Starlight Step <span class="epm-contador">{{aa.starlight.restam}}/{{aa.starlight.max}}</span></button>
+        {{#if aa.starlight.aprimorado}}<button type="button" class="epm-botao" data-action="starlightStep" data-aprimorado="1" {{#unless aa.starlight.restam}}disabled{{/unless}} title="Alcance igual ao seu deslocamento; 10 PE e um uso">Aprimorado (10 PE)</button>{{/if}}{{/if}}
+      {{#if aa.magiaAplicada}}<button type="button" class="epm-botao" data-action="magiaAplicada" title="2 PM e 2 PE: Núcleo no lugar do atributo numa perícia técnica"><i class="fa-solid fa-microchip"></i> Magia Aplicada</button>{{/if}}
+      {{#if aa.camara}}<span class="epm-atirador-camara" title="Termine o turno sem se deslocar e sem atacar para acumular; as cargas se perdem ao se mover, ser teleportado ou no fim da cena">Câmara de Acúmulo
+        <button type="button" class="epm-icone-botao" data-action="cargaCamara" data-delta="-1" aria-label="Tirar carga" {{#unless aa.camara.cargas}}disabled{{/unless}}><i class="fa-solid fa-minus"></i></button>
+        {{#each aa.camara.pips}}<span class="epm-atirador-pip{{#if this}} cheio{{/if}}"></span>{{/each}}
+        <button type="button" class="epm-icone-botao" data-action="cargaCamara" data-delta="1" aria-label="Acumular carga"><i class="fa-solid fa-plus"></i></button></span>{{/if}}
+    </div>
+    {{#if aa.circuitos}}
+    <p class="epm-rotulo">Circuitos Balísticos ({{aa.circuitos.usados}}/{{aa.circuitos.max}}; instalar custa 5 PM)</p>
+    <div class="epm-060-opcoes">{{#each aa.circuitos.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="circuitoAtirador" data-id="{{this.id}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
+    {{/if}}
+    {{#if aa.sobrecarga}}
+    <p class="epm-rotulo">Sobrecarga Arcana (Ação Bônus, 6 PM e 4 PE, 3 rodadas){{#if aa.sobrecarga.ativa}}: <strong>{{aa.sobrecarga.ativa}}</strong> ativa{{/if}}</p>
+    <div class="epm-060-opcoes">{{#each aa.sobrecarga.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="sobrecargaArcana" data-id="{{this.id}}" title="{{this.texto}}{{#if ativo}} (clique para encerrar){{/if}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
+    {{/if}}
+  </div>
+  {{/with}}
   {{#if v.classe.posicoes}}
   <p class="epm-rotulo">Posições (até {{v.classe.posicoes.max}})</p>
   <div class="epm-060-opcoes">{{#each v.classe.posicoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="posicaoLutador" data-id="{{this.id}}" data-max="{{v.classe.posicoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>

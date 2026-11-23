@@ -372,7 +372,9 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     });
     this.element.classList.toggle("epm-limitado", this._visaoLimitada());
     const pers = this.actor.flags?.[FLAG]?.personalizacao ?? {};
-    aplicarPaleta(this.element, (this.actor.type === "npc" ? Npc.corDaFicha(this.actor, this.actor.flags?.[FLAG]) : "") || pers.cor || COR_PADRAO, pers.brilho ?? BRILHO_PADRAO);
+    // NPC sem cor escolhida: noite do Atlas com a cor do tipo como destaque
+    const corNpc = this.actor.type === "npc" ? Npc.corEscolhida(this.actor.flags?.[FLAG]) : "";
+    aplicarPaleta(this.element, this.actor.type === "npc" ? (corNpc || COR_PADRAO) : (pers.cor || COR_PADRAO), pers.brilho ?? BRILHO_PADRAO, this.actor.type === "npc" && !corNpc ? Npc.corPadraoNpc(this.actor) : "");
     this.element.classList.toggle("epm-npc-visual", this.actor.type === "npc");
     try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
     try { this._restaurarDetalhes(); } catch (err) { console.warn("EPM | detalhes abertos", err); }

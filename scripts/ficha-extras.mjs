@@ -9,6 +9,7 @@ import { talentosAtivos, SORTE_POR_DIA } from "./talentos-lista.mjs";
  * Contas puras, chamadas por calcularFicha (data.mjs). Sem Foundry.
  */
 import { num as numBonus } from "./numeros.mjs";
+import { estadoAtirador, ID_ATIRADOR } from "./atirador-arcano.mjs";
 import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
 import { efeitosDosTraumas, dotsDeAcumulos, DANO_ACUMULO_PADRAO, ROTULOS_ACUMULAVEIS } from "./opcionais.mjs";
@@ -83,6 +84,13 @@ function aplicarAjustesBonus(d, out) {
   for (const k of Object.keys(out.extrasAtaque)) out.extrasAtaque[k] = out.extrasAtaque[k].filter(x => x.origem !== "classe" || (x.formula && x.formula !== "0"));
 }
 
+/** Atirador Arcano da ficha: { nivel } da classe (nível de Artífice) ou null. */
+export function atiradorDaFicha(d = {}) {
+  if (idClasse(d?.classe) !== ID_ATIRADOR) return null;
+  const nivel = nivelDe(d, "artifice");
+  return nivel >= 3 ? { nivel } : null;
+}
+
 /** Níveis por arquétipo da ficha ([{ arquetipo, nivel }]). */
 export function niveisArquetipos(d) {
   const out = [];
@@ -102,6 +110,7 @@ export function idClasse(texto) {
   if (t.includes("lutador")) return "lutador";
   if (t.includes("elemental")) return "guerreiroElemental";
   if (t.includes("alice") || t.includes("portadora") || t.includes("pais impossivel")) return "alice";
+  if (t.includes("atirador arcano") || t.includes("arcane gunner")) return "atiradorArcano";
   if (t.includes("cacador") || t.includes("hunter")) return "cacador";
   if (t.includes("trovador") || t.includes("trovoador") || t.includes("bardo")) return "trovador";
   if (t.includes("bastiao") || t.includes("inquebravel")) return "bastiao";
@@ -278,6 +287,11 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
     out.mods.push({ alvo: "ca", valor: valorPessoal(d, "cla-mecanico-ca", 1), fonte: "Blindagem de Guerra (Chassi)" });
     out.classe.placas = valorPessoal(d, "cla-mecanico-placas", valorPorNivel(def.placas, comb)?.[1] ?? 2);
     out.classe.escudoCerco = comb >= 6 ? valorPessoal(d, "cla-mecanico-escudo", valorPorNivel(def.escudoCerco, comb)?.[1] ?? "") : "";
+  }
+  if (classe === "atiradorArcano" && comb >= 3) {
+    // Starlight Step: o Núcleo entra depois, onde a ficha já tem os atributos (contexto e ações)
+    const nivelTotal = Math.max(1, Math.floor(n(d.nivel) || 1)) + (String(d.arquetipo2 ?? "").trim() ? Math.max(0, Math.floor(n(d.nivel2))) : 0);
+    out.classe.atirador = { ...estadoAtirador(comb, opc, { nucleo: 0, nivelPersonagem: nivelTotal }), nivelPersonagem: nivelTotal };
   }
   if (classe === "vitalista" && comb >= 3) {
     out.classe.toque = valorPessoal(d, "cla-vitalista-toque", valorPorNivel(CLASSES_NOTION.vitalista.toque, comb)?.[1] ?? "");

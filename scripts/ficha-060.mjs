@@ -682,10 +682,17 @@ export const NOMES_ACOES_060 = [
   "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
-  "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias", "abrirGrimorio"
+  "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias", "abrirGrimorio",
+  "armaMagica", "starlightStep", "circuitoAtirador", "sobrecargaArcana", "cargaCamara", "magiaAplicada"
 ];
 
 export const METODOS_060 = {
+  async acaoArmaMagica() { return (await import("./atirador-acoes.mjs")).criarArmaMagica(this.actor); },
+  async acaoStarlightStep(ev, alvo) { return (await import("./atirador-acoes.mjs")).starlightStep(this.actor, { aprimorado: alvo.dataset.aprimorado === "1" }); },
+  async acaoCircuitoAtirador(ev, alvo) { return (await import("./atirador-acoes.mjs")).alternarCircuito(this.actor, alvo.dataset.id); },
+  async acaoSobrecargaArcana(ev, alvo) { return (await import("./atirador-acoes.mjs")).sobrecargaArcana(this.actor, alvo.dataset.id); },
+  async acaoCargaCamara(ev, alvo) { return (await import("./atirador-acoes.mjs")).cargaCamara(this.actor, int(alvo.dataset.delta, 1)); },
+  async acaoMagiaAplicada() { return (await import("./atirador-acoes.mjs")).magiaAplicada(this.actor); },
   acaoEscolherRaca() { return escolherRaca(this.actor); },
   async acaoCaminho(ev, alvo) {
     const id = alvo.dataset.caminho;
@@ -714,6 +721,8 @@ export const METODOS_060 = {
   async acaoNovaCena() {
     const { liberarUsosFormas } = await import("./mecanicas.mjs");
     const up = liberarUsosFormas(this.actor.flags?.[FLAG], ["cena", "turno", "rodada"]);
+    // Câmara de Acúmulo: as cargas se perdem no fim da cena
+    if (int(this.actor.flags?.[FLAG]?.classeEpm?.cargas)) up[`${P}.classeEpm.cargas`] = 0;
     if (!Object.keys(up).length) return ui.notifications.info("Nenhum uso de 1× por cena gasto.");
     await this.actor.update(up);
     ui.notifications.info(`${this.actor.name}: usos de 1× por cena (e por turno/rodada) recarregados.`);

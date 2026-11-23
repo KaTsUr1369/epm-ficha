@@ -21,4 +21,8 @@ ok(log.criar?.includes("Fôlego de Combate 2.0") && !log.criar?.includes("Arma F
 ok(log.flag?.["flags.epm-ficha.classes0820"] === true, "marca a ficha para não repetir");
 const T = M.trocasValores0820({ ajustesBonus: { "arq-estilo-duelista-acertoisolado": 3, "arq-estilo-dupla-acerto": 5 } });
 ok("flags.epm-ficha.ajustesBonus.-=arq-estilo-duelista-acertoisolado" in T && Object.keys(T).length === 1, "ajuste com o padrão antigo volta ao livro; ajuste pessoal fica");
+// 0.8.25: tema Atlas
+ok("flags.epm-ficha.personalizacao.-=cor" in M.trocasTemaAtlas({ personalizacao: { cor: "#5d9f98", brilho: 50 } }) && !Object.keys(M.trocasTemaAtlas({ personalizacao: { cor: "#A85660" } })).length && !Object.keys(M.trocasTemaAtlas({})).length, "tema Atlas: só a cor padrão antiga (verdete) sai; cor escolhida fica");
+const Co = await import("/home/claude/epm-ficha/scripts/cores.mjs");
+ok(Co.paletaDaCor()["--epm-fundo"] === "#10162B" && Co.paletaDaCor("#9C8CF0", 50, "#D64560")["--epm-base"] === "#D64560" && Co.paletaDaCor("#5D9F98")["--epm-fundo"] !== "#10162B", "paleta Atlas padrão; NPC usa a cor do tipo como destaque; o verdete continua como opção");
 process.exit(falhas ? 1 : 0);

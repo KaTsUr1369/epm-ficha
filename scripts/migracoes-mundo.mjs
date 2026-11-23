@@ -2,7 +2,7 @@
  * Atualiza as fichas e itens que já existem quando o módulo muda (roda no Mestre ativo ao abrir o mundo).
  * Cada passo confere item por item e só mexe no que está desatualizado (pode rodar sempre).
  */
-import { FLAG } from "./config.mjs";
+import { FLAG, COR_PADRAO_ANTIGA } from "./config.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -166,7 +166,7 @@ export async function arquetiposEClasses0820() {
     }
     // Classe
     const cl = X.classeDaFicha(f);
-    if (cl && ["guerreiroElemental", "alice", "cacador", "trovador", "bastiao", "guerreiroVazio", "vitalista", "mecanicoGuerra"].includes(cl.id)) {
+    if (cl && ["guerreiroElemental", "alice", "cacador", "trovador", "bastiao", "guerreiroVazio", "vitalista", "mecanicoGuerra", "atiradorArcano"].includes(cl.id)) {
       const novas = habilidadesDaClasse(cl.id);
       const def = CLASSES_NOTION[cl.id];
       const vistas = new Set();
@@ -388,6 +388,26 @@ async function melhoriasAntigas(itens) {
   return n;
 }
 
+/**
+ * 0.8.25: o tema "Atlas do Multiverso" virou o padrão. Fichas que ficaram na cor padrão antiga (verdete) passam
+ * para o Atlas; quem escolheu outra cor continua com ela (o verdete segue nas cores prontas).
+ */
+export function trocasTemaAtlas(f = {}) {
+  const cor = String(f.personalizacao?.cor ?? "").trim().toUpperCase();
+  return cor === COR_PADRAO_ANTIGA ? { [`${P}.personalizacao.-=cor`]: null } : {};
+}
+async function temaAtlas() {
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.migrado0825) continue;
+    const upd = trocasTemaAtlas(f);
+    await a.update({ ...upd, [`${P}.migrado0825`]: true }, { render: false });
+    if (Object.keys(upd).length) n++;
+  }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -402,6 +422,7 @@ export async function migrarMundo() {
   try { const n = await valores0820(); if (n) feitos.push(`${n} ficha(s) com números padrão antigos de estilos e classes atualizados`); } catch (err) { console.warn("EPM | valores 0.8.20", err); }
   try { const n = await melhoriasAntigas(itens); if (n) feitos.push(`${n} item(ns) com as melhorias antigas no formato novo`); } catch (err) { console.warn("EPM | melhorias antigas", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
+  try { const n = await temaAtlas(); if (n) feitos.push(`${n} ficha(s) passaram para o visual Atlas`); } catch (err) { console.warn("EPM | tema Atlas", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;
 }

@@ -6,6 +6,7 @@ import { valorPessoal } from "./arquetipos.mjs";
  */
 import { ATRIBUTOS, RECURSOS, FLAG, CONDICOES } from "./config.mjs";
 import { int, num, normalizarTexto } from "./data.mjs";
+import { CATEGORIAS_ARMA_MAGICA, CIRCUITOS, SOBRECARGAS, MAX_CARGAS_CAMARA, usosStarlight } from "./atirador-arcano.mjs";
 import { racaPorId, TAMANHOS } from "./racas.mjs";
 import { ESTADOS_TOKEN } from "./token-estados.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
@@ -24,7 +25,7 @@ export const INTENSIDADES_INSANIDADE = {
 };
 const sel = (lista, atual) => lista.map(([id, label]) => ({ id, label, selected: String(id) === String(atual) }));
 
-export function contexto060({ dados = {}, ficha, edicao = false, editavel = false, isGM = false, mundo = {}, opcoesNotion = {} }) {
+export function contexto060({ actor = null, dados = {}, ficha, edicao = false, editavel = false, isGM = false, mundo = {}, opcoesNotion = {} }) {
   const ex = ficha.extras ?? {};
   const v = {};
 
@@ -171,6 +172,24 @@ export function contexto060({ dados = {}, ficha, edicao = false, editavel = fals
     if (cl.id === "vitalista") {
       if (cl.toque) linhas.push(`Toque Restaurador (Ação Padrão, 8 PE): ${cl.toque} + Núcleo PV.`);
       if (cl.protecaoVital) linhas.push(`Proteção Vital (Ação Bônus, 5 PE): ${cl.protecaoVital} + Núcleo PV temporários por 3 rodadas.`);
+    }
+    if (cl.atirador) {
+      const a = cl.atirador;
+      const arma = (actor?.items?.contents ?? actor?.items ?? []).find(i => i.flags?.[FLAG]?.armaMagica);
+      const catArma = CATEGORIAS_ARMA_MAGICA[arma?.flags?.[FLAG]?.armaMagicaCategoria] ?? null;
+      const starMax = a.nivel >= 15 ? usosStarlight(ficha.atributos?.nucleo?.total, a.nivelPersonagem) : 0;
+      c.atirador = {
+        nivel: a.nivel,
+        arma: arma ? { nome: arma.name, img: arma.img, categoria: catArma?.label ?? "", municao: catArma?.municao ?? 0, sangue: !!arma.flags?.[FLAG]?.armaMagicaSangue, criada: !!arma.flags?.[FLAG]?.armaMagicaCriada } : null,
+        ataque: a.pontaria ? "Arcanismo + Núcleo + Pontaria" : "Arcanismo + Núcleo",
+        posicao: a.nivel >= 48 ? "Posição Tática III (margem +3, +3 dados 1×/turno); 4 PE: multiplicador +2; Absoluta, 10 PE: margem +7, multiplicador +4, +5 dados" : a.nivel >= 39 ? "Posição Tática III: margem +3 e +3 dados (1×/turno); 4 PE: multiplicador +2" : a.nivel >= 12 ? "Posição Tática: margem +1; 4 PE: margem +2 e multiplicador +2" : a.nivel >= 6 ? "Posição Tática: margem +1" : "",
+        starlight: starMax ? { max: starMax, usados: Math.min(starMax, int(dados.classeEpm?.starlightUsos)), restam: Math.max(0, starMax - int(dados.classeEpm?.starlightUsos)), aprimorado: a.nivel >= 42 } : null,
+        circuitos: a.maxCircuitos ? { max: a.maxCircuitos, usados: a.circuitos.length, opcoes: Object.entries(CIRCUITOS).map(([id, x]) => ({ id, nome: x.nome, texto: x.texto, ativo: a.circuitos.includes(id) })) } : null,
+        sobrecarga: a.nivel >= 27 ? { opcoes: Object.entries(SOBRECARGAS).map(([id, x]) => ({ id, nome: x.nome, texto: x.texto, ativo: a.sobrecarga === id })), ativa: a.sobrecarga ? SOBRECARGAS[a.sobrecarga].nome : "" } : null,
+        camara: a.camara ? { cargas: a.cargas, max: MAX_CARGAS_CAMARA, pips: Array.from({ length: MAX_CARGAS_CAMARA }, (_, k) => k < a.cargas) } : null,
+        magiaAplicada: a.magiaAplicada, espiral: a.espiral === "aprimorado" ? "Disparo Espiral Aprimorado (20 PM, 1×/turno): ignora qualquer cobertura com abertura" : a.espiral ? "Disparo Espiral (20 PM, 1×/turno): ignora cobertura parcial" : "",
+        maestria: a.maestria
+      };
     }
     if (linhas.length) c.linhas = linhas;
     if (cl.furia) c.furia = { ...cl.furia, usos: int(dados.classeEpm?.furiaUsos), max: cl.furia.usosMax ?? CLASSES_NOTION.barbaro.furia.usos };

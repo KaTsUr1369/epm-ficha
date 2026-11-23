@@ -34,10 +34,11 @@ const estadoMorteAtor = actor => { try { const e = estadoMorteBase(actor); retur
 import { conteudoNotion } from "./settings.mjs";
 import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
-import { contextoNpc, abaOcultaNpc, eAtorNpc, abasDoTipo, visualNpc, corDaFicha } from "./tipos-npc.mjs";
+import { contextoNpc, abaOcultaNpc, eAtorNpc, abasDoTipo, visualNpc, corDaFicha, corEscolhida } from "./tipos-npc.mjs";
 import { contexto060 } from "./contexto-060.mjs";
 import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
-import { idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse, escolhasTreinoAtivas, especialDoTreino, armaSintonizada } from "./ficha-extras.mjs";
+import { CATEGORIAS_ARMA_MAGICA } from "./atirador-arcano.mjs";
+import { atiradorDaFicha, idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse, escolhasTreinoAtivas, especialDoTreino, armaSintonizada } from "./ficha-extras.mjs";
 import { PROPRIEDADES_PROTECAO, ITENS_CATALOGO, MAESTRIAS, REGIOES_CATALOGO } from "./itens-catalogo.mjs";
 import { estadoMaestria, aplicarMaestriaNoAtaque, seloMaestria, armasFavoritas, limiteFavoritas } from "./maestria-exotica.mjs";
 import { penalidadeTec, NOMES_REGIAO } from "./tecnologia.mjs";
@@ -232,6 +233,13 @@ export function ataqueDeArma(item, modoId = "") {
       base.melhorias.notas.push(`Munição ${mun.name}: ${resumoMelhorias(mm)}.`, ...r.notas);
     }
   } catch (err) { console.warn("EPM | melhorias da munição", err); }
+  // Atirador Arcano: a Arma Mágica usa Arcanismo (Arcanismo + Núcleo) no lugar de Pontaria (Disparo Fortificado)
+  if (f.armaMagica) {
+    const aa = atiradorDaFicha(item.parent?.flags?.[FLAG] ?? {});
+    const cat = CATEGORIAS_ARMA_MAGICA[f.armaMagicaCategoria] ? f.armaMagicaCategoria : "pequena";
+    base.armaMagica = { categoria: cat, categoriaLabel: CATEGORIAS_ARMA_MAGICA[cat].label, municaoPm: CATEGORIAS_ARMA_MAGICA[cat].municao, sangue: !!f.armaMagicaSangue, criada: !!f.armaMagicaCriada, ativa: !!aa };
+    if (aa && (!base.periciaId || base.periciaId === "pontaria")) base.periciaId = "arcanismo";
+  }
   // Maestria das armas Exóticas: efeitos automáticos quando liberada (Katana Leve + Dupla, Rapieira 17–20…)
   const estadoMx = estadoMaestria(item, item.parent?.flags?.[FLAG] ?? {});
   Object.assign(base, aplicarMaestriaNoAtaque(base, estadoMx));
@@ -297,7 +305,7 @@ export function alcanceEscolhido(item) {
 /** Alcance que vale no ataque: o escolhido ("" = automático: Pontaria é à distância, o resto corpo a corpo). */
 export const alcanceDaArma = alcanceEscolhido;
 /** Ataque à distância? Pela categoria escolhida na arma; sem ela, pela perícia (Pontaria). */
-export const ataqueADistancia = at => at?.alcanceCat === "distancia" || (at?.alcanceCat !== "corpo" && at?.periciaId === "pontaria");
+export const ataqueADistancia = at => at?.alcanceCat === "distancia" || (at?.alcanceCat !== "corpo" && (at?.periciaId === "pontaria" || !!at?.armaMagica));
 
 /** Modificadores gerais que valem num ataque (condições, bênçãos, itens). */
 /** Ataque desarmado (tipo de arma "Desarmado", nome com "desarmad" ou ataque natural marcado). */
@@ -316,9 +324,14 @@ export function modsDoAtaque(at, ficha) {
   // Arma que conta como desarmada: só os bônus de desarmado, ou os dois (opção no editor da arma)
   const usaArmado = cac && (!desarmado || !!at?.desarmadoAmbos);
   const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : []), ...(ex.todos ?? [])];
+  // Atirador Arcano: circuitos, Sobrecarga e Disparo Fortificado II (+ Pontaria) nos ataques com a Arma Mágica
+  const aa = at?.armaMagica?.ativa ? ficha.extras?.classe?.atirador : null;
+  const fontesAa = aa ? [...(aa.acertoFontes ?? [])] : [];
+  if (aa?.pontaria) { const pt = int(ficha.periciaPorId?.pontaria?.bonusProprio); if (pt) fontesAa.push({ valor: pt, fonte: "Pontaria (Disparo Fortificado II)" }); }
+  const acertoAa = fontesAa.reduce((s, x) => s + int(x.valor), 0);
   return {
-    acerto: g.penal + distancia,
-    acertoFontes: [...g.fontes, ...(ataqueADistancia(at) ? g.fontesDistancia : [])],
+    acerto: g.penal + distancia + acertoAa,
+    acertoFontes: [...g.fontes, ...(ataqueADistancia(at) ? g.fontesDistancia : []), ...fontesAa],
     dano: g.dano, danoFontes: g.fontesDano,
     danoExtra: [...g.danoExtra.map(x => x.formula), ...(at.danoExtra ?? []).map(x => x.formula), ...extras.map(x => x.formula)],
     danoExtraFontes: extras.map(x => x.fonte),
@@ -892,7 +905,7 @@ export function montarContexto({
   /* ---------- Personalização (cor da ficha) ---------- */
   const cor = normalizarHex(eAtorNpc(actor) ? corDaFicha(actor, brutoFlags) : dados.personalizacao?.cor, COR_PADRAO);
   const brilho = limitar(int(dados.personalizacao?.brilho, BRILHO_PADRAO), 0, 100);
-  ctx.estiloFicha = estiloPaleta(cor, brilho);
+  ctx.estiloFicha = estiloPaleta(eAtorNpc(actor) && !corEscolhida(brutoFlags) ? COR_PADRAO : cor, brilho, eAtorNpc(actor) && !corEscolhida(brutoFlags) ? corDaFicha(actor, brutoFlags) : "");
   const pos = posicaoNaRoda(cor);
   ctx.personalizacao = {
     cor, brilho, padrao: cor === COR_PADRAO && brilho === BRILHO_PADRAO,
@@ -1900,7 +1913,7 @@ export function montarContexto({
 
   /* ---------- 0.6.0 ---------- */
   try {
-    ctx.v060 = contexto060({ dados, ficha, edicao, editavel, isGM, mundo: mundo060, opcoesNotion: conteudoNotion() });
+    ctx.v060 = contexto060({ actor, dados, ficha, edicao, editavel, isGM, mundo: mundo060, opcoesNotion: conteudoNotion() });
   } catch (err) {
     console.warn("EPM | painéis da 0.6.0", err);
     ctx.v060 = null;

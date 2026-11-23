@@ -91,8 +91,14 @@ const DEGRAUS = {
  * As 11 variáveis CSS da ficha para uma cor base e um brilho (0 a 100, padrão 50).
  * A saturação dos fundos é limitada a 70% para o texto continuar legível.
  */
-export function paletaDaCor(cor = COR_PADRAO, brilho = BRILHO_PADRAO) {
+export function paletaDaCor(cor = COR_PADRAO, brilho = BRILHO_PADRAO, destaque = "") {
   const base = normalizarHex(cor);
+  if (base === COR_PADRAO) {
+    // Atlas com a cor de destaque (NPCs: a cor do tipo vira o destaque, o fundo continua a noite do Atlas)
+    const v = paletaAtlas(brilho);
+    if (destaque && hexValido(destaque)) { const d = normalizarHex(destaque); v["--epm-base"] = d; v["--epm-base-suave"] = `${d}33`; }
+    return v;
+  }
   const { h, s } = hexParaHsl(base);
   const sat = Math.min(s, 0.7);
   const deslocamento = (limitar(Number(brilho ?? BRILHO_PADRAO) || 0, 0, 100) - 50) / 50 * 0.06;
@@ -106,7 +112,28 @@ export function paletaDaCor(cor = COR_PADRAO, brilho = BRILHO_PADRAO) {
   return vars;
 }
 
+/**
+ * Tema padrão "Atlas do Multiverso": noite azul com nebulosa. Os tons são fixos (não saem de uma cor só);
+ * o brilho clareia ou escurece os fundos como nas outras cores.
+ */
+export const PALETA_ATLAS = {
+  "--epm-entrada": "#0C1124", "--epm-fundo": "#10162B", "--epm-painel": "#161E38", "--epm-painel-2": "#1C2548",
+  "--epm-brilho": "#1E2850", "--epm-linha": "#2A3560", "--epm-linha-forte": "#3D4C85", "--epm-suave": "#B3B4CC", "--epm-fraco": "#7C80A6"
+};
+export function paletaAtlas(brilho = BRILHO_PADRAO) {
+  const deslocamento = (limitar(Number(brilho ?? BRILHO_PADRAO) || 0, 0, 100) - 50) / 50 * 0.06;
+  const vars = {};
+  for (const [nome, hex] of Object.entries(PALETA_ATLAS)) {
+    if (!deslocamento) { vars[nome] = hex; continue; }
+    const hsl = hexParaHsl(hex);
+    vars[nome] = hslParaHex({ ...hsl, l: limitar(hsl.l + (DEGRAUS[nome]?.fundo ? deslocamento : deslocamento * 0.5), 0.02, 0.9) });
+  }
+  vars["--epm-base"] = COR_PADRAO;
+  vars["--epm-base-suave"] = `${COR_PADRAO}33`;
+  return vars;
+}
+
 /** Texto "nome: valor;" pronto para o atributo style. */
-export function estiloPaleta(cor, brilho) {
-  return Object.entries(paletaDaCor(cor, brilho)).map(([k, v]) => `${k}: ${v}`).join("; ");
+export function estiloPaleta(cor, brilho, destaque = "") {
+  return Object.entries(paletaDaCor(cor, brilho, destaque)).map(([k, v]) => `${k}: ${v}`).join("; ");
 }

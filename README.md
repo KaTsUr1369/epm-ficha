@@ -14,6 +14,16 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.25
+
+- **Visual "Atlas do Multiverso" em todo o módulo:** a ficha virou uma carta celeste. O fundo é azul-noite com meridianos bem apagados, as abas formam uma constelação (a aba aberta é a estrela que brilha), os painéis são placas com fio e cantos de latão, e os títulos usam a Cormorant em versalete. Vale para a ficha, as fichas de NPC (a cor do tipo continua como destaque), o Escudo do Mestre, o grupo, o catálogo, os editores de item e poder, e as janelas de diálogo do módulo.
+- **Fichas que já existem:** quem estava na cor padrão antiga passa sozinho para o Atlas. Quem escolheu outra cor continua com ela, e o verde antigo ficou nas cores prontas da Personalização, como "Verdete (antigo)".
+- **Nova classe: Atirador Arcano (Artífice).** Todas as habilidades do nível 3 ao 48 estão na ficha e no compêndio de classes. O painel fica na aba Combate:
+  - **Arma Mágica:** cria uma arma a partir de uma arma de disparo conhecida, rolando o custo em PM pelo porte, ou imbui uma arma do inventário. Tem a opção de Arma de Sangue, que paga também PV e atordoa se passar da metade dos PV máximos. Armas de Gênesis só com o Mestre.
+  - **Ataques com a Arma Mágica:** usam Arcanismo + Núcleo, e a partir do nível 36 somam também a Pontaria.
+  - **Diálogo de ataque:** traz a Posição Tática (I, II, III e Absoluta, com margem, multiplicador e dados), a Munição de Mana, o Núcleo Ressonante, a Câmara de Acúmulo, o Disparo Potencializado, o Disparo Espiral e o Amplificador. Tudo já cobra os PM e os PE.
+  - **Painel da classe:** botões do Starlight Step (usos por descanso longo e versão Aprimorada), Magia Aplicada, Câmara de Acúmulo, Circuitos Balísticos (5 PM por circuito) e Sobrecarga Arcana.
+
 ## Novidades da 0.8.24
 
 - **Enquadrar imagens:** ao trocar o ícone de um item ou poder, o retrato, a imagem de um companheiro, criatura, facção, Marca ou da alma, abre o mesmo editor do token (sem a borda): arraste o quadrado, puxe as laterais e os cantos ou use a roda do mouse. O retrato, o companheiro e a alma usam a guia redonda; os ícones, a quadrada. A imagem enquadrada vai para a pasta `epm-ficha-imagens` e a original não muda.

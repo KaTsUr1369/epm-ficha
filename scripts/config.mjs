@@ -503,7 +503,7 @@ export const ABAS = [
   { id: "personalizacao", label: "Personalizar", titulo: "Personalização da ficha", icone: "fa-solid fa-palette", soEdicao: true }
 ];
 
-/** Cores prontas da Personalização (a primeira é a padrão: verdete). */
+/** Cores prontas da Personalização (a primeira é a padrão: Atlas). */
 /* -------------------------------------------- */
 /*  Treinamentos                                */
 /* -------------------------------------------- */
@@ -579,7 +579,8 @@ export const SUBABAS_HABILIDADE = [
 export const SUBABAS_ARQCLASSE = ["arquetipo", "classe"];
 
 export const CORES_PRONTAS = [
-  { id: "verdete",  label: "Verdete",  cor: "#5D9F98" },
+  { id: "atlas",    label: "Atlas",    cor: "#9C8CF0" },
+  { id: "verdete",  label: "Verdete (antigo)", cor: "#5D9F98" },
   { id: "noite",    label: "Noite",    cor: "#5A7FB0" },
   { id: "ametista", label: "Ametista", cor: "#8A6BB0" },
   { id: "sangue",   label: "Sangue",   cor: "#A85660" },
@@ -588,6 +589,8 @@ export const CORES_PRONTAS = [
   { id: "grafite",  label: "Grafite",  cor: "#7C838A" }
 ];
 export const COR_PADRAO = CORES_PRONTAS[0].cor;
+/** Cor padrão até a 0.8.24 (as fichas que ficaram nela passam para o Atlas na migração). */
+export const COR_PADRAO_ANTIGA = "#5D9F98";
 
 /** Personalização: moldura do retrato, estilo de letra e tamanho do texto. */
 export const MOLDURAS = {

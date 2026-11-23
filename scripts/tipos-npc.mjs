@@ -4,7 +4,7 @@
  * aparecem por padrão (o Mestre ainda pode mostrar ou esconder cada uma em Personalizar).
  * Dados em flags["epm-ficha"].npc.
  */
-import { FLAG, ABAS, COR_PADRAO } from "./config.mjs";
+import { FLAG, ABAS, COR_PADRAO, COR_PADRAO_ANTIGA } from "./config.mjs";
 import { num, int, novoId } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 
@@ -399,7 +399,7 @@ export const corPadraoNpc = actor => (eAtorNpc(actor) ? CORES_TIPO[tipoNpc(actor
 /** Cor escolhida em Personalizar (a cor padrão do módulo conta como "não escolhida" para NPCs). */
 export const corEscolhida = bruto => {
   const c = String(bruto?.personalizacao?.cor ?? "").trim();
-  return c && c.toLowerCase() !== String(COR_PADRAO).toLowerCase() ? c : "";
+  return c && ![COR_PADRAO, COR_PADRAO_ANTIGA].some(p => c.toLowerCase() === String(p).toLowerCase()) ? c : "";
 };
 export const corDaFicha = (actor, bruto) => corEscolhida(bruto) || corPadraoNpc(actor) || "";
 

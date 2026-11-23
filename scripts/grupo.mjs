@@ -186,4 +186,11 @@ export function botaoNoDiretorio(app, html) {
   b.innerHTML = '<i class="fa-solid fa-people-group" aria-hidden="true"></i> Painel do grupo';
   b.addEventListener("click", ev => { ev.preventDefault(); abrirPainelGrupo(); });
   alvo.append(b);
+  const npc = document.createElement("button");
+  npc.type = "button";
+  npc.className = "epm-botao-grupo epm-botao-npc-rapido";
+  npc.innerHTML = '<i class="fa-solid fa-dragon" aria-hidden="true"></i> NPC rápido';
+  npc.title = "Criar uma ficha de NPC pronta: tipo, força, nível, natureza e se é inteligente";
+  npc.addEventListener("click", async ev => { ev.preventDefault(); (await import("./criar-npc.mjs")).criarNpcRapido(); });
+  alvo.append(npc);
 }

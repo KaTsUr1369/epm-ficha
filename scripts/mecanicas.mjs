@@ -17,7 +17,7 @@ import {
 import { lerAtor, dadosRolagemEPM, danoArma, periciaAtaquePadrao, ataqueDeArma, ataqueCustom, modsDoAtaque } from "./context.mjs";
 import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos.mjs";
 import { fvtt, enriquecer, escapar } from "./helpers.mjs";
-import { maximizar, formulaConsumivel, resumoMelhorias } from "./melhorias.mjs";
+import { maximizar, formulaConsumivel, resumoMelhorias, bonusDeFocos } from "./melhorias.mjs";
 import { ajustes, listaPericias } from "./settings.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { cacadorDe } from "./arquetipos.mjs";
@@ -520,7 +520,14 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
   if (automatico) avisos.unshift(`Ativada sozinha: ${(GATILHOS_BONUS[automatico] ?? GATILHOS_BONUS.dano).replace(/ \(automático\)$/, "").toLowerCase()}.`);
   if (automatico === "zeroPv" && forma?.bonus?.salvaVida) avisos.unshift("Ficou com 1 PV em vez de cair.");
   if (automatico === "dano" && contexto.dano) avisos.push(`Dano recebido: ${contexto.dano}${contexto.tipoDano ? ` ${contexto.tipoDano}` : ""}.`);
-  const fichaCartao = conj ? { ...ficha, cd: { ...ficha.cd, valor: conj.cd } } : ficha;
+  let fichaCartao = conj ? { ...ficha, cd: { ...ficha.cd, valor: conj.cd } } : ficha;
+  // Focos com melhorias (Lapidado, Ressonante, Prisma, Voz Divina, Voz do Abismo…): valem nas magias de quem carrega o foco
+  if (p.tipo === "magia") {
+    const foco = bonusDeFocos(actor);
+    if (foco.cd) { fichaCartao = { ...fichaCartao, cd: { ...fichaCartao.cd, valor: fichaCartao.cd.valor + foco.cd } }; avisos.push(`Foco: +${foco.cd} na CD (${foco.fontesCd.join(", ")}).`); }
+    if (foco.acerto) avisos.push(`Foco: +${foco.acerto} no acerto desta magia (${foco.fontesAcerto.join(", ")}); some no bônus do teste.`);
+    for (const nt of foco.notas) avisos.push(nt);
+  }
   // Reação automática só com bônus/efeito (Corpo adaptável, Regeneração de Cabeças): basta a nota do efeito, sem cartão
   const soNota = automatico && forma && !forma.dano?.formula && forma.bonus?.opcoes?.length && (!custo || custo.recurso === "nenhum" || !custo.valor);
   const msg = soNota ? null : await cartaoPoder(actor, item, p, forma, { avisos, ficha: fichaCartao, rolagem, custo, automatico: !!automatico });

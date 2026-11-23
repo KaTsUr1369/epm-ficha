@@ -74,7 +74,7 @@
     <div class="epm-compartilhadas">
       <p class="epm-rotulo"><i class="fa-solid fa-people-group" aria-hidden="true"></i> Compartilhadas com você</p>
       {{#each mochilasCompartilhadas}}
-      <article class="epm-mochila aberta epm-mochila-compartilhada">
+      <article class="epm-mochila aberta epm-mochila-compartilhada" data-compartilhada-mochila="{{this.id}}" data-dono-id="{{this.donoId}}" title="Arraste itens seus para cá para guardar">
         <header class="epm-mochila-topo">
           <img class="epm-item-img" src="{{this.img}}" alt="" />
           <span class="epm-mochila-nome"><span class="epm-item-titulo">{{this.nome}}</span> <span class="epm-item-dentro">carregada por {{this.dono}}{{#if membrosTexto}} · também com {{this.membrosTexto}}{{/if}}</span></span>
@@ -83,7 +83,7 @@
         <div class="epm-mochila-conteudo">
           {{#if vazia}}<p class="epm-mochila-vazia">Vazia.</p>{{/if}}
           <ol class="epm-itens">{{#each conteudo}}
-            <li class="epm-item"><div class="epm-item-linha"><img class="epm-item-img" src="{{this.img}}" alt="" /><span class="epm-item-titulo">{{this.name}}{{#if (epmMenor 1 qtd)}} ×{{this.qtd}}{{/if}}</span>
+            <li class="epm-item-compartilhado" draggable="true" data-arraste-uuid="{{this.uuid}}" title="Arraste para o inventário para pegar"><div class="epm-item-linha"><img class="epm-item-img" src="{{this.img}}" alt="" /><span class="epm-item-titulo">{{this.name}}{{#if (epmMenor 1 qtd)}} ×{{this.qtd}}{{/if}}</span>
               {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="pegarCompartilhada" data-dono-id="{{../donoId}}" data-mochila-id="{{../id}}" data-item-id="{{this.id}}" title="Passar para o seu inventário"><i class="fa-solid fa-arrow-up"></i> Pegar</button>{{/if}}
             </div></li>
           {{/each}}</ol>

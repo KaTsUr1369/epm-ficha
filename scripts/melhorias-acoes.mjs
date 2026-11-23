@@ -7,7 +7,7 @@ import { escapar, fvtt } from "./helpers.mjs";
 import {
   estadoMelhorias, podeAdicionar, opcoesParaAdicionar, novaEntrada, precoMelhoria, precoTrocaMaterial, dtMelhoria, custoFazerPO,
   precoMaterialPO, lerMelhorias, nomeDaEntrada, perfilItem, TIPOS_MELHORIA, MATERIAIS, HORAS_MELHORIA, ETAPAS_MELHORIA,
-  MATERIAL_UNIDADES_PESADO, PERGAMINHO, melhoriaPorId
+  MATERIAL_UNIDADES_PESADO, PERGAMINHO, melhoriaPorId, bonusDeFerramentas
 } from "./melhorias.mjs";
 
 const P = `flags.${FLAG}`;
@@ -22,6 +22,41 @@ async function nota(actor, html, cor = "#8E7CC3") {
 }
 const mestre = () => !!game.user?.isGM;
 const op = (lista, atual = "") => lista.map(v => `<option value="${escapar(v)}" ${v === atual ? "selected" : ""}>${escapar(v)}</option>`).join("");
+
+/* ---------------- Ofício e atributo (o jogador escolhe) ---------------- */
+
+const norm = t => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+/** Ofícios da ficha: perícias "Ofício (…)" ou com id oficio… (uma pessoa pode ter 0, 1 ou vários). */
+export function oficiosDaFicha(ficha) {
+  return (ficha?.pericias ?? []).filter(p => /^oficio/.test(norm(p.nome)) || /^oficio/.test(p.id));
+}
+/** Ofício sugerido: o que tiver a palavra (Ferreiro, Encantador); senão o primeiro. */
+export function oficioSugerido(ficha, palavra) {
+  const l = oficiosDaFicha(ficha);
+  return l.find(p => norm(p.nome).includes(norm(palavra))) ?? l[0] ?? null;
+}
+const ROT_ATR = { forca: "Força", destreza: "Destreza", constituicao: "Constituição", aparencia: "Aparência", carisma: "Carisma", inteligencia: "Inteligência", autocontrole: "Autocontrole", nucleo: "Núcleo" };
+/** Campos do teste: qual Ofício e qual atributo (o jogador decide). */
+function camposOficio(ficha, palavra, atual = {}) {
+  const l = oficiosDaFicha(ficha);
+  const sug = atual.oficio ? l.find(p => p.id === atual.oficio) : oficioSugerido(ficha, palavra);
+  const ops = l.length ? l.map(p => `<option value="${p.id}" ${p.id === sug?.id ? "selected" : ""}>${escapar(p.nome)} (${p.bonusProprio >= 0 ? "+" : ""}${p.bonusProprio})</option>`).join("") : `<option value="">Sem Ofício (+0)</option>`;
+  const atrs = Object.entries(ROT_ATR).map(([id, l2]) => `<option value="${id}" ${id === (atual.atributo || "inteligencia") ? "selected" : ""}>${l2} (${ficha?.atributos?.[id]?.total ?? 0})</option>`).join("");
+  return `<div class="epm-dialogo-linha"><label class="epm-campo"><span>Ofício (${escapar(palavra)})</span><select name="oficio">${ops}</select></label>
+    <label class="epm-campo"><span>Atributo</span><select name="atributo">${atrs}</select></label></div>`;
+}
+/** Teste: 1d20 + Ofício + atributo escolhidos. */
+async function rolarOficio(actor, { oficio = "", atributo = "inteligencia" } = {}, rotulo = "", dt = 0) {
+  const { estadoAtor, formulaD20 } = await import("./mecanicas.mjs");
+  const { ficha } = estadoAtor(actor);
+  const per = ficha.periciaPorId?.[oficio] ?? null;
+  const vPer = int(per?.bonusProprio);
+  const vAtr = int(ficha.atributos?.[atributo]?.total);
+  const ferr = bonusDeFerramentas(actor);
+  const roll = await new Roll(`${formulaD20()} + ${vPer} + ${vAtr}${ferr.bonus ? ` + ${ferr.bonus}` : ""}`).evaluate();
+  await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<span class="epm-flavor"><strong>${rotulo}</strong> (DT ${dt}; ${escapar(per?.nome ?? "sem Ofício")} + ${escapar(ROT_ATR[atributo] ?? atributo)}${ferr.bonus ? ` + ${escapar(ferr.nome)} ${ferr.bonus}` : ""})</span>` });
+  return roll;
+}
 
 /** Campo do que se escolhe ao fazer (elemento, tipo de dano, perícia, material…). */
 function campoEscolha(def, item) {
@@ -85,30 +120,34 @@ export async function dialogoAdicionarMelhoria(item, tipo) {
   if (item.flags?.[FLAG]?.fazendoMelhoria) return ui.notifications.warn("Este item já tem uma melhoria sendo feita. Termine ou desista dela antes.");
   const def = await escolherDaLista(item, tipo);
   if (!def) return;
-  const pode = podeAdicionar(item, def, { mestre: gm });
-  if (!pode.ok) return ui.notifications.warn(pode.motivo);
   const actor = item.parent;
+  const forja = tipo === "modificacao" && bonusDeFerramentas(actor).forja;
+  const pode = podeAdicionar(item, def, { mestre: gm, forja });
+  if (!pode.ok) return ui.notifications.warn(pode.motivo);
   const p = pode.estado.perfil;
   const fazivel = ["modificacao", "encantamento"].includes(tipo);
+  if (pode.extraForja) { const okF = await fvtt.DialogV2.confirm({ window: { title: "Forja dos Deuses" }, content: `<p>As 3 vagas de Modificação estão cheias. Com a Forja dos Deuses, esta Modificação (feita com ela) não conta no limite: o item passa a ter 4. Isso vale 1 vez por item.</p>`, rejectClose: false, modal: true }); if (!okF) return; }
   const lojaPadrao = p.arma || p.municao;
   const sai = pode.consome.map(uid => nomeDaEntrada(pode.estado.entradas.find(e => e.uid === uid))).filter(Boolean);
   const dt = dtMelhoria(tipo, pode.vaga);
-  const custoTexto = fazivel ? `Fazendo: ${tipo === "modificacao" ? "Forja (Ferraria ou Ofício + Força)" : "Encantamento (Arcanismo + Núcleo)"}, DT ${dt}, ${HORAS_MELHORIA[tipo]} h em 3 etapas, material = metade do preço da vaga.` : "";
+  const custoTexto = fazivel ? `Fazendo: Ofício (${tipo === "modificacao" ? "Ferreiro" : "Encantador"}) + o atributo que você escolher, DT ${dt}, ${HORAS_MELHORIA[tipo]} h em 3 etapas, material = metade do preço da vaga.` : "";
+  let fichaAtor = null;
+  if (fazivel && actor) { const { estadoAtor } = await import("./mecanicas.mjs"); fichaAtor = estadoAtor(actor).ficha; }
   const content = `<p><strong>${escapar(def.nome)}</strong> (${TIPOS_MELHORIA[tipo].label}, ${pode.vaga}ª vaga)${sai.length ? `. Sai do item: <strong>${escapar(sai.join(", "))}</strong>` : ""}.</p>
     <p class="epm-dica">${escapar(def.custo ? `${def.beneficio}. Custo: ${def.custo}` : def.texto)}</p>
     ${campoEscolha(def, item)}
     ${def.pre?.feito ? `<p class="epm-dica">Feito exigido: ${escapar(def.pre.feito)}. Só funciona depois que o Mestre marcar o feito no item.</p>` : ""}
     ${p.lote ? `<p class="epm-dica">${["maldicao", "bencao"].includes(tipo) ? "Bênção e Maldição valem para 1 unidade: ela é separada da pilha." : `Vale para o lote (${p.municao ? "o pacote de munição" : `até ${LOTE_CONSUMIVEL} unidades`}); o preço é 1/5.`}</p>` : ""}
-    ${custoTexto ? `<p class="epm-dica">${custoTexto}</p>` : ""}
+    ${custoTexto ? `<p class="epm-dica">${custoTexto}</p>${fichaAtor ? camposOficio(fichaAtor, tipo === "modificacao" ? "Ferreiro" : "Encantador") : ""}` : ""}
     ${["modificacao", "encantamento"].includes(tipo) ? `<label class="epm-check"><input type="checkbox" name="loja" ${lojaPadrao ? "checked" : ""}> Comprar numa loja de armas (+50%)</label>` : ""}`;
   const botoes = [];
   if (fazivel && actor) botoes.push({ action: "fazer", label: "Fazer", icon: "fa-solid fa-hammer", default: true });
-  if (["modificacao", "encantamento"].includes(tipo) && actor) botoes.push({ action: "comprar", label: "Comprar", icon: "fa-solid fa-coins" });
+  if (["modificacao", "encantamento"].includes(tipo) && actor && !pode.extraForja) botoes.push({ action: "comprar", label: "Comprar", icon: "fa-solid fa-coins" });
   if (gm) botoes.push({ action: "mestre", label: "Adicionar (Mestre)", icon: "fa-solid fa-crown", default: !botoes.length });
   botoes.push({ action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" });
   const form = await fvtt.DialogV2.wait({
     window: { title: `Adicionar ${TIPOS_MELHORIA[tipo].label}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true, position: { width: 520 }, content,
-    buttons: botoes.map(b => ({ ...b, callback: b.action === "cancelar" ? undefined : (ev, btn) => { const el = btn.form?.elements ?? {}; return { acao: b.action, escolha: el.escolha?.value ?? "", material: el.material?.value ?? "", loja: !!el.loja?.checked }; } }))
+    buttons: botoes.map(b => ({ ...b, callback: b.action === "cancelar" ? undefined : (ev, btn) => { const el = btn.form?.elements ?? {}; return { acao: b.action, escolha: el.escolha?.value ?? "", material: el.material?.value ?? "", loja: !!el.loja?.checked, oficio: el.oficio?.value ?? "", atributo: el.atributo?.value ?? "" }; } }))
   });
   if (!form || typeof form !== "object" || !form.acao) return;
   form.escolha = String(form.escolha ?? ""); form.material = form.material ?? ""; form.loja = !!form.loja;
@@ -155,8 +194,6 @@ export async function aplicarMelhoria(item, def, pode, { escolha = "", material 
 function precoCompra(def, pode, form) {
   const p = pode.estado.perfil;
   const precoMat = def.id === "material-especial" ? precoMaterialPO(form.material) * unidadesMaterial(p) : 0;
-  // 3º Encantamento: o preço já foi o Pergaminho (imbuído antes)
-  if (def.tipo === "encantamento" && pode.vaga === 3) return 0;
   return precoMelhoria(def, pode.vaga, { lojaArmas: form.loja, lote: p.lote, precoMaterial: precoMat });
 }
 const unidadesMaterial = p => (p.armadura === "pesada" || p.tipoEscudo === "pesado") ? MATERIAL_UNIDADES_PESADO : 1;
@@ -185,11 +222,11 @@ async function comprar(item, def, pode, form) {
 async function comecarFazer(item, def, pode, form) {
   const p = pode.estado.perfil;
   const horas = HORAS_MELHORIA[def.tipo];
-  const custo = def.tipo === "encantamento" && pode.vaga === 3 ? 0 : custoFazerPO(def, pode.vaga, { lote: p.lote, precoMaterial: def.id === "material-especial" ? precoMaterialPO(form.material) * unidadesMaterial(p) : 0 });
+  const custo = custoFazerPO(def, pode.vaga, { lote: p.lote, precoMaterial: def.id === "material-especial" ? precoMaterialPO(form.material) * unidadesMaterial(p) : 0 });
   await item.update({ [`${P}.fazendoMelhoria`]: {
     id: def.id, tipo: def.tipo, escolha: form.escolha, material: form.material, vaga: pode.vaga, dt: dtMelhoria(def.tipo, pode.vaga),
     horasEtapa: horas / ETAPAS_MELHORIA, feitasEtapa: 0, acertos: 0, falhas: 0, custoEtapaPO: Math.round((custo / ETAPAS_MELHORIA) * 100) / 100, pagoPO: 0,
-    etapaPaga: false, consome: pode.consome, inicio: Date.now()
+    etapaPaga: false, consome: pode.consome, extraForja: !!pode.extraForja, inicio: Date.now(), oficio: form.oficio ?? "", atributo: form.atributo || "inteligencia"
   } });
   ui.notifications.info(`${def.nome}: trabalho começado em ${item.name}. Trabalhe nas etapas pela seção Melhorias do item.`);
 }
@@ -249,12 +286,7 @@ export async function testarEtapa(item) {
   const actor = item.parent;
   const fz = lerFazendo(item);
   if (!fz || !actor || !fz.prontaParaTeste) return;
-  const { estadoAtor, formulaD20 } = await import("./mecanicas.mjs");
-  const { periciaDaProfissao } = await import("./producao.mjs");
-  const { ficha } = estadoAtor(actor);
-  const per = periciaDaProfissao(ficha, fz.tipo === "modificacao" ? "forja" : "encantamento");
-  const roll = await new Roll(`${formulaD20()} + ${per.valorPericia} + ${per.valorAtributo}`).evaluate();
-  await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<span class="epm-flavor"><strong>${escapar(fz.nome)}</strong>: etapa ${fz.etapa} de ${ETAPAS_MELHORIA} (DT ${fz.dt}; ${escapar(per.periciaNome)} + ${escapar(per.atributoNome)})</span>` });
+  const roll = await rolarOficio(actor, fz, `${escapar(fz.nome)}: etapa ${fz.etapa} de ${ETAPAS_MELHORIA}`, fz.dt);
   if (roll.total < fz.dt) {
     await item.update({ [`${P}.fazendoMelhoria.feitasEtapa`]: 0, [`${P}.fazendoMelhoria.etapaPaga`]: false, [`${P}.fazendoMelhoria.falhas`]: int(fz.falhas) + 1 });
     return nota(actor, `<p><strong>${escapar(fz.nome)}</strong>: a etapa ${fz.etapa} falhou (${roll.total} contra DT ${fz.dt}). Perdeu o tempo e o material dela; repita a etapa. Os acertos anteriores ficam.</p>`, "#D2544A");
@@ -267,9 +299,35 @@ export async function testarEtapa(item) {
   // Pronta: confere de novo as vagas (o item pode ter mudado no meio) e aplica
   await item.update({ [`${P}.-=fazendoMelhoria`]: null });
   const def = fz.def;
-  const pode = podeAdicionar(item, def, { mestre: true });
+  const pode = podeAdicionar(item, def, { mestre: true, forja: !!fz.extraForja });
   if (!pode.ok) return nota(actor, `<p><strong>${escapar(fz.nome)}</strong> ficou pronta, mas não coube no item: ${escapar(pode.motivo)}</p>`, "#D2544A");
+  if (pode.extraForja) await item.update({ [`${P}.modExtraForja`]: true });
   await aplicarMelhoria(item, def, pode, { escolha: fz.escolha, material: fz.material, origem: "feita" });
+}
+
+/**
+ * Pular tempo: as horas andam pelas etapas; cada etapa cheia paga o material (ou sai de graça, se marcado) e faz o teste sozinha
+ * com o Ofício e o atributo escolhidos ao começar. Devolve o texto do que aconteceu.
+ */
+export async function avancarMelhoriaComTempo(item, horas, { gratis = false } = {}) {
+  const actor = item.parent;
+  let resto = num(horas);
+  const textos = [];
+  for (let guarda = 0; guarda < 20 && resto > 1e-6; guarda++) {
+    const fz = lerFazendo(item);
+    if (!fz) break;
+    if (!fz.etapaPaga && !gratis) {
+      if (!(await pagar(actor, fz.custoEtapaPO, `o material da etapa de ${fz.nome}`))) { textos.push(`${fz.nome}: parou (sem dinheiro para o material)`); break; }
+      await item.update({ [`${P}.fazendoMelhoria.etapaPaga`]: true, [`${P}.fazendoMelhoria.pagoPO`]: num(fz.pagoPO) + num(fz.custoEtapaPO) });
+    } else if (!fz.etapaPaga) await item.update({ [`${P}.fazendoMelhoria.etapaPaga`]: true });
+    const falta = fz.horasEtapa - fz.feitasEtapa;
+    const usa = Math.min(falta, resto);
+    resto -= usa;
+    await item.update({ [`${P}.fazendoMelhoria.feitasEtapa`]: fz.feitasEtapa + usa });
+    if (fz.feitasEtapa + usa < fz.horasEtapa - 1e-6) { textos.push(`${fz.nome}: etapa ${fz.etapa} em andamento`); break; }
+    await testarEtapa(item);
+  }
+  return textos;
 }
 
 export async function desistirMelhoria(item) {
@@ -310,9 +368,10 @@ export async function trocarMaterial(item, uid) {
     content: `<p>Agora: <strong>${escapar(MATERIAIS[e.material]?.nome ?? "—")}</strong>. O preço é o do novo menos metade do anterior; a vaga não é paga de novo. Teste da vaga: Forja, DT ${dt}.</p>
       <label class="epm-campo"><span>Novo material</span><select name="material">${ops}</select></label>
       <label class="epm-campo"><span>Escolha do material</span><input type="text" name="escolha" value="${escapar(e.escolha)}" placeholder="só para Osso de Dragão"></label>
+      ${actor ? camposOficio((await import("./mecanicas.mjs")).estadoAtor(actor).ficha, "Ferreiro") : ""}
       <p class="epm-dica">Melhorias que pedem o material antigo param de funcionar.</p>`,
     buttons: [
-      { action: "ok", label: "Trocar", icon: "fa-solid fa-right-left", default: true, callback: (ev, b) => ({ acao: "ok", material: b.form.elements.material.value, escolha: b.form.elements.escolha.value }) },
+      { action: "ok", label: "Trocar", icon: "fa-solid fa-right-left", default: true, callback: (ev, b) => ({ acao: "ok", material: b.form.elements.material.value, escolha: b.form.elements.escolha.value, oficio: b.form.elements.oficio?.value ?? "", atributo: b.form.elements.atributo?.value ?? "inteligencia" }) },
       ...(mestre() ? [{ action: "mestre", label: "Trocar sem teste (Mestre)", icon: "fa-solid fa-crown", callback: (ev, b) => ({ acao: "mestre", material: b.form.elements.material.value, escolha: b.form.elements.escolha.value }) }] : []),
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
@@ -321,11 +380,7 @@ export async function trocarMaterial(item, uid) {
   if (form.acao === "ok" && actor) {
     const po = precoTrocaMaterial(precoMaterialPO(form.material) * uni, precoMaterialPO(e.material) * uni);
     if (!(await pagar(actor, po, "a troca de material"))) return;
-    const { estadoAtor, formulaD20 } = await import("./mecanicas.mjs");
-    const { periciaDaProfissao } = await import("./producao.mjs");
-    const per = periciaDaProfissao(estadoAtor(actor).ficha, "forja");
-    const roll = await new Roll(`${formulaD20()} + ${per.valorPericia} + ${per.valorAtributo}`).evaluate();
-    await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<span class="epm-flavor"><strong>Trocar material</strong> de ${escapar(item.name)} (DT ${dt})</span>` });
+    const roll = await rolarOficio(actor, form, `Trocar material de ${escapar(item.name)}`, dt);
     if (roll.total < dt) return nota(actor, `<p>A troca de material de <strong>${escapar(item.name)}</strong> falhou (${roll.total} contra DT ${dt}). O pagamento foi perdido.</p>`, "#D2544A");
   }
   await item.update({ [`${P}.melhoriasDoItem.${uid}.material`]: form.material, [`${P}.melhoriasDoItem.${uid}.escolha`]: form.escolha ?? "" });

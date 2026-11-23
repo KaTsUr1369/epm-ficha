@@ -340,7 +340,8 @@
       <section class="epm-painel">
         <header class="epm-painel-titulo"><h3>Ferramentas</h3></header>
         <div class="epm-060-botoes">
-          <button type="button" class="epm-botao" data-action="mundo" data-op="npc"><i class="fa-solid fa-user-plus"></i> Ficha rápida de NPC</button>
+          <button type="button" class="epm-botao" data-action="mundo" data-op="npcCriatura" title="Escolha o tipo de ficha, a força da criatura, o nível, a natureza e se é inteligente"><i class="fa-solid fa-dragon"></i> Criar NPC rápido</button>
+          <button type="button" class="epm-botao" data-action="mundo" data-op="npc" title="NPC humanoide por raça, arquétipo, posto e região"><i class="fa-solid fa-user-plus"></i> Ficha rápida de NPC (por raça)</button>
           <button type="button" class="epm-botao" data-action="mundo" data-op="chefe" {{#unless mundo.chefe}}disabled title="Selecione o token do chefe"{{/unless}}><i class="fa-solid fa-crown"></i> Chefe com fases{{#if mundo.chefe}}: {{mundo.chefe.nome}}{{#if mundo.chefe.ativo}} (fase {{mundo.chefe.fase}}){{/if}}{{/if}}</button>
           <button type="button" class="epm-botao" data-action="mundo" data-op="discord"><i class="fa-brands fa-discord"></i> Avisos no Discord{{#if mundo.discord.ligado}} (ligado){{/if}}</button>
           {{#if mundo.discord.ligado}}<button type="button" class="epm-botao epm-botao-sutil" data-action="mundo" data-op="testarDiscord">Testar</button>{{/if}}

@@ -60,11 +60,13 @@ export async function alvosDeTreino(dados, actor = null) {
       const total = Math.max(1, Math.ceil(num(c.horas)));
       return { chave: `t-c${id}`, tipo: "criacao", id, nome: `Criação: ${c.nome || "projeto"}`, total, feitas: Math.min(total, Math.max(0, num(c.feitas))) };
     }),
-    // Melhorias de itens em andamento (só a etapa já paga: o material de cada etapa é pago ao trabalhar nela)
-    ...(actor?.items ?? []).filter(i => i.flags?.[FLAG]?.fazendoMelhoria?.etapaPaga).map(i => {
+    // Melhorias de itens em andamento: as horas passam pelas 3 etapas (cada etapa cheia faz o teste sozinha)
+    ...(actor?.items ?? []).filter(i => i.flags?.[FLAG]?.fazendoMelhoria).map(i => {
       const fz = i.flags[FLAG].fazendoMelhoria;
-      const total = Math.round(num(fz.horasEtapa) * 100) / 100;
-      return { chave: `t-m${i.id}`, tipo: "melhoria", id: i.id, nome: `Melhoria em ${i.name}: etapa ${num(fz.acertos) + 1}`, total, feitas: Math.min(total, Math.max(0, num(fz.feitasEtapa))) };
+      const etapa = num(fz.horasEtapa);
+      const total = Math.ceil(etapa * 3);
+      const feitas = Math.min(total, num(fz.acertos) * etapa + Math.max(0, num(fz.feitasEtapa)));
+      return { chave: `t-m${i.id}`, tipo: "melhoria", id: i.id, nome: `Melhoria em ${i.name}`, total, feitas: Math.floor(feitas) };
     }).filter(a => a.total > a.feitas)
   ];
 }
@@ -151,7 +153,7 @@ export function efeitosDoTempo(dados = {}, { seg, horas, agora = 0, relogio = fa
 }
 
 /** Aplica o tempo pulado numa ficha. */
-export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = false, descanso = "nenhum", relogio = false, silencioso = false } = {}) {
+export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = false, descanso = "nenhum", relogio = false, silencioso = false, melhoriasGratis = false } = {}) {
   if (!actor?.isOwner) return null;
   const { agora } = await import("./projetos.mjs");
   const { chavePeriodo } = await import("./ressonancia.mjs");
@@ -164,6 +166,7 @@ export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = fals
   // Treino e criação
   const alvos = await alvosDeTreino(dados, actor);
   const itemUps = [];
+  const melhoriasHoras = [];
   const disponivel = horasDeTreino(horas);
   const dist = porAlvo ?? dividirHoras(alvos, disponivel);
   let usadas = 0;
@@ -176,7 +179,7 @@ export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = fals
       up[`${P}.treinamentos.${a.id}.horasFeitas`] = novo;
       if (novo >= a.total) up[`${P}.treinamentos.${a.id}.estado`] = "concluido";
     } else if (a.tipo === "melhoria") {
-      itemUps.push({ _id: a.id, [`${P}.fazendoMelhoria.feitasEtapa`]: novo });
+      melhoriasHoras.push([a.id, pedidas]);
     } else {
       up[`${P}.criacoes.${a.id}.horasFeitas`] = novo;
       if (novo >= a.total) up[`${P}.criacoes.${a.id}.estado`] = "pronto";
@@ -196,6 +199,13 @@ export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = fals
   feitos.push(...ef.feitos);
   if (Object.keys(up).length) await actor.update(up);
   if (itemUps.length) await actor.updateEmbeddedDocuments("Item", itemUps);
+  if (melhoriasHoras.length) {
+    const { avancarMelhoriaComTempo } = await import("./melhorias-acoes.mjs");
+    for (const [id, h] of melhoriasHoras) {
+      const it = actor.items.get(id);
+      if (it) feitos.push(...(await avancarMelhoriaComTempo(it, h, { gratis: melhoriasGratis })));
+    }
+  }
   if (ef.encerrarManifestacao) { const R = await import("./ressonancia.mjs"); await R.encerrarManifestacao(actor); feitos.push("Ressonância: a alma se recolheu"); }
   if (ef.encerrarTroca) {
     const { pedirAoMestre } = await import("./mundo.mjs");
@@ -245,6 +255,7 @@ export async function dialogoPularTempo(actor, { unidade = "horas", qtd = 8 } = 
         <label class="epm-check"><input type="radio" name="modo" value="auto" checked> Dividir igualmente</label>
         <label class="epm-check"><input type="radio" name="modo" value="manual"> Escolher quanto vai para cada um</label>
         <div data-manual hidden>${linhas}</div></fieldset>` : `<p class="epm-dica">Nenhum treino ou criação em andamento.</p>`}
+      ${alvos.some(a => a.tipo === "melhoria") ? `<label class="epm-check"><input type="checkbox" name="melhoriasGratis"> Melhorias em andamento saem de graça (sem pagar o material das etapas)</label>` : ""}
       <label class="epm-check"><input type="checkbox" name="estudo" ${alvos.length ? "" : "checked"}> As horas de treino que sobrarem viram PT de estudo (${TREINO.acao.pt} PT a cada ${TREINO.acao.horas} h)</label>
       ${outros.length ? `<p class="epm-dica">Também anda: ${escapar(outros.join(", "))}.</p>` : ""}
       <label class="epm-campo"><span>No fim</span><select name="descanso">${opcoesHtml([["nenhum", "Sem descanso"], ["curto", "Descanso curto"], ["longo", "Descanso longo"]], "nenhum")}</select></label>
@@ -270,7 +281,7 @@ export async function dialogoPularTempo(actor, { unidade = "horas", qtd = 8 } = 
         const f = b.form.elements;
         const horas = Math.max(0, num(f.qtd?.value) * (UNIDADES_SKIP[f.unidade?.value]?.horas ?? 1));
         const manual = b.form.querySelector('[name="modo"]:checked')?.value === "manual";
-        return { horas, porAlvo: manual ? Object.fromEntries(alvos.map(a => [a.chave, num(f[a.chave]?.value)])) : null, estudo: !!f.estudo?.checked, descanso: f.descanso?.value ?? "nenhum", relogio: !!f.relogio?.checked };
+        return { horas, porAlvo: manual ? Object.fromEntries(alvos.map(a => [a.chave, num(f[a.chave]?.value)])) : null, estudo: !!f.estudo?.checked, descanso: f.descanso?.value ?? "nenhum", relogio: !!f.relogio?.checked, melhoriasGratis: !!f.melhoriasGratis?.checked };
       } },
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
@@ -302,18 +313,19 @@ export async function pularTempoGrupo() {
       <label class="epm-check"><input type="checkbox" name="relogio" checked> Avançar o relógio do mundo</label>
       <fieldset class="epm-aquisicao"><legend>Fichas</legend>${pjs.map(a => `<label class="epm-check"><input type="checkbox" name="a_${a.id}" ${a.hasPlayerOwner ? "checked" : ""}> ${escapar(a.name)}</label>`).join("") || `<p class="epm-dica">Nenhum personagem.</p>`}</fieldset>
       <label class="epm-check"><input type="checkbox" name="estudo" checked> As horas de treino que sobrarem viram PT de estudo</label>
+      <label class="epm-check"><input type="checkbox" name="melhoriasGratis"> Melhorias de itens em andamento saem de graça (sem pagar o material)</label>
       <label class="epm-campo"><span>No fim</span><select name="descanso">${opcoesHtml([["nenhum", "Sem descanso"], ["curto", "Descanso curto"], ["longo", "Descanso longo"]], "nenhum")}</select></label>`,
     buttons: [
       { action: "ok", label: "Pular", icon: "fa-solid fa-forward", default: true, callback: (ev, b) => {
         const f = b.form.elements;
-        return { horas: Math.max(0, num(f.qtd?.value) * (UNIDADES_SKIP[f.unidade?.value]?.horas ?? 1)), relogio: !!f.relogio?.checked, estudo: !!f.estudo?.checked, descanso: f.descanso?.value ?? "nenhum", atores: pjs.filter(a => f[`a_${a.id}`]?.checked) };
+        return { horas: Math.max(0, num(f.qtd?.value) * (UNIDADES_SKIP[f.unidade?.value]?.horas ?? 1)), relogio: !!f.relogio?.checked, estudo: !!f.estudo?.checked, descanso: f.descanso?.value ?? "nenhum", melhoriasGratis: !!f.melhoriasGratis?.checked, atores: pjs.filter(a => f[`a_${a.id}`]?.checked) };
       } },
       { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
     ]
   });
   if (!r || typeof r !== "object" || !r.horas) return;
   if (r.relogio) await avancarRelogio(r.horas);
-  for (const a of r.atores) await aplicarTempo(a, { horas: r.horas, estudo: r.estudo, descanso: r.descanso, relogio: r.relogio });
+  for (const a of r.atores) await aplicarTempo(a, { horas: r.horas, estudo: r.estudo, descanso: r.descanso, relogio: r.relogio, melhoriasGratis: r.melhoriasGratis });
   ui.notifications.info(`Tempo pulado: ${Math.round(r.horas * 10) / 10} h${r.atores.length ? ` para ${r.atores.map(a => a.name).join(", ")}` : ""}.`);
   return r.atores.length;
 }

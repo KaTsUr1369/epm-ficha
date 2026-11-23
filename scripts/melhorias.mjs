@@ -24,22 +24,31 @@ const norm = t => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLow
 /** Categorias para escolher à mão no editor (a automática vem do catálogo ou do tipo do item). */
 export const CATEGORIAS_MELHORIA = {
   "": "Automática", "armas-cac": "Arma corpo a corpo", "armas-disparo": "Arma de disparo", "armas-fogo": "Arma de fogo e energia",
-  municao: "Munição", armaduras: "Armadura", escudos: "Escudo", vestimentas: "Vestimenta ou acessório", cura: "Consumível de cura",
-  ofensivos: "Consumível ofensivo (bomba)", venenos: "Veneno", ferramentas: "Ferramenta ou kit", focos: "Foco ou instrumento",
+  municao: "Munição", armaduras: "Armadura", "escudos-leve": "Escudo leve", escudos: "Escudo médio", "escudos-pesado": "Escudo pesado",
+  vestimentas: "Vestimenta ou acessório", "vestimentas-olhos": "Vestimenta para os olhos (máscara, óculos, capuz, visor)", cura: "Consumível de cura", "pocao-vida": "Poção de Vida",
+  ofensivos: "Consumível ofensivo (bomba)", venenos: "Veneno", ferramentas: "Ferramenta ou kit", focos: "Foco ou instrumento", grimorio: "Grimório",
   aventura: "Equipamento de aventura", mochilas: "Mochila ou recipiente", nenhuma: "Não recebe melhorias"
 };
 const LISTAS_DA_CATEGORIA = {
   "armas-cac": ["geral", "armas-cac"], "armas-disparo": ["geral", "armas-disparo"], "armas-fogo": ["geral", "armas-fogo"],
-  municao: ["municao"], armaduras: ["geral", "protecoes"], escudos: ["geral", "protecoes", "escudos"], vestimentas: ["geral", "vestimentas"],
-  cura: ["consumiveis-cura"], ofensivos: ["consumiveis-ofensivos"], venenos: ["consumiveis-ofensivos"], ferramentas: ["geral", "ferramentas"],
+  municao: ["municao"], armaduras: ["geral", "protecoes"], escudos: ["geral", "protecoes", "escudos"], "escudos-leve": ["geral", "protecoes", "escudos"],
+  "escudos-pesado": ["geral", "protecoes", "escudos"], vestimentas: ["geral", "vestimentas"], "vestimentas-olhos": ["geral", "vestimentas"],
+  cura: ["consumiveis-cura"], "pocao-vida": ["consumiveis-cura"], grimorio: ["geral", "focos"], ofensivos: ["consumiveis-ofensivos"], venenos: ["consumiveis-ofensivos"], ferramentas: ["geral", "ferramentas"],
   focos: ["geral", "focos"], aventura: ["geral", "aventura"], mochilas: ["geral", "mochilas"], nenhuma: []
 };
 const RE_FOGO = /bal[ií]stic|energia|plasma|laser|el[eé]tric|explosiv|rel[aâ]mpago/i;
 const RE_ARMA_FOGO = /pistola|rev[oó]lver|rifle|fuzil|espingarda|metralhadora|carabina|escopeta|canh[aã]o|blaster|lan[cç]a-chamas|submetralhadora|sniper/i;
 
-/** Categoria automática do item (catálogo primeiro; senão pelo tipo e pelo nome). */
+/** Itens do catálogo que já vêm com um subtipo (o resto o jogador ou o Mestre escolhe no editor). */
+const SUBTIPO_CATALOGO = {
+  "vestimentas.capa-com-capuz": "vestimentas-olhos", "vestimentas.visor-tatico": "vestimentas-olhos", "conjuracao.grimorio": "grimorio"
+};
+
+/** Categoria automática do item (catálogo primeiro; senão pelo tipo do item). */
 export function categoriaAutomatica(item) {
   const f = item?.flags?.[FLAG] ?? {};
+  if (SUBTIPO_CATALOGO[f.catalogo]) return SUBTIPO_CATALOGO[f.catalogo];
+  if (/^pocoes\.pocao-de-vida/.test(String(f.catalogo ?? ""))) return "pocao-vida";
   const nome = String(item?.name ?? "");
   const cat = String(f.catalogo ?? "").split(".")[0];
   const x = f.catalogo ? itemCatalogoPorId(f.catalogo) : null;
@@ -51,7 +60,10 @@ export function categoriaAutomatica(item) {
     return RE_FOGO.test(String(f.tipoDano ?? "")) || RE_ARMA_FOGO.test(nome) ? "armas-fogo" : "armas-disparo";
   }
   if (cat === "armaduras") return "armaduras";
-  if (cat === "escudos") return "escudos";
+  if (cat === "escudos") {
+    const t = norm(x?.armadura?.tipoEscudo);
+    return t === "leve" ? "escudos-leve" : t === "pesado" ? "escudos-pesado" : "escudos";
+  }
   if (cat === "vestimentas") return "vestimentas";
   if (cat === "municao") return "municao";
   if (["pocoes", "medicina", "comida"].includes(cat)) return "cura";
@@ -88,15 +100,17 @@ export function perfilItem(item) {
   const nome = String(item?.name ?? "");
   const x = f.catalogo ? itemCatalogoPorId(f.catalogo) : null;
   const armadura = cat === "armaduras" ? (f.tipoArmadura || "leve") : "";
-  const escudo = cat === "escudos";
-  const tipoEscudo = escudo ? norm(x?.armadura?.tipoEscudo ?? (/broquel|leve/i.test(nome) ? "leve" : /pesad|torre|muralha/i.test(nome) ? "pesado" : "medio")) : "";
+  const escudo = cat.startsWith("escudos");
+  const tipoEscudo = cat === "escudos-leve" ? "leve" : cat === "escudos-pesado" ? "pesado" : escudo ? "medio" : "";
+  void x;
   return {
     categoria: cat, automatica: !manual, listas: LISTAS_DA_CATEGORIA[cat] ?? [], nome,
     arma: cat.startsWith("armas-"), armaCac: cat === "armas-cac", armaDisparo: cat === "armas-disparo", armaFogo: cat === "armas-fogo",
-    municao: cat === "municao", armadura, escudo, tipoEscudo, protecao: !!armadura || escudo, vestimenta: cat === "vestimentas",
-    consumivel: ["cura", "ofensivos", "venenos"].includes(cat), cura: cat === "cura", ofensivo: ["ofensivos", "venenos"].includes(cat),
-    venenos: cat === "venenos", bombas: cat === "ofensivos", ferramenta: cat === "ferramentas", foco: cat === "focos",
-    aventura: cat === "aventura", mochila: cat === "mochilas", lote: ["cura", "ofensivos", "venenos", "municao"].includes(cat),
+    municao: cat === "municao", armadura, escudo, tipoEscudo, protecao: !!armadura || escudo, vestimenta: cat.startsWith("vestimentas"),
+    olhos: cat === "vestimentas-olhos", grimorio: cat === "grimorio", pocaoVida: cat === "pocao-vida",
+    consumivel: ["cura", "pocao-vida", "ofensivos", "venenos"].includes(cat), cura: ["cura", "pocao-vida"].includes(cat), ofensivo: ["ofensivos", "venenos"].includes(cat),
+    venenos: cat === "venenos", bombas: cat === "ofensivos", ferramenta: cat === "ferramentas", foco: ["focos", "grimorio"].includes(cat),
+    aventura: cat === "aventura", mochila: cat === "mochilas", lote: ["cura", "pocao-vida", "ofensivos", "venenos", "municao"].includes(cat),
     nomeado: !!String(f.titulo ?? "").trim(), props: (Array.isArray(f.propriedades) ? f.propriedades : []).map(norm)
   };
 }
@@ -120,12 +134,12 @@ export function alvoCabe(alvo, p) {
     case "pesada-ou-escudo-pesado": return p.armadura === "pesada" || p.tipoEscudo === "pesado";
     case "escudo-leve": return p.tipoEscudo === "leve";
     case "vestimenta": return p.vestimenta;
-    case "vestimenta-olhos": return p.vestimenta && /m[aá]scara|[oó]culos|capuz|visor|elmo|capacete/i.test(p.nome);
+    case "vestimenta-olhos": return p.olhos;
     case "foco": return p.foco;
-    case "grimorio": return p.foco && /grim[oó]rio|livro/i.test(p.nome);
+    case "grimorio": return p.grimorio;
     case "consumivel": return p.consumivel;
     case "consumivel-cura": return p.cura;
-    case "pocao-vida": return p.cura && /po[cç][aã]o de vida|po[cç][aã]o de cura/i.test(p.nome);
+    case "pocao-vida": return p.pocaoVida;
     case "ferramenta": return p.ferramenta;
     case "mochila": return p.mochila;
     default: return false;
@@ -190,7 +204,11 @@ export function motivoPortador(pre, item, dados) {
   if (req.pericia) {
     const [ids, min] = req.pericia;
     const lista = Array.isArray(ids) ? ids : [ids];
-    const melhor = Math.max(...lista.map(id => n(dados.pericias?.[id]?.pontos)));
+    // Ofício é coringa: vale o maior entre os ofícios da pessoa (Ofício (Ferreiro), Ofício (Cozinheiro)…)
+    const pontosDe = id => id === "oficio"
+      ? Math.max(0, ...Object.entries(dados.pericias ?? {}).filter(([pid, pp]) => /^oficio/.test(pid) || /^oficio/.test(norm(pp?.nome))).map(([, pp]) => n(pp?.pontos)))
+      : n(dados.pericias?.[id]?.pontos);
+    const melhor = Math.max(...lista.map(pontosDe));
     if (melhor < min) return `portador com ${min} pontos em ${lista.map(rotuloPericia).join(" ou ")}`;
   }
   if (req.arquetipo && !arquetiposDoPersonagem(dados).some(a => a.id === req.arquetipo)) return `portador ${req.arquetipo === "conjurador" ? "Conjurador" : req.arquetipo}`;
@@ -223,6 +241,8 @@ export function estadoMelhorias(item, { dados } = {}) {
   const vagas = {};
   for (const [tipo, t] of Object.entries(TIPOS_MELHORIA)) {
     let max = tipo === "encantamento" && f.pergaminhoEncantamento ? t.vagasPergaminho : t.vagas;
+    // Forja dos Deuses: 1 vez por item, uma Modificação feita com ela não conta no limite de 3
+    if (tipo === "modificacao" && f.modExtraForja) max += 1;
     const usadas = entradas.filter(e => e.tipo === tipo).length;
     vagas[tipo] = { tipo, ...t, usadas, max, livres: Math.max(0, max - usadas), cheio: usadas >= max };
   }
@@ -253,8 +273,8 @@ function propsDeMateriais(material, p) {
 }
 
 /**
- * Soma os efeitos das melhorias ativas. Números de melhorias diferentes somam (Afiada +2 e Brutal +2 = +4);
- * o mesmo efeito não numérico fica com o maior (peso: o menor fator; RD do mesmo tipo: a maior).
+ * Soma os efeitos das melhorias ativas. Tudo soma, inclusive o mesmo efeito em duas melhorias
+ * (Afiada +2 e Brutal +2 = +4; RD do mesmo tipo soma; Leve e Mitral: metade de metade do peso).
  */
 export function somarEfeitos(ativas, { p, material, pureza = false, nome = "" } = {}) {
   const r = {
@@ -262,18 +282,19 @@ export function somarEfeitos(ativas, { p, material, pureza = false, nome = "" } 
     massacre: false, maxNo20: false, maxNoCritico: false, categoria: 0, props: new Set(), danoExtra: [], curaAcerto: [], notas: [], custoNotas: [],
     mods: {}, rd: {}, resist: new Set(), peso: 1, pesoMenos: 0, capacidade: 1, pesoDentro: 1, consDados: 0, consFixo: 0, consMax: false,
     reservaPm: 0, iniciativa: 0, acertoItem: 0, semPenalDesloc: false, penalDesloc: 0, semPenalFurtividade: false, furtividadeMenos: 0,
-    curaTurno: [], protetiva: false, pureza, selaBencao: false
+    curaTurno: [], protetiva: false, pureza, selaBencao: false, cdMagia: 0, acertoMagia: 0, notasMagia: [], custoMagia: [], testeFerramenta: 0, forjaDosDeuses: false
   };
   const aplicar = (auto, e, fonte) => {
     if (!auto) return;
     if (auto.so && !auto.so.test(nome)) return;
     const troca = v => v === "@escolha" ? (e.escolha || "") : v === "@material" ? (e.materialEscolha || "") : v;
-    for (const k of ["acerto", "dano", "margem", "mult", "dados", "passo", "ignoraRd", "danoCritico", "alcance", "danoParado", "categoria", "consDados", "consFixo", "pesoMenos", "penalDesloc", "furtividadeMenos", "acertoItem"]) if (auto[k]) r[k] += n(auto[k]);
-    for (const k of ["massacre", "maxNo20", "maxNoCritico", "consMax", "semPenalDesloc", "semPenalFurtividade", "protetiva", "selaBencao"]) if (auto[k]) r[k] = true;
-    if (auto.peso !== undefined) r.peso = Math.min(r.peso, auto.peso);
-    if (auto.capacidade) r.capacidade = Math.max(r.capacidade, auto.capacidade);
-    if (auto.pesoDentro !== undefined) r.pesoDentro = Math.min(r.pesoDentro, auto.pesoDentro);
-    if (auto.reservaPm) r.reservaPm = Math.max(r.reservaPm, auto.reservaPm);
+    for (const k of ["acerto", "dano", "margem", "mult", "dados", "passo", "ignoraRd", "danoCritico", "alcance", "danoParado", "categoria", "consDados", "consFixo", "pesoMenos", "penalDesloc", "furtividadeMenos", "acertoItem", "cdMagia", "acertoMagia", "testeFerramenta"]) if (auto[k]) r[k] += n(auto[k]);
+    for (const k of ["massacre", "maxNo20", "maxNoCritico", "consMax", "semPenalDesloc", "semPenalFurtividade", "protetiva", "selaBencao", "forjaDosDeuses"]) if (auto[k]) r[k] = true;
+    // Tudo soma (decisão de 22/11): peso e peso de dentro multiplicam (metade de metade), capacidade soma os acréscimos
+    if (auto.peso !== undefined) r.peso *= auto.peso;
+    if (auto.capacidade) r.capacidade += auto.capacidade - 1;
+    if (auto.pesoDentro !== undefined) r.pesoDentro *= auto.pesoDentro;
+    if (auto.reservaPm) r.reservaPm += auto.reservaPm;
     if (auto.iniciativaUnica) r.iniciativa = Math.max(r.iniciativa, auto.iniciativaUnica);
     for (const pr of auto.props ?? []) r.props.add(pr);
     for (const d of auto.danoExtra ?? []) {
@@ -286,9 +307,10 @@ export function somarEfeitos(ativas, { p, material, pureza = false, nome = "" } 
     for (const [alvo, v] of Object.entries(auto.mods ?? {})) r.mods[alvo] = (r.mods[alvo] ?? 0) + n(v);
     if (auto.ca) r.mods.ca = (r.mods.ca ?? 0) + n(auto.ca);
     if (auto.periciaEscolhida && e.escolha) { const k = `pericia.${norm(e.escolha).replace(/[^a-z]/g, "")}`; r.mods[k] = (r.mods[k] ?? 0) + n(auto.periciaEscolhida); }
-    for (const [v, tipo] of auto.rd ?? []) { const t = troca(tipo); r.rd[t] = Math.max(r.rd[t] ?? 0, n(v)); }
+    for (const [v, tipo] of auto.rd ?? []) { const t = troca(tipo); r.rd[t] = (r.rd[t] ?? 0) + n(v); }
     for (const t of auto.resist ?? []) { const x = troca(t); if (x) r.resist.add(x); }
     if (auto.nota) r.notas.push(`${fonte}: ${auto.nota}`);
+    if (auto.notaMagia) r.notasMagia.push(`${fonte}: ${auto.notaMagia}`);
   };
   const materialEscolha = ativas.find(e => e.id === "material-especial")?.escolha ?? "";
   for (const e of ativas) {
@@ -301,6 +323,7 @@ export function somarEfeitos(ativas, { p, material, pureza = false, nome = "" } 
     if (e.tipo === "maldicao" && !pureza) {
       if (auto.custo) aplicar(auto.custo, ctx, `${fonte} (custo)`);
       if (auto.custoNota) r.custoNotas.push(`${fonte}: ${auto.custoNota}`);
+      if (auto.custoMagia) r.custoMagia.push(`${fonte}: ${auto.custoMagia}`);
     }
   }
   r.props = [...r.props];
@@ -394,7 +417,7 @@ export function resumoMelhorias(est) {
 /* ---------------- Adicionar: regras ---------------- */
 
 /** Pode receber esta melhoria? { ok, motivo, consome: [uid], vaga (1, 2, 3) }. */
-export function podeAdicionar(item, def, { mestre = false, escolha = "" } = {}) {
+export function podeAdicionar(item, def, { mestre = false, escolha = "", forja = false } = {}) {
   if (!def) return { ok: false, motivo: "Melhoria desconhecida." };
   const est = estadoMelhorias(item);
   const p = est.perfil;
@@ -423,6 +446,9 @@ export function podeAdicionar(item, def, { mestre = false, escolha = "" } = {}) 
   if (def.escolha && def.escolha !== "material" && !String(escolha).trim() && def.escolha !== "condicao") { /* a escolha é pedida no diálogo */ }
   const v = est.vagas[def.tipo];
   const livres = v.max - v.usadas + consome.filter(uid => est.entradas.find(e => e.uid === uid)?.tipo === def.tipo).length;
+  if (livres <= 0 && def.tipo === "modificacao" && forja && !item?.flags?.[FLAG]?.modExtraForja) {
+    return { ok: true, consome, vaga: 3, estado: est, extraForja: true };
+  }
   if (livres <= 0) return { ok: false, motivo: `As vagas de ${v.plural} estão cheias (${v.usadas} de ${v.max}).` };
   // Vaga para preço e teste: a seguinte, contando a que vai sair (máximo 3ª Modificação ou 2º Encantamento)
   const teto = def.tipo === "encantamento" && !est.pergaminho ? 2 : 3;
@@ -460,6 +486,36 @@ export function opcoesParaAdicionar(item, tipo, { mestre = false } = {}) {
     return { ...m, textoCompleto: textoMelhoria(m), ok: r.ok, motivo: r.motivo ?? "", vaga: r.vaga ?? 0,
       pre: m.pre, temPre: !!m.pre, listaTexto: m.alvo ? ALVOS_MELHORIA[m.alvo] : m.listas.map(l => LISTAS_MELHORIA[l]).join(", ") };
   });
+}
+
+/** Bônus das ferramentas nos testes de Ofício (a melhor ferramenta) e se alguma é Forja dos Deuses. */
+export function bonusDeFerramentas(actor) {
+  let melhor = 0, nome = "", forja = false;
+  for (const it of actor?.items ?? []) {
+    if (!it.flags?.[FLAG]?.melhoriasDoItem || it.flags[FLAG].passivaDesligada) continue;
+    const est = estadoMelhorias(it, { dados: actor.flags?.[FLAG] });
+    if (!est.perfil.ferramenta) continue;
+    if (est.efeitos.forjaDosDeuses) forja = true;
+    if (est.efeitos.testeFerramenta > melhor) { melhor = est.efeitos.testeFerramenta; nome = it.name; }
+  }
+  return { bonus: melhor, nome, forja };
+}
+
+/** Bônus de magia dos focos que o personagem carrega (passiva ligada): { cd, acerto, notas }. */
+export function bonusDeFocos(actor) {
+  const out = { cd: 0, acerto: 0, fontesCd: [], fontesAcerto: [], notas: [] };
+  for (const it of actor?.items ?? []) {
+    if (it.flags?.[FLAG]?.passivaDesligada || n(it.system?.quantity, 1) <= 0) continue;
+    if (!it.flags?.[FLAG]?.melhoriasDoItem) continue;
+    const est = estadoMelhorias(it, { dados: actor.flags?.[FLAG] });
+    if (!est.perfil.foco) continue;
+    const r = est.efeitos;
+    if (r.cdMagia) { out.cd += r.cdMagia; out.fontesCd.push(it.name); }
+    if (r.acertoMagia) { out.acerto += r.acertoMagia; out.fontesAcerto.push(it.name); }
+    out.notas.push(...r.notasMagia.map(x => `${it.name}: ${x}`));
+    if (!est.pureza) out.notas.push(...r.custoMagia.map(x => `${it.name} (maldição): ${x}`));
+  }
+  return out;
 }
 
 export { TIPOS_MELHORIA, LISTAS_MELHORIA, MATERIAIS, HORAS_MELHORIA, ETAPAS_MELHORIA, MATERIAL_UNIDADES_PESADO, PERGAMINHO, melhoriaPorId, textoMelhoria };

@@ -377,6 +377,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
     try { this._restaurarDetalhes(); } catch (err) { console.warn("EPM | detalhes abertos", err); }
     try { ligarBuscas(this.element, this._buscasListas ??= {}); } catch (err) { console.warn("EPM | barras de busca", err); }
+    // Mochilas compartilhadas: os itens de lá podem ser arrastados para o inventário (pegar)
+    for (const el of this.element.querySelectorAll("[data-arraste-uuid]")) {
+      el.addEventListener("dragstart", ev => { ev.stopPropagation(); ev.dataTransfer?.setData("text/plain", JSON.stringify({ type: "Item", uuid: el.dataset.arrasteUuid })); });
+    }
     if (options.isFirstRender || options.parts?.includes("header")) {
       try { this._animarBarras(); } catch (err) { console.error("EPM | Falha ao animar as barras", err); }
     }
@@ -793,11 +797,21 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
     if (dados?.type === "Item") return this._soltarItem(dados, event);
     if (dados?.type === "Actor") return this._soltarAtor(dados);
+    if (dados?.type) return ui.notifications.info("A ficha EPM aceita itens, habilidades, magias e personagens (estes nas abas Relações, Companheiros ou Bestiário).");
   }
 
   async _soltarItem(dados, event = null) {
     const item = await Item.implementation.fromDropData(dados);
     if (!item) return;
+    // Mochila compartilhada: soltar um item meu nela guarda; soltar um item dela no meu inventário pega
+    const MC = await import("./mochila-compartilhada.mjs");
+    const comp = event?.target?.closest?.("[data-compartilhada-mochila]");
+    if (comp && item.parent?.uuid === this.actor.uuid) return MC.guardar(this.actor, comp.dataset.donoId, comp.dataset.compartilhadaMochila, item.id);
+    const dono = item.parent;
+    if (dono?.documentName === "Actor" && dono.uuid !== this.actor.uuid && item.system?.container) {
+      const m = dono.items.get(item.system.container);
+      if (m && MC.membrosDe(m).includes(this.actor.id)) return MC.pegar(this.actor, dono.id, m.id, item.id);
+    }
     const mochilaId = event?.target?.closest?.("[data-container-id]")?.dataset.containerId ?? null;
     const mochila = mochilaId ? this.actor.items.get(mochilaId) : null;
     if (item.parent?.uuid === this.actor.uuid) {
@@ -831,8 +845,12 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     }
     if (item.type === "feat" || item.type === "spell") return M.aprenderPorArraste(this.actor, item);
     // Consumível ou material do catálogo que a ficha já tem: soma na quantidade
+    // Consumível ou loot igual (mesmo item do catálogo, ou mesmo nome sem melhorias) soma na pilha em vez de criar outra
     const cat = item.flags?.[FLAG]?.catalogo;
-    const igual = cat && ["consumable", "loot"].includes(item.type) ? this.actor.items.find(i => i.flags?.[FLAG]?.catalogo === cat) : null;
+    const semMelhorias = i => !Object.keys(i.flags?.[FLAG]?.melhoriasDoItem ?? {}).length;
+    const igual = ["consumable", "loot"].includes(item.type) && semMelhorias(item)
+      ? this.actor.items.find(i => i.type === item.type && !i.system?.container && semMelhorias(i) && (cat ? i.flags?.[FLAG]?.catalogo === cat : i.name === item.name))
+      : null;
     if (igual) {
       await igual.update({ "system.quantity": (Number(igual.system?.quantity) || 0) + Math.max(1, Number(item.system?.quantity) || 1) });
       return ui.notifications.info(`${item.name}: quantidade somada.`);

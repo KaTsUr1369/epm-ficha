@@ -72,6 +72,11 @@ export function registrarAjustes() {
     scope: "world", config: false, type: Object, default: {},
     onChange: v => { aplicarNumeros(v); for (const a of game.actors ?? []) if (a.sheet?.rendered) a.sheet.render(); }
   });
+  reg("itemPilesMoedas", {
+    name: "Item Piles usa as moedas da ficha EPM",
+    hint: "Com o módulo Item Piles ativo, lojas, baús e trocas usam as moedas EPM (Cobre, Prata, Ouro, Platina e Dracmas) em vez das moedas do dnd5e.",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   reg("numeros0820", { scope: "world", config: false, type: Boolean, default: false });
   game.settings.registerMenu(MODULE_ID, "numerosBonusMenu", {
     name: "Bônus de estilos e treinos", label: "Editar números",

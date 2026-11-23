@@ -14,6 +14,22 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.22
+
+- **Melhorias de itens (ajustes):**
+  - **Ofício:** fazer uma melhoria usa o Ofício que você escolher (Ferreiro, Encantador ou outro da ficha) e o atributo que você escolher. Trocar de material também. As ferramentas com melhorias somam no teste (Precisa, Mestra, Obsessiva, Mão do Criador, Forja dos Deuses).
+  - **Tudo soma:** RD do mesmo tipo soma; Leve e Mitral dão metade de metade do peso; as capacidades da mochila somam.
+  - **3º Encantamento:** o Pergaminho é pago à parte; o 3º Encantamento custa o preço da vaga (comprar) ou metade dele em material (fazer).
+  - **Pular tempo** anda pelas 3 etapas das melhorias em andamento e faz os testes sozinho; há a opção de sair de graça (sem pagar o material).
+  - **Subtipo pelo tipo de item, não pelo nome:** Escudo leve, médio ou pesado; Vestimenta para os olhos (máscara, óculos, capuz, visor); Grimório; Poção de Vida. Vem do catálogo ou se escolhe no editor do item.
+  - **Forja dos Deuses:** 1 vez por item, uma Modificação feita com ela não conta no limite (o item fica com 4).
+  - **Focos:** Lapidado, Ressonante, Prisma, Voz Divina, Voz do Abismo e Abismo Faminto somam na CD (e o acerto aparece no cartão) das magias de quem carrega o foco; Amplificador e Afinidade Elemental viram notas no cartão.
+- **Mochilas compartilhadas:** arraste um item seu para a mochila compartilhada para guardar, e um item dela para o seu inventário para pegar.
+- **Criar NPC rápido** (aba Atores, botão "NPC rápido", e no Escudo do Mestre): tipo de ficha, força da criatura (de Muito fraca a Lendária), nível, natureza, foco, tamanho, disposição, se é inteligente e quantas fichas. Atributos, Vida, CA, acerto, CD e um ataque vêm prontos.
+- **Item Piles:** lojas, baús e trocas passam a usar as moedas EPM (dá para desligar nas configurações do módulo).
+- **Arrastar:** consumível ou loot igual soltado na ficha soma na pilha; itens soltos no Escudo do Mestre vão para quem está em "Dar para"; fichas soltas no Escudo entram no grupo; outros tipos (diário, macro, tabela) mostram um aviso em vez de não fazer nada.
+- **Idiomas:** a lista já era exatamente a pedida (14 que se pode escolher e 5 proibidos).
+
 ## Novidades da 0.8.21
 
 - **Melhorias de itens** (seção "Melhorias" no editor do item EPM):

@@ -166,6 +166,25 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       if (this._detalhes.has(chave(d))) d.open = true;
       d.addEventListener("toggle", () => { if (d.open) this._detalhes.add(chave(d)); else this._detalhes.delete(chave(d)); });
     });
+    // Soltar no Escudo: item vai para quem está em "Dar para" (ou para as fichas marcadas); ficha entra no grupo
+    if (!raiz.dataset.epmSoltar) {
+      raiz.dataset.epmSoltar = "1";
+      raiz.addEventListener("dragover", ev => ev.preventDefault());
+      raiz.addEventListener("drop", async ev => {
+        if (ev.target?.closest?.("[data-soltar-grupo]")) return;
+        ev.preventDefault();
+        let dados;
+        try { dados = JSON.parse(ev.dataTransfer?.getData("text/plain") || "{}"); } catch { return; }
+        if (dados?.type === "Item") {
+          const item = await fromUuid(dados.uuid);
+          if (!item) return;
+          if (!this._destinosItem().length) return ui.notifications.warn("Marque as fichas ou escolha em \"Dar para\" (aba Itens) para quem vai o item.");
+          return this._darItem(ev, { dataset: { uuid: item.uuid } });
+        }
+        if (dados?.type === "Actor") return this._incluirNoGrupo(await fromUuid(dados.uuid));
+        if (dados?.type) ui.notifications.info("O Escudo aceita itens (para dar) e fichas (para o grupo).");
+      });
+    }
     const zona = raiz.querySelector("[data-soltar-grupo]");
     if (zona) {
       zona.addEventListener("dragover", ev => { ev.preventDefault(); zona.classList.add("soltando"); });
@@ -249,7 +268,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
       novoRelogio: () => mundo.novoRelogio(), editarRelogio: () => mundo.novoRelogio(id), apagarRelogio: () => mundo.apagarRelogio(id),
       relogioMais: () => mundo.avancarRelogio(id, 1), relogioMenos: () => mundo.avancarRelogio(id, -1),
       novoCodigo: () => mundo.novoCodigo(), editarCodigo: () => mundo.novoCodigo(id), apagarCodigo: () => mundo.apagarCodigo(id),
-      enquete: () => mundo.novaEnquete(), npc: () => mundo.fichaRapidaNpc(), discord: () => mundo.configurarDiscord(), testarDiscord: () => mundo.testarDiscord(),
+      enquete: () => mundo.novaEnquete(), npc: () => mundo.fichaRapidaNpc(), npcCriatura: async () => (await import("./criar-npc.mjs")).criarNpcRapido(), discord: () => mundo.configurarDiscord(), testarDiscord: () => mundo.testarDiscord(),
       apagarCompendio: () => mundo.apagarDoCompendio(alvo.dataset.tipo, id),
       chefe: () => mundo.configurarChefe(globalThis.canvas?.tokens?.controlled?.[0]?.actor ?? null),
       calcular: () => {
@@ -434,7 +453,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _darItem(ev, alvo) {
     const destinos = this._destinosItem();
-    const item = fromUuidSync(alvo.dataset.uuid);
+    const item = fromUuidSync(alvo.dataset.uuid) ?? await fromUuid(alvo.dataset.uuid);
     if (!destinos.length || !item) return ui.notifications.warn("Escolha para quem dar.");
     const dados = item.toObject();
     delete dados._id;

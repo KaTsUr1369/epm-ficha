@@ -34,7 +34,7 @@ export function compartilhadasCom(actor) {
 export function contextoCompartilhadas(actor) {
   return compartilhadasCom(actor).map(({ dono, mochila }) => {
     const conteudo = (dono.items?.contents ?? [...(dono.items ?? [])]).filter(i => i.system?.container === mochila.id)
-      .map(i => ({ id: i.id, name: i.name, img: i.img, qtd: num(i.system?.quantity, 1), peso: num(i.system?.weight?.value ?? i.system?.weight, 0) }))
+      .map(i => ({ id: i.id, uuid: i.uuid, name: i.name, img: i.img, qtd: num(i.system?.quantity, 1), peso: num(i.system?.weight?.value ?? i.system?.weight, 0) }))
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     const outros = membrosDe(mochila).filter(id => id !== actor.id).map(id => globalThis.game?.actors?.get(id)?.name).filter(Boolean);
     return {

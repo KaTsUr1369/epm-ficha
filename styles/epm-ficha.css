@@ -3529,3 +3529,4 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-membros img { vertical-align: middle; border-radius: 3px; border: 0; }
 .epm-mochila-compartilhada .epm-item-linha { display: flex; align-items: center; gap: 8px; }
 .epm-mochila-compartilhada .epm-item-linha .epm-item-titulo { flex: 1; }
+.epm-item-compartilhado { list-style: none; padding: 4px 6px; margin: 3px 0; border: 1px solid var(--epm-linha); border-radius: 4px; cursor: grab; }

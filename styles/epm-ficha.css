@@ -3530,3 +3530,21 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-mochila-compartilhada .epm-item-linha { display: flex; align-items: center; gap: 8px; }
 .epm-mochila-compartilhada .epm-item-linha .epm-item-titulo { flex: 1; }
 .epm-item-compartilhado { list-style: none; padding: 4px 6px; margin: 3px 0; border: 1px solid var(--epm-linha); border-radius: 4px; cursor: grab; }
+/* 0.8.23: caixas de texto mais modernas (crescem com o texto e salvam sozinhas) */
+.epm-ficha textarea[name], .epm-item-editor textarea[name] { border-radius: 6px; border: 1px solid var(--epm-linha); background: var(--epm-entrada); padding: 6px 8px; line-height: 1.45; resize: vertical; min-height: 2.6em; transition: border-color .15s, box-shadow .15s; }
+.epm-ficha textarea[name]:focus, .epm-item-editor textarea[name]:focus { outline: none; border-color: var(--epm-latao); box-shadow: 0 0 0 2px color-mix(in srgb, var(--epm-latao) 30%, transparent); }
+.epm-ficha prose-mirror .editor-menu, .epm-item-editor prose-mirror .editor-menu { border-radius: 6px 6px 0 0; }
+/* 0.8.23: busca na ficha inteira */
+.epm-busca-global { position: relative; margin-top: 8px; }
+.epm-busca-global input { width: 100%; border-radius: 6px; }
+.epm-busca-global-res { position: fixed; z-index: 1000; left: 0; min-width: 260px; max-height: 360px; overflow-y: auto; margin: 2px 0 0; padding: 4px; list-style: none; background: var(--epm-painel); border: 1px solid var(--epm-linha-forte); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+.epm-busca-global-res button { all: unset; display: block; width: 100%; padding: 4px 6px; cursor: pointer; border-radius: 4px; color: var(--epm-texto); }
+.epm-busca-global-res button:hover, .epm-busca-global-res button:focus { background: var(--epm-entrada); }
+.epm-busca-global-aba { font-size: .75em; color: var(--epm-latao); text-transform: uppercase; margin-right: 4px; }
+.epm-busca-achado { outline: 2px solid var(--epm-latao); outline-offset: 2px; transition: outline-color 1.5s; }
+.epm-assistente-aviso { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin: 0 0 10px; border: 1px dashed var(--epm-latao); border-radius: 8px; background: color-mix(in srgb, var(--epm-latao) 10%, transparent); }
+.epm-assistente-aviso span { flex: 1; }
+.epm-assistente-grade { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 10px; }
+.epm-abrir-manual { display: block; margin-top: 6px; font-size: .85em; }
+.epm-busca-global input[type="search"] { background: var(--epm-entrada); border: 1px solid var(--epm-linha); color: var(--epm-texto); padding: 4px 8px; font-size: .85em; height: auto; }
+.epm-busca-global input[type="search"]:focus { border-color: var(--epm-latao); outline: none; }

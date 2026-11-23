@@ -354,7 +354,7 @@ const B = [
   ["Protetiva", "+3 na CA para cada item com essa bênção no inventário (limite +12 CA) e +5 em testes de resistência (não cumulativo)", ["geral"], { auto: { protetiva: true } }],
   ["Inviolável", "Só o dono e quem ele permitir usam o item. Nas mãos de outro, pesa 10× e queima 4d6 Radiante por turno", ["geral"]],
   ["Relíquia", "+5 em todos os testes feitos com o item; 1 vez por dia, rola de novo um deles e fica com o melhor", ["geral"], { auto: { acertoItem: 5 } }],
-  ["Ensinamento de [deus da guerra]", "Ao tirar 20 natural, o dano é maximizado", ARMAS, { id: "ensinamento", chave: "ensinamento", auto: { maxNo20: true } }],
+  ["Ensinamento da Guerra", "Ao tirar 20 natural, o dano é maximizado", ARMAS, { id: "ensinamento", chave: "ensinamento", auto: { maxNo20: true } }],
   ["Golpe Divino", "1 vez por cena, um ataque que acertou vira crítico", ARMAS],
   ["Égide", "1 vez por cena, como Reação, anula todo o dano de um ataque", PROT],
   ["Graça Imaculada", "Imune a uma condição, escolhida ao receber a bênção: Apavorado, Envenenado, Sangrando, Atordoado ou Em Chamas", PROT, { escolha: "condicao" }],

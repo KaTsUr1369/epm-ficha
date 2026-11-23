@@ -59,7 +59,7 @@ async function rolarOficio(actor, { oficio = "", atributo = "inteligencia" } = {
 }
 
 /** Campo do que se escolhe ao fazer (elemento, tipo de dano, perícia, material…). */
-function campoEscolha(def, item) {
+function campoEscolha(def, item, materialPronto = "") {
   switch (def.escolha) {
     case "elemento": return `<label class="epm-campo"><span>Elemento</span><select name="escolha">${op(ELEMENTOS)}</select></label>`;
     case "tipoDano": return `<label class="epm-campo"><span>Tipo de dano</span><select name="escolha">${op(TIPOS_REVESTIDA)}</select></label>`;
@@ -72,7 +72,7 @@ function campoEscolha(def, item) {
     case "material": {
       const p = perfilItem(item);
       const col = p.arma || p.municao ? "arma" : p.protecao ? "protecao" : "outros";
-      const ops = Object.entries(MATERIAIS).filter(([, m]) => m[col]).map(([id, m]) => `<option value="${id}">${escapar(m.nome)} (${precoMaterialPO(id).toLocaleString("pt-BR")} PO): ${escapar(m[col].texto)}</option>`).join("");
+      const ops = Object.entries(MATERIAIS).filter(([, m]) => m[col]).map(([id, m]) => `<option value="${id}" ${id === materialPronto ? "selected" : ""}>${escapar(m.nome)} (${precoMaterialPO(id).toLocaleString("pt-BR")} PO): ${escapar(m[col].texto)}</option>`).join("");
       return `<label class="epm-campo"><span>Material</span><select name="material">${ops}</select></label>
         <label class="epm-campo"><span>Escolha do material (ex.: elemento do dragão)</span><input type="text" name="escolha" placeholder="só para Osso de Dragão"></label>`;
     }
@@ -113,12 +113,12 @@ async function escolherDaLista(item, tipo) {
 }
 
 /** Adicionar uma melhoria: escolhe na lista, depois Fazer, Comprar ou (Mestre) só adicionar. */
-export async function dialogoAdicionarMelhoria(item, tipo) {
+export async function dialogoAdicionarMelhoria(item, tipo, { def: defPronta = null, material: materialPronto = "" } = {}) {
   if (!item?.isOwner) return ui.notifications.warn("Este item não é seu.");
   const gm = mestre();
   if (["maldicao", "bencao"].includes(tipo) && !gm) return ui.notifications.warn("Maldições e Bênçãos só o Mestre adiciona.");
   if (item.flags?.[FLAG]?.fazendoMelhoria) return ui.notifications.warn("Este item já tem uma melhoria sendo feita. Termine ou desista dela antes.");
-  const def = await escolherDaLista(item, tipo);
+  const def = defPronta ?? await escolherDaLista(item, tipo);
   if (!def) return;
   const actor = item.parent;
   const forja = tipo === "modificacao" && bonusDeFerramentas(actor).forja;
@@ -135,7 +135,7 @@ export async function dialogoAdicionarMelhoria(item, tipo) {
   if (fazivel && actor) { const { estadoAtor } = await import("./mecanicas.mjs"); fichaAtor = estadoAtor(actor).ficha; }
   const content = `<p><strong>${escapar(def.nome)}</strong> (${TIPOS_MELHORIA[tipo].label}, ${pode.vaga}ª vaga)${sai.length ? `. Sai do item: <strong>${escapar(sai.join(", "))}</strong>` : ""}.</p>
     <p class="epm-dica">${escapar(def.custo ? `${def.beneficio}. Custo: ${def.custo}` : def.texto)}</p>
-    ${campoEscolha(def, item)}
+    ${campoEscolha(def, item, materialPronto)}
     ${def.pre?.feito ? `<p class="epm-dica">Feito exigido: ${escapar(def.pre.feito)}. Só funciona depois que o Mestre marcar o feito no item.</p>` : ""}
     ${p.lote ? `<p class="epm-dica">${["maldicao", "bencao"].includes(tipo) ? "Bênção e Maldição valem para 1 unidade: ela é separada da pilha." : `Vale para o lote (${p.municao ? "o pacote de munição" : `até ${LOTE_CONSUMIVEL} unidades`}); o preço é 1/5.`}</p>` : ""}
     ${custoTexto ? `<p class="epm-dica">${custoTexto}</p>${fichaAtor ? camposOficio(fichaAtor, tipo === "modificacao" ? "Ferreiro" : "Encantador") : ""}` : ""}
@@ -152,6 +152,7 @@ export async function dialogoAdicionarMelhoria(item, tipo) {
   if (!form || typeof form !== "object" || !form.acao) return;
   form.escolha = String(form.escolha ?? ""); form.material = form.material ?? ""; form.loja = !!form.loja;
   const acao = form.acao;
+  if (materialPronto && !MATERIAIS[form.material]) form.material = materialPronto;
   if (def.id === "material-especial" && !MATERIAIS[form.material]) return ui.notifications.warn("Escolha o material.");
   if (def.escolha && def.escolha !== "material" && !form.escolha.trim() && def.escolha !== "texto") return ui.notifications.warn("Faça a escolha da melhoria.");
   if (acao === "fazer") return comecarFazer(item, def, pode, form);

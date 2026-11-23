@@ -42,6 +42,25 @@ export class EPMItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
     ligarTextoRico(this);
+    // Melhoria arrastada do compêndio "EPM · Melhorias" para o editor do item
+    if (!this.element.dataset.epmSoltarMelhoria) {
+      this.element.dataset.epmSoltarMelhoria = "1";
+      this.element.addEventListener("dragover", ev => ev.preventDefault());
+      this.element.addEventListener("drop", async ev => {
+        let dados;
+        try { dados = JSON.parse(ev.dataTransfer?.getData("text/plain") || "{}"); } catch { return; }
+        if (dados?.type !== "Item" || !dados.uuid) return;
+        const origem = await fromUuid(dados.uuid);
+        const ref = origem?.flags?.[FLAG]?.melhoriaDef;
+        if (!ref) return;
+        ev.preventDefault(); ev.stopPropagation();
+        const { melhoriaPorId } = await import("./melhorias-lista.mjs");
+        const def = melhoriaPorId(ref.id, ref.tipo);
+        if (!def) return;
+        const MA = await import("./melhorias-acoes.mjs");
+        return MA.dialogoAdicionarMelhoria(this.item, def.tipo, { def, material: ref.material ?? "" });
+      });
+    }
     this.element.querySelector("select[data-mudar-categoria]")?.addEventListener("change", ev => {
       ev.stopPropagation();
       const sel = ev.currentTarget;

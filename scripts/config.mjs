@@ -813,14 +813,4 @@ export const REGRAS_IDIOMA = [
   "Línguas arcanas (como a do Grimório): ler pede Conhecimentos Mágicos DT 25 e custa 1d6 de Sanidade."
 ];
 
-/* -------------------------------------------- */
-/*  Melhorias de itens (0.6.0: só a base)       */
-/* -------------------------------------------- */
 
-/** Base para a conversa futura sobre Melhorias de itens: categorias e limites provisórios, sem automação. */
-export const CATEGORIAS_MELHORIA_ITEM = {
-  modificacao: { label: "Modificação", limite: 3, icone: "fa-solid fa-screwdriver-wrench" },
-  encantamento: { label: "Encantamento", limite: 2, icone: "fa-solid fa-wand-sparkles" },
-  maldicaoBencao: { label: "Maldição ou Bênção de item", limite: 3, icone: "fa-solid fa-skull" },
-  titulo: { label: "Título", limite: 2, icone: "fa-solid fa-award" }
-};

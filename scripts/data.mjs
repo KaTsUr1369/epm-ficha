@@ -339,10 +339,25 @@ export function moverNaLista(lista, id, antesDe = null) {
 const EQUIPAVEIS = ["weapon", "equipment"];
 
 /** Estado das melhorias do item (com o portador), ou null se o item não tem nenhuma. */
+const cacheMelhorias = new WeakMap();
 export function melhoriasAtivas(item) {
   const bruto = item?.flags?.[FLAG]?.melhoriasDoItem;
   if (!bruto || !Object.keys(bruto).length) return null;
-  try { return estadoMelhorias(item, { dados: item.parent?.flags?.[FLAG] }); } catch (err) { console.warn("EPM | melhorias", err); return null; }
+  // Guarda o cálculo enquanto nada que ele usa muda (o mesmo item é lido várias vezes num desenho da ficha)
+  const f = item.flags[FLAG];
+  const d = item.parent?.flags?.[FLAG] ?? {};
+  let chave;
+  try {
+    chave = JSON.stringify([bruto, f.listaMelhorias, f.titulo, f.pergaminhoEncantamento, f.modExtraForja, f.feitosMelhoria, f.catalogo, f.tipoArmadura, f.propriedades, f.periciaAtaque, f.tipoDano, item.name, item.type,
+      d.atributos, d.pericias, d.arquetipo, d.arquetipo2, d.nivel, d.nivel2, d.arquetipoOpcoes?.combatente?.tipoFavorito, d.recursos?.ps?.value, d.arquetipoOpcoes?.combatente, regra("titulosItens")]);
+  } catch { chave = null; }
+  const guardado = cacheMelhorias.get(item);
+  if (chave && guardado?.chave === chave) return guardado.valor;
+  try {
+    const valor = estadoMelhorias(item, { dados: item.parent?.flags?.[FLAG] });
+    if (chave) cacheMelhorias.set(item, { chave, valor });
+    return valor;
+  } catch (err) { console.warn("EPM | melhorias", err); return null; }
 }
 
 /**

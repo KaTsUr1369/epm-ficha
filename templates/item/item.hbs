@@ -121,8 +121,6 @@
       <label class="epm-campo"><span>Tipo de armadura</span><select name="flags.epm-ficha.tipoArmadura">{{#each notion060.tiposArmadura}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <label class="epm-campo" title="Descontada no Novo turno com a armadura equipada (armaduras de Genesis)"><span>Estamina por turno</span><input type="number" min="0" name="flags.epm-ficha.estaminaPorTurno" value="{{notion060.estaminaPorTurno}}" /></label>
       {{else if notion060.eUso}}
-      {{else}}
-      <label class="epm-campo" title="Título da arma (ganho por feitos)"><span>Título da arma</span><input type="text" name="flags.epm-ficha.titulo" value="{{notion060.titulo}}" placeholder="A que Partiu o Céu" /></label>
       {{/if}}
     </div>
     {{#if notion060.propriedades.length}}<ul class="epm-060-lista">{{#each notion060.propriedades}}<li><strong>{{this.nome}}</strong>{{#if tipo}} <em>({{this.tipo}})</em>{{/if}}{{#if texto}}: {{this.texto}}{{/if}}</li>{{/each}}</ul>{{/if}}
@@ -135,6 +133,7 @@
       {{#if melhoriasItem.temTitulos}}{{#each melhoriasItem.titulos}}<span class="epm-tag epm-selo-titulo"><i class="fa-solid fa-award" aria-hidden="true"></i> {{this}}</span>{{/each}}{{/if}}
       <span class="epm-dica">{{#if melhoriasItem.lote}}Modificação e Encantamento valem para o lote; Bênção e Maldição, para 1 unidade.{{else}}Modificações 3, Encantamentos 2 (3 com pergaminho), Maldições 3, Bênçãos 2.{{/if}}</span>
     </header>
+    <label class="epm-campo epm-melhorias-nome" title="Nomeação: o nome próprio do item (ex.: A que Partiu o Céu). Os Títulos (regra opcional) só vão para itens com nome."><span>Nome do item (Nomeação)</span><input type="text" name="flags.epm-ficha.titulo" value="{{melhoriasItem.nomeProprio}}" placeholder="A que Partiu o Céu" {{#unless editavel}}disabled{{/unless}} /></label>
     {{#if editavel}}<label class="epm-campo epm-melhorias-categoria" title="Que listas de melhorias o item usa (a automática vem do catálogo ou do tipo do item)"><span>Tipo de item</span><select name="flags.epm-ficha.listaMelhorias">{{#each melhoriasItem.opcoesCategoria}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
     {{#if melhoriasItem.semMelhorias}}<p class="epm-vazio">Este item não recebe melhorias (matéria-prima).</p>{{else}}
     {{#if melhoriasItem.temFazendo}}{{#with melhoriasItem.fazendo as |fz|}}

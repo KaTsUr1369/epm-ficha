@@ -156,6 +156,11 @@ export function melhoriaServe(m, p) {
   return true;
 }
 
+/** A regra opcional de Títulos de itens está ligada? (fora do Foundry: ligada, para os testes) */
+function titulosLigados() {
+  try { const g = globalThis.game; if (!g?.settings) return true; const r = g.settings.get("epm-ficha", "regrasOpcionais"); return r && typeof r === "object" ? !!r.titulosItens : true; } catch { return true; }
+}
+
 /** Entradas gravadas no item, com a definição de cada uma. */
 export function lerMelhorias(item) {
   const bruto = item?.flags?.[FLAG]?.melhoriasDoItem ?? {};
@@ -246,7 +251,8 @@ export function estadoMelhorias(item, { dados } = {}) {
     const usadas = entradas.filter(e => e.tipo === tipo).length;
     vagas[tipo] = { tipo, ...t, usadas, max, livres: Math.max(0, max - usadas), cheio: usadas >= max };
   }
-  const titulos = p.lote ? [] : Object.values(vagas).filter(v => v.cheio && v.usadas > 0).map(v => v.titulo);
+  // Títulos: regra opcional, e só em item com nome (Nomeação)
+  const titulos = p.lote || !titulosLigados() || !p.nomeado ? [] : Object.values(vagas).filter(v => v.cheio && v.usadas > 0).map(v => v.titulo);
   const lista = entradas.map(e => {
     const motivos = [];
     const pre = e.def?.pre;

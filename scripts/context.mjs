@@ -4,7 +4,7 @@
  * O que depende do Foundry (lista de idiomas, outros atores) chega já resolvido pela ficha.
  */
 import {
-  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, USOS_FORMA, CATEGORIAS_MELHORIA_ITEM, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
+  FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, USOS_FORMA, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, itemNaCategoria, eVestimenta, TIPOS_VESTIMENTA, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
   AFINIDADE, ABAS, SUGESTOES, GATILHOS_BONUS, ESCOLHAS_BONUS, DURACOES_BONUS, TIPOS_BONUS_SITUACIONAL, ARQUETIPOS_SUGERIDOS, alvosModificador, REQUISITOS,
   PERICIAS_PADRAO, PERICIAS_RESISTENCIA, CUSTO_RECURSOS, TIPOS_TESTE, MELHORIAS, CRITICO_PADRAO, COR_VIDA_TEMP, CORES_TEMP, CD,
@@ -1586,6 +1586,8 @@ export function montarContexto({
     ctx.mochilasCompartilhadas = actor ? contextoCompartilhadas(actor) : [];
   } catch (err) { console.warn("EPM | mochilas compartilhadas", err); ctx.mochilasCompartilhadas = []; }
   ctx.temCompartilhadas = ctx.mochilasCompartilhadas.length > 0;
+  // Criação guiada: aparece em personagem novo (sem arquétipo) até ser usada
+  ctx.mostrarAssistente = !!editavel && actor?.type === "character" && !dados.assistenteFeito && !String(dados.arquetipo ?? "").trim();
   const ordemCategorias = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), dados.ui?.ordemCategorias, { aposVizinho: true });
   ctx.categorias = ordemCategorias.map((id, indice) => {
     const cat = CATEGORIAS_ITEM.find(c => c.id === id);
@@ -2169,7 +2171,7 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     const fz = lerFazendo(item);
     const feitos = f.feitosMelhoria ?? {};
     ctx.melhoriasItem = {
-      gm, semMelhorias: !est.perfil.listas.length, lote: est.perfil.lote, titulos: est.titulos, temTitulos: est.titulos.length > 0,
+      gm, nomeProprio: f.titulo ?? "", semMelhorias: !est.perfil.listas.length, lote: est.perfil.lote, titulos: est.titulos, temTitulos: est.titulos.length > 0,
       categoriaLabel: CATEGORIAS_MELHORIA[est.perfil.categoria] ?? est.perfil.categoria, automatica: est.perfil.automatica,
       opcoesCategoria: Object.entries(CATEGORIAS_MELHORIA).map(([id, label]) => ({ id, label: id ? label : `Automática (${CATEGORIAS_MELHORIA[categoriaAutomatica(item)] ?? "—"})`, selected: id === (f.listaMelhorias ?? "") })),
       pergaminho: est.pergaminho, podePergaminho: editavel && !est.pergaminho && !est.perfil.lote && est.perfil.listas.length > 0,

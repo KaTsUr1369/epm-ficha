@@ -34,6 +34,8 @@ import { registrarTiposNpc } from "./tipos-npc.mjs";
 registrarPolyglot();
 import("./treinos-conclusao.mjs").then(m => m.registrarConclusoes()).catch(err => console.warn("EPM | Treinamentos", err));
 import("./talentos.mjs").then(m => m.registrarTalentos()).catch(err => console.warn("EPM | Talentos", err));
+import("./erros-amigaveis.mjs").then(m => { m.registrarBarraToken(); Hooks.once("ready", () => m.registrarErrosAmigaveis()); }).catch(err => console.warn("EPM | Erros", err));
+import("./atalhos.mjs").then(m => m.registrarAtalhos()).catch(err => console.warn("EPM | Atalhos", err));
 import("./integracoes.mjs").then(m => m.registrarIntegracoes()).catch(err => console.warn("EPM | Integrações", err));
 import("./mochila-compartilhada.mjs").then(m => m.registrarMochilasCompartilhadas()).catch(err => console.warn("EPM | Mochilas compartilhadas", err));
 import("./ressonancia.mjs").then(m => m.registrarRessonancia()).catch(err => console.warn("EPM | Ressonância de Alma", err));
@@ -47,6 +49,7 @@ const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 Hooks.once("init", () => {
   registrarAjustes();
   registrarCompendioClasses();
+  import("./conteudo-epm.mjs").then(m => m.registrarConteudo()).catch(err => console.warn("EPM | Conteúdo pronto", err));
   registrarCompendioItens();
   registrarDicasCompendio();
   // Marcador de turno EPM em volta do token de quem está na vez (quando a configuração do combate não define outra imagem)
@@ -78,7 +81,7 @@ Hooks.once("init", () => {
   });
 
   const modulo = game.modules.get(MODULE_ID);
-  if (modulo) modulo.api = { EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo, mundo,
+  if (modulo) modulo.api = { atalho: async d => (await import("./atalhos.mjs")).executarAtalho(d), EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo, mundo,
     grimorio: async (opcoes = {}) => (await import("./grimorio-app.mjs")).abrirGrimorio(opcoes) };
 });
 

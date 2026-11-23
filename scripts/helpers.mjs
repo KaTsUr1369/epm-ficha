@@ -87,6 +87,28 @@ export function ligarTextoRico(app, documento = () => app.document) {
     if (foundry.utils.getProperty(doc, nome) === valor) return;
     doc.update({ [nome]: valor }, { render: false, epmTextoRico: true }).catch(err => console.warn("EPM | Falha ao salvar o texto", err));
   }, { capture: true });
+  // 0.8.23: salva sozinho enquanto escreve (textos ricos e caixas de texto), sem precisar sair do campo nem clicar em salvar
+  const pendentes = new Map();
+  const salvarCampo = (nome, valor) => {
+    const doc = documento();
+    if (!nome || !doc?.isOwner) return;
+    if ((foundry.utils.getProperty(doc, nome) ?? "") === valor) return;
+    doc.update({ [nome]: valor }, { render: false, epmTextoRico: true }).catch(err => console.warn("EPM | Falha ao salvar o texto", err));
+  };
+  const agendar = el => {
+    const nome = el.name || el.getAttribute?.("name");
+    if (!nome) return;
+    clearTimeout(pendentes.get(nome));
+    pendentes.set(nome, setTimeout(() => { pendentes.delete(nome); salvarCampo(nome, el.value ?? ""); }, 700));
+  };
+  const aoDigitar = ev => {
+    const pm = ev.target?.closest?.("prose-mirror");
+    if (pm) return agendar(pm);
+    const ta = ev.target?.closest?.("textarea[name]");
+    if (ta) { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight + 2}px`; agendar(ta); }
+  };
+  raiz.addEventListener("input", aoDigitar, { capture: true });
+  raiz.addEventListener("keyup", ev => { if (ev.target?.closest?.("prose-mirror")) aoDigitar(ev); }, { capture: true });
 }
 
 /** Lê os dados de arrastar-e-soltar de um evento. */

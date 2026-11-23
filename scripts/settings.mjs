@@ -72,6 +72,17 @@ export function registrarAjustes() {
     scope: "world", config: false, type: Object, default: {},
     onChange: v => { aplicarNumeros(v); for (const a of game.actors ?? []) if (a.sheet?.rendered) a.sheet.render(); }
   });
+  reg("barraToken", {
+    name: "Barra de Vida nos tokens novos",
+    hint: "Fichas EPM criadas daqui em diante já vêm com a barra de Vida no token. \"Ao passar o mouse\" e \"Sempre\" mostram para o dono; \"Para todos\" mostra também aos outros jogadores.",
+    scope: "world", config: true, type: String, default: "nao",
+    choices: { nao: "Não mexer (padrão do Foundry)", hover: "Ao passar o mouse (dono)", sempre: "Sempre (dono)", todos: "Sempre, para todos" }
+  });
+  reg("errosAmigaveis", {
+    name: "Avisos de erro da ficha",
+    hint: "Quando algo da ficha EPM falhar, mostra um aviso dizendo o que fazer e um cartão (só para você) com o botão \"Copiar o erro\".",
+    scope: "client", config: true, type: Boolean, default: true
+  });
   reg("itemPilesMoedas", {
     name: "Item Piles usa as moedas da ficha EPM",
     hint: "Com o módulo Item Piles ativo, lojas, baús e trocas usam as moedas EPM (Cobre, Prata, Ouro, Platina e Dracmas) em vez das moedas do dnd5e.",

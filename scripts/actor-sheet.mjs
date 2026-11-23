@@ -62,7 +62,7 @@ const ACOES_FICHA = [
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
   "favoritarPericia", "favoritasNoTopo", "moverPericia", "ordemPericiasPadrao", "recolherPainel",
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
-  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila", "pegarCompartilhada", "guardarCompartilhada",
+  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila", "pegarCompartilhada", "guardarCompartilhada", "assistenteCriacao",
   // 0.5.4
   "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao", "abrirCompendioClasses",
   "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
@@ -377,6 +377,10 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     try { this._aplicarVisual(pers); } catch (err) { console.error("EPM | Falha no visual da ficha", err); }
     try { this._restaurarDetalhes(); } catch (err) { console.warn("EPM | detalhes abertos", err); }
     try { ligarBuscas(this.element, this._buscasListas ??= {}); } catch (err) { console.warn("EPM | barras de busca", err); }
+    // Busca na ficha inteira (campo na barra de abas)
+    import("./busca-global.mjs").then(m => m.ligarBuscaGlobal(this)).catch(err => console.warn("EPM | busca na ficha", err));
+    // Atalhos: perícias, ataques e habilidades podem ser arrastados para a barra de macros
+    import("./atalhos.mjs").then(m => m.ligarAtalhos(this.element, this.actor)).catch(err => console.warn("EPM | atalhos", err));
     // Mochilas compartilhadas: os itens de lá podem ser arrastados para o inventário (pegar)
     for (const el of this.element.querySelectorAll("[data-arraste-uuid]")) {
       el.addEventListener("dragstart", ev => { ev.stopPropagation(); ev.dataTransfer?.setData("text/plain", JSON.stringify({ type: "Item", uuid: el.dataset.arrasteUuid })); });
@@ -1214,6 +1218,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoGuardarMoedasMochila(ev, alvo) {
     const item = this._item(alvo);
     if (item) return M.moverMoedasMochila(item, "guardar");
+  }
+
+  async acaoAssistenteCriacao() {
+    const { assistenteCriacao } = await import("./assistente-criacao.mjs");
+    return assistenteCriacao(this.actor);
   }
 
   async acaoPegarCompartilhada(ev, alvo) {

@@ -14,6 +14,19 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.23
+
+- **Manual dentro do Foundry:** compêndio "EPM · Manual" com o diário "Manual da Ficha EPM": Começando, Guia do jogador, Guia do Mestre, Regras rápidas e Patch notes (resumo de cada versão). Botão "Manual" na barra de abas da ficha. Ao atualizar o módulo, um aviso oferece abrir as Patch notes.
+- **Conteúdo pronto em compêndios:** EPM · NPCs modelo (16 criaturas por região), EPM · Tabelas de loot (por região e faixa de nível, mais materiais), EPM · Macros (Escudo, grupo, pular tempo, NPC rápido, Grimório, catálogo, manual) e EPM · Melhorias (arraste uma melhoria ou um material para o editor de um item). Ícones próprios para os tipos de melhoria e os materiais.
+- **Busca na ficha inteira:** campo embaixo das abas; acha perícia, item, habilidade, magia, treino, receita, relação ou criatura e leva até ela.
+- **Atalhos na barra de macros:** arraste o botão de uma perícia, de um ataque ou de uma habilidade/magia para a barra.
+- **Caixas de texto:** salvam sozinhas enquanto você escreve (sem precisar sair do campo) e crescem com o texto.
+- **Criação guiada de personagem (base):** botão "Criação guiada" em personagem novo: nome, raça, atributos (16 pontos), arquétipo, perícias (50 pontos) e kit inicial.
+- **Erros amigáveis:** quando algo da ficha falha, um aviso diz o que fazer e um cartão (só para você) traz o botão "Copiar o erro". Dá para desligar nas configurações.
+- **Barra de Vida nos tokens novos:** opção nas configurações (não mexer, ao passar o mouse, sempre, ou para todos).
+- **Nomeação e Títulos:** o campo "Nome do item (Nomeação)" fica em todo item, na seção Melhorias. Os Títulos (Item Refinado, Item Arcano…) viraram a regra opcional "Títulos de itens" e só vão para itens com nome. A bênção de arma agora se chama "Ensinamento da Guerra".
+- **Por dentro:** testes rodam no GitHub antes de cada release (a release só sai se passarem); a parte de Treinamentos saiu de mecanicas.mjs para um arquivo próprio; a base antiga das melhorias (0.6.0) foi tirada (a migração já converte os itens); o cálculo das melhorias é guardado durante o desenho da ficha.
+
 ## Novidades da 0.8.22
 
 - **Melhorias de itens (ajustes):**

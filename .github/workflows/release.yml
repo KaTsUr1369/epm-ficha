@@ -16,7 +16,32 @@ permissions:
   contents: write
 
 jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Preparar os testes (Handlebars e os caminhos que eles usam)
+        run: |
+          npm install --no-save --no-package-lock handlebars@4
+          sudo mkdir -p /home/claude/ext
+          sudo ln -sfn "$GITHUB_WORKSPACE" /home/claude/epm-ficha
+          sudo ln -sfn "$GITHUB_WORKSPACE/testes" /home/claude/dev
+          sudo ln -sfn "$GITHUB_WORKSPACE/node_modules/handlebars/dist" /home/claude/ext/handlebars
+      - name: Rodar os testes
+        run: |
+          falhou=0
+          for t in testes/testes/*.mjs; do
+            echo "::group::$t"
+            node "$t" || falhou=1
+            echo "::endgroup::"
+          done
+          exit $falhou
+
   build:
+    needs: testes
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}

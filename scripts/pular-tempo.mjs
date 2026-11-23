@@ -46,7 +46,7 @@ export function dividirHoras(alvos, total) {
 }
 
 /** Treinos e criações em andamento: [{ chave, tipo, id, nome, total, feitas }]. */
-export async function alvosDeTreino(dados) {
+export async function alvosDeTreino(dados, actor = null) {
   const { lerCriacao } = await import("./oficina.mjs");
   const { especiaisDaFicha } = await import("./treinamentos-lista.mjs");
   const { horasDoTreino } = await import("./mecanicas.mjs");
@@ -59,7 +59,13 @@ export async function alvosDeTreino(dados) {
     ...Object.entries(dados.criacoes ?? {}).filter(([, c]) => c).map(([id, c]) => ({ id, c: lerCriacao(id, c, { artesao }) })).filter(x => x.c.estado === "andamento").map(({ id, c }) => {
       const total = Math.max(1, Math.ceil(num(c.horas)));
       return { chave: `t-c${id}`, tipo: "criacao", id, nome: `Criação: ${c.nome || "projeto"}`, total, feitas: Math.min(total, Math.max(0, num(c.feitas))) };
-    })
+    }),
+    // Melhorias de itens em andamento (só a etapa já paga: o material de cada etapa é pago ao trabalhar nela)
+    ...(actor?.items ?? []).filter(i => i.flags?.[FLAG]?.fazendoMelhoria?.etapaPaga).map(i => {
+      const fz = i.flags[FLAG].fazendoMelhoria;
+      const total = Math.round(num(fz.horasEtapa) * 100) / 100;
+      return { chave: `t-m${i.id}`, tipo: "melhoria", id: i.id, nome: `Melhoria em ${i.name}: etapa ${num(fz.acertos) + 1}`, total, feitas: Math.min(total, Math.max(0, num(fz.feitasEtapa))) };
+    }).filter(a => a.total > a.feitas)
   ];
 }
 
@@ -156,7 +162,8 @@ export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = fals
   const feitos = [];
   const up = {};
   // Treino e criação
-  const alvos = await alvosDeTreino(dados);
+  const alvos = await alvosDeTreino(dados, actor);
+  const itemUps = [];
   const disponivel = horasDeTreino(horas);
   const dist = porAlvo ?? dividirHoras(alvos, disponivel);
   let usadas = 0;
@@ -168,6 +175,8 @@ export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = fals
     if (a.tipo === "treino") {
       up[`${P}.treinamentos.${a.id}.horasFeitas`] = novo;
       if (novo >= a.total) up[`${P}.treinamentos.${a.id}.estado`] = "concluido";
+    } else if (a.tipo === "melhoria") {
+      itemUps.push({ _id: a.id, [`${P}.fazendoMelhoria.feitasEtapa`]: novo });
     } else {
       up[`${P}.criacoes.${a.id}.horasFeitas`] = novo;
       if (novo >= a.total) up[`${P}.criacoes.${a.id}.estado`] = "pronto";
@@ -186,6 +195,7 @@ export async function aplicarTempo(actor, { horas, porAlvo = null, estudo = fals
   Object.assign(up, ef.updates);
   feitos.push(...ef.feitos);
   if (Object.keys(up).length) await actor.update(up);
+  if (itemUps.length) await actor.updateEmbeddedDocuments("Item", itemUps);
   if (ef.encerrarManifestacao) { const R = await import("./ressonancia.mjs"); await R.encerrarManifestacao(actor); feitos.push("Ressonância: a alma se recolheu"); }
   if (ef.encerrarTroca) {
     const { pedirAoMestre } = await import("./mundo.mjs");
@@ -215,7 +225,7 @@ export async function dialogoPularTempo(actor, { unidade = "horas", qtd = 8 } = 
   if (!actor?.isOwner) return null;
   const dados = actor.flags?.[FLAG] ?? {};
   const { agora } = await import("./projetos.mjs");
-  const alvos = await alvosDeTreino(dados);
+  const alvos = await alvosDeTreino(dados, actor);
   const tem = temposDaFicha(dados, agora());
   const gm = !!game.user?.isGM;
   const linhas = alvos.map(a => `<label class="epm-campo epm-pular-linha"><span>${escapar(a.nome)} <em class="epm-dica">faltam ${a.total - a.feitas} h</em></span>

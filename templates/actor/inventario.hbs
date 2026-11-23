@@ -45,6 +45,7 @@
             <span class="epm-item-dentro">{{this.qtdDentro}} {{#if (epmEq qtdDentro 1)}}item{{else}}itens{{/if}}, peso {{epmNumero pesoDentro}}{{#if capacidade}} de {{epmNumero capacidade}}{{/if}}</span>
             {{#if temMoedas}}<span class="epm-mochila-moedas">{{#each moedas}}<span title="{{this.label}}"><img src="{{this.img}}" alt="" />{{this.qtd}}</span>{{/each}}</span>{{/if}}
             {{#if resumoEfeitos.length}}<span class="epm-item-efeitos">{{epmJoin resumoEfeitos " · "}}</span>{{/if}}
+            {{#if compartilhadaTexto}}<span class="epm-tag epm-selo-compartilhada" title="Compartilhada com {{compartilhadaTexto}}"><i class="fa-solid fa-people-group" aria-hidden="true"></i> {{compartilhadaTexto}}</span>{{/if}}
           </button>
           <div class="epm-item-controles">
             <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar no chat"><i class="fa-solid fa-comment"></i></button>
@@ -69,6 +70,28 @@
       </article>
       {{/each}}
     </div>
+    {{#if temCompartilhadas}}
+    <div class="epm-compartilhadas">
+      <p class="epm-rotulo"><i class="fa-solid fa-people-group" aria-hidden="true"></i> Compartilhadas com você</p>
+      {{#each mochilasCompartilhadas}}
+      <article class="epm-mochila aberta epm-mochila-compartilhada">
+        <header class="epm-mochila-topo">
+          <img class="epm-item-img" src="{{this.img}}" alt="" />
+          <span class="epm-mochila-nome"><span class="epm-item-titulo">{{this.nome}}</span> <span class="epm-item-dentro">carregada por {{this.dono}}{{#if membrosTexto}} · também com {{this.membrosTexto}}{{/if}}</span></span>
+          {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="guardarCompartilhada" data-dono-id="{{this.donoId}}" data-mochila-id="{{this.id}}" title="Guardar um item seu nesta mochila"><i class="fa-solid fa-arrow-down"></i> Guardar</button>{{/if}}
+        </header>
+        <div class="epm-mochila-conteudo">
+          {{#if vazia}}<p class="epm-mochila-vazia">Vazia.</p>{{/if}}
+          <ol class="epm-itens">{{#each conteudo}}
+            <li class="epm-item"><div class="epm-item-linha"><img class="epm-item-img" src="{{this.img}}" alt="" /><span class="epm-item-titulo">{{this.name}}{{#if (epmMenor 1 qtd)}} ×{{this.qtd}}{{/if}}</span>
+              {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="pegarCompartilhada" data-dono-id="{{../donoId}}" data-mochila-id="{{../id}}" data-item-id="{{this.id}}" title="Passar para o seu inventário"><i class="fa-solid fa-arrow-up"></i> Pegar</button>{{/if}}
+            </div></li>
+          {{/each}}</ol>
+        </div>
+      </article>
+      {{/each}}
+    </div>
+    {{/if}}
   </section>
 
   <div class="epm-filtros" role="group" aria-label="Filtrar por raridade">

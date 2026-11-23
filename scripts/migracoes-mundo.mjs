@@ -338,6 +338,56 @@ async function talentosParaTreinos() {
   return n;
 }
 
+/**
+ * Base antiga das Melhorias de itens (0.6.0: nome e efeito livres por categoria) → formato da 0.8.21.
+ * Nome igual a uma melhoria da lista (que sirva no item) vira ela; o resto fica como melhoria escrita à mão, com o texto antigo.
+ * Títulos vão para o campo "Título da arma" (o primeiro) ou para a descrição.
+ */
+export function trocasMelhoriasAntigas(item, { melhoriaPorNome } = {}) {
+  const f = item.flags?.[FLAG] ?? {};
+  const antigas = Object.entries(f.melhoriasItem ?? {}).filter(([, m]) => m && typeof m === "object");
+  if (!antigas.length && !f.melhoriasItem) return null;
+  const up = { [`${P}.-=melhoriasItem`]: null };
+  let titulo = String(f.titulo ?? "").trim();
+  const extras = [];
+  antigas.sort(([, a], [, b]) => Number(a.criado ?? 0) - Number(b.criado ?? 0)).forEach(([id, m], i) => {
+    const nome = String(m.nome ?? "").trim();
+    const texto = String(m.efeito ?? "").trim();
+    if (!nome && !texto) return;
+    if (m.categoria === "titulo") {
+      if (!titulo) { titulo = nome || texto; up[`${P}.titulo`] = titulo; } else extras.push(`<p><strong>Título:</strong> ${nome}${texto ? `: ${texto}` : ""}</p>`);
+      return;
+    }
+    const tipos = m.categoria === "maldicaoBencao" ? ["maldicao", "bencao"] : [m.categoria === "encantamento" ? "encantamento" : "modificacao"];
+    const def = tipos.map(t => melhoriaPorNome?.(nome, t, item)).find(Boolean);
+    up[`${P}.melhoriasDoItem.${id}`] = def
+      ? { id: def.id, tipo: def.tipo, escolha: "", origem: "migrada", consumiu: [], criado: Number(m.criado) || Date.now() + i }
+      : { id: `manual-${id}`, tipo: tipos[0], manual: { nome: nome || "Melhoria", texto }, origem: "migrada", consumiu: [], criado: Number(m.criado) || Date.now() + i };
+  });
+  if (extras.length) up["system.description.value"] = `${item.system?.description?.value ?? ""}${extras.join("")}`;
+  return up;
+}
+
+async function melhoriasAntigas(itens) {
+  const { MELHORIAS_ITEM } = await import("./melhorias-lista.mjs");
+  const { perfilItem, melhoriaServe } = await import("./melhorias.mjs");
+  const norm = t => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const melhoriaPorNome = (nome, tipo, item) => {
+    const p = perfilItem(item);
+    const cands = MELHORIAS_ITEM.filter(m => m.tipo === tipo && norm(m.nome) === norm(nome));
+    return cands.find(m => melhoriaServe(m, p)) ?? null;
+  };
+  let n = 0;
+  for (const item of itens) {
+    if (!item.flags?.[FLAG]?.melhoriasItem) continue;
+    const up = trocasMelhoriasAntigas(item, { melhoriaPorNome });
+    if (!up) continue;
+    await item.update(up, { render: false });
+    n++;
+  }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -350,6 +400,7 @@ export async function migrarMundo() {
   try { const n = await talentosParaTreinos(); if (n) feitos.push(`${n} ficha(s) com os talentos passados para Treinamentos`); } catch (err) { console.warn("EPM | talentos para treinos", err); }
   try { const n = await arquetiposEClasses0820(); if (n) feitos.push(`${n} ficha(s) com o arquétipo e a classe balanceados`); } catch (err) { console.warn("EPM | arquétipos e classes 0.8.20", err); }
   try { const n = await valores0820(); if (n) feitos.push(`${n} ficha(s) com números padrão antigos de estilos e classes atualizados`); } catch (err) { console.warn("EPM | valores 0.8.20", err); }
+  try { const n = await melhoriasAntigas(itens); if (n) feitos.push(`${n} item(ns) com as melhorias antigas no formato novo`); } catch (err) { console.warn("EPM | melhorias antigas", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

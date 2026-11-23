@@ -21,7 +21,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "novaMelhoriaItem", "removerMelhoriaItem", "adicionarPropriedade", "removerPropriedade", "novaFormaItem", "editarFormasItem"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "alternarMembroMochila", "adicionarMelhoria", "removerMelhoria", "trocarMaterial", "trabalharMelhoria", "desistirMelhoria", "imbuirPergaminho", "marcarFeitoMelhoria", "adicionarPropriedade", "removerPropriedade", "novaFormaItem", "editarFormasItem"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -167,12 +167,19 @@ export function abrirEditorItem(item) {
   return app;
 }
 
-/* 0.6.0: base das Melhorias de itens */
+/* 0.8.21: Mochilas compartilhadas */
 Object.assign(EPMItemSheet.prototype, {
-  acaoNovaMelhoriaItem(ev, alvo) {
-    return this.item.update({ [`flags.${FLAG}.melhoriasItem.${foundry.utils.randomID()}`]: { categoria: alvo.dataset.categoria, nome: "", efeito: "", criado: Date.now() } });
-  },
-  acaoRemoverMelhoriaItem(ev, alvo) {
-    return this.item.update({ [`flags.${FLAG}.melhoriasItem.-=${alvo.dataset.id}`]: null });
-  }
+  async acaoAlternarMembroMochila(ev, alvo) { const { alternarMembro } = await import("./mochila-compartilhada.mjs"); return alternarMembro(this.item, alvo.dataset.atorId); }
+});
+
+/* 0.8.21: Melhorias de itens */
+const MA = () => import("./melhorias-acoes.mjs");
+Object.assign(EPMItemSheet.prototype, {
+  async acaoAdicionarMelhoria(ev, alvo) { return (await MA()).dialogoAdicionarMelhoria(this.item, alvo.dataset.tipo); },
+  async acaoRemoverMelhoria(ev, alvo) { return (await MA()).removerMelhoria(this.item, alvo.dataset.uid); },
+  async acaoTrocarMaterial(ev, alvo) { return (await MA()).trocarMaterial(this.item, alvo.dataset.uid); },
+  async acaoTrabalharMelhoria() { return (await MA()).trabalharMelhoria(this.item); },
+  async acaoDesistirMelhoria() { return (await MA()).desistirMelhoria(this.item); },
+  async acaoImbuirPergaminho() { return (await MA()).imbuirPergaminho(this.item); },
+  async acaoMarcarFeitoMelhoria(ev, alvo) { return (await MA()).marcarFeito(this.item, alvo.dataset.id, alvo.checked); }
 });

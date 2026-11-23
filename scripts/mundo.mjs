@@ -94,6 +94,13 @@ async function tratarPedido({ tipo, dados, userId }) {
     const { pedidoNoMestre } = await import("./ressonancia.mjs");
     return pedidoNoMestre(dados);
   }
+  if (tipo === "mochilaCompartilhada") {
+    const { executarTroca } = await import("./mochila-compartilhada.mjs");
+    const usuario = game.users.get(userId);
+    const membro = game.actors.get(dados.membroId);
+    if (!usuario || !membro?.testUserPermission?.(usuario, "OWNER")) return console.warn("EPM | mochila compartilhada: pedido de quem não é dono");
+    return executarTroca(dados);
+  }
   if (tipo === "relacaoMutua") {
     const { relacaoMutuaNoMestre } = await import("./relacoes.mjs");
     return relacaoMutuaNoMestre(dados);

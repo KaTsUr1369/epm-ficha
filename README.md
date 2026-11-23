@@ -14,6 +14,22 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.21
+
+- **Melhorias de itens** (seção "Melhorias" no editor do item EPM):
+  - **Vagas:** Modificações 3, Encantamentos 2 (3 com o Pergaminho de Encantamento), Maldições 3, Bênçãos 2. Ao completar um tipo, o item mostra o título (Item Refinado, Item Arcano, Objeto Amaldiçoado, Objeto Divino).
+  - **Listas:** "Adicionar" abre a lista filtrada pelo tipo do item, com busca: Geral mais a do tipo (consumíveis e munição só a própria; matéria-prima não recebe). O tipo vem do catálogo ou do item e pode ser trocado à mão. São 217 melhorias.
+  - **Regras:** a mesma melhoria não entra duas vezes. Vaga cheia bloqueia. Pré-requisitos de melhoria ("consome" tira a exigida, que não volta; "mantém" desliga a nova se a exigida sair), de item (propriedade, tipo de armadura ou escudo, material), de portador (atributo, pontos na perícia, arquétipo, arma favorita, Sanidade) e de feito (o Mestre marca). Sem cumprir, a melhoria fica desligada, com o motivo.
+  - **Automático:** acerto, dano, margem de ameaça, multiplicador de crítico, dados extras (Elemental, Sagrada, Sedenta…), passos de dado (Faminta de Mana sobe; Massacre desce), CA, Bloqueio, Contra-ataque, perícias, testes de resistência, RD, resistência, iniciativa, deslocamento, peso, capacidade da mochila e as fórmulas de consumíveis (Concentrada, Fórmula Própria, Viciante, Ambrosia). Cruel soma +15 no crítico; Massacre multiplica os bônus fixos; Ensinamento e Avatar da Guerra maximizam o dano. Pureza Divina desliga o custo das Maldições. Bênção Protetiva: +3 CA por item (até +12) e +5 nos testes de resistência. O resto vai como nota no cartão de ataque.
+  - **Material Especial:** ocupa 1 vaga de Modificação e aplica a coluna certa da tabela (arma, proteção ou outros). Dá para trocar: paga o novo menos metade do anterior e faz o teste da vaga.
+  - **Fazer:** Modificação pela Forja, Encantamento pelo Encantamento, com DT da vaga (35/50/70 e 30/45/70). São 8 h ou 24 h em 3 etapas, cada uma com um teste; falhou, repete a etapa. O material é metade do preço da vaga, pago 1/3 por etapa. Usa as horas do dia (as mesmas dos treinos) e também anda com o Pular tempo.
+  - **Comprar:** 200/800/3.000 PO e 1.000/4.000 PO, loja de armas +50%, consumíveis e munição 1/5, pago com as moedas da ficha. Maldições e Bênçãos só o Mestre adiciona.
+  - **Consumíveis e munição:** Modificação e Encantamento valem para o lote (até 5 unidades, separadas da pilha; a munição é o pacote). Bênção e Maldição separam 1 unidade. As melhorias da munição ligada à arma valem nos disparos.
+  - Linha do item no inventário e cartão de ataque mostram o resumo.
+- **Mochilas compartilhadas:** no editor da mochila, marque os personagens com quem ela é compartilhada. Eles veem o conteúdo na aba Inventário ("Compartilhadas com você") e podem pegar e guardar itens. A mochila e o peso continuam com quem carrega. Quando o jogador não é dono de quem carrega, o Mestre faz a troca sozinho (precisa de um Mestre conectado).
+- **Ofícios (Produção):** as regras já estavam na ficha (CD 15/25/35, 4 h por profissão, etapas, um teste por profissão no fim, falha crítica e as combinações). Agora os +3 Pontos de Estrutura da Forja valem: cada ponto segura uma perda inteira de durabilidade, e o campo aparece no editor do item. O produto defeituoso da falha crítica entra no inventário marcado como Defeituoso.
+- **Fichas e itens antigos:** a base antiga das melhorias (nome e texto livres) passa para o formato novo. Nome igual a uma melhoria da lista vira ela; o resto fica escrito à mão, com o texto antigo; o primeiro título vai para "Título da arma".
+
 ## Novidades da 0.8.20
 
 - **Os Talentos viraram Treinamentos.** A sub-aba e a janela de Talentos saíram. Os 55 agora estão no catálogo de treinamentos ("Adicionar da lista"), nas categorias de treino, com tempo e PT pela antiga faixa:

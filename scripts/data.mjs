@@ -5,6 +5,7 @@
 import { ATRIBUTO_RECURSO_PADRAO } from "./regras-extras.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { modsDeArquetipo } from "./arquetipos.mjs";
+import { estadoMelhorias, ajustarEfeitosGravados, efeitosDasMelhorias, formulaConsumivel } from "./melhorias.mjs";
 import {
   FLAG, USOS_FORMA, ATRIBUTOS, GRUPOS_ATRIBUTO, PERICIAS_PADRAO, PERICIAS_RESISTENCIA, RECURSOS, REGRAS, custoNivel,
   RARIDADES_PODER, RARIDADES_ITEM, RARIDADE_DND5E, CONDICOES, COMBINACOES, EXAUSTAO, EXAUSTAO_MAX, DEFESAS,
@@ -337,7 +338,28 @@ export function moverNaLista(lista, id, antesDe = null) {
 
 const EQUIPAVEIS = ["weapon", "equipment"];
 
-export function lerEfeitosItem(item) {
+/** Estado das melhorias do item (com o portador), ou null se o item não tem nenhuma. */
+export function melhoriasAtivas(item) {
+  const bruto = item?.flags?.[FLAG]?.melhoriasDoItem;
+  if (!bruto || !Object.keys(bruto).length) return null;
+  try { return estadoMelhorias(item, { dados: item.parent?.flags?.[FLAG] }); } catch (err) { console.warn("EPM | melhorias", err); return null; }
+}
+
+/**
+ * Efeitos do item. Com `melhorias` (padrão), junta os efeitos automáticos das Melhorias de itens (0.8.21)
+ * e ajusta os gravados (Ajustada, Abafada, Mitral; fórmulas de consumíveis com Concentrada, Ambrosia…).
+ */
+export function lerEfeitosItem(item, { melhorias = true } = {}) {
+  const proprios = lerEfeitosGravados(item);
+  if (!melhorias) return proprios;
+  const est = melhoriasAtivas(item);
+  if (!est) return proprios;
+  const r = est.efeitos;
+  const ajustados = ajustarEfeitosGravados(proprios, r).map(e => e.tipo === "cura" && e.formula && e.quando === "uso" ? { ...e, formula: formulaConsumivel(e.formula, r) } : e);
+  return [...ajustados, ...efeitosDasMelhorias(item, est)];
+}
+
+function lerEfeitosGravados(item) {
   const f = item?.flags?.[FLAG]?.efeitos ?? {};
   const padraoQuando = item?.type === "weapon" ? "acerto" : "uso";
   return Object.entries(f)
@@ -392,6 +414,15 @@ export function efeitosDeItens(itens = [], { nivelTec = 0 } = {}) {
     if (efeitos.length || armadura || arma || /escudo/i.test(item.name ?? "")) out.push({ id: item.id, nome: nomeTec, poder: ["feat", "spell"].includes(item.type), efeitos, armadura, arma, tipoArma: arma ? String(item.flags?.[FLAG]?.tipoArma ?? "").trim() : "",
       escudo: /escudo/i.test(String(item.flags?.[FLAG]?.tipoArma ?? "")) || /escudo/i.test(item.name ?? "") || item.system?.type?.value === "shield" });
   }
+  // Bênção Protetiva: +3 CA por item com ela no inventário (até +12) e +5 nos testes de resistência (não soma)
+  let protetivas = 0;
+  for (const item of itens) {
+    try { if (melhoriasAtivas(item)?.efeitos?.protetiva && num(item.system?.quantity, 1) > 0) protetivas++; } catch { /* item ilegível */ }
+  }
+  if (protetivas) out.push({ id: "bencao-protetiva", nome: `Bênção Protetiva (${protetivas} ${protetivas === 1 ? "item" : "itens"})`, efeitos: [
+    { tipo: "mod", alvo: "ca", valor: Math.min(12, 3 * protetivas), origem: "bencao" },
+    ...["fortitude", "reflexos", "vontade"].map(id => ({ tipo: "mod", alvo: `pericia.${id}`, valor: 5, origem: "bencao" }))
+  ], armadura: 0, arma: false });
   return out;
 }
 
@@ -772,7 +803,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
     const corredor = especialDoTreino(t) === "corredor";
     for (const m of Object.values(t.mods ?? {})) somar(m?.alvo, corredor && m?.alvo === "deslocamento" ? numBonus("treino.corredor") : m?.valor, `Treinamento: ${t.nome || "sem nome"}`);
   }
-  for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome, fonteItem.poder ? "habilidade" : "item");
+  for (const fonteItem of itens) for (const e of fonteItem.efeitos) if (e.tipo === "mod") somar(e.alvo, e.valor, fonteItem.nome, fonteItem.poder ? "habilidade" : (e.origem || "item"));
   // Transformação ativa (sub-aba Transformações)
   const tAtiva = d.transformacao?.ativa ? d.transformacoes?.[d.transformacao.ativa] : null;
   if (tAtiva) for (const m of Object.values(tAtiva.mods ?? {})) somar(m?.alvo, m?.valor, `Transformação: ${tAtiva.nome || "sem nome"}`, "habilidade");

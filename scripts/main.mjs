@@ -34,6 +34,7 @@ import { registrarTiposNpc } from "./tipos-npc.mjs";
 registrarPolyglot();
 import("./treinos-conclusao.mjs").then(m => m.registrarConclusoes()).catch(err => console.warn("EPM | Treinamentos", err));
 import("./talentos.mjs").then(m => m.registrarTalentos()).catch(err => console.warn("EPM | Talentos", err));
+import("./mochila-compartilhada.mjs").then(m => m.registrarMochilasCompartilhadas()).catch(err => console.warn("EPM | Mochilas compartilhadas", err));
 import("./ressonancia.mjs").then(m => m.registrarRessonancia()).catch(err => console.warn("EPM | Ressonância de Alma", err));
 // Fichas e itens antigos recebem as mudanças das versões novas (Mestre ativo, ao abrir o mundo)
 Hooks.once("ready", () => { import("./migracoes-mundo.mjs").then(m => m.migrarMundo()).catch(err => console.warn("EPM | migração do mundo", err)); });

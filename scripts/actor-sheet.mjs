@@ -62,7 +62,7 @@ const ACOES_FICHA = [
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
   "favoritarPericia", "favoritasNoTopo", "moverPericia", "ordemPericiasPadrao", "recolherPainel",
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
-  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila",
+  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila", "pegarCompartilhada", "guardarCompartilhada",
   // 0.5.4
   "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao", "abrirCompendioClasses",
   "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
@@ -1196,6 +1196,16 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoGuardarMoedasMochila(ev, alvo) {
     const item = this._item(alvo);
     if (item) return M.moverMoedasMochila(item, "guardar");
+  }
+
+  async acaoPegarCompartilhada(ev, alvo) {
+    const { pegar } = await import("./mochila-compartilhada.mjs");
+    return pegar(this.actor, alvo.dataset.donoId, alvo.dataset.mochilaId, alvo.dataset.itemId);
+  }
+
+  async acaoGuardarCompartilhada(ev, alvo) {
+    const { guardar } = await import("./mochila-compartilhada.mjs");
+    return guardar(this.actor, alvo.dataset.donoId, alvo.dataset.mochilaId);
   }
 
   acaoPegarMoedasMochila(ev, alvo) {

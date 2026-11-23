@@ -41,6 +41,12 @@ export async function gastarDurabilidade(item, quanto = PERDA_CRITICO, motivo = 
   if (atual === null || atual === 0 || !item.isOwner) return "";
   // Armeiro (treino): as armas e armaduras dele perdem 5 em vez de 10 nos críticos e falhas críticas
   if (quanto === PERDA_CRITICO && item.parent?.flags?.[FLAG] && especiaisDaFicha(item.parent.flags[FLAG]).has("armeiro")) { quanto = ARMEIRO_PERDA; motivo = motivo ? `${motivo}, Armeiro` : "Armeiro"; }
+  // Pontos de Estrutura (itens da Forja): cada ponto segura uma perda inteira de durabilidade
+  const estrutura = int(item.flags?.[FLAG]?.pontosEstrutura);
+  if (estrutura > 0) {
+    await item.update({ [`${P}.pontosEstrutura`]: estrutura - 1 });
+    return `${item.name}: a Estrutura segurou o dano (${estrutura - 1} ponto${estrutura - 1 === 1 ? "" : "s"} de Estrutura sobrando)${motivo ? ` (${motivo})` : ""}.`;
+  }
   const novo = Math.max(0, atual - quanto);
   await item.update({ [`${P}.durabilidade`]: novo });
   return novo === 0 ? `${item.name} quebrou${motivo ? ` (${motivo})` : ""}: perde os efeitos até ser consertado.` : `${item.name}: durabilidade ${atual} → ${novo}${motivo ? ` (${motivo})` : ""}.`;

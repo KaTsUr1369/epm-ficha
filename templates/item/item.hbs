@@ -19,6 +19,7 @@
       <label class="epm-campo"><span>Preço</span><span class="epm-linha-campos"><input type="number" min="0" step="any" name="flags.epm-ficha.preco.valor" value="{{preco.valor}}" /><select name="flags.epm-ficha.preco.moeda">{{#each preco.moedas}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></span></label>
       {{#if eArmadura}}<label class="epm-campo" title="Soma em Armaduras e escudos, na CA, quando equipado"><span>CA de armadura ou escudo</span><input type="number" name="flags.epm-ficha.armadura" value="{{this.armadura}}" /></label>{{/if}}
       {{#if duravel}}<label class="epm-campo" title="0 a 100. Falha crítica com a arma ou crítico sofrido tiram 10; em 0 fica Quebrado e perde os efeitos até ser consertado"><span>Durabilidade</span><input type="number" min="0" max="100" name="flags.epm-ficha.durabilidade" value="{{durabilidade}}" /></label>{{/if}}
+      {{#if duravel}}<label class="epm-campo" title="Itens feitos na Forja ganham +3. Cada ponto segura uma perda inteira de durabilidade (crítico sofrido ou falha crítica)"><span>Pontos de Estrutura</span><input type="number" min="0" name="flags.epm-ficha.pontosEstrutura" value="{{pontosEstrutura}}" /></label>{{/if}}
       {{#if eConsumivel}}<label class="epm-campo largo"><span>Rolagem ao usar</span><input type="text" name="flags.epm-ficha.formula" value="{{this.formulaUso}}" placeholder="2d4 + 2" /></label>{{/if}}
       {{#if eMochila}}<label class="epm-campo"><span>Capacidade (peso)</span><input type="number" min="0" step="any" name="system.capacity.weight.value" value="{{mochila.capacidade}}" /></label>{{/if}}
       {{#unless eMochila}}
@@ -128,15 +129,47 @@
   </section>
   {{/if}}
 
-  <section class="epm-painel epm-060-melhorias-item">
-    <header class="epm-painel-titulo"><h3>Melhorias do item</h3><span class="epm-dica">Base: as regras de Melhorias de itens ainda vão ser definidas (limites provisórios, sem automação).</span></header>
-    {{#each melhorias060.categorias}}
-    <div class="epm-060-melhoria-cat">
-      <p class="epm-rotulo"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}} <span class="epm-contador">{{this.qtd}}/{{this.limite}}</span>{{#if @root.editavel}}{{#unless cheio}} <button type="button" class="epm-icone-botao" data-action="novaMelhoriaItem" data-categoria="{{this.id}}" title="Adicionar"><i class="fa-solid fa-plus"></i></button>{{/unless}}{{/if}}</p>
-      {{#each itens}}<div class="epm-060-item"><input type="text" name="flags.epm-ficha.melhoriasItem.{{this.id}}.nome" value="{{this.nome}}" placeholder="Nome" /><input type="text" name="flags.epm-ficha.melhoriasItem.{{this.id}}.efeito" value="{{this.efeito}}" placeholder="Efeito e preço" /><button type="button" class="epm-icone-botao perigo" data-action="removerMelhoriaItem" data-id="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button></div>{{/each}}
+  {{#if melhoriasItem}}
+  <section class="epm-painel epm-melhorias-item">
+    <header class="epm-painel-titulo"><h3>Melhorias</h3>
+      {{#if melhoriasItem.temTitulos}}{{#each melhoriasItem.titulos}}<span class="epm-tag epm-selo-titulo"><i class="fa-solid fa-award" aria-hidden="true"></i> {{this}}</span>{{/each}}{{/if}}
+      <span class="epm-dica">{{#if melhoriasItem.lote}}Modificação e Encantamento valem para o lote; Bênção e Maldição, para 1 unidade.{{else}}Modificações 3, Encantamentos 2 (3 com pergaminho), Maldições 3, Bênçãos 2.{{/if}}</span>
+    </header>
+    {{#if editavel}}<label class="epm-campo epm-melhorias-categoria" title="Que listas de melhorias o item usa (a automática vem do catálogo ou do tipo do item)"><span>Tipo de item</span><select name="flags.epm-ficha.listaMelhorias">{{#each melhoriasItem.opcoesCategoria}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>{{/if}}
+    {{#if melhoriasItem.semMelhorias}}<p class="epm-vazio">Este item não recebe melhorias (matéria-prima).</p>{{else}}
+    {{#if melhoriasItem.temFazendo}}{{#with melhoriasItem.fazendo as |fz|}}
+    <div class="epm-melhoria-fazendo">
+      <p><i class="fa-solid fa-hammer" aria-hidden="true"></i> Fazendo <strong>{{fz.nome}}</strong>{{#if fz.escolha}} ({{fz.escolha}}){{/if}}: etapa {{fz.etapa}} de 3 · DT {{fz.dt}} · {{fz.horasTexto}} · material {{fz.custoEtapaTexto}} por etapa{{#if fz.falhas}} · {{fz.falhas}} falha(s){{/if}}</p>
+      <div class="epm-barra"><span style="width: {{fz.pct}}%"></span></div>
+      {{#if @root.editavel}}<div class="epm-linha-botoes">
+        <button type="button" class="epm-botao epm-botao-forte" data-action="trabalharMelhoria">{{#if fz.prontaParaTeste}}<i class="fa-solid fa-dice-d20"></i> Testar a etapa{{else}}<i class="fa-solid fa-hammer"></i> Trabalhar{{/if}}</button>
+        <button type="button" class="epm-botao" data-action="desistirMelhoria"><i class="fa-solid fa-xmark"></i> Desistir</button>
+      </div>{{/if}}
+    </div>{{/with}}{{/if}}
+    {{#each melhoriasItem.tipos}}
+    <div class="epm-melhoria-tipo">
+      <p class="epm-rotulo"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.plural}} <span class="epm-contador">{{this.usadas}}/{{this.max}}</span>{{#if completo}} <span class="epm-tag">{{this.titulo}}</span>{{/if}}
+        {{#if podeAdicionar}} <button type="button" class="epm-icone-botao" data-action="adicionarMelhoria" data-tipo="{{this.tipo}}" title="Adicionar {{this.label}}"><i class="fa-solid fa-plus"></i></button>{{/if}}</p>
+      {{#each entradas}}
+      <div class="epm-melhoria-entrada{{#unless ativa}} desligada{{/unless}}">
+        <div><strong>{{this.nome}}</strong>{{#if origem}} <em class="epm-dica">({{this.origem}})</em>{{/if}}{{#if selada}} <span class="epm-tag">selada</span>{{/if}}
+          <br><span class="epm-dica">{{this.texto}}</span>
+          {{#unless ativa}}<br><span class="epm-alerta-texto"><i class="fa-solid fa-power-off" aria-hidden="true"></i> Desligada: {{this.motivo}}</span>{{/unless}}
+          {{#if feito}}<br><label class="epm-check"><input type="checkbox" data-action="marcarFeitoMelhoria" data-id="{{this.feitoId}}" {{#if feitoMarcado}}checked{{/if}} {{#unless @root.melhoriasItem.gm}}disabled{{/unless}}> Feito: {{this.feito}} (o Mestre marca)</label>{{/if}}
+        </div>
+        <div class="epm-linha-botoes">
+          {{#if eMaterial}}{{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="trocarMaterial" data-uid="{{this.uid}}" title="Trocar de material"><i class="fa-solid fa-right-left"></i></button>{{/if}}{{/if}}
+          {{#if podeTirar}}<button type="button" class="epm-icone-botao perigo" data-action="removerMelhoria" data-uid="{{this.uid}}" title="Tirar do item"><i class="fa-solid fa-trash"></i></button>{{/if}}
+        </div>
+      </div>
+      {{/each}}
     </div>
     {{/each}}
+    {{#if melhoriasItem.pergaminho}}<p class="epm-dica"><i class="fa-solid fa-scroll" aria-hidden="true"></i> Pergaminho de Encantamento imbuído: 3ª vaga de Encantamento.</p>{{else}}{{#if melhoriasItem.podePergaminho}}<p><button type="button" class="epm-botao" data-action="imbuirPergaminho" title="Conhecimentos Mágicos DT 35 para identificar e Arcanismo DT 70 para imbuir; gasta 1 Pergaminho de Encantamento do inventário"><i class="fa-solid fa-scroll"></i> Imbuir Pergaminho de Encantamento</button></p>{{/if}}{{/if}}
+    {{#if melhoriasItem.efeitosTexto}}<p class="epm-dica"><i class="fa-solid fa-gears" aria-hidden="true"></i> Automático: {{melhoriasItem.efeitosTexto}}</p>{{/if}}
+    {{/if}}
   </section>
+  {{/if}}
 
   <section class="epm-painel">
     <header class="epm-painel-titulo"><h3>Bônus e efeitos</h3><span class="epm-dica">{{this.dicaAtivo}}</span></header>
@@ -184,6 +217,13 @@
   </section>
 
   {{#if eMochila}}
+  {{#if mochila.temMembros}}
+  <section class="epm-painel epm-mochila-membros">
+    <header class="epm-painel-titulo"><h3>Compartilhar</h3><span class="epm-dica">Os personagens marcados veem o que está nesta mochila e podem pegar e guardar itens. O peso continua com quem carrega.</span></header>
+    {{#if mochila.membros.length}}<div class="epm-membros">{{#each mochila.membros}}<label class="epm-check"><input type="checkbox" data-action="alternarMembroMochila" data-ator-id="{{this.id}}" {{#if marcado}}checked{{/if}} {{#unless @root.editavel}}disabled{{/unless}}> <img src="{{this.img}}" alt="" width="20" height="20" /> {{this.nome}}</label>{{/each}}</div>
+    {{else}}<p class="epm-vazio">Nenhum outro personagem no mundo.</p>{{/if}}
+  </section>
+  {{/if}}
   <section class="epm-painel">
     <header class="epm-painel-titulo"><h3>Moedas na mochila</h3><span class="epm-contador">{{mochila.totalTexto}}</span></header>
     <div class="epm-mochila-moedas-editor">

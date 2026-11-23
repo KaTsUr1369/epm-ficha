@@ -20,12 +20,15 @@ import {
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
   situacaoLimite, raridadeItem, valorEmCobre, formatarMoedas, arredondar, bonusCenaAtivos, entradaPericia, lerCaminho, municaoDaArma,
-  efeitosDeItens, lerEfeitosItem, resumoEfeitoItem, itemAtivo, ordenarPorLista, normalizarTexto
+  efeitosDeItens, lerEfeitosItem, resumoEfeitoItem, itemAtivo, ordenarPorLista, normalizarTexto, melhoriasAtivas
 } from "./data.mjs";
 import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
 import { painelProjetos } from "./projetos.mjs";
+import { passoDeDado, maisDados, resumoMelhorias, pesoComMelhorias, estadoMelhorias, categoriaAutomatica, CATEGORIAS_MELHORIA } from "./melhorias.mjs";
+import { lerFazendo } from "./melhorias-acoes.mjs";
+import { membrosDe, contextoCompartilhadas, opcoesMembros } from "./mochila-compartilhada.mjs";
 import { estadoMorte as estadoMorteBase } from "./morte.mjs";
 const estadoMorteAtor = actor => { try { const e = estadoMorteBase(actor); return e.ativo ? e : null; } catch { return null; } };
 import { conteudoNotion } from "./settings.mjs";
@@ -116,7 +119,20 @@ function rotuloAfinidade(v) {
 
 function pesoItem(item) {
   const w = item?.system?.weight;
-  return num(typeof w === "object" && w !== null ? w.value : w);
+  let peso = num(typeof w === "object" && w !== null ? w.value : w);
+  // Melhorias de itens: Leve, Pluma, Mitral, Furtiva… e a mochila onde ele está (Alças Ajustadas, Dimensional)
+  const mel = melhoriasAtivas(item);
+  if (mel) peso = pesoComMelhorias(peso, mel.efeitos);
+  const cont = item?.system?.container ? item.parent?.items?.get?.(item.system.container) : null;
+  const melCont = cont ? melhoriasAtivas(cont) : null;
+  if (melCont) peso *= melCont.efeitos.pesoDentro;
+  return arredondar(peso, 3);
+}
+/** Capacidade da mochila com as melhorias (Ampliada, Dimensional, Bolsa sem Fundo…). */
+function capacidadeMochila(item) {
+  const base = num(item?.system?.capacity?.weight?.value ?? item?.system?.capacity?.value, 0);
+  const mel = melhoriasAtivas(item);
+  return mel ? arredondar(base * mel.efeitos.capacidade, 2) : base;
 }
 
 export function danoArma(item) {
@@ -182,6 +198,40 @@ export function ataqueDeArma(item, modoId = "") {
     propriedades: Array.isArray(f.propriedades) ? [...f.propriedades] : []
   };
   base.nomeItem = item.name;
+  // Melhorias de itens (0.8.21): acerto, dano, margem, multiplicador, passos de dado e o que vai como nota no cartão
+  const mel = melhoriasAtivas(item);
+  if (mel) {
+    const r = mel.efeitos;
+    base.bonusAcerto += r.acerto;
+    if (r.passo) base.dano = passoDeDado(base.dano, r.passo);
+    if (r.dados) base.dano = maisDados(base.dano, r.dados);
+    if (r.dano) base.dano = base.dano ? `${base.dano} + ${r.dano}` : String(r.dano);
+    base.critMargem = limitar(base.critMargem - r.margem, 2, 20);
+    base.critMult = Math.max(2, base.critMult + r.mult);
+    for (const pr of r.props) if (!base.propriedades.some(x => normalizarTexto(x) === normalizarTexto(pr))) base.propriedades.push(pr);
+    const notas = [...r.notas];
+    if (r.ignoraRd) notas.push(`Melhorias: ignora ${r.ignoraRd} de RD.`);
+    if (r.alcance) notas.push(`Melhorias: alcance +${r.alcance} passo${r.alcance > 1 ? "s" : ""}.`);
+    if (r.danoParado) notas.push(`Estabilizada: +${r.danoParado} de dano se você não se moveu no turno (some no bônus externo).`);
+    if (r.categoria) notas.push("Ferro Estelar: o dano sobe uma categoria (Normal → Verdadeiro).");
+    if (r.acertoItem) notas.push(`Melhorias: +${r.acertoItem} em todos os testes feitos com o item.`);
+    base.melhorias = { resumo: resumoMelhorias(mel), danoCritico: r.danoCritico, massacre: r.massacre, maxNo20: r.maxNo20, maxNoCritico: r.maxNoCritico, notas, custoNotas: r.custoNotas, titulos: mel.titulos };
+  }
+  // Melhorias da munição ligada (Expansiva, Explosiva, Elemental, Material Especial…) valem nos disparos desse lote
+  try {
+    const md = municaoDaArma(f);
+    const mun = md.usa && md.itemId ? item.parent?.items?.get?.(md.itemId) : null;
+    const mm = mun ? melhoriasAtivas(mun) : null;
+    if (mm) {
+      const r = mm.efeitos;
+      base.critMult = Math.max(2, base.critMult + r.mult);
+      base.critMargem = limitar(base.critMargem - r.margem, 2, 20);
+      if (r.dano) base.dano = base.dano ? `${base.dano} + ${r.dano}` : String(r.dano);
+      for (const d of r.danoExtra) base.danoExtra.push({ formula: d.formula, tipo: d.tipo });
+      base.melhorias ??= { resumo: "", notas: [], custoNotas: [], titulos: [] };
+      base.melhorias.notas.push(`Munição ${mun.name}: ${resumoMelhorias(mm)}.`, ...r.notas);
+    }
+  } catch (err) { console.warn("EPM | melhorias da munição", err); }
   // Maestria das armas Exóticas: efeitos automáticos quando liberada (Katana Leve + Dupla, Rapieira 17–20…)
   const estadoMx = estadoMaestria(item, item.parent?.flags?.[FLAG] ?? {});
   Object.assign(base, aplicarMaestriaNoAtaque(base, estadoMx));
@@ -1453,6 +1503,7 @@ export function montarContexto({
       equipado: !!item.system?.equipped,
       eArma, eConsumivel: item.type === "consumable", ataque,
       formasQtd: Object.values(f.formas ?? {}).filter(Boolean).length,
+      melhoriasResumo: (() => { const mel = melhoriasAtivas(item); return mel ? resumoMelhorias(mel) : ""; })(),
       // Passiva do item (efeitos, regeneração, gatilhos): pode ser desligada
       temPassiva: Object.keys(f.efeitos ?? {}).length > 0 || Object.values(f.formas ?? {}).some(fo => fo && (fo.acao === "passiva" || (fo.bonus?.gatilho && fo.bonus.gatilho !== "uso"))),
       passivaLigada: !f.passivaDesligada,
@@ -1513,7 +1564,7 @@ export function montarContexto({
       conteudo = conteudo.sort((a, b) => (pos.get(a.id) ?? 9999) - (pos.get(b.id) ?? 9999) || porNome(a, b));
     } else conteudo = conteudo.sort(comparar[modo]);
     conteudo.forEach((x, i, l) => { x.naMochila = true; x.manual = modo === "manual"; x.primeiraM = i === 0; x.ultimaM = i === l.length - 1; });
-    const capacidade = num(item.system?.capacity?.weight?.value ?? item.system?.capacity?.value, 0);
+    const capacidade = capacidadeMochila(item);
     const pesoDentro = arredondar(conteudo.reduce((s, x) => s + x.pesoLinha, 0), 2);
     return {
       ...base, conteudo, qtdDentro: conteudo.length, pesoDentro,
@@ -1525,6 +1576,16 @@ export function montarContexto({
     };
   }, falhas).sort(porNome);
   ctx.temMochilas = ctx.mochilas.length > 0;
+  // Mochilas compartilhadas: as minhas mostram com quem; as dos outros aparecem aqui para pegar e guardar
+  try {
+    for (const m of ctx.mochilas) {
+      const mi = actor?.items?.get?.(m.id);
+      const membros = membrosDe(mi).map(id => globalThis.game?.actors?.get(id)?.name).filter(Boolean);
+      if (membros.length) m.compartilhadaTexto = membros.join(", ");
+    }
+    ctx.mochilasCompartilhadas = actor ? contextoCompartilhadas(actor) : [];
+  } catch (err) { console.warn("EPM | mochilas compartilhadas", err); ctx.mochilasCompartilhadas = []; }
+  ctx.temCompartilhadas = ctx.mochilasCompartilhadas.length > 0;
   const ordemCategorias = ordenarPorLista(CATEGORIAS_ITEM.map(c => c.id), dados.ui?.ordemCategorias, { aposVizinho: true });
   ctx.categorias = ordemCategorias.map((id, indice) => {
     const cat = CATEGORIAS_ITEM.find(c => c.id === id);
@@ -2024,7 +2085,7 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
   const ataque = eArma ? { ...ataqueDeArma(item), dano: danoArma(item) } : null;
   const opcoesAtributoDano = [{ id: "", label: "Nenhum", selected: !ATRIBUTOS[f.atributoDano] },
     ...Object.entries(ATRIBUTOS).map(([id, a]) => ({ id, label: a.label, selected: id === f.atributoDano }))];
-  const efeitos = lerEfeitosItem(item).map(e => ({
+  const efeitos = lerEfeitosItem(item, { melhorias: false }).map(e => ({
     ...e,
     eMod: e.tipo === "mod", eRd: e.tipo === "rd", eTipoDano: ["resistencia", "imunidade", "vulnerabilidade", "danoExtra"].includes(e.tipo),
     eEm: e.tipo === "desvantagem" || e.tipo === "vantagem", eCura: e.tipo === "cura", eFormula: e.tipo === "cura" || e.tipo === "danoExtra",
@@ -2042,7 +2103,7 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     quantidade: num(item.system?.quantity, 1), peso: num(item.system?.weight?.value ?? item.system?.weight, 0),
     equipavel: ["weapon", "equipment"].includes(tipo), equipado: !!item.system?.equipped,
     preco: { valor: num(preco.valor), moedas: MOEDAS.map(m => ({ id: m.id, label: m.label, selected: m.id === (preco.moeda ?? "po") })) },
-    eArma, duravel, durabilidade, ataque, opcoesAtributoDano, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
+    eArma, duravel, durabilidade, pontosEstrutura: int(f.pontosEstrutura), ataque, opcoesAtributoDano, opcoesPericia: eArma ? pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === ataque.periciaId })) : [],
     modosArma: eArma ? modosDaArma(item).map(m => ({
       ...m, bonusTexto: m.bonusAcerto === null ? "" : m.bonusAcerto,
       opcoesPericia: [{ id: "", nome: "Igual à arma", selected: !m.pericia }, ...pericias.map(p => ({ id: p.id, nome: p.nome, selected: p.id === m.pericia }))]
@@ -2101,12 +2162,31 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
       estaminaPorTurno: int(f.estaminaPorTurno), titulo: f.titulo ?? ""
     };
   }
-  ctx.melhorias060 = {
-    categorias: Object.entries(CATEGORIAS_MELHORIA_ITEM).map(([id, c]) => {
-      const itens = Object.entries(f.melhoriasItem ?? {}).filter(([, m]) => m?.categoria === id).map(([mid, m]) => ({ id: mid, nome: m.nome ?? "", efeito: m.efeito ?? "" }));
-      return { id, ...c, itens, qtd: itens.length, cheio: itens.length >= c.limite };
-    })
-  };
+  // Melhorias de itens (0.8.21): vagas por tipo, pré-requisitos, Material Especial, pergaminho e trabalho em etapas
+  try {
+    const est = estadoMelhorias(item, { dados: item.parent?.flags?.[FLAG] });
+    const gm = !!globalThis.game?.user?.isGM;
+    const fz = lerFazendo(item);
+    const feitos = f.feitosMelhoria ?? {};
+    ctx.melhoriasItem = {
+      gm, semMelhorias: !est.perfil.listas.length, lote: est.perfil.lote, titulos: est.titulos, temTitulos: est.titulos.length > 0,
+      categoriaLabel: CATEGORIAS_MELHORIA[est.perfil.categoria] ?? est.perfil.categoria, automatica: est.perfil.automatica,
+      opcoesCategoria: Object.entries(CATEGORIAS_MELHORIA).map(([id, label]) => ({ id, label: id ? label : `Automática (${CATEGORIAS_MELHORIA[categoriaAutomatica(item)] ?? "—"})`, selected: id === (f.listaMelhorias ?? "") })),
+      pergaminho: est.pergaminho, podePergaminho: editavel && !est.pergaminho && !est.perfil.lote && est.perfil.listas.length > 0,
+      fazendo: fz, temFazendo: !!fz,
+      tipos: Object.values(est.vagas).map(v => ({
+        ...v, completo: v.cheio && v.usadas > 0 && !est.perfil.lote,
+        podeAdicionar: editavel && !v.cheio && !fz && (gm || ["modificacao", "encantamento"].includes(v.tipo)),
+        entradas: est.entradas.filter(e => e.tipo === v.tipo).map(e => ({
+          uid: e.uid, nome: e.nome, texto: e.texto, ativa: e.ativa, motivo: e.motivoTexto, selada: e.selada,
+          eMaterial: e.id === "material-especial", podeTirar: editavel && !e.selada && (gm || ["modificacao", "encantamento"].includes(e.tipo)),
+          feito: e.def?.pre?.feito ?? "", feitoId: e.id, feitoMarcado: !!feitos[e.id],
+          origem: { feita: "feita", comprada: "comprada", mestre: "do Mestre", migrada: "de antes da 0.8.21" }[e.origem] ?? ""
+        }))
+      })),
+      efeitosTexto: lerEfeitosItem(item).filter(e => e.deMelhoria).map(e => resumoEfeitoItem(e, { alvos: Object.fromEntries(alvosModificador(pericias).map(a => [a.id, a.label])) })).filter(Boolean).join(" · ")
+    };
+  } catch (err) { console.warn("EPM | melhorias do item", err); ctx.melhoriasItem = null; }
   const recarga = RECARGAS[f.cargas?.recarga] ? f.cargas.recarga : "nenhuma";
   ctx.cargas = {
     valor: Math.max(0, int(f.cargas?.valor)), max: Math.max(0, int(f.cargas?.max)),
@@ -2129,8 +2209,9 @@ export function montarContextoItem({ item, ficha = null, editores = {}, editavel
     const m = f.moedas ?? {};
     const carteira = actor?.flags?.[FLAG]?.moedas ?? {};
     ctx.mochila = {
+      membros: actor ? opcoesMembros(item) : [], temMembros: !!actor,
       conteudo, vazia: !conteudo.length, temDono: !!actor,
-      capacidade: num(item.system?.capacity?.weight?.value ?? item.system?.capacity?.value, 0),
+      capacidade: capacidadeMochila(item),
       pesoDentro: arredondar(conteudo.reduce((s, x) => s + x.peso * x.qtd, 0), 2),
       moedas: MOEDAS.map(x => ({ id: x.id, label: x.label, abrev: x.abrev, img: x.img, qtd: Math.max(0, int(m[x.id])), naCarteira: Math.max(0, int(carteira[x.id])) })),
       totalTexto: [...MOEDAS].reverse().filter(x => int(m[x.id]) > 0).map(x => `${int(m[x.id])} ${x.abrev}`).join(", ") || "vazia"

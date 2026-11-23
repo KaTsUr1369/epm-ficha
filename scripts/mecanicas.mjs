@@ -10,13 +10,14 @@ import {
 import {
   num, int, novoId, lerPoder, avaliarForma, textoCusto, eSustentada, contarRaridades, situacaoLimite, raridadeItem,
   maxFormula, tetoDano, contarEfeitos, somarFormula, valorEmCobre, pagarMoedas, consolidarMoedas,
-  formatarMoedas, formaPadrao, moedaPorId, multiplicarDados, bonusCenaAtivos, limitar, lerEfeitosItem,
+  formatarMoedas, formaPadrao, moedaPorId, multiplicarDados, bonusCenaAtivos, limitar, lerEfeitosItem, melhoriasAtivas,
   custoEfetivo, condicaoPorId, danoRecebido, municaoDaArma, lerTipoDano, normalizarTexto, nivelHabilidade, montarBonusCena, itemAtivo,
   valorBonusCena, origemBonusCena, corteTetoAtaque
 } from "./data.mjs";
 import { lerAtor, dadosRolagemEPM, danoArma, periciaAtaquePadrao, ataqueDeArma, ataqueCustom, modsDoAtaque } from "./context.mjs";
 import { automacaoDe, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS } from "./bencaos.mjs";
 import { fvtt, enriquecer, escapar } from "./helpers.mjs";
+import { maximizar, formulaConsumivel, resumoMelhorias } from "./melhorias.mjs";
 import { ajustes, listaPericias } from "./settings.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { cacadorDe } from "./arquetipos.mjs";
@@ -235,7 +236,9 @@ export async function cartaoItem(actor, item, { avisos = [], linhas = [] } = {})
     const per = ficha.periciaPorId[periciaAtaquePadrao(item)];
     if (per) botoes.push({ acao: "teste", pericia: per.id, tipo: "ataque", rotulo: `Ataque: ${item.name}`, label: `Atacar (${sinalCurto(per.total)})`, icone: "fa-solid fa-dice-d20" });
   }
-  const formula = item.type === "weapon" ? danoArma(item) : (item.flags?.[FLAG]?.formula ?? "");
+  let formula = item.type === "weapon" ? danoArma(item) : (item.flags?.[FLAG]?.formula ?? "");
+  if (formula && item.type !== "weapon") { const mel = melhoriasAtivas(item); if (mel) formula = formulaConsumivel(formula, mel.efeitos); }
+  if (item.type !== "weapon") { const mel = melhoriasAtivas(item); if (mel) { const nomes = resumoMelhorias(mel); if (nomes) avisos.push(`Melhorias: ${nomes}.`); for (const c of mel.efeitos.custoNotas) avisos.push(`Maldição — ${c}`); } }
   if (formula) botoes.push({ acao: "formula", formula, rotulo: `${item.type === "weapon" ? "Dano" : "Rolagem"}: ${item.name}`, label: formula, icone: "fa-solid fa-dice" });
   return enviarCartao(actor, {
     img: item.img, nome: item.name, tipoLabel, raridadeLabel, raridadeCor, circuloLabel, texto, botoes, avisos, linhas
@@ -1769,6 +1772,10 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (ficha.extras?.titulos?.ativo?.contraTipo) notas.push(`Título ${ficha.extras.titulos.ativo.nome}: +2 no acerto contra ${ficha.extras.titulos.ativo.contraTipo} (some no bônus externo)`);
   if (tec) notas.push(tec.texto);
   if (itemTec && quebrado(itemTec)) notas.push("Arma quebrada: sem os bônus e efeitos dela até ser consertada");
+  if (at.melhorias) {
+    notas.push(...at.melhorias.notas);
+    for (const c of at.melhorias.custoNotas) notas.push(`Maldição — ${c}`);
+  }
 
   // Arquétipos, munição e cargas
   const item = tipo === "arma" ? actor.items.get(String(ref).split(":")[0]) : null;
@@ -2216,7 +2223,13 @@ export async function rolarAtaque(actor, at, {
   if (comDano) {
     let danoArmaFormula = semModDano ? semModificadorDeDano(at.dano) : at.dano;
     danoArmaFormula = somarDadosDaArma(danoArmaFormula, int(dadosExtra));
-    const base = danoArmaFormula ? (critico ? multiplicarDados(danoArmaFormula, multFinal) : danoArmaFormula) : "";
+    const mel = at.melhorias ?? {};
+    const maxDano = (mel.maxNo20 && natural === 20) || (mel.maxNoCritico && critico);
+    if (maxDano && danoArmaFormula) { danoArmaFormula = maximizar(danoArmaFormula); notas.push("Dano maximizado (Bênção da arma)."); }
+    let base = danoArmaFormula ? (critico ? multiplicarDados(danoArmaFormula, multFinal) : danoArmaFormula) : "";
+    // Massacre: no crítico, os bônus fixos multiplicam junto com os dados
+    if (critico && mel.massacre && danoArmaFormula) { base = `(${danoArmaFormula}) * ${multFinal}`; notas.push(`Massacre: o dano da arma inteiro (com os bônus fixos) ×${multFinal}.`); }
+    if (critico && mel.danoCritico) { base = `${base} + ${mel.danoCritico}`; notas.push(`Cruel: +${mel.danoCritico} de dano no crítico.`); }
     // Danos extras com a origem de cada um (bônus de cena, efeitos, dano da arma, bônus externo).
     // No crítico os dados deles também multiplicam (1d8 ×2 = 2d8), cada um separado; números fixos e penalidades não.
     const g = ficha.ataquesGerais ?? {};

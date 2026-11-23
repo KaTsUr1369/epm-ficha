@@ -264,13 +264,18 @@ export async function testarProducao(actor, id) {
   }
   if (r.critica) {
     const acidente = await new Roll("1d2").evaluate();
-    const texto = acidente.total === 1 ? "Acidente durante o processo (o Mestre define o efeito)." : "Saiu um produto defeituoso (o Mestre define o defeito).";
+    let texto = "Acidente durante o processo (o Mestre define o efeito).";
+    if (acidente.total === 2) {
+      const receita = lerReceita(p.receita, dados.receitas?.[p.receita] ?? { nome: p.nome });
+      const criado = await criarResultado(actor, receita, p, { defeituoso: true });
+      texto = `Saiu um produto defeituoso: ${escapar(criado)} entrou no inventário marcado como Defeituoso (o Mestre define o defeito).`;
+    }
     return nota(actor, `<p><strong>${escapar(p.nome)}: falha crítica.</strong> Os materiais foram perdidos. ${texto}</p>`, "#D2544A");
   }
   return nota(actor, `<p><strong>${escapar(p.nome)}: falhou.</strong> Os materiais foram consumidos e a produção se perdeu.</p>`, "#D2544A");
 }
 
-async function criarResultado(actor, receita, p) {
+async function criarResultado(actor, receita, p, { defeituoso = false } = {}) {
   const qtd = receita.resultado.qtd;
   let dadosItem = null;
   if (receita.resultado.uuid) {
@@ -280,7 +285,11 @@ async function criarResultado(actor, receita, p) {
   delete dadosItem._id;
   dadosItem.system = { ...(dadosItem.system ?? {}), quantity: qtd };
   dadosItem.flags = { ...(dadosItem.flags ?? {}), [FLAG]: { ...(dadosItem.flags?.[FLAG] ?? {}), produzidoPor: actor.name, receita: receita.nome } };
-  if ((p.profissoes ?? []).includes("forja")) {
+  if (defeituoso) {
+    dadosItem.name = `${dadosItem.name} (defeituoso)`;
+    dadosItem.flags[FLAG].defeituoso = true;
+    dadosItem.system.description = { value: `${dadosItem.system.description?.value ?? ""}<p><strong>Defeituoso:</strong> saiu de uma falha crítica na produção. O Mestre define o defeito.</p>` };
+  } else if ((p.profissoes ?? []).includes("forja")) {
     dadosItem.flags[FLAG].pontosEstrutura = int(dadosItem.flags[FLAG].pontosEstrutura) + PROFISSOES.forja.estrutura;
   }
   await actor.createEmbeddedDocuments("Item", [dadosItem]);

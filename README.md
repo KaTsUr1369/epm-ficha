@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.31
+
+Correções nos testes do Quench (o módulo em si não mudou):
+- **Projetos do Artífice**: o Foundry não devolve os itens criados juntos na mesma ordem; o teste trocava a Afiação pela Torreta. Agora os itens são achados pelo nome.
+- **Combate e recursos**: personagem novo do dnd5e nasce com Vida máxima 0 (sem classe), então dano e cura não tinham de onde partir. O teste fixa a Vida máxima em 30 antes.
+- Mensagens de erro mais detalhadas (mostram os efeitos gravados quando a Afiação falha).
+
 ## Novidades da 0.8.30
 
 - **Compêndios numa pasta**: os 8 compêndios do EPM (Manual, NPCs modelo, Tabelas de loot, Macros, Melhorias, Receitas do Artífice, Arquétipos e Classes, Itens) ficam juntos na pasta "EPM · Escolhidos pelo Multiverso" da aba Compêndios. O Mestre arruma sozinho ao abrir o mundo.

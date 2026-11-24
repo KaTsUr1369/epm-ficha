@@ -24,6 +24,7 @@ export const PREFIXO = "[Teste EPM]";
 export const PASTA_TESTES = "EPM · Testes (Quench)";
 const espera = ms => new Promise(r => setTimeout(r, ms));
 const itensDe = ator => ator?.items?.contents ?? [...(ator?.items ?? [])];
+const porNome = (ator, nome) => itensDe(ator).find(i => i.name === `${PREFIXO} ${nome}`) ?? null;
 
 export function registrarQuench() {
   Hooks.on("quenchReady", quench => {
@@ -295,7 +296,9 @@ export function registrarLotes(quench) {
       it("prepara as fichas e as mochilas", async () => {
         const MC = await import("./mochila-compartilhada.mjs");
         dono = await h.ator("Dono"); membro = await h.ator("Membro");
-        [bau, sacola] = await dono.createEmbeddedDocuments("Item", [{ name: `${PREFIXO} Baú`, type: "container" }, { name: `${PREFIXO} Sacola`, type: "container" }]);
+        // O Foundry não garante a ordem dos itens criados juntos: busca pelo nome
+        await dono.createEmbeddedDocuments("Item", [{ name: `${PREFIXO} Baú`, type: "container" }, { name: `${PREFIXO} Sacola`, type: "container" }]);
+        bau = porNome(dono, "Baú"); sacola = porNome(dono, "Sacola");
         await dono.createEmbeddedDocuments("Item", [{ name: `${PREFIXO} Corda`, type: "loot", system: { quantity: 3, container: bau.id } }]);
         await MC.alternarMembro(bau, membro.id); await MC.alternarMembro(sacola, membro.id);
         assert.equal(MC.contextoCompartilhadas(membro).length, 2);
@@ -348,11 +351,12 @@ export function registrarLotes(quench) {
       it("Afiação instalada na arma do aliado", async () => {
         const PJ = await import("./projetos.mjs");
         [espada] = await aliado.createEmbeddedDocuments("Item", [{ name: `${PREFIXO} Espada`, type: "weapon", system: { equipped: true } }]);
-        [afiacao, torreta] = await art.createEmbeddedDocuments("Item", [eng("afiacao", "Afiação"), eng("torreta", "Torreta")]);
+        await art.createEmbeddedDocuments("Item", [eng("afiacao", "Afiação"), eng("torreta", "Torreta")]);
+        afiacao = porNome(art, "Afiação"); torreta = porNome(art, "Torreta");
         const ocupados = PJ.estadoArtifice(art).ocupados;
         assert.isTrue(await PJ.executarEnvio({ artificeId: art.id, itemId: afiacao.id, alvoId: aliado.id, alvoItemId: espada.id, modo: "acoplamento", tipoDano: "Fogo" }));
         const efs = Object.values(aliado.items.get(espada.id).flags?.[FLAG]?.efeitos ?? {});
-        assert.ok(efs.some(e => e.tipo === "danoExtra" && e.tipoDano === "Fogo"), "dano extra de Fogo na espada");
+        assert.ok(efs.some(e => e.tipo === "danoExtra" && e.tipoDano === "Fogo"), `dano extra de Fogo na espada (efeitos: ${JSON.stringify(efs)})`);
         assert.equal(PJ.estadoArtifice(art).ocupados, ocupados, "continua ocupando a reserva");
       });
       it("Torreta vai para o inventário do aliado", async () => {
@@ -432,7 +436,10 @@ export function registrarLotes(quench) {
       it("dano tira primeiro da Vida temporária", async () => {
         const M = await import("./mecanicas.mjs");
         ator = await h.ator("Lutador", { flags: { nivel: 5, arquetipo: "Combatente" } });
+        // Personagem novo do dnd5e nasce com Vida máxima 0 (sem classe): fixa o máximo antes
+        await ator.update({ "system.attributes.hp.max": 30 });
         await ator.update({ "system.attributes.hp.value": 20, "system.attributes.hp.temp": 5 });
+        assert.equal(M.estadoAtor(ator).ficha.recursos.pv.max, 30, "Vida máxima 30");
         const { ficha } = M.estadoAtor(ator);
         const r = M.calcularPerda(ficha, "pv", 8);
         assert.equal(r.doTemp, 5);
@@ -441,6 +448,7 @@ export function registrarLotes(quench) {
       it("cura não passa do máximo", async () => {
         const M = await import("./mecanicas.mjs");
         const { ficha } = M.estadoAtor(ator);
+        assert.isAtLeast(ficha.recursos.pv.max, 1, "tem Vida máxima");
         const r = M.calcularRecuperacao(ficha, "pv", 99999);
         assert.equal(r.updates["system.attributes.hp.value"], ficha.recursos.pv.max);
       });

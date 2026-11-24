@@ -3,8 +3,9 @@
     <div class="epm-aba-resumo">
       <span class="epm-contador" title="Pontos de Habilidade disponíveis">{{ficha.pontos.ph}} PH</span>
       <span class="epm-contador" title="DT dos testes de resistência contra as suas magias: {{ficha.cd.formula}}">DT {{ficha.cd.valor}}</span>
-      <span class="epm-contador" title="Magias de 1º círculo ou acima. Magias Únicas não contam.">{{magias.conhecidas}} de {{magias.espacosMagias}} magias</span>
+      <span class="epm-contador{{#if magias.acumulo}}{{#if (epmMenor magias.espacosMagias magias.conhecidas)}} excedido{{/if}}{{/if}}" title="{{#if magias.acumulo}}Acúmulo de Magias do Conjurador. Magias de Classe, Pergaminho, Treinamento ou Raça somam por fora.{{else}}Magias de 1º círculo ou acima. Magias Únicas não contam.{{/if}}">{{#if magias.acumulo}}Acúmulo: {{/if}}{{magias.conhecidas}} de {{magias.espacosMagias}} magias</span>
       <span class="epm-contador">{{magias.truques}} de {{magias.espacosTruques}} truques</span>
+      {{#if magias.porFora}}<span class="epm-contador" title="Magias de Classe, Pergaminho, Treinamento ou Raça">+{{magias.porFora}} por fora</span>{{/if}}
       {{#each magias.limites}}<span class="epm-contador epm-limite{{#if excedido}} excedido{{else if cheio}} cheio{{/if}}" style="--cor: {{this.cor}}" title="Limite de magias {{this.label}}{{#if (epmEq @root.modoLimites "combinados")}} (somado às habilidades){{/if}}">{{this.label}} {{this.usados}}/{{this.limite}}</span>{{/each}}
     </div>
     <div class="epm-aba-acoes">

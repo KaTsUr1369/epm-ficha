@@ -1,19 +1,21 @@
 /**
- * Projetos do Artífice: criar (2 por dia, prontos em 1 minuto), usar (some e volta depois de 1 hora),
- * Soma (+testes) e Proteção (+CA) por 1 hora, e o Livro de Projetos.
- * O tempo é o relógio do mundo (game.time.worldTime). Com o Simple Calendar ativo, usa o calendário dele
- * para o tamanho da hora e para saber quando o dia muda.
+ * Projetos do Artífice (reformulado): reserva de Projetos de Criação, Grau, Livro de Projetos (receitas),
+ * Consumíveis (1 Projeto, duram até ser usados) e Engenhocas (ocupam Projetos e duram cenas).
+ * Os itens fabricados vão para o inventário com flags.epm-ficha.projeto.
+ *
+ * Também guarda o relógio usado pela Produção (agora, somarTempo, textoDuracao), que segue o Simple Calendar.
  */
 import { FLAG } from "./config.mjs";
 import { int, novoId } from "./data.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
 import {
-  ARQUETIPOS, TIPOS_PROJETO, nivelArquetipo, projetosDoNivel, limiteLivro, estadoProjetos, efeitosProjetoValendo
+  ARQUETIPOS, TIPOS_PROJETO, nivelArquetipo, criacaoDe, valoresDoGrau, grauRomano, montagemDe, encantadosDe, dadoUtensilios
 } from "./arquetipos.mjs";
+import { RECEITAS_ARTIFICE, receitaPorId, grauMinimo, normalizarReceita } from "./receitas-artifice.mjs";
 import { estadoAtor, calcularRecuperacao, confirmar } from "./mecanicas.mjs";
 
 const P = `flags.${FLAG}`;
-const CFG = () => ARQUETIPOS.artifice.tempoProjeto;
+const COR = ARQUETIPOS.artifice.cor;
 
 /* ---------------- Relógio (Simple Calendar quando houver) ---------------- */
 
@@ -38,19 +40,6 @@ export function somarTempo(t, { minutos = 0, horas = 0 } = {}) {
   return t + minutos * s.minuto + horas * s.hora;
 }
 
-/** Chave do dia do calendário (os projetos terminam quando ela muda). */
-export function chaveDia(t = agora()) {
-  const api = apiSC();
-  if (api?.timestampToDate) {
-    try { const d = api.timestampToDate(t); if (d) return `${d.year}-${d.month}-${d.day}`; } catch { /* segue */ }
-  }
-  const cal = globalThis.game?.time?.calendar;
-  if (cal?.timeToComponents) {
-    try { const c = cal.timeToComponents(t); return `${c.year}-${c.day}`; } catch { /* segue */ }
-  }
-  return String(Math.floor(t / 86400));
-}
-
 /** "45 min", "1 h 10 min", "30 s". */
 export function textoDuracao(seg) {
   const s = segundosPor();
@@ -64,184 +53,351 @@ export function textoDuracao(seg) {
   return resto ? `${h} h ${resto} min` : `${h} h`;
 }
 
-/* ---------------- Dados para a ficha ---------------- */
-
-/** Bloco "projetos do dia" do painel do Artífice. */
-export function painelProjetos(dados, nivel, intel, podeUsar) {
-  const t = agora();
-  const dia = chaveDia(t);
-  const valores = projetosDoNivel(nivel, intel, dados.ajustesBonus);
-  // Projeto cancelado antes de ser usado não conta no dia (fichas antigas: os que ficaram só marcados como apagados)
-  const todos = estadoProjetos(dados, t, dia).filter(p => !(p.apagado && !p.usado));
-  const lista = todos.filter(p => !p.apagado).map(p => ({
-    ...p,
-    valor: valores ? (p.tipo === "dano" ? valores.dano : p.tipo === "cura" ? valores.cura : `+${valores[p.tipo]}`) : "",
-    producao: p.estado === "producao", recarga: p.estado === "recarga", pronto: p.estado === "pronto",
-    faltamTexto: p.faltam ? textoDuracao(p.faltam) : ""
-  }));
-  const efeitos = efeitosProjetoValendo(dados, t).map(e => ({
-    ...e, label: TIPOS_PROJETO[e.tipo].label, alvo: e.tipo === "soma" ? "em todos os testes" : "na CA", faltamTexto: textoDuracao(e.ate - t)
-  }));
-  const limite = limiteLivro(nivel, intel, dados.ajustesBonus);
-  const livro = Object.entries(dados.livroProjetos ?? {}).filter(([, l]) => l && TIPOS_PROJETO[l.tipo])
-    .map(([id, l]) => ({ id, nome: l.nome || TIPOS_PROJETO[l.tipo].label, tipoLabel: TIPOS_PROJETO[l.tipo].label, icone: TIPOS_PROJETO[l.tipo].icone }));
-  const porDia = valores?.porDia ?? ARQUETIPOS.artifice.projetosPorDia;
-  return {
-    lista, efeitos, livro, limiteLivro: limite, livroCheio: livro.length >= limite,
-    criadosHoje: todos.length, restam: Math.max(0, porDia - todos.length), podeCriar: podeUsar && todos.length < porDia,
-    podeUsar, calendario: !!apiSC()
-  };
-}
-
-/* ---------------- Ações ---------------- */
-
-async function perguntar({ titulo, content, ok, icone, callback }) {
-  const r = await fvtt.DialogV2.wait({
-    window: { title: titulo }, classes: ["epm-dialogo"], rejectClose: false, modal: true, content,
-    buttons: [
-      { action: "ok", label: ok, icon: icone, default: true, callback: (ev, b) => callback(b.form?.elements ?? {}) },
-      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
-    ]
+/** Produção em andamento: redesenha a aba Produção quando o relógio anda (no máximo a cada 3 s). */
+export function registrarRelogioProjetos() {
+  Hooks.on("updateWorldTime", (novo, delta) => {
+    const antes = novo - (Number(delta) || 0);
+    const apps = globalThis.foundry?.applications?.instances?.values?.() ?? [];
+    for (const app of apps) {
+      const actor = app?.actor;
+      const dados = actor?.flags?.[FLAG];
+      if (!dados || !app.rendered || app.document !== actor) continue;
+      const prod = Object.values(dados.producoes ?? {}).filter(p => p?.estado === "andamento");
+      if (!prod.length) continue;
+      if (prod.some(p => { const m = Number(p.fim) || 0; return m > Math.min(antes, novo) && m <= Math.max(antes, novo); })) { app.render(); continue; }
+      if (Date.now() - (app._epmRelogio ?? 0) > 3000) { app._epmRelogio = Date.now(); app.render({ parts: ["producao"] }); }
+    }
   });
-  return r && typeof r === "object" ? r : null;
 }
 
-/** Remove dos dados os projetos de outros dias e os efeitos vencidos. */
-function limpezas(dados, t, dia) {
-  const up = {};
-  for (const [id, p] of Object.entries(dados.projetos ?? {})) if (!p || p.dia !== dia) up[`${P}.projetos.-=${id}`] = null;
-  for (const [id, e] of Object.entries(dados.projetosEfeitos ?? {})) if (!e || Number(e.ate) <= t) up[`${P}.projetosEfeitos.-=${id}`] = null;
-  return up;
-}
+/* ---------------- Estado ---------------- */
 
-export async function criarProjeto(actor) {
-  const dados = actor.flags?.[FLAG] ?? {};
-  if (!nivelArquetipo(dados, "artifice")) return ui.notifications.warn("Criar Projetos é do Artífice.");
-  const t = agora();
-  const dia = chaveDia(t);
-  const porDia = projetosDoNivel(nivelArquetipo(dados, "artifice"), estadoAtor(actor).ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus)?.porDia ?? ARQUETIPOS.artifice.projetosPorDia;
-  const hoje = estadoProjetos(dados, t, dia).filter(p => !(p.apagado && !p.usado)).length;
-  if (hoje >= porDia) return ui.notifications.warn(`Você já criou ${porDia} projetos hoje. Eles voltam a ficar disponíveis quando o dia muda.`);
-  const livro = Object.entries(dados.livroProjetos ?? {}).filter(([, l]) => l && TIPOS_PROJETO[l.tipo]);
-  const opcoesTipo = Object.entries(TIPOS_PROJETO).map(([id, x]) => `<option value="${id}">${x.label}</option>`).join("");
-  const opcoesLivro = livro.map(([id, l]) => `<option value="${id}">${escapar(l.nome || TIPOS_PROJETO[l.tipo].label)} (${TIPOS_PROJETO[l.tipo].label})</option>`).join("");
-  const r = await perguntar({
-    titulo: "Criar projeto", ok: "Começar a produção", icone: "fa-solid fa-screwdriver-wrench",
-    content: `<p class="epm-dica">Fica pronto em ${CFG().producaoMin} minuto de produção. ${porDia - hoje} de ${porDia} restantes hoje.</p>
-      ${livro.length ? `<label class="epm-campo"><span>Do Livro de Projetos</span><select name="livro"><option value="">— projeto novo —</option>${opcoesLivro}</select></label>` : ""}
-      <label class="epm-campo"><span>Nome</span><input type="text" name="nome" placeholder="ex.: Granada de pregos"></label>
-      <label class="epm-campo"><span>Tipo</span><select name="tipo">${opcoesTipo}</select></label>`,
-    callback: f => ({ livro: f.livro?.value ?? "", nome: String(f.nome?.value ?? "").trim(), tipo: f.tipo?.value ?? "dano" })
-  });
-  if (!r) return;
-  const doLivro = r.livro ? dados.livroProjetos?.[r.livro] : null;
-  const tipo = doLivro?.tipo ?? r.tipo;
-  if (!TIPOS_PROJETO[tipo]) return;
-  const nome = r.nome || doLivro?.nome || TIPOS_PROJETO[tipo].label;
-  const id = novoId();
-  await actor.update({
-    ...limpezas(dados, t, dia),
-    [`${P}.projetos.${id}`]: { nome, tipo, dia, criadoEm: t, prontoEm: somarTempo(t, { minutos: CFG().producaoMin }), voltaEm: 0 }
-  });
-  ui.notifications.info(`${nome}: em produção (${CFG().producaoMin} min).`);
-}
+const flagProjeto = item => item?.flags?.[FLAG]?.projeto ?? null;
+const listaItens = actor => actor?.items?.contents ?? [...(actor?.items ?? [])];
 
-/** Usa o projeto: rola dano ou cura, ou liga Soma/Proteção por 1 hora. O projeto some e volta depois de 1 hora. */
-export async function usarProjeto(actor, id) {
-  const dados = actor.flags?.[FLAG] ?? {};
-  const t = agora();
-  const p = estadoProjetos(dados, t, chaveDia(t)).find(x => x.id === id);
-  if (!p || p.apagado) return ui.notifications.warn("Esse projeto não existe mais (os projetos terminam no fim do dia).");
-  if (p.estado === "producao") return ui.notifications.warn(`${p.nome} ainda está em produção (falta ${textoDuracao(p.faltam)}).`);
-  if (p.estado === "recarga") return ui.notifications.warn(`${p.nome} volta em ${textoDuracao(p.faltam)}.`);
-  const { ficha } = estadoAtor(actor);
-  const nivel = nivelArquetipo(dados, "artifice");
-  const v = projetosDoNivel(nivel, ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
-  if (!v) return;
-  const volta = somarTempo(t, { horas: CFG().voltaHoras });
-  const up = { [`${P}.projetos.${id}.voltaEm`]: volta };
-  // Projetos Ágeis (Notion): em combate, uma vez por combate, o projeto guardado sai com a Ação Bônus
-  let agil = "";
-  const emCombate = !!game.combat?.started && game.combat.combatants.some(c => c.actor?.uuid === actor.uuid);
-  if (emCombate && !dados.usos?.projetoAgil && !dados.acoes?.bonus
-    && await confirmar("Projeto Ágil", `<p>Usar <strong>${escapar(p.nome)}</strong> com a <strong>Ação Bônus</strong> (Projetos Ágeis, uma vez por combate)?</p><p class="epm-dica">Não: usa normalmente.</p>`)) {
-    up[`${P}.usos.projetoAgil`] = true;
-    up[`${P}.acoes.bonus`] = true;
-    agil = `<p class="epm-dica">Projeto Ágil: usado com a Ação Bônus (1 vez por combate).</p>`;
-  }
-  const falar = ChatMessage.getSpeaker({ actor });
-  const titulo = `<strong>${escapar(p.nome)}</strong> <em>(projeto de ${TIPOS_PROJETO[p.tipo].label.toLowerCase()})</em>`;
-  const rodape = `${agil}<p class="epm-dica">O projeto some e volta em ${CFG().voltaHoras} hora.</p>`;
-
-  if (p.tipo === "dano" || p.tipo === "cura") {
-    const formula = p.tipo === "dano" ? v.dano : v.cura;
-    const roll = await new Roll(formula).evaluate();
-    await actor.update(up);
-    const alvos = [...(game.user?.targets ?? [])].map(x => x.actor?.uuid).filter(Boolean).join(",");
-    const botao = p.tipo === "dano"
-      ? `<button type="button" data-epm-action="dano" data-valor="${roll.total}" data-alvos="${alvos}"><i class="fa-solid fa-burst"></i> Aplicar ${roll.total} de dano</button>`
-      : `<button type="button" data-epm-action="curaProjeto" data-valor="${roll.total}" data-alvos="${alvos}"><i class="fa-solid fa-heart"></i> Aplicar ${roll.total} de cura</button>`;
-    return roll.toMessage({
-      speaker: falar,
-      flavor: `<div class="epm-chat epm-chat-nota" data-actor-uuid="${actor.uuid}" style="--cor: #C9A55A"><p>${titulo}</p>
-        <div class="epm-chat-botoes">${botao}</div>${rodape}</div>`
-    });
-  }
-  const valor = p.tipo === "soma" ? v.soma : v.protecao;
-  const ate = somarTempo(t, { horas: CFG().efeitoHoras });
-  up[`${P}.projetosEfeitos.${id}`] = { tipo: p.tipo, valor, ate, nome: p.nome };
-  await actor.update(up);
-  return ChatMessage.create({
-    speaker: falar,
-    content: `<div class="epm-chat epm-chat-nota" style="--cor: #C9A55A"><p>${titulo}: <strong>+${valor} ${p.tipo === "soma" ? "em todos os testes" : "de CA"}</strong> por ${CFG().efeitoHoras} hora (já somado na ficha).</p>${rodape}</div>`
+/** Livro de Projetos da ficha (receitas conhecidas, já normalizadas). */
+export function livroDaFicha(dados = {}) {
+  return Object.entries(dados.artificeLivro ?? {}).filter(([, r]) => r).map(([chave, r]) => {
+    const base = r.receita ? receitaPorId(r.receita) : null;
+    return { chave, ...normalizarReceita({ ...(base ?? {}), ...r, id: r.receita || chave }), temporaria: !!r.temporaria };
   });
 }
 
 /**
- * Cancelar um projeto que ainda não foi usado: sai de vez e não conta no limite do dia nem no Livro de Projetos
- * (se ele foi guardado no livro a partir deste projeto, sai do livro também). Um projeto já usado só some da lista
- * e continua contando no dia.
+ * Situação do Artífice: reserva, o que as Engenhocas ocupam, Consumíveis carregados, Livro e itens.
+ * `ficha` = calcularFicha (para a Inteligência e o Ofício).
  */
-export async function apagarProjeto(actor, id) {
+export function estadoArtifice(actor, ficha = null) {
+  const dados = actor?.flags?.[FLAG] ?? {};
+  if (!nivelArquetipo(dados, "artifice")) return null;
+  return estadoArtificeDe(dados, ficha ?? estadoAtor(actor).ficha, listaItens(actor));
+}
+
+/** O mesmo, só com dados (para o contexto da ficha). */
+export function estadoArtificeDe(dados, f, todosItens = []) {
+  const nivel = nivelArquetipo(dados, "artifice");
+  if (!nivel) return null;
+  const intel = f.atributos?.inteligencia?.total ?? 0;
+  const cri = criacaoDe(nivel, intel, dados.ajustesBonus);
+  const itens = todosItens.filter(i => flagProjeto(i));
+  const engenhocas = itens.filter(i => flagProjeto(i).categoria === "engenhoca");
+  const consumiveis = itens.filter(i => flagProjeto(i).categoria !== "engenhoca");
+  const ocupados = engenhocas.reduce((s, i) => s + Math.max(0, int(flagProjeto(i).ocupa, 1)), 0);
+  const gastos = Math.max(0, int(dados.projetosCriacao?.gastos));
+  const carregados = consumiveis.reduce((s, i) => s + Math.max(1, int(i.system?.quantity, 1)), 0);
+  const oficio = Math.floor(Number(f.periciaPorId?.oficio?.total) || 0);
+  const livro = livroDaFicha(dados);
+  return {
+    nivel, intel, criacao: cri, ocupados, gastos, disponivel: Math.max(0, cri.projetos - ocupados - gastos),
+    carregados, podeCarregar: carregados < cri.carregar, cd: 10 + oficio, oficio,
+    livro, livroCheio: livro.filter(r => !r.temporaria).length >= cri.livro,
+    sobrecarga: nivel >= ARQUETIPOS.artifice.sobrecargaNivel, menteInventora: nivel >= ARQUETIPOS.artifice.menteInventora,
+    montagem: montagemDe(nivel), encantados: encantadosDe(nivel), utensilios: dadoUtensilios(nivel),
+    engenhocas, consumiveis
+  };
+}
+
+/* ---------------- Livro de Projetos ---------------- */
+
+/** Põe uma receita no Livro (pronta, pelo id, ou escrita: objeto). `temporaria` = Engenharia Reversa (fora do limite). */
+export async function aprenderReceita(actor, receita, { temporaria = false } = {}) {
+  const est = estadoArtifice(actor);
+  if (!est) return ui.notifications.warn("O Livro de Projetos é do Artífice.");
+  const r = typeof receita === "string" ? receitaPorId(receita) : receita;
+  if (!r) return;
+  if (!temporaria && est.livroCheio) return ui.notifications.warn(`Livro de Projetos cheio (${est.criacao.livro} receitas). Tire uma para trocar (1 por Descanso Longo).`);
+  const id = r.id && receitaPorId(r.id) ? r.id : "";
+  if (id && est.livro.some(l => l.id === id)) return ui.notifications.info(`${r.nome} já está no Livro.`);
+  const dados = id ? { receita: id, temporaria } : { ...normalizarReceita(r), propria: true, temporaria };
+  await actor.update({ [`${P}.artificeLivro.${novoId()}`]: dados });
+  ui.notifications.info(`${r.nome} entrou no Livro de Projetos${temporaria ? " (temporária, até o próximo Descanso Longo)" : ""}.`);
+}
+
+export async function esquecerReceita(actor, chave) {
+  return actor.update({ [`${P}.artificeLivro.-=${chave}`]: null });
+}
+
+/** Escolher uma receita pronta para o Livro (ou escrever uma nova). */
+export async function escolherReceita(actor) {
+  const est = estadoArtifice(actor);
+  if (!est) return;
+  const ja = new Set(est.livro.map(r => r.id));
+  const opc = cat => RECEITAS_ARTIFICE.filter(r => r.categoria === cat && !ja.has(r.id))
+    .map(r => `<option value="${r.id}">${escapar(r.nome)} [${escapar(TIPOS_PROJETO[r.tipo]?.label ?? r.tipo)}]</option>`).join("");
+  const r = await fvtt.DialogV2.wait({
+    window: { title: "Livro de Projetos: nova receita" }, classes: ["epm-dialogo"], rejectClose: false, modal: true, position: { width: 520 },
+    content: `<p class="epm-dica">${est.livro.filter(x => !x.temporaria).length} de ${est.criacao.livro} receitas. O Livro precisa de pelo menos 1 Consumível e 1 Engenhoca. A cada Descanso Longo dá para trocar 1 receita.</p>
+      <label class="epm-campo"><span>Receita pronta</span><select name="receita"><optgroup label="Consumíveis">${opc("consumivel")}</optgroup><optgroup label="Engenhocas">${opc("engenhoca")}</optgroup></select></label>`,
+    buttons: [
+      { action: "ok", label: "Pôr no Livro", icon: "fa-solid fa-book", default: true, callback: (ev, b) => b.form.elements.receita.value },
+      { action: "nova", label: "Escrever uma receita", icon: "fa-solid fa-pen" },
+      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+    ]
+  });
+  if (r === "nova") return escreverReceita(actor);
+  if (r && r !== "cancelar") return aprenderReceita(actor, r);
+}
+
+/** Receita nova escrita pelo jogador ou pelo Mestre (valores por Grau). */
+export async function escreverReceita(actor) {
+  const r = await fvtt.DialogV2.wait({
+    window: { title: "Escrever receita" }, classes: ["epm-dialogo"], rejectClose: false, modal: true, position: { width: 560 },
+    content: `<p class="epm-dica">No mesmo padrão das receitas do livro (o Mestre aprova). Use "Int." para a Inteligência; "—" num Grau que não dá para fabricar.</p>
+      <label class="epm-campo"><span>Nome</span><input type="text" name="nome" placeholder="Ex.: Arpéu Magnético"></label>
+      <div class="epm-dialogo-linha">
+        <label class="epm-campo"><span>Categoria</span><select name="categoria"><option value="consumivel">Consumível</option><option value="engenhoca">Engenhoca</option></select></label>
+        <label class="epm-campo"><span>Tipo</span><select name="tipo">${Object.entries(TIPOS_PROJETO).map(([id, t]) => `<option value="${id}">${t.label}</option>`).join("")}</select></label>
+      </div>
+      <label class="epm-campo"><span>Uso</span><input type="text" name="uso" placeholder="Ação Padrão, Reação, Passivo…"></label>
+      <label class="epm-campo"><span>Efeito</span><textarea name="efeito" rows="3"></textarea></label>
+      <div class="epm-dialogo-linha">${[1, 2, 3, 4, 5].map(g => `<label class="epm-campo epm-campo-mini"><span>Grau ${grauRomano(g)}</span><input type="text" name="v${g}"></label>`).join("")}</div>`,
+    buttons: [
+      { action: "ok", label: "Pôr no Livro", icon: "fa-solid fa-book", default: true, callback: (ev, b) => {
+        const f = b.form.elements;
+        return { nome: f.nome.value, categoria: f.categoria.value, tipo: f.tipo.value, uso: f.uso.value, efeito: f.efeito.value, valores: [1, 2, 3, 4, 5].map(g => f[`v${g}`].value) };
+      } },
+      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+    ]
+  });
+  if (!r || typeof r !== "object" || !String(r.nome).trim()) return;
+  return aprenderReceita(actor, { ...r, propria: true });
+}
+
+/* ---------------- Fabricar ---------------- */
+
+/**
+ * Fabrica um Projeto do Livro. Consumível: custa 1 Projeto. Engenhoca: ocupa os Projetos do Grau enquanto existir.
+ * `montagem` = Montagem em Campo (Consumível no meio da cena, com a ação do nível).
+ */
+export async function fabricarProjeto(actor, chave, { montagem = false } = {}) {
+  const est = estadoArtifice(actor);
+  if (!est) return;
+  const r = est.livro.find(x => x.chave === chave);
+  if (!r) return ui.notifications.warn("Receita não encontrada no Livro.");
+  if (montagem && r.categoria === "engenhoca") return ui.notifications.warn("Engenhocas só são montadas em Descanso Curto ou Longo.");
+  const gMin = grauMinimo(r);
+  if (gMin > est.criacao.grauMax) return ui.notifications.warn(`${r.nome} pede Grau ${grauRomano(gMin)}; o seu máximo é ${grauRomano(est.criacao.grauMax)}.`);
+  const graus = Array.from({ length: est.criacao.grauMax - gMin + 1 }, (_, i) => gMin + i);
+  const escolha = await fvtt.DialogV2.wait({
+    window: { title: `${montagem ? "Montagem em Campo" : "Fabricar"}: ${r.nome}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true, position: { width: 520 },
+    content: `<p class="epm-dica">${escapar(r.efeito)}</p>
+      <label class="epm-campo"><span>Grau</span><select name="grau">${graus.map(g => {
+        const v = valoresDoGrau(g, est.intel);
+        return `<option value="${g}" ${g === est.criacao.grauMax ? "selected" : ""}>Grau ${grauRomano(g)}: ${escapar(r.valores[g - 1])}${r.categoria === "engenhoca" ? ` · ${v.cenas} cenas, ocupa ${v.ocupa}` : ""}</option>`;
+      }).join("")}</select></label>
+      ${r.rolar?.escolha ? `<label class="epm-campo"><span>Tipo</span><select name="variante">${r.rolar.escolha.map(e => `<option>${escapar(e)}</option>`).join("")}</select></label>` : ""}
+      ${r.categoria === "engenhoca" ? `<label class="epm-campo" title="Com portador, funciona a qualquer distância; sem portador, para depois de 1 dia longe do Artífice"><span>Portador</span><input type="text" name="portador" value="${escapar(actor.name)}"></label>` : ""}
+      <p class="epm-dica">Reserva: ${est.disponivel} de ${est.criacao.projetos} Projetos em aberto${montagem && est.montagem ? ` · Montagem em Campo: ${escapar(est.montagem.label)}` : ""}.</p>`,
+    buttons: [
+      { action: "ok", label: montagem ? "Montar" : "Fabricar", icon: "fa-solid fa-screwdriver-wrench", default: true, callback: (ev, b) => {
+        const f = b.form.elements;
+        return { grau: int(f.grau.value, est.criacao.grauMax), variante: f.variante?.value ?? "", portador: f.portador?.value ?? "" };
+      } },
+      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+    ]
+  });
+  if (!escolha || typeof escolha !== "object") return null;
+  const v = valoresDoGrau(escolha.grau, est.intel);
+  const custo = r.categoria === "engenhoca" ? v.ocupa : 1;
+  if (est.disponivel < custo) return ui.notifications.warn(`Faltam Projetos de Criação: precisa de ${custo}, tem ${est.disponivel} em aberto.`);
+  if (r.categoria !== "engenhoca" && !est.podeCarregar) return ui.notifications.warn(`Consumíveis carregados no máximo (${est.criacao.carregar}, 2× seus Projetos).`);
+  const updAtor = {};
+  if (r.categoria !== "engenhoca") updAtor[`${P}.projetosCriacao.gastos`] = est.gastos + 1;
+  if (montagem && est.montagem) {
+    const acao = est.montagem.acao;
+    if (acao === "livre") {
+      if (actor.flags?.[FLAG]?.usos?.linhaMontagemTurno) return ui.notifications.warn("Linha de Montagem: ação livre só 1×/turno.");
+      updAtor[`${P}.usos.linhaMontagemTurno`] = true;
+    } else updAtor[`${P}.acoes.${acao}`] = true;
+  }
+  const nome = `${r.nome}${escolha.variante ? ` (${escolha.variante})` : ""} · Grau ${v.romano}`;
+  const projeto = {
+    receita: r.id, chaveLivro: chave, nome: r.nome, categoria: r.categoria, tipo: r.tipo, grau: v.grau, variante: escolha.variante,
+    ...(r.categoria === "engenhoca" ? { cenas: v.cenas, cenasMax: v.cenas, ocupa: v.ocupa, portador: escolha.portador.trim() } : {})
+  };
+  const doc = {
+    name: nome, type: r.categoria === "engenhoca" ? "equipment" : "consumable", img: r.categoria === "engenhoca" ? "icons/svg/clockwork.svg" : "icons/svg/explosion.svg",
+    system: { quantity: 1, description: { value: `<p><strong>${escapar(r.uso)}</strong>. ${escapar(r.efeito)}</p><p><strong>Grau ${v.romano}:</strong> ${escapar(r.valores[v.grau - 1] ?? "")}</p>` } },
+    flags: { [FLAG]: { projeto, categoria: r.categoria === "engenhoca" ? "ferramentas" : "consumiveis" } }
+  };
+  if (Object.keys(updAtor).length) await actor.update(updAtor);
+  const [criado] = await actor.createEmbeddedDocuments("Item", [doc]);
+  await cartao(actor, `<p><strong>${montagem ? "Montagem em Campo" : "Fabricou"}:</strong> ${escapar(nome)}${r.categoria === "engenhoca" ? ` (ocupa ${v.ocupa} Projeto${v.ocupa > 1 ? "s" : ""}, ${v.cenas} cenas)` : " (1 Projeto)"}.</p>`);
+  return criado;
+}
+
+/* ---------------- Usar ---------------- */
+
+const cartao = (actor, html, botoes = "") => ChatMessage.create({
+  speaker: ChatMessage.getSpeaker({ actor }),
+  content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:${COR}" data-actor-uuid="${actor.uuid}">${html}${botoes ? `<div class="epm-chat-botoes">${botoes}</div>` : ""}</div>`,
+  flags: { [FLAG]: { tipo: "ataque" } }
+});
+
+const alvosMarcados = () => [...(game.user?.targets ?? [])].map(t => t.actor).filter(Boolean);
+
+/**
+ * Usa um Projeto do inventário. Consumível: some (ou −1). Engenhoca: gasta 1 cena só na primeira ativação da cena.
+ * `sobrecarga` (Nv. 3): a Engenhoca funciona 1 Grau acima e perde 1 cena (no Nv. 50 é sempre, sem perder cena).
+ */
+export async function usarProjeto(actor, itemId, { sobrecarga = false } = {}) {
+  const item = actor.items.get(itemId);
+  const pj = flagProjeto(item);
+  if (!pj) return;
+  const est = estadoArtifice(actor);
   const dados = actor.flags?.[FLAG] ?? {};
-  const p = dados.projetos?.[id];
-  if (!p) return;
-  if (Number(p.voltaEm) > 0) return actor.update({ [`${P}.projetos.${id}.apagado`]: true });
-  const up = { [`${P}.projetos.-=${id}`]: null };
-  for (const [lid, l] of Object.entries(dados.livroProjetos ?? {})) if (l?.projeto === id) up[`${P}.livroProjetos.-=${lid}`] = null;
-  return actor.update(up);
+  const eng = pj.categoria === "engenhoca";
+  const receita = est?.livro.find(r => r.chave === pj.chaveLivro || (pj.receita && r.id === pj.receita)) ?? normalizarReceita(receitaPorId(pj.receita) ?? { nome: pj.nome });
+  if (eng && int(pj.cenas) <= 0) return ui.notifications.warn(`${item.name} está Quebrada: use o Reparo Rápido ou espere o descanso.`);
+  const mente = !!est?.menteInventora;
+  const sobre = eng && (mente || (sobrecarga && est?.sobrecarga));
+  const grau = int(pj.grau, 1) + (sobre ? 1 : 0);
+  const v = valoresDoGrau(grau, est?.intel ?? 0);
+  const updItem = {};
+  const avisos = [];
+  if (eng) {
+    const chaveCena = `eng-${item.id}`;
+    let cenas = int(pj.cenas);
+    if (!dados.usosFormas?.[chaveCena]) { cenas -= 1; await actor.update({ [`${P}.usosFormas.${chaveCena}`]: "cena" }); avisos.push("gastou 1 cena (primeira ativação nesta cena)"); }
+    if (sobre && !mente) { cenas -= 1; avisos.push("Sobrecarga: −1 cena"); }
+    if (sobre) avisos.push(`funciona como Grau ${v.romano}`);
+    updItem[`flags.${FLAG}.projeto.cenas`] = Math.max(0, cenas);
+    if (cenas <= 0) avisos.push("ficou Quebrada");
+  }
+  // Valor do Grau para o cartão
+  const iG = Math.min(5, grau) - 1;
+  const valorTexto = receita.valores?.[iG] ?? "";
+  const md = receita.rolar?.modo ?? "nota";
+  const cd = est?.cd ?? 10;
+  const enc = est?.encantados;
+  let html = `<p><strong>${escapar(item.name)}</strong>${sobre ? ` <em>(Grau ${v.romano})</em>` : ""}: ${escapar(receita.efeito)}</p><p>${escapar(valorTexto)}${grau > 5 ? ` (acima do Grau V: +2 dados ou +2)` : ""}</p>`;
+  let botoes = "";
+  const alvos = alvosMarcados();
+  const formulaDano = () => {
+    if (receita.rolar?.dados) { const d = receita.rolar.dados[iG]; return grau > 5 ? d.replace(/^(\d+)d/, (m, n) => `${Number(n) + 2 * (grau - 5)}d`) : d; }
+    return receita.rolar?.dano === "danoArea" ? v.danoArea : v.dano;
+  };
+  if (md === "ataque") {
+    const atk = await new Roll(`1d20 + ${est?.oficio ?? 0}`).evaluate();
+    const dmg = await new Roll(`${formulaDano()}${enc ? ` + ${enc.dano}` : ""}`).evaluate();
+    html += `<p>Ataque (d20 + Ofício): <strong>${atk.total}</strong>${atk.dice[0]?.total === 20 ? " (20 natural)" : ""} · Dano: <strong>${dmg.total}</strong> ${escapar(receita.rolar?.tipoDano ?? "")}${enc ? ` (com Itens Encantados ${enc.dano}, 1×/turno)` : ""}</p>`;
+    botoes += `<button type="button" data-epm-action="dano" data-valor="${dmg.total}" ${alvos.length ? `data-alvos="${alvos.map(a => a.uuid).join(",")}"` : ""} data-tipo-dano="${escapar(receita.rolar?.tipoDano ?? "")}" data-rotulo="${escapar(item.name)}"><i class="fa-solid fa-burst"></i> Aplicar ${dmg.total} de dano</button>`;
+  } else if (md === "area") {
+    const dmg = await new Roll(formulaDano()).evaluate();
+    html += `<p>Dano: <strong>${dmg.total}</strong>${receita.rolar?.metade ? " (metade com Reflexo)" : ""} · CD de Projeto ${cd}.</p>`;
+    botoes += `<button type="button" data-epm-action="dano" data-valor="${dmg.total}" ${alvos.length ? `data-alvos="${alvos.map(a => a.uuid).join(",")}"` : ""} data-tipo-dano="${escapar(receita.rolar?.tipoDano ?? escolhaTipo(pj))}" data-rotulo="${escapar(item.name)}"><i class="fa-solid fa-burst"></i> Aplicar ${dmg.total}</button>`;
+    if (receita.rolar?.metade) botoes += `<button type="button" data-epm-action="dano" data-valor="${Math.floor(dmg.total / 2)}" data-rotulo="${escapar(item.name)} (metade)"><i class="fa-solid fa-burst"></i> Metade (${Math.floor(dmg.total / 2)})</button>`;
+    botoes += botoesResistencia(receita.rolar?.resistencia, cd, item.name, alvos);
+  } else if (md === "resist") {
+    html += `<p>CD de Projeto ${cd}.</p>`;
+    botoes += botoesResistencia(receita.rolar?.resistencia, cd, item.name, alvos);
+  } else if (md === "cura") {
+    const rec = receita.rolar?.recurso ?? "pv";
+    const roll = await new Roll(`${v.cura}${rec === "pv" && enc ? ` + ${enc.cura}` : ""}`).evaluate();
+    html += `<p>${rec === "pe" ? "Recupera" : "Cura"}: <strong>${roll.total}</strong> ${rec.toUpperCase()}${rec === "pv" && enc ? ` (Itens Encantados +${enc.cura})` : ""}.</p>`;
+    if (rec === "pv") botoes += `<button type="button" data-epm-action="curaProjeto" data-valor="${roll.total}" ${alvos.length ? `data-alvos="${alvos.map(a => a.uuid).join(",")}"` : ""} data-rotulo="${escapar(item.name)}"><i class="fa-solid fa-heart"></i> Aplicar ${roll.total} de cura</button>`;
+  } else if (receita.rolar?.valor) {
+    const val = v[receita.rolar.valor];
+    const aux = (receita.tipo === "soma" || receita.tipo === "protecao") && enc ? enc.auxilio : 0;
+    html += `<p>Valor no Grau ${v.romano}: <strong>${typeof val === "number" ? `+${val + aux}` : escapar(val)}</strong>${aux ? ` (Itens Encantados: Auxílio +${aux})` : ""}.</p>`;
+  }
+  if (avisos.length) html += `<p class="epm-dica">${escapar(avisos.join(" · "))}.</p>`;
+  if (eng) { if (Object.keys(updItem).length) await item.update(updItem); }
+  else {
+    const qtd = int(item.system?.quantity, 1);
+    if (qtd > 1) await item.update({ "system.quantity": qtd - 1 }); else await item.delete();
+  }
+  return cartao(actor, html, botoes);
 }
 
-/** Pular tempo a partir do painel de projetos: o diálogo único, em horas. */
-export async function pularTempoProjetos(actor) {
-  const { dialogoPularTempo } = await import("./pular-tempo.mjs");
-  return dialogoPularTempo(actor, { unidade: "horas", qtd: 1 });
+const escolhaTipo = pj => ({ Fogo: "Fogo", Frio: "Gelo", "Relâmpago": "Elétrico", "Água": "Água" })[pj?.variante] ?? "";
+
+function botoesResistencia(pericia, cd, rotulo, alvos) {
+  if (!pericia) return "";
+  const nome = { reflexos: "Reflexo", fortitude: "Fortitude", vontade: "Vontade" }[pericia] ?? pericia;
+  const lista = alvos.length ? alvos : [null];
+  return lista.map(a => `<button type="button" data-epm-action="resistir" data-pericia="${pericia}" data-dt="${cd}"${a ? ` data-defensor="${escapar(a.uuid)}"` : ""} data-rotulo="${escapar(rotulo)}"><i class="fa-solid fa-shield-heart"></i> ${nome} CD ${cd}${a ? `: ${escapar(a.name)}` : ""}</button>`).join("");
 }
 
-export async function encerrarEfeitoProjeto(actor, id) {
-  return actor.update({ [`${P}.projetosEfeitos.-=${id}`]: null });
-}
-
-/** Livro de Projetos: guarda o projeto (nome e tipo) para recriar depois. */
-export async function guardarNoLivro(actor, id) {
+/** Reparo Rápido: Ação Bônus e 5 PE, a Engenhoca recupera 1 cena (1× por cena por Engenhoca). */
+export async function repararEngenhoca(actor, itemId) {
+  const item = actor.items.get(itemId);
+  const pj = flagProjeto(item);
+  if (!pj || pj.categoria !== "engenhoca") return;
   const dados = actor.flags?.[FLAG] ?? {};
-  const p = dados.projetos?.[id];
-  if (!p) return;
+  const chave = `reparo-${item.id}`;
+  if (dados.usosFormas?.[chave]) return ui.notifications.warn(`${item.name}: Reparo Rápido só 1× por cena.`);
+  if (int(pj.cenas) >= int(pj.cenasMax)) return ui.notifications.info(`${item.name} já está com a Durabilidade cheia.`);
   const { ficha } = estadoAtor(actor);
-  const limite = limiteLivro(nivelArquetipo(dados, "artifice"), ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
-  if (!limite) return ui.notifications.warn("O Livro de Projetos libera no nível 3 de Artífice.");
-  const livro = Object.values(dados.livroProjetos ?? {}).filter(Boolean);
-  if (livro.some(l => l.nome === p.nome && l.tipo === p.tipo)) return ui.notifications.info(`${p.nome} já está no livro.`);
-  if (livro.length >= limite) return ui.notifications.warn(`O livro está cheio (${limite}). Apague um projeto dele primeiro.`);
-  await actor.update({ [`${P}.livroProjetos.${novoId()}`]: { nome: p.nome, tipo: p.tipo, projeto: id } });
-  ui.notifications.info(`${p.nome} guardado no Livro de Projetos.`);
+  const { custoRecurso } = await import("./extras.mjs");
+  const c = custoRecurso(ficha, "pe", ARQUETIPOS.artifice.reparo.pe);
+  if (!c.ok) return ui.notifications.warn(`Reparo Rápido: faltam ${c.falta} PE.`);
+  await actor.update({ ...c.updates, [`${P}.usosFormas.${chave}`]: "cena", ...(game.combat?.started ? { [`${P}.acoes.bonus`]: true } : {}) });
+  await item.update({ [`flags.${FLAG}.projeto.cenas`]: Math.min(int(pj.cenasMax), int(pj.cenas) + 1) });
+  return cartao(actor, `<p><strong>Reparo Rápido</strong> (Ação Bônus, −5 PE): ${escapar(item.name)} recupera 1 cena (${Math.min(int(pj.cenasMax), int(pj.cenas) + 1)}/${int(pj.cenasMax)}).</p>`);
 }
 
-export async function apagarDoLivro(actor, id) {
-  return actor.update({ [`${P}.livroProjetos.-=${id}`]: null });
+/** Desmontar (ação livre): a Engenhoca some e os Projetos que ela ocupava voltam. */
+export async function desmontarEngenhoca(actor, itemId) {
+  const item = actor.items.get(itemId);
+  if (!flagProjeto(item)) return;
+  if (!(await confirmar("Desmontar", `<p>Desmontar <strong>${escapar(item.name)}</strong>? Os Projetos que ela ocupa voltam na hora.</p>`))) return;
+  await item.delete();
 }
 
-/** Botão "Aplicar cura" do cartão do projeto: cura os alvos marcados (ou o próprio Artífice). */
+/** Descanso: Longo zera a reserva gasta e restaura as Engenhocas; Curto recupera ¼ (mín. 1) e devolve 1 cena. */
+export function updatesDescansoArtifice(actor, longo) {
+  const est = estadoArtifice(actor);
+  if (!est) return { ator: {}, itens: [], texto: "" };
+  const ator = {};
+  const itens = [];
+  if (longo) {
+    if (est.gastos) ator[`${P}.projetosCriacao.gastos`] = 0;
+    for (const i of est.engenhocas) { const pj = flagProjeto(i); if (int(pj.cenas) < int(pj.cenasMax)) itens.push({ _id: i.id, [`flags.${FLAG}.projeto.cenas`]: int(pj.cenasMax) }); }
+    // Engenharia Reversa: a receita temporária some no Descanso Longo
+    for (const r of est.livro.filter(x => x.temporaria)) ator[`${P}.artificeLivro.-=${r.chave}`] = null;
+    return { ator, itens, texto: "Projetos de Criação de volta e Engenhocas restauradas" };
+  }
+  const volta = Math.max(1, Math.floor(est.criacao.projetos / 4));
+  if (est.gastos) ator[`${P}.projetosCriacao.gastos`] = Math.max(0, est.gastos - volta);
+  for (const i of est.engenhocas) { const pj = flagProjeto(i); if (int(pj.cenas) < int(pj.cenasMax)) itens.push({ _id: i.id, [`flags.${FLAG}.projeto.cenas`]: int(pj.cenas) + 1 }); }
+  return { ator, itens, texto: `+${volta} Projeto${volta > 1 ? "s" : ""} e +1 cena nas Engenhocas` };
+}
+
+/** Utensílios (Nv. 5): 4 PE por +dado num teste com uma das 3 perícias. */
+export async function usarUtensilios(actor) {
+  const est = estadoArtifice(actor);
+  if (!est?.utensilios) return ui.notifications.warn("Utensílios libera no nível 5 de Artífice.");
+  const { ficha } = estadoAtor(actor);
+  const { custoRecurso } = await import("./extras.mjs");
+  const c = custoRecurso(ficha, "pe", ARQUETIPOS.artifice.utensilios.pe);
+  if (!c.ok) return ui.notifications.warn(`Utensílios: faltam ${c.falta} PE.`);
+  await actor.update(c.updates);
+  const roll = await new Roll(est.utensilios).evaluate();
+  return roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<strong>Utensílios</strong> (−4 PE): +${roll.total} no teste (${est.utensilios}). Vale só nas 3 perícias escolhidas.` });
+}
+
+/** Botão "Aplicar cura" do cartão do Projeto: cura os alvos marcados (ou o próprio Artífice). */
 export async function curaDoCartao(actor, botao) {
   const valor = Math.max(0, int(botao.dataset.valor));
   let alvos = (botao.dataset.alvos ?? "").split(",").filter(Boolean).map(u => fromUuidSync(u)).filter(Boolean);
@@ -259,35 +415,4 @@ export async function curaDoCartao(actor, botao) {
     }
   }
   ui.notifications.info(`${valor} de cura em ${alvos.map(a => a.name).join(", ")}.`);
-}
-
-/* ---------------- Atualizar fichas quando o relógio anda ---------------- */
-
-/** Instantes em que algo muda para este ator (produção termina, projeto volta, efeito acaba). */
-function marcos(dados) {
-  const out = [];
-  for (const p of Object.values(dados.projetos ?? {})) if (p) out.push(Number(p.prontoEm) || 0, Number(p.voltaEm) || 0);
-  for (const e of Object.values(dados.projetosEfeitos ?? {})) if (e) out.push(Number(e.ate) || 0);
-  for (const p of Object.values(dados.producoes ?? {})) if (p && p.estado === "andamento") out.push(Number(p.fim) || 0);
-  return out.filter(Boolean);
-}
-
-/** Quando o tempo do mundo (ou o Simple Calendar) avança, redesenha só as fichas em que algo virou. */
-export function registrarRelogioProjetos() {
-  Hooks.on("updateWorldTime", (novo, delta) => {
-    const antes = novo - (Number(delta) || 0);
-    const diaMudou = chaveDia(antes) !== chaveDia(novo);
-    const apps = globalThis.foundry?.applications?.instances?.values?.() ?? [];
-    for (const app of apps) {
-      const actor = app?.actor;
-      const dados = actor?.flags?.[FLAG];
-      if (!dados || !app.rendered || app.document !== actor) continue;
-      const temProjetos = Object.keys(dados.projetos ?? {}).length || Object.keys(dados.projetosEfeitos ?? {}).length;
-      const produzindo = Object.values(dados.producoes ?? {}).some(p => p?.estado === "andamento");
-      if (!temProjetos && !produzindo) continue;
-      if (diaMudou || marcos(dados).some(m => m > Math.min(antes, novo) && m <= Math.max(antes, novo))) { app.render(); continue; }
-      // Produção em andamento: só a aba Produção, no máximo a cada 3 s (o relógio do Simple Calendar pode andar a cada segundo)
-      if (produzindo && Date.now() - (app._epmRelogio ?? 0) > 3000) { app._epmRelogio = Date.now(); app.render({ parts: ["producao"] }); }
-    }
-  });
 }

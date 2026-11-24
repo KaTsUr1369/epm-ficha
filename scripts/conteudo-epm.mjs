@@ -17,7 +17,8 @@ export const PACOTES = {
   npcs: { nome: "epm-npcs-modelo", rotulo: "EPM · NPCs modelo", tipo: "Actor" },
   loot: { nome: "epm-tabelas-loot", rotulo: "EPM · Tabelas de loot", tipo: "RollTable" },
   macros: { nome: "epm-macros", rotulo: "EPM · Macros", tipo: "Macro" },
-  melhorias: { nome: "epm-melhorias", rotulo: "EPM · Melhorias", tipo: "Item" }
+  melhorias: { nome: "epm-melhorias", rotulo: "EPM · Melhorias", tipo: "Item" },
+  receitas: { nome: "epm-receitas-artifice", rotulo: "EPM · Receitas do Artífice", tipo: "Item" }
 };
 export const ID_MANUAL = idFixo("manual:entrada");
 export const UUID_MANUAL = `Compendium.world.${PACOTES.manual.nome}.JournalEntry.${ID_MANUAL}`;
@@ -159,6 +160,20 @@ export async function documentosMelhorias() {
   return { pastas, docs };
 }
 
+/** Receitas do Livro de Projetos do Artífice: arraste na ficha para pôr no Livro. */
+export async function documentosReceitas() {
+  const { RECEITAS_ARTIFICE } = await import("./receitas-artifice.mjs");
+  const { grauRomano } = await import("./arquetipos.mjs");
+  const pastas = [["consumivel", "Consumíveis"], ["engenhoca", "Engenhocas"]].map(([id, nome], i) => ({ _id: idFixo(`receitas:pasta:${id}`), name: nome, type: "Item", sorting: "a", sort: (i + 1) * 100 }));
+  const docs = RECEITAS_ARTIFICE.map(r => ({
+    _id: idFixo(`receita:${r.id}`), name: r.nome, type: "loot", folder: idFixo(`receitas:pasta:${r.categoria}`),
+    img: r.categoria === "engenhoca" ? "icons/svg/clockwork.svg" : "icons/svg/explosion.svg",
+    system: { description: { value: `<p><strong>${escapar(r.categoria === "engenhoca" ? "Engenhoca" : "Consumível")}</strong> · ${escapar(r.uso)}</p><p>${escapar(r.efeito)}</p><ul>${r.valores.map((v, i) => `<li>Grau ${grauRomano(i + 1)}: ${escapar(v)}</li>`).join("")}</ul><p><em>Arraste para a ficha do Artífice para pôr no Livro de Projetos.</em></p>` } },
+    flags: { [FLAG]: { receitaArtifice: r.id } }
+  }));
+  return { pastas, docs };
+}
+
 /* ---------------- Foundry ---------------- */
 
 async function sincronizarPacote(chave, gerar, assinatura) {
@@ -198,6 +213,7 @@ export async function sincronizarConteudo() {
     ["manual", async () => documentosManual(await lerReadme())],
     ["macros", async () => documentosMacros()],
     ["melhorias", documentosMelhorias],
+    ["receitas", documentosReceitas],
     ["npcs", documentosNpcs],
     ["loot", documentosLoot]
   ];

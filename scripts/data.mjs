@@ -197,10 +197,9 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     rd: {},
     receitas: {},
     producoes: {},
-    projetos: {},
-    projetosEfeitos: {},
-    livroProjetos: {},
-    arquetipoOpcoes: { combatente: { tipoFavorito: "", maestria: "", estilos: [] }, artifice: { utensilios: [] }, conjurador: { dominio: "" } },
+    artificeLivro: {},
+    projetosCriacao: { gastos: 0 },
+    arquetipoOpcoes: { combatente: { tipoFavorito: "", maestrias: [], maestriaTipos: {}, estilos: [] }, artifice: { utensilios: [], modificacao: { parte: "", opcao: 0 } }, conjurador: { dominio: "", assinaturas: [], elemento: "" } },
     usos: { ataqueExtraTurno: false, gemeaTurno: false, recuperarMana: false, presa: "" },
     combate: { atrasou: "" },
     sustentadas: {},
@@ -234,7 +233,11 @@ export function normalizarDados(bruto = {}, listaPericias = PERICIAS_PADRAO) {
   if (!Array.isArray(dados.ui?.ordemCategorias)) dados.ui.ordemCategorias = [];
   // Campos que apareciam duas vezes na ficha (Habilidades → Arquétipo e aba Arquétipo) e viravam "Katana,Katana,…"
   const opc = dados.arquetipoOpcoes ?? {};
-  if (opc.combatente) for (const k of ["tipoFavorito", "maestria"]) opc.combatente[k] = valorUnico(opc.combatente[k]);
+  if (opc.combatente) {
+    opc.combatente.tipoFavorito = valorUnico(opc.combatente.tipoFavorito);
+    if (opc.combatente.maestrias && !Array.isArray(opc.combatente.maestrias)) opc.combatente.maestrias = Object.values(opc.combatente.maestrias).filter(Boolean);
+  }
+  if (opc.conjurador?.assinaturas && !Array.isArray(opc.conjurador.assinaturas)) opc.conjurador.assinaturas = Object.values(opc.conjurador.assinaturas).filter(Boolean);
   if (opc.conjurador) opc.conjurador.dominio = valorUnico(opc.conjurador.dominio);
   return dados;
 }
@@ -829,6 +832,7 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
   }
   // Arquétipos modelo: Reserva Arcana, Utensílios, Arma Protetora, Arma Dupla, projetos do Artífice
   for (const m of modsDeArquetipo(d, itens.filter(x => x.arma), agora, itens, [...statuses])) {
+    if (m.alvo === "rd") { reducoes.push({ valor: num(m.valor), tipos: "dano físico", fonte: m.fonte }); continue; }
     ajustarBonus(d, Object.assign(m, { origem: "arquetipo" }), m.alvo);
     if (num(m.valor)) somar(m.alvo, m.valor, m.fonte, "habilidade");
   }

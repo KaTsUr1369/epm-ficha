@@ -269,10 +269,24 @@ export function opcoesAmalgama(racaId = "entretenimento") {
   return RACAS.filter(r => r.id !== racaId && !r.mestico).flatMap(r => r.habilidades.map(h => ({ ref: `${r.id}:${h.id}`, label: `${r.nome}: ${h.nome}`, texto: h.texto })));
 }
 
+/**
+ * Confere as Habilidades Únicas escolhidas: só 1, a não ser com Compatibilidade à Fera (Mutante, ou Mestiço com Mutante),
+ * que libera mais 2. Devolve a lista que vale (a Fera fica, os extras saem se ela sair) e se passou do limite.
+ */
+export function conferirUnicas(raca, escolhidas = []) {
+  const lista = [...new Set(escolhidas)];
+  const fera = raca?.mestico ? "mutante:fera" : "fera";
+  const comFera = lista.includes(fera);
+  const ordenada = comFera ? [fera, ...lista.filter(x => x !== fera)] : lista;
+  const max = qtdUnicas(raca, ordenada);
+  return { validas: ordenada.slice(0, max), max, passou: ordenada.length > max };
+}
+
 /** Habilidades Únicas que a raça deixa escolher (1, ou 1 + extras de Compatibilidade à Fera). */
 export function qtdUnicas(raca, escolhidas = []) {
   if (!raca) return 0;
-  if (raca.mestico) return 2;
+  // Mestiço: 2 (uma de cada raça); com Mutante e Compatibilidade à Fera, +2 do Mutante
+  if (raca.mestico) return 2 + (escolhidas.includes("mutante:fera") ? 2 : 0);
   const extras = (raca.unicas ?? []).filter(u => escolhidas.includes(u.id)).reduce((s, u) => s + (u.auto?.unicasExtras ?? 0), 0);
   return 1 + extras;
 }
@@ -287,7 +301,8 @@ export function efeitosDaRaca(escolha, ativas = []) {
   if (!raca) return out;
   const lista = [];
   if (raca.mestico) {
-    for (const ref of [...(escolha?.mestico?.habilidades ?? []), ...(escolha?.mestico?.unicas ?? [])]) {
+    const feraM = (escolha?.mestico?.unicas ?? []).includes("mutante:fera");
+    for (const ref of [...(escolha?.mestico?.habilidades ?? []).filter(r => !(feraM && r === "mutante:pele")), ...(escolha?.mestico?.unicas ?? [])]) {
       const [rid, hid] = String(ref).split(":");
       const r = racaPorId(rid);
       const h = [...(r?.habilidades ?? []), ...(r?.unicas ?? [])].find(x => x.id === hid);

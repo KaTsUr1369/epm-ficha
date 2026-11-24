@@ -89,6 +89,7 @@ export function registrarAjustes() {
     scope: "world", config: true, type: Boolean, default: true
   });
   reg("numeros0820", { scope: "world", config: false, type: Boolean, default: false });
+  reg("numeros0827", { scope: "world", config: false, type: Boolean, default: false });
   game.settings.registerMenu(MODULE_ID, "numerosBonusMenu", {
     name: "Bônus de estilos e treinos", label: "Editar números",
     hint: "O Mestre muda os bônus numéricos dos Estilos de Combate e dos treinos automáticos. Campo vazio volta ao padrão.",

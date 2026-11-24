@@ -1,7 +1,6 @@
 /**
  * Pular tempo (timeskip) único para tudo o que depende de tempo ou do calendário:
  *   - treinamentos e criações da Oficina (8 h de treino por dia, divididas entre eles), sobra vira PT de estudo;
- *   - projetos do Artífice (produção, volta, Soma/Proteção e o limite do dia);
  *   - produções (receitas);
  *   - pacto quebrado (habilidades bloqueadas por horas);
  *   - Ressonância de Alma (Troca de lugar de 1 hora, manifestação, Conversa semanal e Troca mensal sem Simple Calendar);
@@ -73,12 +72,11 @@ export async function alvosDeTreino(dados, actor = null) {
 
 /** O que mais a ficha tem que depende de tempo (para o diálogo mostrar só o que existe). */
 export function temposDaFicha(dados = {}, t = 0) {
-  const projetos = Object.values(dados.projetos ?? {}).filter(Boolean);
   const producoes = Object.values(dados.producoes ?? {}).filter(p => p?.estado === "andamento");
   const pactos = Object.values(dados.pactos ?? {}).filter(p => p?.quebrado && num(p.bloqueioAte) > t);
   const res = dados.ressonancia ?? {};
   return {
-    projetos: projetos.length + Object.keys(dados.projetosEfeitos ?? {}).length,
+    projetos: 0,
     producoes: producoes.length, pactos: pactos.length,
     troca: !!res.troca?.alma, manifestacao: !!res.manifestacao?.alma,
     usosAlma: !!(res.usos?.conversa?.usado || res.usos?.troca?.usado),
@@ -96,24 +94,6 @@ export function efeitosDoTempo(dados = {}, { seg, horas, agora = 0, relogio = fa
   const up = {};
   const feitos = [];
   const adiantar = v => Math.max(0, num(v) - (relogio ? 0 : seg));
-  // Projetos do Artífice
-  const projetos = Object.entries(dados.projetos ?? {}).filter(([, p]) => p);
-  if (horas >= 24 && projetos.length) {
-    for (const [id] of projetos) up[`${P}.projetos.-=${id}`] = null;
-    feitos.push("Projetos: dia novo (o limite do dia voltou)");
-  } else if (projetos.length) {
-    let n = 0;
-    for (const [id, p] of projetos) {
-      if (num(p.prontoEm) > agora) { up[`${P}.projetos.${id}.prontoEm`] = Math.min(num(p.prontoEm), Math.max(agora, adiantar(p.prontoEm))); n++; }
-      if (num(p.voltaEm) > agora) { up[`${P}.projetos.${id}.voltaEm`] = Math.min(num(p.voltaEm), Math.max(agora, adiantar(p.voltaEm))); n++; }
-    }
-    if (n) feitos.push("Projetos: produção e volta andaram");
-  }
-  for (const [id, e] of Object.entries(dados.projetosEfeitos ?? {})) {
-    if (!e) continue;
-    if (adiantar(e.ate) <= agora || horas >= 24) { up[`${P}.projetosEfeitos.-=${id}`] = null; feitos.push(`${e.nome || "Efeito de projeto"} terminou`); }
-    else if (!relogio) up[`${P}.projetosEfeitos.${id}.ate`] = adiantar(e.ate);
-  }
   // Produções (receitas)
   for (const [id, p] of Object.entries(dados.producoes ?? {})) {
     if (p?.estado !== "andamento" || relogio) continue;
@@ -241,13 +221,13 @@ export async function dialogoPularTempo(actor, { unidade = "horas", qtd = 8 } = 
   const linhas = alvos.map(a => `<label class="epm-campo epm-pular-linha"><span>${escapar(a.nome)} <em class="epm-dica">faltam ${a.total - a.feitas} h</em></span>
       <input type="number" min="0" step="1" name="${a.chave}" data-falta="${a.total - a.feitas}" value="0"></label>`).join("");
   const outros = [
-    tem.projetos ? "projetos do Artífice" : "", tem.producoes ? "produções" : "", tem.pactos ? "bloqueio de pacto" : "",
+    tem.producoes ? "produções" : "", tem.pactos ? "bloqueio de pacto" : "",
     tem.troca ? "Troca de lugar" : "", tem.manifestacao ? "manifestação da alma" : "", tem.usosAlma ? "usos da Ressonância" : "",
     tem.cena ? "bônus de cena" : "", tem.usosDia ? "usos por dia" : ""
   ].filter(Boolean);
   const r = await fvtt.DialogV2.wait({
     window: { title: `Pular tempo: ${actor.name}` }, classes: ["epm-dialogo", "epm-pular-tempo"], rejectClose: false, modal: true,
-    content: `<p class="epm-dica">Para quando o tempo passa fora de cena. Vale para tudo o que depende de tempo: treinos e criações (${TREINO.horasDia} h de treino por dia), projetos do Artífice, produções, pacto, Ressonância, bônus de cena e usos por dia.</p>
+    content: `<p class="epm-dica">Para quando o tempo passa fora de cena. Vale para tudo o que depende de tempo: treinos e criações (${TREINO.horasDia} h de treino por dia), produções, pacto, Ressonância, bônus de cena e usos por dia.</p>
       <div class="epm-dialogo-linha"><label class="epm-campo"><span>Quanto tempo passou</span><input type="number" min="0" step="any" name="qtd" value="${qtd}"></label>
       <label class="epm-campo"><span>Unidade</span><select name="unidade">${opcoesHtml(Object.entries(UNIDADES_SKIP).map(([k, u]) => [k, u.label]), unidade)}</select></label></div>
       <p class="epm-dica epm-pular-total">= <strong data-total-horas></strong> h; até <strong data-treino-horas></strong> h de treino.</p>

@@ -150,6 +150,7 @@ export const ORIGENS_HABILIDADE = {
   transformacao: "Transformação",
   maestria: "Domínio",
   treinamento: "Treinamento",
+  pergaminho: "Pergaminho ou mestre",
   talento: "Talento",
   meme: "Meme"
 };

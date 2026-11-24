@@ -21,8 +21,8 @@ import { maximizar, formulaConsumivel, resumoMelhorias, bonusDeFocos } from "./m
 import { ajustes, listaPericias } from "./settings.mjs";
 import { num as numBonus } from "./numeros.mjs";
 import { cacadorDe } from "./arquetipos.mjs";
-import { ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, estilosEscolhidos, custoMagiaCirculo, eTipoFavorito, ataqueExtraDe, estiloVal, recuperarManaDe } from "./arquetipos.mjs";
-import { listaPropriedades as listaPropriedadesItem, ataqueDesarmado } from "./context.mjs";
+import { ARQUETIPOS, nivelArquetipo, degrau, efeitoMaestria, estilosEscolhidos, custoMagiaCirculo, eTipoFavorito, ataqueExtraDe, estiloVal, recuperarManaDe, maestriasDaArma, textoMaestria, cdMaestria, assinaturaDe } from "./arquetipos.mjs";
+import { listaPropriedades as listaPropriedadesItem, ataqueDesarmado, ataqueADistancia } from "./context.mjs";
 import { EFEITO_ELEMENTO, DANO_EFEITO_ELEMENTO, DT_EFEITO_ELEMENTO } from "./regras-extras.mjs";
 import { posicaoTatica, facesDaArma } from "./atirador-arcano.mjs";
 import { custoRecurso, turnoTransformacao, destransformar, cliqueChatExtra, registrarBestiario } from "./extras.mjs";
@@ -447,6 +447,24 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     if (!conj) return null;
     if (custo.recurso === "pm") custo = { ...custo, valor: Math.max(0, custo.valor - conj.parteParceiro) };
     avisos.push(conj.nota);
+  }
+  // Magia Assinatura (Conjurador): metade dos PM (para cima) e sempre sem movimentos
+  if (p.tipo === "magia" && custo.recurso === "pm" && custo.valor > 0) {
+    const dAs = actor.flags?.[FLAG] ?? {};
+    const ass = assinaturaDe(nivelArquetipo(dAs, "conjurador"));
+    const ids = ass ? (dAs.arquetipoOpcoes?.conjurador?.assinaturas ?? []).slice(0, ass.qtd) : [];
+    if (ids.includes(item.id) && (p.circulo ?? 0) <= ass.circuloMax) {
+      const antes = custo.valor;
+      custo = { ...custo, valor: Math.ceil(antes / 2) };
+      avisos.push(`Magia Assinatura: ${custo.valor} PM em vez de ${antes}, sem movimentos.`);
+    }
+  }
+  // Maestria Elemental (Conjurador 35): lembrete no cartão
+  if (p.tipo === "magia") {
+    const dEl = actor.flags?.[FLAG] ?? {};
+    const el = String(dEl.arquetipoOpcoes?.conjurador?.elemento ?? "").trim().toLowerCase();
+    const tipoForma = String(forma?.dano?.tipo ?? item.flags?.[FLAG]?.elemento ?? "").toLowerCase();
+    if (el && nivelArquetipo(dEl, "conjurador") >= ARQUETIPOS.conjurador.maestriaElemental.nivel && tipoForma.includes(el)) avisos.push(`Maestria Elemental (${dEl.arquetipoOpcoes.conjurador.elemento}): +1 dado de dano e ignora Resistência a esse tipo.`);
   }
   let sobrecarga = null;
   if (custo.recurso !== "nenhum" && custo.valor > 0) {
@@ -1159,7 +1177,7 @@ export async function novoTurno(actor) {
     [`${P}.acoes.padrao`]: usadas.padrao, [`${P}.acoes.bonus`]: usadas.bonus, [`${P}.acoes.movimento`]: usadas.movimento,
     [`${P}.acoes.reacao`]: false, [`${P}.acoes.defesas`]: 0,
     [`${P}.usos.ataqueExtraTurno`]: false, [`${P}.usos.gemeaTurno`]: false,
-    [`${P}.usos.manobraTurno`]: false, [`${P}.usos.maestriaTurno`]: false, [`${P}.acoes.convertida`]: "", [`${P}.acoes.extra`]: false
+    [`${P}.usos.manobraTurno`]: false, [`${P}.usos.maestriaTurno`]: false, [`${P}.usos.maestriasTurno`]: [], [`${P}.acoes.convertida`]: "", [`${P}.acoes.extra`]: false
   };
   // Formas "1× por turno" (habilidades e formas de itens) voltam
   Object.assign(updates, liberarUsosFormas(dados, ["turno"]));
@@ -1485,6 +1503,17 @@ export async function descanso(actor, tipo) {
     }
   }
   if (dados.usos?.recuperarMana) updates[`${P}.usos.recuperarMana`] = false;
+  if (dados.usos?.zonaDeMana) updates[`${P}.usos.zonaDeMana`] = false;
+  // Artífice: reserva de Projetos e Durabilidade das Engenhocas
+  if (nivelArquetipo(dados, "artifice")) {
+    try {
+      const { updatesDescansoArtifice } = await import("./projetos.mjs");
+      const a = updatesDescansoArtifice(actor, longo);
+      Object.assign(updates, a.ator);
+      if (a.itens.length) await actor.updateEmbeddedDocuments("Item", a.itens);
+      if (a.texto && (Object.keys(a.ator).length || a.itens.length)) feitos.push(a.texto);
+    } catch (err) { console.warn("EPM | descanso do Artífice", err); }
+  }
   const recargas = longo ? ["curto", "longo", "dia"] : ["curto"];
   const recarregados = await recarregarCargas(actor, recargas);
   if (recarregados.length) feitos.push(`cargas recarregadas: ${recarregados.join(", ")}`);
@@ -1795,7 +1824,10 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const comb = nivelArquetipo(dados, "combatente");
   const opc = dados.arquetipoOpcoes?.combatente ?? {};
   const favorita = !!item && eTipoFavorito(item, dados);
-  const ef = favorita ? efeitoMaestria(opc.maestria, comb, dados) : null;
+  // Arsenal de Maestrias: as Maestrias que valem com esta arma na mão
+  const efs = favorita ? maestriasDaArma(item, dados, comb) : [];
+  const efDe = id => efs.find(e => e.id === id) ?? null;
+  const maestriasUsadas = Array.isArray(dados.usos?.maestriasTurno) ? dados.usos.maestriasTurno : [];
   const ae = ataqueExtraDe(comb, dados);
   const estilos = estilosEscolhidos(dados, comb);
   const armasEquipadas = actor.items.filter(i => i.type === "weapon" && i.system?.equipped).length;
@@ -1810,9 +1842,9 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   const cargas = int(fi.cargas?.max) > 0 ? { valor: int(fi.cargas.valor), max: int(fi.cargas.max) } : null;
   let margemPadrao = at.critMargem;
   let multPadrao = at.critMult;
-  if (ef?.id === "perigosa") {
-    margemPadrao = Math.max(2, at.critMargem - (ef.margem ?? 0));
-    multPadrao = Math.max(at.critMult, ef.mult || 0);
+  if (efDe("perigosa")) {
+    margemPadrao = Math.max(2, at.critMargem - (efDe("perigosa").margem ?? 0));
+    multPadrao = Math.max(at.critMult, efDe("perigosa").mult || 0);
     notas.push(`Arma Perigosa: crítico ${margemPadrao < 20 ? `${margemPadrao}–20` : "20"}/×${multPadrao}`);
   }
   // Crítico Brutal (Bárbaro do Notion): margem mínima e +multiplicador até o máximo da tabela
@@ -1852,20 +1884,22 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
       extras.push(`<label class="epm-check epm-check-linha" title="Uma vez por turno; o custo é por ataque adicional${ae.desconto ? ` (Gêmea: −${ae.desconto} PE no total, mínimo 3)` : ""}"><input type="checkbox" name="extraComb" ${usado || peDisp < ae.custoDe(1) ? "disabled" : ""}> Ataque Extra (Combatente):
         <select name="extraCombQtd" ${usado ? "disabled" : ""}>${opcoesAE}</select>${usado ? " <em>(já usado neste turno)</em>" : ""}</label>`);
     }
-    if (ef?.id === "gemea") {
+    if (efDe("gemea")) {
+      const g = efDe("gemea");
       const usado = !!dados.usos?.gemeaTurno;
       const semBonus = !acoesLivres.includes("bonus");
-      extras.push(chk("gemea", `Gêmea (Ação Bônus): ${ef.custo} PE → +${ef.ataques} ataque${ef.ataques > 1 ? "s" : ""} com a segunda arma${ef.semMod ? " (sem modificador no dano)" : ""}${usado ? " <em>(já usado)</em>" : ""}`, { desabilitado: usado || semBonus || peDisp < ef.custo, dica: semBonus ? "A Ação Bônus já foi usada" : "1× por turno" }));
+      extras.push(chk("gemea", `Gêmea (Ação Bônus): ${g.custo} PE → +${g.ataques} ataque${g.ataques > 1 ? "s" : ""} com a segunda arma${g.semMod ? " (sem modificador no dano)" : ""}${usado ? " <em>(já usado)</em>" : ""}`, { desabilitado: usado || semBonus || peDisp < g.custo, dica: semBonus ? "A Ação Bônus já foi usada" : "1× por turno" }));
     }
   }
   const opcoesArq = [];
-  // Maestrias com custo em PE: 1 vez por turno
-  const maestriaUsada = !!dados.usos?.maestriaTurno;
-  const jaTxt = maestriaUsada ? " <em>(já usada neste turno)</em>" : "";
-  if (ef?.id === "certeiro") opcoesArq.push(chk("certeiro", `Ataque Certeiro: ${ef.custo} PE → +${ef.acerto} de Acerto${jaTxt}`, { desabilitado: maestriaUsada || peDisp < ef.custo }));
-  if (ef?.id === "longa") opcoesArq.push(chk("longa", `Arma Longa: ${ef.custo} PE → +${String(ef.alcance).replace(".", ",")} m de alcance${jaTxt}`, { desabilitado: maestriaUsada || peDisp < ef.custo }));
-  if (ef?.id === "leve" && ef.danoDex) notas.push(`Arma Leve: +${ef.danoDex} de dano se a arma já usa Destreza (some no bônus externo)`);
-  if (ef?.id === "perigosa" && ef.dadosCritico) notas.push(`Arma Perigosa: o crítico causa +${ef.dadosCritico} dado${ef.dadosCritico > 1 ? "s" : ""} de dano.`);
+  // Maestrias com custo em PE: cada uma 1×/turno (Maestrias diferentes podem no mesmo turno)
+  const jaTxt = id => maestriasUsadas.includes(id) ? " <em>(já usada neste turno)</em>" : "";
+  const ct = efDe("certeiro"), lg = efDe("longa"), lv = efDe("leve"), sen = efDe("sentinela");
+  if (ct) opcoesArq.push(chk("certeiro", `Ataque Certeiro: ${ct.custo} PE → +${ct.acerto} de Acerto${jaTxt("certeiro")}`, { desabilitado: maestriasUsadas.includes("certeiro") || peDisp < ct.custo }));
+  if (lg) opcoesArq.push(chk("longa", `Arma Longa: ${lg.custo} PE → +${String(lg.alcance).replace(".", ",")} m de alcance${jaTxt("longa")}`, { desabilitado: maestriasUsadas.includes("longa") || peDisp < lg.custo }));
+  if (lv?.danoDex) notas.push(`Arma Leve: +${lv.danoDex} de dano se a arma já usa Destreza (some no bônus externo)`);
+  if (sen) notas.push(`Sentinela: ${textoMaestria(sen)}`);
+  if (efs.some(e => ["destrutivo", "alongado", "esmagador", "sangrenta"].includes(e.id))) notas.push(`Maestrias ${efs.filter(e => ["destrutivo", "alongado", "esmagador", "sangrenta"].includes(e.id)).map(e => e.nome).join(", ")}: botão no cartão do ataque.`);
   // Núcleo Vermelho (Guerreiro Elemental): fixo no primeiro acerto do turno, sem multiplicar no crítico
   if (elem?.nucleo && !oportunidade) {
     const usadoNV = dados.usos?.nucleoTurno === chaveTurnoAtual();
@@ -1941,7 +1975,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
     </fieldset>
     ${extras.length ? `<fieldset class="epm-aquisicao"><legend>Ataques adicionais</legend>${extras.join("")}</fieldset>` : ""}
     ${!oportunidade && !contra ? htmlDupla(actor) : ""}
-    ${opcoesArq.length ? `<fieldset class="epm-aquisicao"><legend>${ef ? `Maestria e estilo` : "Estilo e Presa"}</legend>${opcoesArq.join("")}</fieldset>` : ""}
+    ${opcoesArq.length ? `<fieldset class="epm-aquisicao"><legend>${efs.length ? `Maestria e estilo` : "Estilo e Presa"}</legend>${opcoesArq.join("")}</fieldset>` : ""}
     ${opcoesAa.length ? `<fieldset class="epm-aquisicao epm-opcoes-atirador"><legend>Arma Mágica (Atirador Arcano)</legend>${opcoesAa.join("")}</fieldset>` : ""}
     ${opcoesTal.length ? `<fieldset class="epm-aquisicao epm-opcoes-talento"><legend>Talentos (marque se valer neste ataque)</legend>${opcoesTal.join("")}</fieldset>` : ""}
     <div class="epm-dialogo-linha">
@@ -2003,7 +2037,7 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   // Quantos ataques e o que cada escolha custa
   const extrasComuns = escolha.extraComum ? 1 : 0;
   const extrasComb = escolha.extraComb && ae ? Math.max(1, Math.min(ae.ataques, escolha.extraCombQtd || 1)) : 0;
-  const extrasGemea = escolha.gemea && ef?.id === "gemea" ? ef.ataques : 0;
+  const extrasGemea = escolha.gemea && efDe("gemea") ? efDe("gemea").ataques : 0;
   const total = 1 + extrasComuns + extrasComb + extrasGemea;
   const updates = {};
   const gastos = [];
@@ -2018,11 +2052,13 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
   if (extrasComb) { pe += ae.custoDe(extrasComb); updates[`${P}.usos.ataqueExtraTurno`] = true; gastos.push(`Ataque Extra +${extrasComb}`); }
   if (extrasGemea) {
     if (!acoesLivres.includes("bonus")) return ui.notifications.warn("Gêmea usa a Ação Bônus, que já foi gasta.");
-    pe += ef.custo; updates[`${P}.usos.gemeaTurno`] = true; updates[`${P}.acoes.bonus`] = true; gastos.push("Ação Bônus (Gêmea)");
+    pe += efDe("gemea").custo; updates[`${P}.usos.gemeaTurno`] = true; updates[`${P}.acoes.bonus`] = true; gastos.push("Ação Bônus (Gêmea)");
   }
   if (escolha.nucleo && elem?.nucleo) updates[`${P}.usos.nucleoTurno`] = chaveTurnoAtual();
-  if (escolha.certeiro && ef?.id === "certeiro") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
-  if (escolha.longa && ef?.id === "longa") { pe += ef.custo; updates[`${P}.usos.maestriaTurno`] = true; }
+  const usadasAgora = [...maestriasUsadas];
+  if (escolha.certeiro && efDe("certeiro")) { pe += efDe("certeiro").custo; usadasAgora.push("certeiro"); }
+  if (escolha.longa && efDe("longa")) { pe += efDe("longa").custo; usadasAgora.push("longa"); }
+  if (usadasAgora.length > maestriasUsadas.length) updates[`${P}.usos.maestriasTurno`] = usadasAgora;
   // Atirador Arcano: PE da Posição Tática e do Disparo Potencializado; PM da munição, do circuito e do Espiral
   let pmAa = 0;
   const posAa = aa && escolha.aaPosicao ? posicaoTatica(aa.nivel, escolha.aaPosicao === "posicao" ? "" : escolha.aaPosicao) : null;
@@ -2086,25 +2122,26 @@ export async function dialogoAtaque(actor, tipo, ref, { oportunidade = false, co
 
   // Bônus que valem para todos os ataques desta rodada
   const bonusFontes = [];
-  if (escolha.certeiro && ef?.id === "certeiro") bonusFontes.push({ valor: ef.acerto, fonte: "Ataque Certeiro", hab: true });
+  if (escolha.certeiro && efDe("certeiro")) bonusFontes.push({ valor: efDe("certeiro").acerto, fonte: "Ataque Certeiro", hab: true });
+  if (oportunidade && efDe("sentinela")?.acertoOportunidade) bonusFontes.push({ valor: efDe("sentinela").acertoOportunidade, fonte: "Sentinela (oportunidade)", hab: true });
   if (escolha.duelista) bonusFontes.push({ valor: estiloVal(dados, "duelista", "acertoIsolado"), fonte: "Duelista", hab: true });
   if (estilos.includes("dupla") && armasEquipadas >= 2) bonusFontes.push({ valor: estiloVal(dados, "dupla", "acerto"), fonte: "Arma Dupla", hab: true });
   if (escolha.presa && cac) bonusFontes.push({ valor: cac.acerto, fonte: `Presa (${presa})`, hab: true });
-  if (favorita && ef?.id === "leve" && ef.acerto) bonusFontes.push({ valor: ef.acerto, fonte: "Arma Leve (Maestria)", hab: true });
+  if (efDe("leve")?.acerto) bonusFontes.push({ valor: efDe("leve").acerto, fonte: "Arma Leve (Maestria)", hab: true });
   if (tec?.penal) bonusFontes.push({ valor: tec.penal, fonte: tec.fonte });
   const base = {
     ...escolha, bonusFontes, dadosExtra: escolha.presa ? 1 : 0, semModDano: !!escolha.atirador || (!!escolha.segundaArma && !ambidestro),
     notaSemMod: !escolha.atirador && escolha.segundaArma ? "Segunda arma (Combate com Duas Armas): o dano não soma o atributo." : "",
     margemBonus: escolha.atirador ? estiloVal(dados, "atirador", "margem")
       : (estilos.includes("atirador") && (at?.alcanceCat === "distancia" || (at?.alcanceCat !== "corpo" && at?.periciaId === "pontaria")) ? int(estiloVal(dados, "atirador", "margemSempre")) : 0),
-    maestria: favorita && ef && ["destrutivo", "alongado"].includes(ef.id) ? ef : null,
+    maestrias: efs.filter(e => ["destrutivo", "alongado", "esmagador", "sangrenta"].includes(e.id)).map(e => ({ ...e, cd: cdMaestria(ficha, ataqueADistancia(at)) })),
     notasExtra: [
       ...(gastos.length ? [`Gastou: ${gastos.join(", ")}.`] : []),
       ...(escolha.segundaArma && ambidestro ? ["Segunda arma (ação bônus): soma o atributo no dano pela Ambidestria."] : []),
-      ...(extrasGemea && ef?.semMod ? ["Gêmea: o ataque da segunda arma não soma o modificador ao dano (até o Nv. 11)."] : []),
-      ...(escolha.presa && cac ? [`Presa: +${cac.ca} CA contra ela${cac.esquiva ? ` e +${cac.esquiva} Esquiva` : ""}; ignora a Resistência dela${cac.imunidadeVira ? " e a Imunidade dela ao seu dano vira Resistência" : " (Imunidade não)"}.`] : []),
+      ...(extrasGemea && efDe("gemea")?.semMod ? ["Gêmea: o ataque da segunda arma não soma o modificador ao dano (até o Nv. 11)."] : []),
+      ...(escolha.presa && cac ? [`Presa: +${cac.ca} CA contra ela${cac.esquiva ? ` e +${cac.esquiva} em Bloqueio, Contra-ataque e Esquiva` : ""}; ignora a Resistência dela${cac.imunidadeVira ? " e a Imunidade dela ao seu dano vira Resistência" : " (Imunidade não)"}.`] : []),
       ...(escolha.nucleo && elem?.nucleo && total > 1 ? [`Núcleo Vermelho: +${elem.nucleo} de ${elem.tipo || "dano elemental"} só no primeiro ataque que acertar (some no dano dele).`] : []),
-      ...(escolha.longa && ef?.id === "longa" ? [`Arma Longa: +${String(ef.alcance).replace(".", ",")} m de alcance.`] : []),
+      ...(escolha.longa && efDe("longa") ? [`Arma Longa: +${String(efDe("longa").alcance).replace(".", ",")} m de alcance.`] : []),
       ...(oportunidade ? ["Ataque de oportunidade (Reação)."] : []),
       ...(manobra ? [`Manobra: ${manobra.label}. ${manobra.texto}`] : []),
       ...(contra ? ["Contra-ataque (pago com a defesa)."] : [])
@@ -2243,7 +2280,7 @@ function poderesComoFonte(actor) {
 
 export async function rolarAtaque(actor, at, {
   modo = "normal", extraAcerto = "", extraDano = "", margem, mult, comDano = true,
-  bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestria = null, notasExtra = [], tipoArma = "", notaSemMod = ""
+  bonusFontes = [], penalidade = 0, dadosExtra = 0, semModDano = false, margemBonus = 0, rotulo = "", maestrias = [], notasExtra = [], tipoArma = "", notaSemMod = ""
 } = {}) {
   const { ficha, dados } = estadoAtor(actor);
   const cena = bonusCenaAtivos(dados);
@@ -2409,14 +2446,13 @@ export async function rolarAtaque(actor, at, {
   if (tipoArma && regra("maestria")) {
     botoes.push({ acao: "maestriaAcerto", tipoArma, rotulo: "Domínio", label: `Acertou (Domínio: ${tipoArma})`, icone: "fa-solid fa-medal" });
   }
-  // Maestria do Combatente depois de saber se acertou: Ataque Destrutivo (acertou) ou Acerto Alongado (errou)
-  if (maestria?.id === "destrutivo") {
-    botoes.push({ acao: "destrutivo", alvos: alvos.map(a => a.uuid).join(","), tipoDano: at.tipoDano ?? "", custo: maestria.custo, rotulo: maestria.nome,
-      label: `Acertou? Destrutivo: ${maestria.custo} PE, +${maestria.dano}`, icone: "fa-solid fa-hammer" });
-  }
-  if (maestria?.id === "alongado") {
-    botoes.push({ acao: "alongado", alvos: alvos.map(a => a.uuid).join(","), tipoDano: at.tipoDano ?? "", custo: maestria.custo, rotulo: maestria.nome,
-      label: `Errou? Alongado: ${maestria.custo} PE, ${maestria.dano} de dano`, icone: "fa-solid fa-arrows-left-right" });
+  // Arsenal: botões das Maestrias que dependem de acertar ou errar (cada uma 1×/turno)
+  const listaAlvos = alvos.map(a => a.uuid).join(",");
+  for (const m of maestrias) {
+    if (m.id === "destrutivo") botoes.push({ acao: "destrutivo", alvos: listaAlvos, tipoDano: at.tipoDano ?? "", custo: m.custo, rotulo: m.nome, label: `Acertou? Destrutivo: ${m.custo} PE, +${m.dano}`, icone: "fa-solid fa-hammer" });
+    if (m.id === "alongado") botoes.push({ acao: "alongado", alvos: listaAlvos, tipoDano: at.tipoDano ?? "", custo: m.custo, rotulo: m.nome, label: `Errou? Alongado: ${m.custo} PE, ${m.dano} de dano`, icone: "fa-solid fa-arrows-left-right" });
+    if (m.id === "esmagador") botoes.push({ acao: "esmagador", alvos: listaAlvos, custo: m.custo, cd: m.cd, rotulo: m.nome, label: `Acertou? Esmagador: ${m.custo} PE (Fortitude CD ${m.cd})`, icone: "fa-solid fa-hand-fist" });
+    if (m.id === "sangrenta") botoes.push({ acao: "sangrenta", alvos: listaAlvos, custo: m.custo, cd: m.cd, rotulo: m.nome, label: `Acertou? Sangrenta: ${m.custo} PE (${m.dadosSangue} por turno)`, icone: "fa-solid fa-droplet" });
   }
   const rotulos = { normal: "", vantagem: "com vantagem", desvantagem: "com desvantagem" };
   // Cada alvo com ficha EPM escolhe a defesa (Esquiva, Bloqueio ou Contra-ataque) direto no cartão
@@ -2808,6 +2844,7 @@ export async function fimDeCombate(combate) {
     await recarregarCargas(actor, ["combate"]);
     const updates = {};
     if (dados.usos?.recuperarMana) updates[`${P}.usos.recuperarMana`] = false;
+    if (dados.usos?.zonaDeMana) updates[`${P}.usos.zonaDeMana`] = false;
     if (dados.usos?.presa) updates[`${P}.usos.presa`] = "";
     // 0.6.0: Fúria dura 1 cena; Projeto Ágil e pacotes de munição valem por combate
     if (dados.classeEpm?.furiaAtiva) updates[`${P}.classeEpm.furiaAtiva`] = false;

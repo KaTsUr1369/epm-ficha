@@ -9,7 +9,7 @@
   {{#unless this.producao.vazio}}{{> "epm-busca" chave="receitas" dica="Buscar receita, ingrediente ou profissão"}}{{/unless}}
   {{#if this.producao.temProducoes}}
   <section class="epm-painel epm-producoes">
-    <header class="epm-painel-titulo"><h3>Em produção</h3>{{#if editavel}}<button type="button" class="epm-link" data-action="pularHoras" title="Pular tempo: as produções andam junto com treinos, projetos e o resto"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>{{/if}}</header>
+    <header class="epm-painel-titulo"><h3>Em produção</h3>{{#if editavel}}<button type="button" class="epm-link" data-action="pularHoras" title="Pular tempo: as produções andam junto com treinos e o resto"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>{{/if}}</header>
     {{#each this.producao.producoes}}
     <div class="epm-producao-linha {{#if andamento}}andamento{{/if}}{{#if pronta}}pronta{{/if}}{{#if concluida}}concluida{{/if}}{{#if falhou}}falhou{{/if}}">
       <div class="epm-producao-info">

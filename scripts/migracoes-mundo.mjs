@@ -408,6 +408,87 @@ async function temaAtlas() {
   return n;
 }
 
+/** Nomes antigos das habilidades de arquétipo → nomes dos arquétipos reformulados (0.8.27). */
+export const ARQ_RENOMEADAS_0827 = {
+  "Arma Favorita": "Arsenal de Maestrias", "Arma Favorita 2.0": "Maestrias — etapa 2", "Arma Favorita 3.0": "Maestrias — etapa 3 + 2ª Maestria",
+  "Arma Favorita 4.0": "Maestrias — etapa 4", "Arma Favorita 5.0": "Maestrias — etapa 5 + 3ª Maestria", "Caçador Natural 3.0": "Caçador Natural 2.0",
+  "Despertar Mágico": "Marcado pela Mana", "Corpo de Mana": "Corpo de Mana", "Zona de Mana": "Zona de Mana",
+  "Estudo das Almas": "Estudo de Espécie", "Recriando Almas": "Reconstrução Mecânica", "Sobrecarga 2.0 e Reserva Arcana 3.0": null
+};
+/** Valores antigos do livro que ficaram gravados como ajuste e mudaram nos arquétipos reformulados. */
+const ESTILOS_ANTIGOS_0827 = { "arq-estilo-duelista-acertoisolado": 2, "arq-estilo-dupla-acerto": 1, "arq-estilo-atirador-margem": 2, "arq-estilo-atirador-margemsempre": 0 };
+/** Receitas que entram no Livro de quem já era Artífice (o Livro antigo guardava projetos, não receitas). */
+export const LIVRO_INICIAL_0827 = ["carga-explosiva", "remendo-campo", "torreta", "escudo-defletor"];
+
+/**
+ * Troca dos dados da ficha para os arquétipos reformulados (puro: devolve as atualizações).
+ * Combatente: a Maestria única vira a lista do Arsenal; os ajustes dela passam a ser por Maestria.
+ * Artífice: some o sistema antigo de projetos do dia (projetos, efeitos, Livro de projetos guardados e ajustes).
+ */
+export function trocasArquetipos0827(f = {}) {
+  const up = {};
+  const opc = f.arquetipoOpcoes ?? {};
+  const m = String(opc.combatente?.maestria ?? "").trim();
+  if (m && !(Array.isArray(opc.combatente?.maestrias) && opc.combatente.maestrias.length)) up[`${P}.arquetipoOpcoes.combatente.maestrias`] = [m];
+  if ("maestria" in (opc.combatente ?? {})) up[`${P}.arquetipoOpcoes.combatente.-=maestria`] = null;
+  for (const [k, v] of Object.entries(f.ajustesBonus ?? {})) {
+    const mm = k.match(/^arq-maestria-(custo|dano|acerto|alcance|ca|defesa|esquiva|margem|mult|danodex|dadoscritico|descontoae)$/i);
+    if (mm && m) { up[`${P}.ajustesBonus.-=${k}`] = null; up[`${P}.ajustesBonus.arq-maestria-${m}-${mm[1].toLowerCase()}`] = v; }
+    if (k in ESTILOS_ANTIGOS_0827 && Number(v) === ESTILOS_ANTIGOS_0827[k]) up[`${P}.ajustesBonus.-=${k}`] = null;
+    if (/^artifice-projetos-|^artifice-livro-de-projetos$|^arq-utensilios-bonus$|^arq-maestria-dadoscritico$/.test(k)) up[`${P}.ajustesBonus.-=${k}`] = null;
+  }
+  for (const k of ["projetos", "projetosEfeitos", "livroProjetos"]) if (f[k] && Object.keys(f[k]).length) up[`${P}.-=${k}`] = null;
+  return up;
+}
+
+/**
+ * Arquétipos reformulados (0.8.27), uma vez por ficha: dados (Arsenal, projetos antigos), habilidades de arquétipo do
+ * modelo (renomeadas, texto novo, as que saíram somem, as liberadas que faltam entram) e o Livro inicial do Artífice.
+ * Habilidades escritas pelo jogador (sem o texto do modelo) ficam como estão.
+ */
+export async function arquetiposReformulados0827() {
+  const { ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem } = await import("./arquetipos.mjs");
+  const X = await import("./extras.mjs");
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.migrado0827) continue;
+    const up = trocasArquetipos0827(f);
+    const upd = [], apagar = [], criar = [];
+    const itens = a.items?.contents ?? [];
+    const usaModelo = new Set();
+    for (const it of itens) {
+      const ref = it.flags?.[FLAG]?.arquetipoRef;
+      if (!ref) continue;
+      const [arqId] = String(ref).split(":");
+      const desc = String(it.system?.description?.value ?? "");
+      if (!/\(modelo 0\.5\)/.test(desc)) continue;
+      usaModelo.add(arqId);
+      const novoNome = it.name in ARQ_RENOMEADAS_0827 ? ARQ_RENOMEADAS_0827[it.name] : it.name;
+      const h = novoNome ? ARQUETIPOS[arqId]?.habilidades?.find(x => x.nome === novoNome) : null;
+      if (!h || h.nivel > nivelArquetipo(f, arqId)) { apagar.push(it.id); continue; }
+      const textoNovo = X.dadosHabilidadeArquetipo(arqId, h).system.description.value;
+      if (it.name === h.nome && ref === h.ref && desc === textoNovo) continue;
+      upd.push({ _id: it.id, name: h.nome, "system.description.value": textoNovo, [`${P}.arquetipoRef`]: h.ref });
+    }
+    for (const arqId of usaModelo) {
+      const nivel = nivelArquetipo(f, arqId);
+      const refs = new Set([...itens.filter(i => !apagar.includes(i.id)).map(i => i.flags?.[FLAG]?.arquetipoRef).filter(Boolean), ...upd.map(u => u[`${P}.arquetipoRef`])]);
+      for (const h of ARQUETIPOS[arqId]?.habilidades ?? []) if (h.nivel <= nivel && !refs.has(h.ref)) criar.push(X.dadosHabilidadeArquetipo(arqId, h));
+    }
+    // Artífice: Livro de Projetos começa com 4 receitas (troca no Descanso Longo)
+    if (arquetiposDoPersonagem(f).some(x => x.id === "artifice") && !Object.keys(f.artificeLivro ?? {}).length) {
+      LIVRO_INICIAL_0827.forEach((rid, i) => { up[`${P}.artificeLivro.livro${i + 1}`] = { receita: rid }; });
+    }
+    if (apagar.length) await a.deleteEmbeddedDocuments("Item", apagar, { epmMigracao: true });
+    if (upd.length) await a.updateEmbeddedDocuments("Item", upd, { render: false });
+    if (criar.length) await a.createEmbeddedDocuments("Item", criar, { render: false });
+    await a.update({ ...up, [`${P}.migrado0827`]: true }, { render: false });
+    if (apagar.length || upd.length || criar.length || Object.keys(up).length) n++;
+  }
+  return n;
+}
+
 /** 0.8.26: o Atirador Arcano passou de Artífice para Conjurador. Avisa o Mestre das fichas sem Conjurador. */
 function avisoAtiradorArcano() {
   const nomes = (game.actors ?? []).filter(a => {
@@ -433,6 +514,18 @@ export async function migrarMundo() {
   try { const n = await melhoriasAntigas(itens); if (n) feitos.push(`${n} item(ns) com as melhorias antigas no formato novo`); } catch (err) { console.warn("EPM | melhorias antigas", err); }
   try { const n = await valoresAntigos(); if (n) feitos.push(`${n} ficha(s) com valores antigos do livro atualizados`); } catch (err) { console.warn("EPM | valores antigos", err); }
   try { const n = await temaAtlas(); if (n) feitos.push(`${n} ficha(s) passaram para o visual Atlas`); } catch (err) { console.warn("EPM | tema Atlas", err); }
+  // Números dos estilos guardados pelo Mestre iguais ao padrão da 0.8.20 voltam a seguir o livro reformulado
+  try {
+    if (!game.settings.get(FLAG, "numeros0827")) {
+      const salvos = { ...(game.settings.get(FLAG, "numerosBonus") ?? {}) };
+      const velhos = { "estilo.duelista.acertoIsolado": 2, "estilo.dupla.acerto": 1, "estilo.atirador.margem": 2, "estilo.atirador.margemSempre": 0 };
+      let mudou = false;
+      for (const [k, v] of Object.entries(velhos)) if (salvos[k] !== undefined && Number(salvos[k]) === v) { delete salvos[k]; mudou = true; }
+      if (mudou) await game.settings.set(FLAG, "numerosBonus", salvos);
+      await game.settings.set(FLAG, "numeros0827", true);
+    }
+  } catch (err) { console.warn("EPM | números 0.8.27", err); }
+  try { const n = await arquetiposReformulados0827(); if (n) feitos.push(`${n} ficha(s) passaram para os arquétipos reformulados`); } catch (err) { console.warn("EPM | arquétipos reformulados", err); }
   try { avisoAtiradorArcano(); } catch (err) { console.warn("EPM | aviso do Atirador Arcano", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

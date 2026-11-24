@@ -14,6 +14,23 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.27
+
+**Arquétipos reformulados** (do documento "Reformulação do Arquétipo"):
+- **Combatente**: Arsenal de Maestrias no nível 1 (1 Maestria, 2 no 21, 3 no 41) com a Arma Favorita; novas Maestrias Golpe Esmagador, Arma Sangrenta e Sentinela; Arma Perigosa com margem 1/2/3; Fôlego de Combate cura PV; estilos com os valores novos (Duelista +8, Arma Dupla +2, Atirador margem 4). Regra opcional para Maestrias em várias armas.
+- **Conjurador**: Acúmulo de Magias (só as do arquétipo contam; Classe, raça, pergaminho e treino somam por fora), Magia Assinatura (metade do PM), Barreira Arcana, Corpo de Mana, Zona de Mana, Sobrecarga 12/22 PE (acumula com Canalização) e Maestria Elemental.
+- **Artífice**: Projetos de Criação com reserva, Graus I a V, Livro de Projetos com 20 receitas (12 Consumíveis e 8 Engenhocas, também no compêndio "EPM · Receitas do Artífice"), fabricar, usar, reparar e desmontar pela ficha, Utensílios e Modificação Permanente.
+
+**Criação guiada reformulada**:
+- Conceito opcional e nível da ficha no primeiro passo; um passo para os níveis seguintes (Aumentos de Status com o teto do nível, Arma Favorita, Maestrias e Estilos, Acúmulo do Conjurador, Livro e Utensílios do Artífice) e a Classe a partir do nível 3.
+- O botão Próximo trava enquanto atributos (16 pontos, máximo 3; o 4 só com dois em −1), perícias (pontos e limite do nível: 5 até o 15) ou Aumentos não fecham.
+- Habilidade Única: só 1. Com Compatibilidade à Fera (Mutante, ou Mestiço com Mutante) mais 2; as caixas travam na hora.
+- Kit inicial: só os do arquétipo da ficha; os outros aparecem travados.
+
+**Fichas existentes** migram sozinhas: a Maestria única vira lista, os números antigos dos estilos voltam ao padrão novo, os projetos do modelo antigo saem e os Artífices ganham um Livro inicial (Carga Explosiva, Remendo de Campo, Torreta e Escudo Defletor).
+
+**Decisões tomadas**: Utensílios virou botão (4 PE + dado) em vez de +2 fixo; a Modificação Permanente só é automática no próprio Artífice (visão fica no texto); "Engenhocas só no descanso" fica como aviso, sem trava; Duelista +8 pode passar do Teto, que corta; Maestria Elemental é lembrete; Ímpeto, Herói e afins seguem como texto; nova origem de magia "Pergaminho".
+
 ## Novidades da 0.8.26
 
 - **Atirador Arcano é classe de Conjurador** (o nível da classe é o de Conjurador). Se alguma ficha escolheu a classe como Artífice na 0.8.25, o Mestre recebe um aviso com o nome dela para ajustar o arquétipo.

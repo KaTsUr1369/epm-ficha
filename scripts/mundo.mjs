@@ -40,11 +40,11 @@ function redesenharFichas() {
 }
 
 /** Diálogo com formulário: devolve os campos (nome[] vira lista) ou null. */
-export async function formulario(titulo, html, { botao = "Confirmar", largura = 520 } = {}) {
+export async function formulario(titulo, html, { botao = "Confirmar", largura = 520, render = null } = {}) {
   try {
     const r = await fvtt.DialogV2.wait({
       window: { title: titulo }, classes: ["epm-dialogo", "epm-dialogo-060"], position: { width: largura }, rejectClose: false, modal: true,
-      content: `<div class="epm-form-060">${html}</div>`,
+      content: `<div class="epm-form-060">${html}</div>`, ...(render ? { render } : {}),
       buttons: [
         { action: "ok", label: botao, icon: "fa-solid fa-check", default: true, callback: (ev, b) => {
           const out = {};

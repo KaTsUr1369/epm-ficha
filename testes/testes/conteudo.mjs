@@ -19,6 +19,22 @@ const A = await import("/home/claude/epm-ficha/scripts/assistente-criacao.mjs");
 ok(A.conferirAtributos({ forca: 3, destreza: 3, constituicao: 3, aparencia: 1, carisma: 1, inteligencia: 3, autocontrole: 1, nucleo: 1 }).ok, "criação guiada: 16 pontos válidos");
 ok(!A.conferirAtributos({ forca: 4, destreza: 3, constituicao: 3 }).ok && A.conferirAtributos({ forca: 4, carisma: -1, aparencia: -1, destreza: 3 }).ok, "criação guiada: o 4 só com dois em −1");
 ok(!A.conferirPericias({ luta: 6 }).ok && A.conferirPericias({ luta: 5, pontaria: 5 }).restante === 40, "criação guiada: perícias até 5 e 50 pontos");
+ok(A.periciasDoNivel(14).total === 50 + 2 * 15 && A.periciasDoNivel(14).limite === 5 && A.periciasDoNivel(15).limite === 10 && A.periciasDoNivel(35).limite === 15, "criação guiada: perícias seguem o nível (5 até o 15)");
+ok(!A.conferirPericias({ luta: 6 }, 14).ok && A.conferirPericias({ luta: 10 }, 15).ok, "criação guiada: limite por perícia sobe no 15");
+ok(A.aumentosDoNivel(1) === 0 && A.aumentosDoNivel(10) === 5 && A.aumentosDoNivel(50) === 26, "criação guiada: Aumentos de Status por nível");
+ok(A.conferirAumentos({ forca: 5 }, { forca: 3 }, 10).ok && !A.conferirAumentos({ forca: 5 }, { forca: 4 }, 10).ok && A.conferirAumentos({ forca: 5 }, { forca: 4 }, 21).ok, "criação guiada: Aumentos respeitam o teto do nível");
+ok(!A.conferirAumentos({ forca: 3, destreza: 3 }, {}, 10).ok, "criação guiada: Aumentos não passam do disponível");
+const R = await import("/home/claude/epm-ficha/scripts/racas.mjs");
+const mut = R.racaPorId("mutante");
+if (mut) {
+  const fera = mut.unicas.find(u => u.auto?.unicasExtras)?.id;
+  const outras = mut.unicas.filter(u => u.id !== fera).map(u => u.id);
+  ok(R.conferirUnicas(mut, outras.slice(0, 2)).validas.length === 1 && R.conferirUnicas(mut, outras.slice(0, 2)).passou, "Habilidade Única: só 1");
+  ok(R.conferirUnicas(mut, [outras[0], fera, outras[1], outras[2]]).validas.length === 3 && R.conferirUnicas(mut, [outras[0], fera, outras[1], outras[2]]).validas[0] === fera, "Habilidade Única: Compatibilidade à Fera libera mais 2");
+}
+const outra = R.RACAS.find(r => !r.mestico && r.id !== "mutante" && r.unicas?.length > 1);
+if (outra) ok(R.conferirUnicas(outra, outra.unicas.map(u => u.id)).validas.length === 1, "Habilidade Única: outras raças só 1");
+ok(R.qtdUnicas({ mestico: true }, ["mutante:fera"]) === 4 && R.qtdUnicas({ mestico: true }, []) === 2, "Mestiço de Mutante com a Fera: +2");
 const E = await import("/home/claude/epm-ficha/scripts/erros-amigaveis.mjs");
 ok(/permissão/.test(E.dicaDoErro("User lacks permission to update")) && /F5/.test(E.dicaDoErro("Cannot read properties of undefined")), "erros amigáveis: dica certa para cada tipo de erro");
 process.exit(falhas ? 1 : 0);

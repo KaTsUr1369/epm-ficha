@@ -32,7 +32,7 @@
   <div class="epm-chat-botoes"><button type="button" data-epm-action="revelarAtaque" data-rotulo="Revelar" title="Só o Mestre ou quem atacou: mostra o acerto e o dano sem esperar a reação"><i class="fa-solid fa-eye" aria-hidden="true"></i> Revelar sem esperar</button></div>
   {{else if botoes.length}}
   <div class="epm-chat-botoes">
-    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}}{{#if valor}} data-valor="{{this.valor}}"{{/if}}{{#if alvos}} data-alvos="{{this.alvos}}"{{/if}}{{#if tipoDano}} data-tipo-dano="{{this.tipoDano}}"{{/if}}{{#if custo}} data-custo="{{this.custo}}"{{/if}}{{#if condicao}} data-condicao="{{this.condicao}}"{{/if}}{{#if critico}} data-critico="1"{{/if}}{{#if tipoArma}} data-tipo-arma="{{this.tipoArma}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
+    {{#each botoes}}<button type="button" data-epm-action="{{this.acao}}"{{#if formula}} data-formula="{{this.formula}}"{{/if}}{{#if recurso}} data-recurso="{{this.recurso}}"{{/if}}{{#if valor}} data-valor="{{this.valor}}"{{/if}}{{#if alvos}} data-alvos="{{this.alvos}}"{{/if}}{{#if tipoDano}} data-tipo-dano="{{this.tipoDano}}"{{/if}}{{#if custo}} data-custo="{{this.custo}}"{{/if}}{{#if condicao}} data-condicao="{{this.condicao}}"{{/if}}{{#if critico}} data-critico="1"{{/if}}{{#if tipoArma}} data-tipo-arma="{{this.tipoArma}}"{{/if}}{{#if cd}} data-cd="{{this.cd}}"{{/if}} data-rotulo="{{this.rotulo}}"><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}
   </div>
   {{/if}}
 </div>

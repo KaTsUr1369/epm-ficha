@@ -14,8 +14,10 @@ import {
 } from "./config.mjs";
 import {
   ARQUETIPOS, arquetiposDoPersonagem, nivelArquetipo, degrau, proximoDegrau, efeitoMaestria, textoMaestria, estilosPermitidos, tipoDaArma, eTipoFavorito,
-  estilosEscolhidos, projetosDoNivel, limiteLivro, bonusAutomato, reservaArcana, custoMagiaCirculo, circuloLiberado, intMin1,
-  ataqueExtraDe, recuperarManaDe, valoresAjustaveisArquetipo, cacadorDe, folegoDe, usosFolego
+  estilosEscolhidos, bonusAutomato, valoresDoGrau, grauRomano, modificacoesDe, TIPOS_PROJETO, reservaArcana, custoMagiaCirculo, circuloLiberado, intMin1,
+  ataqueExtraDe, recuperarManaDe, valoresAjustaveisArquetipo, cacadorDe, folegoDe, usosFolego,
+  acumuloDeMagias, contaNoAcumulo, assinaturaDe, corpoDeManaDe, zonaDeManaDe,
+  maestriasEscolhidas, maestriasPermitidas, variasArmasFavoritas, tipoDaMaestria, etapaMaestria
 } from "./arquetipos.mjs";
 import {
   num, int, limitar, normalizarDados, calcularFicha, lerPoder, avaliarForma, textoCusto, contarRaridades,
@@ -25,7 +27,7 @@ import {
 import {
   CATALOGO, NATUREZAS, RARIDADES_BENCAO, FREQUENCIAS, REGRAS_BENCAOS, GRUPOS_BENCAO, textoBusca, automacaoDe
 } from "./bencaos.mjs";
-import { painelProjetos } from "./projetos.mjs";
+import { estadoArtificeDe } from "./projetos.mjs";
 import { passoDeDado, maisDados, resumoMelhorias, pesoComMelhorias, estadoMelhorias, categoriaAutomatica, CATEGORIAS_MELHORIA } from "./melhorias.mjs";
 import { lerFazendo } from "./melhorias-acoes.mjs";
 import { membrosDe, contextoCompartilhadas, opcoesMembros } from "./mochila-compartilhada.mjs";
@@ -664,7 +666,7 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
       return { n, texto: a.progressao[n] ?? "", alcancado: n <= nivel, atual: n === nivel, marco: marcos.has(n) };
     });
     const habilidades = a.habilidades.map(h => {
-      const ref = `${id}:${h.nivel}`;
+      const ref = h.ref;
       return { ...h, ref, liberada: nivel >= h.nivel, naFicha: naFicha.has(ref), podeAdicionar: editavel && nivel >= h.nivel && !naFicha.has(ref) };
     });
     const liberadas = habilidades.filter(h => h.liberada);
@@ -680,8 +682,9 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
       const armas = itens.filter(i => tipoDe(i) === "weapon");
       const doTipo = armas.filter(i => eTipoFavorito(i, dados));
       const tiposInventario = [...new Set(armas.map(tipoDaArma).filter(Boolean))];
-      const mId = cfg.maestrias[opc.maestria] ? opc.maestria : "";
-      const ef = mId ? efeitoMaestria(mId, nivel, dados) : null;
+      const escolhidas = maestriasEscolhidas(dados, nivel);
+      const maxM = maestriasPermitidas(nivel);
+      const varias = variasArmasFavoritas();
       const ae = ataqueExtraDe(nivel, dados);
       const prox = proximoDegrau(cfg.ataqueExtra, nivel);
       const permitidos = estilosPermitidos(nivel);
@@ -691,10 +694,11 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
         sugestoesTipo: [...new Set([...tiposInventario, ...TIPOS_ARMA])],
         armasDoTipo: doTipo.map(i => ({ nome: i.name, img: i.img, equipada: !!i.system?.equipped })),
         semTipoNasArmas: armas.length > 0 && !tiposInventario.length,
-        opcoesMaestria: [{ id: "", label: "Escolha a Maestria…", selected: !mId },
-          ...Object.entries(cfg.maestrias).map(([mid, m]) => ({ id: mid, label: m.nome, selected: mid === mId, texto: m.texto }))],
-        maestria: ef ? { ...ef, resumo: textoMaestria(ef) } : null,
-        maestrias: Object.entries(cfg.maestrias).map(([mid, m]) => ({ id: mid, nome: m.nome, texto: m.texto, escolhida: mid === mId })),
+        maxMaestrias: maxM, variasArmas: varias, etapa: etapaMaestria(nivel),
+        escolhidas: escolhidas.map(mid => { const e = efeitoMaestria(mid, nivel, dados); return { ...e, resumo: textoMaestria(e), tipo: varias ? String(opc.maestriaTipos?.[mid] ?? "") : "" }; }),
+        maestrias: Object.entries(cfg.maestrias).map(([mid, m]) => ({ id: mid, nome: m.nome, texto: m.texto, escolhida: escolhidas.includes(mid),
+          podeMarcar: editavel && (escolhidas.includes(mid) || escolhidas.length < maxM) })),
+        proximaMaestria: proximoDegrau(cfg.maestriasPorNivel, nivel)?.nivel ?? null,
         ataqueExtra: ae ? `Até +${ae.ataques} ataque${ae.ataques > 1 ? "s" : ""}, ${ae.custo} PE cada${ae.desconto ? ` (Gêmea: −${ae.desconto} PE no total, mín. 3)` : ""}; uma vez por turno` : "",
         proximoAtaqueExtra: prox ? `Nv. ${prox.nivel}: até +${prox.ataques}, ${prox.custo} PE cada` : "",
         estilosPermitidos: permitidos,
@@ -723,32 +727,63 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
           exclui: nivel >= cfg.manipulacao.nivelPrecisa ? 4 : 2
         } : null,
         sobrecarga: nivel >= cfg.sobrecarga.nivel,
+        acumulo: (() => {
+          const ac = acumuloDeMagias(nivel);
+          const mags = poderes.filter(p => p.tipo === "magia" && contaNoAcumulo(p));
+          const m = mags.filter(p => p.circulo >= 1).length, t = mags.filter(p => p.circulo === 0).length;
+          return { ...ac, temMagias: m, temTruques: t, faltamMagias: Math.max(0, ac.magias - m), faltamTruques: Math.max(0, ac.truques - t), excedeu: m > ac.magias || t > ac.truques };
+        })(),
+        assinatura: (() => {
+          const a = assinaturaDe(nivel);
+          if (!a) return null;
+          const ids = (Array.isArray(opcoes.conjurador?.assinaturas) ? opcoes.conjurador.assinaturas : []).slice(0, a.qtd);
+          const mags = poderes.filter(p => p.tipo === "magia" && p.circulo >= 0 && p.circulo <= a.circuloMax);
+          return { ...a, opcoes: mags.map(p => ({ id: p.id, nome: p.name, circulo: p.circulo, escolhida: ids.includes(p.id), podeMarcar: editavel && (ids.includes(p.id) || ids.length < a.qtd) })),
+            escolhidas: mags.filter(p => ids.includes(p.id)).map(p => p.name).join(", ") };
+        })(),
+        elemental: nivel >= cfg.maestriaElemental.nivel ? { tipo: String(opcoes.conjurador?.elemento ?? "") } : null,
         dominio: nivel >= cfg.dominioNivel ? Object.entries(cfg.dominios).map(([did, label]) => ({ id: did, label, selected: did === opcoes.conjurador?.dominio })) : null,
         dominioTexto: cfg.dominios[opcoes.conjurador?.dominio] ?? ""
       };
     }
     if (id === "artifice") {
       const cfg = ARQUETIPOS.artifice;
-      const proj = projetosDoNivel(nivel, intel, dados.ajustesBonus);
-      const enc = degrau(cfg.encantados, nivel);
-      const i = intMin1(intel);
+      const est = estadoArtificeDe(dados, ficha, itens);
       const escolhidas = (Array.isArray(opcoes.artifice?.utensilios) ? opcoes.artifice.utensilios : []).filter(p => !cfg.utensilios.exceto.includes(p)).slice(0, cfg.utensilios.qtd);
-      painel.artifice = {
-        intel: i, projetos: proj, porDia: proj?.porDia ?? cfg.projetosPorDia, livro: limiteLivro(nivel, intel, dados.ajustesBonus),
-        dia: proj ? painelProjetos(dados, nivel, intel, editavel) : null,
-        encantados: enc ? {
-          dano: `${enc.dano}${enc.danoInt ? ` + ${i}` : ""}`, cura: `+${enc.cura + (enc.curaInt ? i : 0)}`, auxilio: `+${enc.auxilio + (enc.auxilioInt ? i : 0)}`
-        } : null,
+      const v = est ? valoresDoGrau(est.criacao.grauMax, est.intel) : null;
+      const modN = modificacoesDe(nivel);
+      const modEsc = opcoes.artifice?.modificacao ?? {};
+      const projItem = i => {
+        const pj = i.flags?.[FLAG]?.projeto ?? {};
+        return { id: i.id, nome: i.name, img: i.img, grau: grauRomano(pj.grau), tipo: TIPOS_PROJETO[pj.tipo]?.label ?? "", qtd: Math.max(1, int(i.system?.quantity, 1)),
+          cenas: int(pj.cenas), cenasMax: int(pj.cenasMax), ocupa: int(pj.ocupa, 1), portador: pj.portador ?? "", quebrada: pj.categoria === "engenhoca" && int(pj.cenas) <= 0,
+          pips: pj.categoria === "engenhoca" ? Array.from({ length: int(pj.cenasMax) }, (_, k) => k < int(pj.cenas)) : [] };
+      };
+      painel.artifice = est ? {
+        reserva: { max: est.criacao.projetos, ocupados: est.ocupados, gastos: est.gastos, disponivel: est.disponivel, formula: est.criacao.formula,
+          pips: Array.from({ length: est.criacao.projetos }, (_, k) => k < est.ocupados ? "ocupado" : k < est.ocupados + est.gastos ? "gasto" : "aberto") },
+        grauMax: grauRomano(est.criacao.grauMax), proximo: est.criacao.proximo, cd: est.cd, carregados: est.carregados, carregar: est.criacao.carregar,
+        valores: v, montagem: est.montagem?.label ?? "", sobrecarga: est.sobrecarga, mente: est.menteInventora,
+        livro: est.livro.map(r => ({ chave: r.chave, nome: r.nome, categoria: r.categoria === "engenhoca" ? "Engenhoca" : "Consumível", engenhoca: r.categoria === "engenhoca",
+          tipo: TIPOS_PROJETO[r.tipo]?.label ?? r.tipo, uso: r.uso, efeito: r.efeito, valor: r.valores[est.criacao.grauMax - 1] ?? "", temporaria: r.temporaria, propria: r.propria })),
+        livroUsado: est.livro.filter(r => !r.temporaria).length, livroMax: est.criacao.livro,
+        consumiveis: est.consumiveis.map(projItem), engenhocas: est.engenhocas.map(projItem),
+        encantados: est.encantados ? { dano: est.encantados.dano, cura: `+${est.encantados.cura}`, auxilio: `+${est.encantados.auxilio}` } : null,
         utensilios: nivel >= cfg.utensilios.nivel ? {
-          qtd: cfg.utensilios.qtd, bonus: cfg.utensilios.bonus, faltam: cfg.utensilios.qtd - escolhidas.length,
+          qtd: cfg.utensilios.qtd, dado: est.utensilios, faltam: cfg.utensilios.qtd - escolhidas.length,
           escolhidasTexto: escolhidas.map(p => ficha.periciaPorId?.[p]?.nome ?? p).join(", "),
           opcoes: ficha.pericias.filter(p => !cfg.utensilios.exceto.includes(p.id)).map(p => ({
             id: p.id, nome: p.nome, escolhida: escolhidas.includes(p.id), podeMarcar: editavel && (escolhidas.includes(p.id) || escolhidas.length < cfg.utensilios.qtd)
           }))
         } : null,
+        modificacao: modN ? {
+          ...modN, partes: Object.entries(cfg.partesModificacao).map(([pid, pt]) => ({ id: pid, nome: pt.nome, selected: pid === modEsc.parte,
+            opcoes: pt.opcoes.map((o, k) => ({ k, label: `${o[0]} (${o[2] === 18 || o[2] === 1.5 ? (nivel >= 35 ? (o[2] === 18 ? "36 m e +2 Percepção" : "+3 m") : (o[2] === 18 ? "18 m" : "+1,5 m")) : `+${nivel >= 35 ? o[3] : o[2]}`})`, selected: pid === modEsc.parte && k === int(modEsc.opcao) })) })),
+          escolhida: cfg.partesModificacao[modEsc.parte] ? `${cfg.partesModificacao[modEsc.parte].nome}: ${cfg.partesModificacao[modEsc.parte].opcoes[int(modEsc.opcao)]?.[0] ?? ""}` : ""
+        } : null,
         automato: nivel >= cfg.automato.nivel ? { bonus: bonusAutomato(nivel), podeCriar: editavel } : null,
         subclasses: cfg.subclasses.join(", ")
-      };
+      } : null;
     }
     return painel;
   });
@@ -762,18 +797,19 @@ function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
     const cfg = ARQUETIPOS.combatente;
     const opc = dados.arquetipoOpcoes?.combatente ?? {};
     const ae = ataqueExtraDe(comb, dados);
-    const ef = efeitoMaestria(opc.maestria, comb, dados);
+    const efs = maestriasEscolhidas(dados, comb).map(m => efeitoMaestria(m, comb, dados));
     const tipoFav = String(opc.tipoFavorito ?? "").trim();
     const estilos = estilosEscolhidos(dados, comb).map(e => cfg.estilos[e].nome);
     const linhas = [];
     if (ae) linhas.push(`Ataque Extra: até +${ae.ataques}, ${ae.custo} PE cada (uma vez por turno)${dados.usos?.ataqueExtraTurno ? ". Já usado neste turno" : ""}.`);
-    linhas.push(ef && tipoFav ? `${ef.nome} (${tipoFav}): ${textoMaestria(ef)}` : "Arma Favorita: escolha o tipo de arma e a Maestria em Habilidades → Arquétipo.");
+    if (efs.length && tipoFav) for (const ef of efs) linhas.push(`${ef.nome} (${tipoDaMaestria(dados, ef.id) || tipoFav}): ${textoMaestria(ef)}`);
+    else linhas.push("Arsenal de Maestrias: escolha a Arma Favorita e as Maestrias em Arquétipo e Classe → Arquétipo.");
     if (estilos.length) linhas.push(`Estilo: ${estilos.join(", ")}.`);
     const botoes = [];
     const fol = folegoDe(comb, dados);
     if (fol) {
       const usados = usosFolego(dados);
-      botoes.push({ acao: "folegoCombate", icone: "fa-solid fa-wind", label: `Fôlego de Combate (${fol.dado} PE)`,
+      botoes.push({ acao: "folegoCombate", icone: "fa-solid fa-wind", label: `Fôlego de Combate (${fol.dado} PV)`,
         dica: `Ação Bônus, ${fol.usos}× por cena (${Math.max(0, fol.usos - usados)} sobrando)`, desabilitado: !editavel || usados >= fol.usos });
     }
     const cac = cacadorDe(comb, dados);
@@ -793,7 +829,21 @@ function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
     if (res) linhas.push(`Reserva Arcana: +${res} PM máximo (já somado).`);
     linhas.push(`Custo das magias: ${cfg.custosMagia.map((pm, c) => `${c === 0 ? "Truque" : `${c}º`} ${pm}`).join(" · ")} PM.`);
     if (conj >= cfg.manipulacao.nivel) linhas.push("Manipulação Mágica e outras opções aparecem no cartão da magia, no chat.");
+    const ac = acumuloDeMagias(conj);
+    linhas.push(`Acúmulo de Magias: ${ac.magias} magias e ${ac.truques} Truques (aba Magias).`);
+    const ass = assinaturaDe(conj);
+    if (ass) { const ids = dados.arquetipoOpcoes?.conjurador?.assinaturas ?? []; if (ids.length) linhas.push("Magia Assinatura: custa metade dos PM e é sempre conjurada sem movimentos."); }
+    if (conj >= cfg.maestriaElemental.nivel && dados.arquetipoOpcoes?.conjurador?.elemento) linhas.push(`Maestria Elemental (${dados.arquetipoOpcoes.conjurador.elemento}): +1 dado de dano e ignora Resistência a ele.`);
     const botoes = [];
+    if (conj >= cfg.barreira.nivel) botoes.push({ acao: "barreiraArcana", icone: "fa-solid fa-shield", label: "Barreira Arcana", dica: `Reação: −2 de dano por PM (até ${2 * Math.max(0, Math.floor(Number(ficha.atributos?.nucleo?.total) || 0))} PM)`, desabilitado: !editavel });
+    const cm = corpoDeManaDe(conj);
+    if (cm) botoes.push({ acao: "corpoDeMana", icone: "fa-solid fa-feather", label: `Corpo de Mana${cm.pm ? ` (${cm.pm} PM/rodada)` : ""}`, dica: cm.vooDobro ? "Grátis; voo com o dobro do deslocamento" : "Flutua e anda em paredes e tetos; paga a cada rodada", desabilitado: !editavel });
+    const zm = zonaDeManaDe(conj);
+    if (zm) {
+      const ativa = !!dados.usos?.zonaDeMana;
+      botoes.push({ acao: "zonaDeMana", icone: "fa-solid fa-circle-radiation", label: ativa ? `Manter Zona de Mana (${zm.manterPm} PM + ${zm.manterPe} PE)` : `Zona de Mana (${zm.pm} PM + ${zm.pe} PE)`,
+        dica: ativa ? "Paga a manutenção deste turno (ou encerre)" : "1×/cena, sustentada", desabilitado: !editavel });
+    }
     if (rec) {
       const usado = !!dados.usos?.recuperarMana;
       botoes.push({ acao: "recuperarMana", icone: "fa-solid fa-droplet", label: `Recuperar Mana (${rec.pe} PE → ${rec.pm} PM)`,
@@ -804,12 +854,22 @@ function combateArquetipo({ dados, ficha, itens, tipoDe, editavel }) {
   const art = nivelArquetipo(dados, "artifice");
   if (art) {
     const cfg = ARQUETIPOS.artifice;
-    const proj = projetosDoNivel(art, ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
+    const est = estadoArtificeDe(dados, ficha, itens);
     const linhas = [];
-    if (proj) linhas.push(`Projetos (${proj.porDia} por dia): dano ${proj.dano}, cura ${proj.cura}, soma +${proj.soma}, proteção +${proj.protecao}.`);
-    const livro = limiteLivro(art, ficha.atributos?.inteligencia?.total ?? 0, dados.ajustesBonus);
-    if (livro) linhas.push(`Livro de Projetos: guarda até ${livro}.`);
-    lista.push({ id: "artifice", nome: "Artífice", nivel: art, icone: cfg.icone, cor: cfg.cor, linhas, botoes: [] });
+    const botoes = [];
+    if (est) {
+      linhas.push(`Projetos de Criação: ${est.disponivel} de ${est.criacao.projetos} em aberto (Engenhocas ocupam ${est.ocupados}). Grau máximo ${grauRomano(est.criacao.grauMax)}; CD de Projeto ${est.cd}.`);
+      if (est.montagem) linhas.push(`Montagem em Campo: ${est.montagem.label}, 1 Projeto em aberto vira um Consumível do Livro.`);
+      for (const r of est.livro.filter(r => r.categoria !== "engenhoca")) botoes.push({ acao: "montagemCampo", dataset: { receita: r.chave }, icone: "fa-solid fa-hammer", label: `Montar: ${r.nome}`, dica: r.efeito, desabilitado: !editavel || !est.disponivel });
+      for (const i of [...est.consumiveis, ...est.engenhocas]) {
+        const pj = i.flags?.[FLAG]?.projeto ?? {};
+        const eng = pj.categoria === "engenhoca";
+        botoes.push({ acao: "usarProjeto", dataset: { itemId: i.id }, icone: eng ? "fa-solid fa-gears" : "fa-solid fa-flask", label: `${i.name}${eng ? ` (${int(pj.cenas)}/${int(pj.cenasMax)} cenas)` : int(i.system?.quantity, 1) > 1 ? ` ×${int(i.system.quantity)}` : ""}`,
+          dica: eng ? "Gasta 1 cena só na primeira ativação da cena" : "Uso único", desabilitado: !editavel || (eng && int(pj.cenas) <= 0) });
+      }
+      if (est.utensilios) botoes.push({ acao: "usarUtensilios", icone: "fa-solid fa-toolbox", label: `Utensílios (+${est.utensilios}, 4 PE)`, dica: "Num teste com uma das 3 perícias escolhidas", desabilitado: !editavel });
+    }
+    lista.push({ id: "artifice", nome: "Artífice", nivel: art, icone: cfg.icone, cor: cfg.cor, linhas, botoes });
   }
   return lista;
 }
@@ -1404,10 +1464,13 @@ export function montarContexto({
       id, label: r.label, cor: r.cor, ...situacaoLimite(contagem, "magia", id, modo)
     })),
     total: magias.length,
-    conhecidas: magias.filter(m => m.circulo >= 1 && m.raridade !== "unica").length,
-    truques: magias.filter(m => m.circulo === 0).length,
-    espacosMagias: int(dados.espacos?.magias, 2),
-    espacosTruques: int(dados.espacos?.truques, 0),
+    // Conjurador: o Acúmulo conta só as magias que não vêm de Classe, pergaminho, treinamento…
+    conhecidas: magias.filter(m => m.circulo >= 1 && m.raridade !== "unica" && (!nivelConj || contaNoAcumulo(m))).length,
+    truques: magias.filter(m => m.circulo === 0 && (!nivelConj || contaNoAcumulo(m))).length,
+    espacosMagias: nivelConj ? acumuloDeMagias(nivelConj).magias : int(dados.espacos?.magias, 2),
+    espacosTruques: nivelConj ? acumuloDeMagias(nivelConj).truques : int(dados.espacos?.truques, 0),
+    acumulo: !!nivelConj,
+    porFora: nivelConj ? magias.filter(m => !contaNoAcumulo(m)).length : 0,
     bloqueadas: ficha.bloqueios.magias.join(", ")
   };
   if (!ctx.magias.circulos.some(c => c.ativa)) {

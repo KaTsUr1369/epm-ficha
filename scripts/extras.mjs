@@ -9,7 +9,7 @@ import {
 } from "./config.mjs";
 import { num, int, novoId, formaPadrao } from "./data.mjs";
 import {
-  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato, recuperarManaDe, cacadorDe, folegoDe, usosFolego, sobrecargaDe
+  ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato, recuperarManaDe, cacadorDe, folegoDe, usosFolego, sobrecargaDe, corpoDeManaDe, zonaDeManaDe
 } from "./arquetipos.mjs";
 import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas, tipoDoElemento } from "./regras-extras.mjs";
 import { idClasse } from "./ficha-extras.mjs";
@@ -175,7 +175,7 @@ export function dadosHabilidadeArquetipo(arqId, h) {
     name: h.nome, type: "feat", img: "icons/svg/upgrade.svg",
     system: { description: { value: `<p>${escapar(h.resumo)}</p><p class="epm-dica">${escapar(a.nome)}, nível ${h.nivel} (modelo 0.5).</p>` } },
     flags: { [FLAG]: {
-      raridade: "comum", origem: "arquetipo", passiva: true, arquetipoRef: `${arqId}:${h.nivel}`,
+      raridade: "comum", origem: "arquetipo", passiva: true, arquetipoRef: h.ref ?? `${arqId}:${h.nivel}`,
       formas: { [novoId()]: forma }, usos: { valor: 0, max: 0, recarga: "nenhuma" }
     } }
   };
@@ -374,8 +374,8 @@ export async function adicionarHabilidadesArquetipo(actor, ref) {
   if (!a) return;
   const nivel = nivelArquetipo(actor.flags?.[FLAG] ?? {}, arqId);
   const jaTem = new Set(actor.items.filter(i => i.flags?.[FLAG]?.arquetipoRef).map(i => i.flags[FLAG].arquetipoRef));
-  const alvo = nivelTxt ? a.habilidades.filter(h => h.nivel === int(nivelTxt)) : a.habilidades;
-  const novas = alvo.filter(h => h.nivel <= nivel && !jaTem.has(`${arqId}:${h.nivel}`)).map(h => dadosHabilidadeArquetipo(arqId, h));
+  const alvo = nivelTxt ? a.habilidades.filter(h => h.ref === ref) : a.habilidades;
+  const novas = alvo.filter(h => h.nivel <= nivel && !jaTem.has(h.ref)).map(h => dadosHabilidadeArquetipo(arqId, h));
   if (!novas.length) return ui.notifications.info("Nada novo para adicionar.");
   await actor.createEmbeddedDocuments("Item", novas);
   ui.notifications.info(`${novas.length} habilidade(s) de ${a.nome} adicionada(s) na sub-aba Arquétipo.`);
@@ -396,7 +396,59 @@ export async function recuperarMana(actor) {
   return nota(actor, `<p><strong>Recuperar Mana</strong>: −${rec.pe} PE. ${escapar(r.texto || `+${qtd} PM`)}</p><p class="epm-dica">Usa uma ação. Uma vez por cena.</p>`, "#8A7CE0");
 }
 
-/** Fôlego de Combate (Combatente 10/22/35): Ação Bônus, recupera PE; 1× por cena (2× no 35). */
+/** Barreira Arcana (Conjurador 21): Reação, gasta PM para reduzir o dano em 2 por PM (máx. 2 × Núcleo PM). */
+export async function barreiraArcana(actor) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  if (nivelArquetipo(dados, "conjurador") < ARQUETIPOS.conjurador.barreira.nivel) return ui.notifications.warn("Barreira Arcana libera no nível 21 de Conjurador.");
+  const { ficha } = estadoAtor(actor);
+  const max = Math.max(0, 2 * Math.floor(Number(ficha.atributos?.nucleo?.total) || 0));
+  if (!max) return ui.notifications.warn("Barreira Arcana: o máximo é 2 × Núcleo PM (Núcleo 0).");
+  const r = await dialogo({
+    titulo: "Barreira Arcana", ok: "Reduzir o dano", icone: "fa-solid fa-shield",
+    content: `<p class="epm-dica">Reação, 1×/rodada, sem gastar ação do próximo turno. Cada PM reduz o dano em 2. Máximo ${max} PM (2 × Núcleo).</p>
+      <label class="epm-campo"><span>PM</span><input type="number" name="pm" value="${Math.min(max, 5)}" min="1" max="${max}"></label>`,
+    callback: f => ({ pm: Math.max(1, Math.min(max, int(f.pm?.value))) })
+  });
+  if (!r) return;
+  if (!(await gastar(actor, "pm", r.pm, "Barreira Arcana"))) return;
+  return nota(actor, `<p><strong>Barreira Arcana</strong> (Reação, −${r.pm} PM): reduz o dano deste ataque ou magia em <strong>${r.pm * ARQUETIPOS.conjurador.barreira.reducaoPorPm}</strong>.</p>`, "#8A7CE0");
+}
+
+/** Corpo de Mana (Conjurador 22; grátis e voo dobrado no 46): paga a rodada. */
+export async function corpoDeMana(actor) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  const cm = corpoDeManaDe(nivelArquetipo(dados, "conjurador"));
+  if (!cm) return ui.notifications.warn("Corpo de Mana libera no nível 22 de Conjurador.");
+  if (cm.pm && !(await gastar(actor, "pm", cm.pm, "Corpo de Mana"))) return;
+  return nota(actor, `<p><strong>Corpo de Mana</strong>${cm.pm ? ` (−${cm.pm} PM, esta rodada)` : ""}: flutua com voo ${cm.vooDobro ? "igual ao dobro do" : "igual ao"} deslocamento e anda por paredes e tetos.</p>`, "#8A7CE0");
+}
+
+/** Zona de Mana (Conjurador 41; 2.0 no 50): ativa (1×/cena) ou paga a manutenção do turno; encerra se não pagar. */
+export async function zonaDeMana(actor) {
+  const dados = actor.flags?.[FLAG] ?? {};
+  const zm = zonaDeManaDe(nivelArquetipo(dados, "conjurador"));
+  if (!zm) return ui.notifications.warn("Zona de Mana libera no nível 41 de Conjurador.");
+  const { ficha } = estadoAtor(actor);
+  const ativa = !!dados.usos?.zonaDeMana;
+  if (ativa) {
+    const r = await fvtt.DialogV2.wait({ window: { title: "Zona de Mana" }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+      content: `<p>Manter a zona neste turno custa <strong>${zm.manterPm} PM + ${zm.manterPe} PE</strong>. Sem pagar, ela termina.</p>`,
+      buttons: [{ action: "manter", label: "Manter", icon: "fa-solid fa-rotate", default: true }, { action: "encerrar", label: "Encerrar", icon: "fa-solid fa-xmark" }] });
+    if (r === "encerrar") { await actor.update({ [`${P}.usos.zonaDeMana`]: false }); return nota(actor, "<p><strong>Zona de Mana</strong> encerrada.</p>", "#8A7CE0"); }
+    if (r !== "manter") return;
+    const cpm = custoRecurso(ficha, "pm", zm.manterPm), cpe = custoRecurso(ficha, "pe", zm.manterPe);
+    if (!cpm.ok || !cpe.ok) { await actor.update({ [`${P}.usos.zonaDeMana`]: false }); return nota(actor, "<p><strong>Zona de Mana</strong> termina: faltou recurso para manter.</p>", "#8A7CE0"); }
+    await actor.update({ ...cpm.updates, ...cpe.updates });
+    return nota(actor, `<p><strong>Zona de Mana</strong> mantida (−${zm.manterPm} PM, −${zm.manterPe} PE).${zm.modGratis ? " A primeira modificação paga com PE neste turno sai de graça." : ""}</p>`, "#8A7CE0");
+  }
+  if (dados.usosFormas?.["arq-zona-de-mana"]) return ui.notifications.warn("Zona de Mana: 1× por cena.");
+  const cpm = custoRecurso(ficha, "pm", zm.pm), cpe = custoRecurso(ficha, "pe", zm.pe);
+  if (!cpm.ok || !cpe.ok) return ui.notifications.warn(`Zona de Mana: precisa de ${zm.pm} PM e ${zm.pe} PE.`);
+  await actor.update({ ...cpm.updates, ...cpe.updates, [`${P}.usos.zonaDeMana`]: true, [`${P}.usosFormas.arq-zona-de-mana`]: "cena" });
+  return nota(actor, `<p><strong>Zona de Mana</strong> ativada (−${zm.pm} PM, −${zm.pe} PE). Move-se no ar, paredes, teto ou chão; magias podem surgir de qualquer ponto da zona; percebe manifestações de mana. Manter custa ${zm.manterPm} PM + ${zm.manterPe} PE por turno.${zm.modGratis ? " A primeira modificação paga com PE em cada turno sai de graça." : ""}</p>`, "#8A7CE0");
+}
+
+/** Fôlego de Combate (Combatente 10/22/35): Ação Bônus, recupera PV; 1× por cena (2× no 35). */
 export async function folegoCombate(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
   const nivel = nivelArquetipo(dados, "combatente");
@@ -407,10 +459,12 @@ export async function folegoCombate(actor) {
   const { estadoAtor } = await import("./mecanicas.mjs");
   const { ficha } = estadoAtor(actor);
   const roll = await new Roll(String(fol.dado)).evaluate();
-  const pe = ficha.recursos.pe;
-  const novo = Math.min(pe.max, pe.value + roll.total);
-  await actor.update({ [`${P}.recursos.pe.value`]: novo, [`${P}.usosFormas.arq-folego-${usados + 1}`]: "cena", ...(game.combat?.started ? { [`${P}.acoes.bonus`]: true } : {}) });
-  await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<strong>Fôlego de Combate</strong> (Ação Bônus): +${novo - pe.value} PE${fol.usos > 1 ? ` · ${usados + 1}/${fol.usos} nesta cena` : ""}` });
+  // Reformulado: recupera PV (antes era PE)
+  const hp = actor.system?.attributes?.hp ?? {};
+  const atual = int(hp.value), max = int(hp.max) || int(ficha.recursos?.pv?.max);
+  const novo = Math.min(max, atual + roll.total);
+  await actor.update({ "system.attributes.hp.value": novo, [`${P}.usosFormas.arq-folego-${usados + 1}`]: "cena", ...(game.combat?.started ? { [`${P}.acoes.bonus`]: true } : {}) });
+  await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `<strong>Fôlego de Combate</strong> (Ação Bônus): +${novo - atual} PV${fol.usos > 1 ? ` · ${usados + 1}/${fol.usos} nesta cena` : ""}` });
 }
 
 /** Caçador Natural (Combatente 19/29/47): marca a Presa até o fim do combate; transferir custa (ou é grátis do 29 em diante). */
@@ -423,7 +477,7 @@ export async function cacadorNatural(actor) {
   const sugestao = alvoMarcado?.name ?? "";
   const r = await dialogo({
     titulo: "Caçador Natural", ok: atual ? "Trocar a Presa" : "Marcar a Presa", icone: "fa-solid fa-crosshairs",
-    content: `<p class="epm-dica">${atual ? `Presa atual: <strong>${escapar(atual)}</strong>. Trocar ${cfg.transferir ? `custa ${cfg.transferir} PE` : "é grátis"} (quando ela chega a 0 PV).` : `Custa ${cfg.custo} PE. Contra a Presa: +${cfg.acerto} Acerto, +${cfg.ca} CA${cfg.esquiva ? `, +${cfg.esquiva} Esquiva` : ""}, ignora a Resistência dela${cfg.imunidadeVira ? " (a Imunidade vira Resistência)" : ""} e ${cfg.todoAcerto ? "todo acerto" : "1 acerto por turno"} causa +1 dado de dano, até o fim do combate.`}</p>
+    content: `<p class="epm-dica">${atual ? `Presa atual: <strong>${escapar(atual)}</strong>. Trocar ${cfg.transferir ? `custa ${cfg.transferir} PE` : "é grátis"} (quando ela chega a 0 PV).` : `Custa ${cfg.custo} PE. Contra a Presa: +${cfg.acerto} Acerto, +${cfg.ca} CA${cfg.esquiva ? `, +${cfg.esquiva} em Bloqueio, Contra-ataque e Esquiva` : ""}, ignora a Resistência dela${cfg.imunidadeVira ? " (a Imunidade vira Resistência)" : ""} e ${cfg.todoAcerto ? "todo acerto" : "1 acerto por turno"} causa +1 dado de dano, até o fim do combate.`}</p>
       <label class="epm-campo"><span>Presa</span><input type="text" name="presa" value="${escapar(sugestao)}" placeholder="nome da criatura (o alvo marcado vem sozinho)"></label>
       ${atual ? `<label class="epm-check"><input type="checkbox" name="encerrar"> Encerrar (sem custo)</label>` : ""}`,
     callback: f => ({ presa: String(f.presa?.value ?? "").trim(), encerrar: !!f.encerrar?.checked })
@@ -791,8 +845,20 @@ async function cartaoDanoExtra(actor, { titulo, valor, alvos = "", tipoDano = ""
  */
 export async function defenderDoCartao(defensor, defesaId, { acerto, dano = 0, tipoDano = "", atacanteUuid = "", critico = false, tipoArma = "" }) {
   const { ficha } = estadoAtor(defensor);
-  const def = ficha.defesas.find(d => d.id === defesaId);
-  if (!def) return null;
+  const def0 = ficha.defesas.find(d => d.id === defesaId);
+  if (!def0) return null;
+  // Caçador Natural: contra a Presa, +1 CA e +2 em Bloqueio, Contra-ataque e Esquiva
+  let def = def0;
+  const dDef = defensor.flags?.[FLAG] ?? {};
+  const cacDef = dDef.usos?.presa ? cacadorDe(nivelArquetipo(dDef, "combatente"), dDef) : null;
+  if (cacDef && atacanteUuid) {
+    const atacante = await fromUuid(atacanteUuid).catch(() => null);
+    const nomeA = String(atacante?.name ?? "").trim().toLowerCase();
+    if (nomeA && nomeA === String(dDef.usos.presa).trim().toLowerCase()) {
+      const extra = int(cacDef.ca) + int(cacDef.esquiva);
+      def = { ...def0, valor: def0.valor + extra, periciaBonus: def0.periciaBonus + extra, periciaNome: `${def0.periciaNome} + Presa` };
+    }
+  }
   if (ficha.acoes.defesas >= REGRAS.maxDefesasPorRodada) return ui.notifications.warn(`${defensor.name}: as 3 ações do próximo turno já foram gastas em defesas.`);
   const passou = acerto >= def.valor;
   const falhaPor = def.valor - acerto;
@@ -918,7 +984,7 @@ export async function cliqueChatExtra(acao, actor, botao) {
     return true;
   }
   if (acao === "curaProjeto") { await curaDoCartao(actor, botao); return true; }
-  const novos = ["destrutivo", "alongado", "manipulacao", "sobrecarga"];
+  const novos = ["destrutivo", "alongado", "esmagador", "sangrenta", "manipulacao", "sobrecarga"];
   if (!novos.includes(acao)) return false;
   if (!actor) { ui.notifications.warn("Não encontrei o personagem deste cartão."); return true; }
   if (!actor.isOwner) { ui.notifications.warn("Só o dono do personagem usa este botão."); return true; }
@@ -927,13 +993,24 @@ export async function cliqueChatExtra(acao, actor, botao) {
   cliqueChatExtra.usados ??= new Set();
   if (cliqueChatExtra.usados.has(chave)) { ui.notifications.info("Já usado neste cartão."); return true; }
   const dados = actor.flags?.[FLAG] ?? {};
-  if (acao === "destrutivo" || acao === "alongado") {
+  if (["destrutivo", "alongado", "esmagador", "sangrenta"].includes(acao)) {
     const e = efeitoMaestria(acao, nivelArquetipo(dados, "combatente"), dados);
     if (!e) { ui.notifications.warn("Maestria indisponível."); return true; }
-    if (e.custo && dados.usos?.maestriaTurno) { ui.notifications.warn("Maestria com custo em PE: só 1 vez por turno."); return true; }
+    // Cada Maestria com custo em PE vale 1×/turno; Maestrias diferentes podem no mesmo turno
+    const usadas = Array.isArray(dados.usos?.maestriasTurno) ? dados.usos.maestriasTurno : [];
+    if (e.custo && usadas.includes(acao)) { ui.notifications.warn(`${e.nome}: só 1 vez por turno.`); return true; }
     if (!(await gastar(actor, "pe", e.custo, e.nome))) return true;
-    if (e.custo) await actor.update({ [`flags.${FLAG}.usos.maestriaTurno`]: true });
+    if (e.custo) await actor.update({ [`flags.${FLAG}.usos.maestriasTurno`]: [...usadas, acao] });
     cliqueChatExtra.usados.add(chave);
+    if (acao === "esmagador" || acao === "sangrenta") {
+      const cd = int(botao.dataset.cd) || 10;
+      const efeito = acao === "esmagador" ? `Fortitude CD ${cd} ou ${e.efeito}.` : `Fortitude CD ${cd} ou fica Sangrando: perde ${e.dadosSangue} de Vida no início de cada turno, até passar em Fortitude CD ${cd} no fim do turno ou ser tratado. Aplicar de novo só renova.`;
+      const alvos = String(botao.dataset.alvos ?? "").split(",").filter(Boolean);
+      const resistir = (alvos.length ? alvos : [""]).map(uuid => `<button type="button" data-epm-action="resistir" data-pericia="fortitude" data-dt="${cd}"${uuid ? ` data-defensor="${escapar(uuid)}"` : ""} data-rotulo="${escapar(e.nome)}"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> Fortitude CD ${cd}${uuid ? `: ${escapar(fromUuidSync?.(uuid)?.name ?? "alvo")}` : ""}</button>`).join("");
+      await ChatMessage.create({ speaker: falar(actor), flags: { [FLAG]: { tipo: "ataque" } },
+        content: `<div class="epm-chat epm-chat-nota" data-actor-uuid="${actor.uuid}"><p><strong>${escapar(e.nome)}</strong> (−${e.custo} PE): ${escapar(efeito)}</p><div class="epm-chat-botoes">${resistir}</div></div>` });
+      return true;
+    }
     await cartaoDanoExtra(actor, {
       titulo: e.nome, valor: e.dano, alvos: botao.dataset.alvos ?? "", tipoDano: botao.dataset.tipoDano ?? "",
       texto: acao === "destrutivo" ? `−${e.custo} PE, +${e.dano} de dano` : `−${e.custo} PE: ${e.dano} de dano mesmo errando (não conta como acerto)`

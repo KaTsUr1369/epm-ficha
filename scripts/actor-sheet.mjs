@@ -66,7 +66,7 @@ const ACOES_FICHA = [
   // 0.5.4
   "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao", "abrirCompendioClasses",
   "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
-  "adicionarHabilidadeArq", "escolherClasse", "trocarClasse", "classeLivre", "adicionarHabilidadeClasse", "caminhoClasse", "alternarEstilo", "alternarUtensilio", "recuperarMana", "cacadorNatural", "folegoCombate",
+  "adicionarHabilidadeArq", "escolherClasse", "trocarClasse", "classeLivre", "adicionarHabilidadeClasse", "caminhoClasse", "alternarEstilo", "alternarMaestria", "alternarAssinatura", "barreiraArcana", "corpoDeMana", "zonaDeMana", "alternarUtensilio", "recuperarMana", "cacadorNatural", "folegoCombate",
   "novoCompanheiro", "excluirCompanheiro", "imagemCompanheiro", "ajustarCompanheiro", "novoAtaqueCompanheiro", "excluirAtaqueCompanheiro",
   "rolarAtaqueCompanheiro", "abrirLigado", "criarAutomato",
   "novaCriatura", "excluirCriatura", "imagemCriatura", "contarCriatura",
@@ -77,7 +77,7 @@ const ACOES_FICHA = [
   "novaRd", "removerRd",
   "novaReceita", "apagarReceita", "alternarProfissao", "novoIngrediente", "removerIngrediente", "ligarResultado",
   "produzir", "testarProducao", "terminarProducao", "apagarProducao",
-  "criarProjeto", "usarProjeto", "apagarProjeto", "pularTempoProjetos", "guardarProjeto", "apagarDoLivro", "encerrarEfeitoProjeto",
+  "novaReceitaArtifice", "esquecerReceita", "fabricarProjeto", "montagemCampo", "usarProjeto", "sobrecargaProjeto", "repararEngenhoca", "desmontarEngenhoca", "usarUtensilios",
   // 0.6.0
   ...NOMES_ACOES_060,
   // Novas mecânicas
@@ -842,6 +842,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       return;
     }
     // Compêndio "EPM · Arquétipos e Classes": Classe (D&D) = Arquétipo, Subclasse = Classe, Talento = habilidade
+    // Receita do Artífice (compêndio "Receitas do Artífice"): vai para o Livro de Projetos
+    if (item.flags?.[FLAG]?.receitaArtifice) return PJ.aprenderReceita(this.actor, item.flags[FLAG].receitaArtifice);
     const doCompendio = item.flags?.[FLAG]?.compendio;
     if (doCompendio === "arquetipo") return X.definirArquetipo(this.actor, item.flags[FLAG].arquetipoId);
     if (doCompendio === "classe") return X.definirClassePorItem(this.actor, item.flags[FLAG].classeId);
@@ -1988,6 +1990,36 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     await this.actor.update({ [`${P}.arquetipoOpcoes.combatente.estilos`]: lista });
   }
 
+  /** Arsenal de Maestrias: marca ou tira uma Maestria (até o número do nível; sem repetir). */
+  async acaoAlternarMaestria(ev, alvo) {
+    const opc = this.actor.flags?.[FLAG]?.arquetipoOpcoes?.combatente ?? {};
+    const lista = Array.isArray(opc.maestrias) ? [...opc.maestrias] : [];
+    const id = alvo.dataset.maestria;
+    const i = lista.indexOf(id);
+    const { maestriasPermitidas, nivelArquetipo } = await import("./arquetipos.mjs");
+    const max = maestriasPermitidas(nivelArquetipo(this.actor.flags?.[FLAG] ?? {}, "combatente"));
+    if (i >= 0) lista.splice(i, 1);
+    else if (lista.length < max) lista.push(id);
+    else return ui.notifications.warn(`No seu nível: ${max} Maestria${max > 1 ? "s" : ""}. Tire uma para trocar (Retreino: 1 por Descanso Longo).`);
+    await this.actor.update({ [`${P}.arquetipoOpcoes.combatente.maestrias`]: lista });
+  }
+
+  /** Magia Assinatura (Conjurador 15/39): marca ou tira a magia (até 1, ou 2 no 39). */
+  async acaoAlternarAssinatura(ev, alvo) {
+    const d = this.actor.flags?.[FLAG] ?? {};
+    const { assinaturaDe, nivelArquetipo } = await import("./arquetipos.mjs");
+    const a = assinaturaDe(nivelArquetipo(d, "conjurador"));
+    if (!a) return;
+    const lista = Array.isArray(d.arquetipoOpcoes?.conjurador?.assinaturas) ? [...d.arquetipoOpcoes.conjurador.assinaturas] : [];
+    const id = alvo.dataset.magia;
+    const i = lista.indexOf(id);
+    if (i >= 0) lista.splice(i, 1); else if (lista.length < a.qtd) lista.push(id);
+    await this.actor.update({ [`${P}.arquetipoOpcoes.conjurador.assinaturas`]: lista });
+  }
+  acaoBarreiraArcana() { return X.barreiraArcana(this.actor); }
+  acaoCorpoDeMana() { return X.corpoDeMana(this.actor); }
+  acaoZonaDeMana() { return X.zonaDeMana(this.actor); }
+
   async acaoAlternarUtensilio(ev, alvo) {
     const atual = this.actor.flags?.[FLAG]?.arquetipoOpcoes?.artifice?.utensilios;
     const lista = Array.isArray(atual) ? [...atual] : [];
@@ -2033,20 +2065,18 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
   /* ---------- Projetos do Artífice ---------- */
 
-  acaoCriarProjeto() { return PJ.criarProjeto(this.actor); }
-  acaoUsarProjeto(ev, alvo) { return PJ.usarProjeto(this.actor, alvo.dataset.projeto); }
-  async acaoApagarProjeto(ev, alvo) {
-    const p = this.actor.flags?.[FLAG]?.projetos?.[alvo.dataset.projeto];
-    const usado = Number(p?.voltaEm) > 0;
-    if (!(await M.confirmar(usado ? "Apagar projeto" : "Cancelar projeto", usado
-      ? "<p>Apagar este projeto da lista? Ele já foi usado, então continua contando no limite do dia.</p>"
-      : "<p>Cancelar este projeto? Ele não conta no limite do dia e, se foi guardado no Livro de Projetos a partir daqui, sai do livro também.</p>"))) return;
-    return PJ.apagarProjeto(this.actor, alvo.dataset.projeto);
+  acaoNovaReceitaArtifice() { return PJ.escolherReceita(this.actor); }
+  async acaoEsquecerReceita(ev, alvo) {
+    if (!(await M.confirmar("Tirar do Livro", "<p>Tirar esta receita do Livro de Projetos? (Troca: 1 por Descanso Longo.)</p>"))) return;
+    return PJ.esquecerReceita(this.actor, alvo.dataset.receita);
   }
-  acaoPularTempoProjetos() { return PJ.pularTempoProjetos(this.actor); }
-  acaoGuardarProjeto(ev, alvo) { return PJ.guardarNoLivro(this.actor, alvo.dataset.projeto); }
-  acaoApagarDoLivro(ev, alvo) { return PJ.apagarDoLivro(this.actor, alvo.dataset.livro); }
-  acaoEncerrarEfeitoProjeto(ev, alvo) { return PJ.encerrarEfeitoProjeto(this.actor, alvo.dataset.efeito); }
+  acaoFabricarProjeto(ev, alvo) { return PJ.fabricarProjeto(this.actor, alvo.dataset.receita); }
+  acaoMontagemCampo(ev, alvo) { return PJ.fabricarProjeto(this.actor, alvo.dataset.receita, { montagem: true }); }
+  acaoUsarProjeto(ev, alvo) { return PJ.usarProjeto(this.actor, alvo.dataset.itemId ?? alvo.dataset.projeto); }
+  acaoSobrecargaProjeto(ev, alvo) { return PJ.usarProjeto(this.actor, alvo.dataset.itemId, { sobrecarga: true }); }
+  acaoRepararEngenhoca(ev, alvo) { return PJ.repararEngenhoca(this.actor, alvo.dataset.itemId); }
+  acaoDesmontarEngenhoca(ev, alvo) { return PJ.desmontarEngenhoca(this.actor, alvo.dataset.itemId); }
+  acaoUsarUtensilios() { return PJ.usarUtensilios(this.actor); }
   acaoCacadorNatural() { return X.cacadorNatural(this.actor); }
   acaoFolegoCombate() { return X.folegoCombate(this.actor); }
 

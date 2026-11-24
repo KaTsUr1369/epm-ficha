@@ -10,7 +10,7 @@ import { int, num, novoId, formaPadrao } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import { estadoAtor, confirmar, rolarTeste, calcularPerda, calcularRecuperacao } from "./mecanicas.mjs";
 import { custoRecurso } from "./extras.mjs";
-import { RACAS, racaPorId, qtdUnicas, opcoesAmalgama, habilidadePorRef } from "./racas.mjs";
+import { RACAS, racaPorId, qtdUnicas, conferirUnicas, opcoesAmalgama, habilidadePorRef } from "./racas.mjs";
 import { insanidadeTemporaria, insanidadePermanente, estadoSanidade, RECUPERACAO_SANIDADE } from "./insanidades.mjs";
 import { TREINAMENTOS_NOTION, KITS_INICIAIS, ARMAS_REGIAO, ARMADURAS_REGIAO, REGIOES, PROPRIEDADES_ARMA, TIPOS_ARMADURA } from "./catalogos.mjs";
 import {
@@ -49,6 +49,30 @@ function vagasAumento(aumento, extras = []) {
   return vagas;
 }
 
+/**
+ * Trava as caixas de uma lista ".epm-lista-escolha[data-limite]": passou do limite, as outras ficam desabilitadas.
+ * Com data-fera (Compatibilidade à Fera), marcar a Fera soma data-extras ao limite; desmarcar tira os extras.
+ */
+export function limitarMarcados(ev, dlg) {
+  const raiz = dlg?.element ?? ev?.target?.element;
+  for (const lista of raiz?.querySelectorAll?.(".epm-lista-escolha[data-limite]") ?? []) {
+    const caixas = [...lista.querySelectorAll("input[type=checkbox]")];
+    const fera = lista.dataset.fera ? caixas.find(c => c.value === lista.dataset.fera) : null;
+    const atualizar = mudou => {
+      const limite = Number(lista.dataset.limite) + (fera?.checked ? Number(lista.dataset.extras) || 0 : 0);
+      let marcadas = caixas.filter(c => c.checked);
+      if (marcadas.length > limite) {
+        // Tira primeiro a que acabou de mudar (ou as últimas), mantendo a Fera
+        const tirar = marcadas.filter(c => c !== fera).reverse();
+        for (const c of tirar) { if (marcadas.length <= limite) break; c.checked = false; marcadas = caixas.filter(x => x.checked); }
+      }
+      for (const c of caixas) c.disabled = !c.checked && marcadas.length >= limite;
+    };
+    caixas.forEach(c => c.addEventListener("change", () => atualizar(c)));
+    atualizar(null);
+  }
+}
+
 export async function escolherRaca(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
   const atual = dados.racaEscolha?.id ?? "";
@@ -79,16 +103,29 @@ export async function escolherRaca(actor) {
       <label class="epm-campo"><span>Única de ${escapar(A.nome)}</span><select name="u1">${opcoes(A.unicas.map(u => [`${A.id}:${u.id}`, u.nome]))}</select></label>
       <label class="epm-campo"><span>Única de ${escapar(B.nome)}</span><select name="u2">${opcoes(B.unicas.map(u => [`${B.id}:${u.id}`, u.nome]))}</select></label>`, { botao: "Continuar" });
     if (!r3) return;
-    mestico = { a: A.id, b: B.id, habilidades: [...new Set([r3.h1, r3.h2])], unicas: [r3.u1, r3.u2] };
+    let unicasM = [r3.u1, r3.u2];
+    // Mestiço de Mutante com Compatibilidade à Fera: mais 2 Habilidades Únicas do Mutante (perde Pele Animal)
+    const Mut = [A, B].find(x => x.id === "mutante");
+    if (Mut && unicasM.includes("mutante:fera")) {
+      const resto = Mut.unicas.filter(u => u.id !== "fera" && !unicasM.includes(`mutante:${u.id}`));
+      const rf = await formulario("Compatibilidade à Fera: mais 2 Habilidades Únicas", `
+        <p class="epm-dica">Do Mutante. Escolha 2 (Pele Animal sai).</p>
+        <div class="epm-lista-escolha" data-limite="2">${resto.map(u => `<label class="epm-check epm-check-bloco"><input type="checkbox" name="extras[]" value="mutante:${u.id}"><span><strong>${escapar(u.nome)}</strong> ${escapar(u.texto)}</span></label>`).join("")}</div>`,
+        { botao: "Continuar", largura: 600, render: limitarMarcados });
+      if (!rf) return;
+      unicasM = [...unicasM, ...(rf.extras ?? []).slice(0, 2)];
+    }
+    mestico = { a: A.id, b: B.id, habilidades: [...new Set([r3.h1, r3.h2])], unicas: unicasM };
   } else if (raca.unicas.length) {
+    const temFera = raca.unicas.some(u => u.auto?.unicasExtras);
     const r2 = await formulario(`${raca.nome}: Habilidade Única`, `
-      <p class="epm-dica">Escolha 1 (Compatibilidade à Fera dá +2). ${escapar(raca.aumento?.texto ?? "")}</p>
-      <div class="epm-lista-escolha">${raca.unicas.map(u => `<label class="epm-check epm-check-bloco"><input type="checkbox" name="unicas[]" value="${u.id}" ${dados.racaEscolha?.id === raca.id && (dados.racaEscolha?.unicas ?? []).includes(u.id) ? "checked" : ""}>
-        <span><strong>${escapar(u.nome)}</strong> ${escapar(u.texto)}</span></label>`).join("")}</div>`, { botao: "Continuar", largura: 600 });
+      <p class="epm-dica">Escolha 1${temFera ? " (Compatibilidade à Fera libera mais 2)" : ""}. ${escapar(raca.aumento?.texto ?? "")}</p>
+      <div class="epm-lista-escolha" data-limite="1" ${temFera ? `data-fera="${raca.unicas.find(u => u.auto?.unicasExtras).id}" data-extras="2"` : ""}>${raca.unicas.map(u => `<label class="epm-check epm-check-bloco"><input type="checkbox" name="unicas[]" value="${u.id}" ${dados.racaEscolha?.id === raca.id && (dados.racaEscolha?.unicas ?? []).includes(u.id) ? "checked" : ""}>
+        <span><strong>${escapar(u.nome)}</strong> ${escapar(u.texto)}</span></label>`).join("")}</div>`, { botao: "Continuar", largura: 600, render: limitarMarcados });
     if (!r2) return;
-    unicas = r2.unicas ?? [];
-    const max = qtdUnicas(raca, unicas);
-    if (unicas.length > max) { ui.notifications.warn(`${raca.nome}: só ${max} Habilidade(s) Única(s). Fiquei com as primeiras.`); unicas = unicas.slice(0, max); }
+    const conf = conferirUnicas(raca, r2.unicas ?? []);
+    if (conf.passou) ui.notifications.warn(`${raca.nome}: só ${conf.max} Habilidade(s) Única(s).`);
+    unicas = conf.validas;
   }
 
   // Amálgama: escolhe uma passiva ou habilidade de outra raça
@@ -515,12 +552,16 @@ export async function catalogoItens(actor) {
 
 export async function kitInicial(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
-  const arq = idArquetipo(dados.arquetipo) || "combatente";
+  const arqFicha = idArquetipo(dados.arquetipo);
+  const arq = arqFicha || "combatente";
+  // Com o arquétipo escolhido, só os kits dele (os dos outros arquétipos ficam travados)
   const lista = Object.entries(KITS_INICIAIS).flatMap(([a, kits]) => kits.map(k => [`${a}:${k.id}`, `${a[0].toUpperCase()}${a.slice(1)} · ${k.nome}: ${k.itens.map(i => i[0] + (i[2] ? ` (${i[2]})` : "")).join(", ")}${Object.keys(k.moedas).length ? ` + ${Object.values(k.moedas)[0]} PO` : ""}`]));
-  const r = await formulario("Kit inicial do arquétipo", `<label class="epm-campo"><span>Kit</span><select name="kit">${opcoes(lista, `${arq}:a`)}</select></label>
+  const r = await formulario("Kit inicial do arquétipo", `<label class="epm-campo"><span>Kit</span><select name="kit">${lista.map(([v, t]) => { const trava = arqFicha && !v.startsWith(`${arqFicha}:`); return `<option value="${v}" ${v === `${arq}:a` ? "selected" : ""} ${trava ? "disabled" : ""}>${escapar(t)}${trava ? " (outro arquétipo)" : ""}</option>`; }).join("")}</select></label>
+    ${arqFicha ? `<p class="epm-dica">Só os kits do seu arquétipo; os dos outros ficam travados.</p>` : ""}
     <p class="epm-dica">Cria itens genéricos (troque pelas armas e armaduras de verdade depois) e soma as moedas.</p>`, { botao: "Criar kit", largura: 640 });
   if (!r) return;
   const [a, id] = String(r.kit).split(":");
+  if (arqFicha && a !== arqFicha) return ui.notifications.warn("Só os kits do seu arquétipo.");
   const kit = KITS_INICIAIS[a]?.find(k => k.id === id);
   if (!kit) return;
   await actor.createEmbeddedDocuments("Item", kit.itens.map(([nome, type, qtd]) => ({ name: nome, type, system: qtd ? { quantity: qtd } : {} })));

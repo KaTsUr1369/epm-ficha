@@ -143,7 +143,7 @@
         <div class="epm-arq-combate-bloco" style="--cor: {{this.cor}}">
           <h4><i class="{{this.icone}}" aria-hidden="true"></i> {{this.nome}} <span class="epm-contador">Nv. {{this.nivel}}</span></h4>
           <ul class="epm-arq-linhas">{{#each linhas}}<li>{{this}}</li>{{/each}}</ul>
-          {{#if botoes.length}}<div class="epm-chips">{{#each botoes}}<button type="button" class="epm-botao" data-action="{{this.acao}}" title="{{this.dica}}" {{#if desabilitado}}disabled{{/if}}><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}</div>{{/if}}
+          {{#if botoes.length}}<div class="epm-chips">{{#each botoes}}<button type="button" class="epm-botao" data-action="{{this.acao}}"{{#if dataset.receita}} data-receita="{{dataset.receita}}"{{/if}}{{#if dataset.itemId}} data-item-id="{{dataset.itemId}}"{{/if}} title="{{this.dica}}" {{#if desabilitado}}disabled{{/if}}><i class="{{this.icone}}" aria-hidden="true"></i> {{this.label}}</button>{{/each}}</div>{{/if}}
         </div>
         {{/each}}
       </section>

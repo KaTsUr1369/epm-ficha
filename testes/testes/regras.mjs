@@ -138,51 +138,48 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
   ok(A.nivelArquetipo({ arquetipo: "Arcanista", arquetipo2: "Conjurador", nivel: 5, nivel2: 19 }, "conjurador") === 19, "nível do segundo arquétipo");
   const ef = A.efeitoMaestria("certeiro", 11);
   ok(ef.etapa === 2 && ef.custo === 3 && ef.acerto === 2, "Ataque Certeiro na etapa 2: 3 PE por +2 (balanceado)");
-  const per = A.efeitoMaestria("perigosa", 41);
-  ok(per.margem === 2 && per.mult === 3 && per.dadosCritico === 2, "Arma Perigosa no nível 41: margem +2, ×3 e +2 dados no crítico");
+  const per = A.efeitoMaestria("perigosa", 41), per11 = A.efeitoMaestria("perigosa", 11), per21 = A.efeitoMaestria("perigosa", 21);
+  ok(per.margem === 3 && per.mult === 4 && per11.margem === 1 && per11.mult === 3 && per21.margem === 2 && A.efeitoMaestria("perigosa", 1).mult === 0, "Arma Perigosa nova: crítico 19/18/17 (1/21/41) e ×3/×4 (11/31)");
   ok(A.reservaArcana(26) === 10 && A.reservaArcana(41) === 25 && A.reservaArcana(49) === 40 && A.reservaArcana(25) === 0, "Reserva Arcana: +10 no 26, +25 no 41, +40 no 49");
-  ok(A.custoMagiaCirculo(3) === 14 && A.circuloLiberado(3, 18) === false && A.circuloLiberado(3, 19) && A.circuloLiberado(6, 47), "custo e liberação do 3º círculo (19) e do 6º (47)");
-  const pr = A.projetosDoNivel(13, 0);
-  ok(pr.dano === "3d8 + 1" && pr.soma === 3 && pr.etapa === 2 && A.limiteLivro(20, 5) === 4, "Projetos do Artífice: Inteligência mínima 1 no dano; Soma e Livro sem Inteligência");
-  const mods = A.modsDeArquetipo({ arquetipo: "Conjurador", nivel: 26, arquetipo2: "Artífice", nivel2: 6, arquetipoOpcoes: { artifice: { utensilios: ["luta", "medicina", "furtividade", "ciencia", "crime"] } } });
+  ok(A.custoMagiaCirculo(3) === 14 && A.circuloLiberado(1, 1) && A.circuloLiberado(3, 18) === false && A.circuloLiberado(3, 19) && !A.circuloLiberado(6, 44) && A.circuloLiberado(6, 45), "círculos novos: 1º no Nv. 1, 3º no 19, 6º no 45");
+  const ac1 = A.acumuloDeMagias(1), ac10 = A.acumuloDeMagias(10), ac50 = A.acumuloDeMagias(50);
+  ok(ac1.magias === 3 && ac1.truques === 3 && ac10.magias === 12 && ac10.truques === 4 && ac50.magias === 52 && ac50.truques === 8, "Acúmulo de Magias: 3/3 no Nv. 1, 12/4 no 10, 52/8 no 50");
+  ok(A.contaNoAcumulo({ origem: "" }) && A.contaNoAcumulo({ origem: "arquetipo" }) && !A.contaNoAcumulo({ origem: "classe" }) && !A.contaNoAcumulo({ origem: "pergaminho" }), "Classe e pergaminho somam por fora do Acúmulo");
+  ok(A.assinaturaDe(14) === null && A.assinaturaDe(15).qtd === 1 && A.assinaturaDe(39).circuloMax === 4 && A.corpoDeManaDe(22).pm === 6 && A.corpoDeManaDe(46).pm === 0 && A.zonaDeManaDe(41).manterPm === 20 && A.zonaDeManaDe(50).pm === 30, "Magia Assinatura, Corpo de Mana (22/46) e Zona de Mana (41/50)");
+  const c1 = A.criacaoDe(1, 5), c11 = A.criacaoDe(11, 5), c50 = A.criacaoDe(50, 5), c0 = A.criacaoDe(1, 0);
+  ok(c1.projetos === 3 && c1.grauMax === 1 && c1.livro === 4 && c11.projetos === 5 && c11.grauMax === 2 && c50.projetos === 13 && c50.livro === 14 && c0.projetos === 1, "Projetos de Criação: metade da Int (mín. 1) no 1, Int no 11, Int + 8 no 50");
+  const g1 = A.valoresDoGrau(1, 3), g5 = A.valoresDoGrau(5, 3), g6 = A.valoresDoGrau(6, 3);
+  ok(g1.dano === "2d6 + 3" && g1.cenas === 2 && g1.ocupa === 1 && g5.cura === "6d12 + 3" && g5.ocupa === 3 && g6.dano === "10d10 + 3" && g6.soma === 12, "Graus I–V (e acima do V pela Sobrecarga: +2 dados, +2)");
+  const mods = A.modsDeArquetipo({ arquetipo: "Conjurador", nivel: 26, arquetipo2: "Artífice", nivel2: 11, arquetipoOpcoes: { artifice: { utensilios: ["medicina"], modificacao: { parte: "pernas", opcao: 0 } } } });
   ok(mods.some(m => m.alvo === "recurso.pm" && m.valor === 10), "Reserva Arcana entra como PM máximo");
-  ok(mods.filter(m => m.alvo.startsWith("pericia.")).length === 3 && !mods.some(m => m.alvo === "pericia.luta"), "Utensílios: 3 perícias, nunca Luta");
+  ok(!mods.some(m => m.alvo === "pericia.medicina") && mods.some(m => m.alvo === "pericia.atletismo" && m.valor === 2), "Utensílios não é mais bônus fixo; Modificação Permanente (Pernas: Atletismo +2)");
   const { visualDaFicha } = await import("/home/claude/epm-ficha/scripts/context.mjs");
   const v = visualDaFicha({ moldura: "dourada", fonte: "antiga", escala: 112, fundo: "worlds/x/fundo.webp", fundoVeu: 60 });
   ok(v.escala === 110 && v.classes.includes("epm-moldura-dourada") && v.classes.includes("epm-com-fundo") && v.vars["--epm-fundo-veu"] === "60%", "visual: escala em passos de 5, moldura, fundo e véu");
 }
 {
   const A = await import("/home/claude/epm-ficha/scripts/arquetipos.mjs");
-  const dadosT = { arquetipo: "Combatente", nivel: 11, arquetipoOpcoes: { combatente: { tipoFavorito: "espada longa", maestria: "protetora" } } };
+  const dadosT = { arquetipo: "Combatente", nivel: 11, arquetipoOpcoes: { combatente: { tipoFavorito: "espada longa", maestrias: ["protetora", "certeiro"] } } };
   ok(A.eTipoFavorito({ flags: { "epm-ficha": { tipoArma: "Espada Longa" } } }, dadosT) && !A.eTipoFavorito({ flags: { "epm-ficha": { tipoArma: "Machado" } } }, dadosT), "Arma Favorita vale pelo tipo da arma (sem maiúsculas)");
   const ca = A.modsDeArquetipo(dadosT, [{ id: "x", tipoArma: "Espada longa" }]).find(m => m.alvo === "ca");
   const def11 = A.modsDeArquetipo(dadosT, [{ id: "x", tipoArma: "Espada longa" }]).find(m => m.alvo === "defesa.bloqueio");
   ok(ca?.valor === 1 && def11?.valor === 1, "Arma Protetora: +1 CA e +1 Defesa com uma espada longa equipada no nível 11");
   ok(!A.modsDeArquetipo(dadosT, [{ id: "y", tipoArma: "Machado" }]).some(m => m.alvo === "ca"), "Arma Protetora não vale para outro tipo");
+  ok(A.maestriasEscolhidas(dadosT).join() === "protetora" && A.maestriasEscolhidas({ ...dadosT, nivel: 21 }).join() === "protetora,certeiro" && A.maestriasPermitidas(41) === 3, "Arsenal: 1 Maestria até o 20, 2 no 21, 3 no 41");
+  const esm = A.efeitoMaestria("esmagador", 41), sang = A.efeitoMaestria("sangrenta", 21), sen = A.efeitoMaestria("sentinela", 41);
+  ok(esm.custo === 7 && /Atordoado/.test(esm.efeito) && sang.custo === 5 && sang.dadosSangue === "1d8" && sen.oportunidades === 2 && sen.acertoOportunidade === 2, "Maestrias novas: Golpe Esmagador, Arma Sangrenta e Sentinela");
+  ok(A.cdMaestria({ periciaPorId: { luta: { total: 7 }, pontaria: { total: 3 } } }) === 17 && A.cdMaestria({ periciaPorId: { pontaria: { total: 3 } } }, true) === 13, "CD de Maestria = 10 + Luta ou Pontaria");
+  const cac = A.cacadorDe(19), cac47 = A.cacadorDe(47);
+  ok(cac.acerto === 5 && cac.transferir === 2 && cac.esquiva === 2 && !cac.imunidadeVira && cac47.imunidadeVira, "Caçador Natural: +5 Acerto, +2 nas reações, troca por 2 PE; 2.0 no 47");
+  ok(A.folegoDe(10).dado === "2d6" && A.ARQUETIPOS.combatente.folegoRecurso === "pv", "Fôlego de Combate recupera PV");
+  const M = await import("/home/claude/epm-ficha/scripts/migracoes-mundo.mjs");
+  const t = M.trocasArquetipos0827({ arquetipoOpcoes: { combatente: { maestria: "destrutivo" } }, ajustesBonus: { "arq-maestria-custo": 2, "arq-estilo-duelista-acertoisolado": 2, "artifice-projetos-dano": "3d8" }, projetos: { a: {} } });
+  ok(t["flags.epm-ficha.arquetipoOpcoes.combatente.maestrias"]?.join() === "destrutivo" && t["flags.epm-ficha.ajustesBonus.arq-maestria-destrutivo-custo"] === 2 && "flags.epm-ficha.ajustesBonus.-=arq-estilo-duelista-acertoisolado" in t && "flags.epm-ficha.ajustesBonus.-=artifice-projetos-dano" in t && "flags.epm-ficha.-=projetos" in t, "migração: Maestria vira Arsenal, ajustes por Maestria, estilo antigo volta ao livro, projetos antigos saem");
 }
 {
-  const A = await import("/home/claude/epm-ficha/scripts/arquetipos.mjs");
-  const { calcularFicha, normalizarDados } = await import("/home/claude/epm-ficha/scripts/data.mjs");
-  const d = {
-    arquetipo: "Artífice", nivel: 5,
-    projetos: {
-      a: { nome: "Granada", tipo: "dano", dia: "1-1-1", prontoEm: 160, voltaEm: 0 },
-      b: { nome: "Kit", tipo: "cura", dia: "1-1-1", prontoEm: 50, voltaEm: 3700 },
-      c: { nome: "Velho", tipo: "soma", dia: "1-1-0", prontoEm: 0, voltaEm: 0 },
-      e: { nome: "Lixo", tipo: "dano", dia: "1-1-1", prontoEm: 0, voltaEm: 0, apagado: true }
-    },
-    projetosEfeitos: { s: { tipo: "soma", valor: 4, ate: 3700, nome: "Lente" }, p: { tipo: "protecao", valor: 1, ate: 3700, nome: "Placa" }, v: { tipo: "protecao", valor: 9, ate: 90 } }
-  };
-  const est = A.estadoProjetos(d, 100, "1-1-1");
-  ok(est.length === 3 && !est.some(x => x.id === "c"), "projetos: só os do dia contam (inclusive apagados, para o limite)");
-  ok(est.find(x => x.id === "a").estado === "producao" && est.find(x => x.id === "b").estado === "recarga", "projetos: em produção e recarregando");
-  ok(A.estadoProjetos(d, 3700, "1-1-1").filter(x => !x.apagado).every(x => x.estado === "pronto"), "projetos: voltam depois de 1 hora");
-  const mods = A.modsDeProjetos(d, 100);
-  ok(mods.length === 2 && mods.some(m => m.alvo === "testes" && m.valor === 4) && mods.some(m => m.alvo === "ca" && m.valor === 1), "Soma vai nos testes e Proteção na CA; efeito vencido não conta");
-  ok(!A.modsDeProjetos(d, 3700).length, "Soma e Proteção acabam depois de 1 hora");
-  const dados = normalizarDados(d);
-  const f1 = calcularFicha({ dados, agora: 100 }), f2 = calcularFicha({ dados, agora: 4000 });
-  ok(f1.ca.total - f2.ca.total === 1, "Proteção soma na CA da ficha enquanto vale");
+  const R = await import("/home/claude/epm-ficha/scripts/receitas-artifice.mjs");
+  ok(R.RECEITAS_ARTIFICE.filter(r => r.categoria === "consumivel").length === 12 && R.RECEITAS_ARTIFICE.filter(r => r.categoria === "engenhoca").length === 8 && R.RECEITAS_ARTIFICE.every(r => r.valores.length === 5), "receitas do PDF: 12 Consumíveis e 8 Engenhocas, com valores por Grau");
+  ok(R.grauMinimo(R.receitaPorId("gerador-campo")) === 3 && R.grauMinimo(R.receitaPorId("drone-batedor")) === 2 && R.grauMinimo(R.receitaPorId("carga-explosiva")) === 1, "Grau mínimo: Gerador de Campo III, Drone II");
 }
 {
   const { calcularFicha, normalizarDados, danoRecebido, tipoCobre } = await import("/home/claude/epm-ficha/scripts/data.mjs");
@@ -248,7 +245,7 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
     const A = await import("/home/claude/epm-ficha/scripts/arquetipos.mjs");
     const f50 = D.calcularFicha({ dados: D.normalizarDados({ nivel: 50, arquetipo: "Conjurador" }) });
     ok(f50.pontosAtributo.aumentoDisponivel === 26, `AS: 1 por nível par e 2 no 50 (${f50.pontosAtributo.aumentoDisponivel})`);
-    ok(A.ARQUETIPOS.combatente.estilos.duelista.acertoIsolado === 2 && A.ARQUETIPOS.combatente.estilos.dupla.acerto === 1 && A.ARQUETIPOS.combatente.estilos.atirador.margem === 2, "estilos com os números balanceados");
+    ok(A.ARQUETIPOS.combatente.estilos.duelista.acertoIsolado === 8 && A.ARQUETIPOS.combatente.estilos.dupla.acerto === 2 && A.ARQUETIPOS.combatente.estilos.atirador.margem === 4 && A.ARQUETIPOS.combatente.estilos.atirador.margemSempre === 1, "estilos reformulados: Duelista +8, Arma Dupla +2, Atirador +1 (ou +4)");
     const I = await import("/home/claude/epm-ficha/scripts/inimigos-nivel.mjs");
     const i1 = I.inimigoPorNivel(1, "chefe"), i12 = I.inimigoPorNivel(12, "monstro"), il = I.inimigoPorNivel(50, "lacaio");
     ok(i1.ca === 23 && i1.pv === 130 && i1.dano === 10, "inimigo: chefe nível 1");

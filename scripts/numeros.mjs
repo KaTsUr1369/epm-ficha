@@ -10,15 +10,15 @@ export const CAMPOS_NUMEROS = [
   ["Estilos de Combate", [
     ["estilo.defensivo.defesa", "Combate Defensivo: Defesa (Bloqueio)", "n", 2],
     ["estilo.defensivo.ca", "Combate Defensivo: CA", "n", 1],
-    ["estilo.duelista.acertoIsolado", "Duelista: Acerto", "n", 2],
+    ["estilo.duelista.acertoIsolado", "Duelista: Acerto", "n", 8],
     ["estilo.bebado.acerto", "Bêbado: Acerto", "n", 3],
     ["estilo.bebado.esquiva", "Bêbado: Esquiva", "n", 1],
     ["estilo.bebado.ca", "Bêbado: CA", "n", 1],
-    ["estilo.atirador.margemSempre", "Atirador: margem de crítico (sempre, à distância)", "n", 0],
-    ["estilo.atirador.margem", "Atirador: margem de crítico abrindo mão do atributo no dano", "n", 2],
+    ["estilo.atirador.margemSempre", "Atirador: margem de crítico (sempre, à distância)", "n", 1],
+    ["estilo.atirador.margem", "Atirador: margem de crítico abrindo mão do atributo no dano", "n", 4],
     ["estilo.longo.dano", "Armamento Longo: dano à distância", "d", "1d6"],
     ["estilo.longo.desarmado", "Armamento Longo: dano desarmado", "d", "1d4"],
-    ["estilo.dupla.acerto", "Arma Dupla: Acerto", "n", 1],
+    ["estilo.dupla.acerto", "Arma Dupla: Acerto", "n", 2],
     ["estilo.dupla.esquiva", "Arma Dupla: Esquiva", "n", 1],
     ["estilo.dupla.ca", "Arma Dupla: CA", "n", 0]
   ]],
@@ -60,11 +60,11 @@ export function aplicarNumeros(salvos = {}) {
     if (E[est]) E[est][campo] = atuais[k];
   }
   const T = n => atuais[`estilo.${n}`];
-  E.defensivo.texto = `Usando Escudo ou Armadura: +${T("defensivo.defesa")} Defesa (Bloqueio) e +${T("defensivo.ca")} CA.`;
+  E.defensivo.texto = `Com Escudo ou Armadura: +${T("defensivo.defesa")} no Bloqueio e +${T("defensivo.ca")} na CA.`;
   E.duelista.texto = `+${T("duelista.acertoIsolado")} Acerto contra um inimigo que não tenha outros inimigos seus a até 1,5 m dele.`;
-  E.bebado.texto = `Com a condição Bêbado, as penalidades viram +${T("bebado.acerto")} Acerto, +${T("bebado.esquiva")} Esquiva e +${T("bebado.ca")} CA. Ainda fica Exausto e Desequilibrado depois de 2 horas.`;
-  E.atirador.texto = `${T("atirador.margemSempre") ? `Atacando com arma à distância: margem de crítico +${T("atirador.margemSempre")}. ` : ""}Pode abrir mão do modificador de dano da arma para reduzir a margem de crítico em ${T("atirador.margem")}.`;
-  E.longo.texto = `Arma à distância Pesada ou Enorme: +${T("longo.dano")} de dano. Também pode atacar corpo a corpo desarmado com +${T("longo.desarmado")} de dano.`;
+  E.bebado.texto = `Com a condição Bêbado: +${T("bebado.acerto")} Acerto, +${T("bebado.esquiva")} Esquiva e +${T("bebado.ca")} CA (no lugar das penalidades). Ainda fica Exausto e Desequilibrado depois de 2 horas.`;
+  E.atirador.texto = `Margem de crítico +${T("atirador.margemSempre")} com armas a distância; ou +${T("atirador.margem")} de margem abrindo mão do atributo no dano. A margem não garante o acerto.`;
+  E.longo.texto = `Com arma a distância Pesada ou Enorme: +${T("longo.dano")} de dano. Também pode atacar corpo a corpo desarmado com ela (coronhada), causando +${T("longo.desarmado")} de dano.`;
   E.dupla.texto = `Usando duas armas: +${T("dupla.acerto")} Acerto e +${T("dupla.esquiva")} Esquiva${T("dupla.ca") ? ` e +${T("dupla.ca")} CA` : ""}.`;
   return atuais;
 }

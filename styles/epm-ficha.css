@@ -3681,3 +3681,18 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-atirador-camara { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--epm-suave); margin-left: auto; }
 .epm-atirador-pip { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--epm-base); }
 .epm-atirador-pip.cheio { background: var(--epm-base); box-shadow: 0 0 8px var(--epm-base); }
+
+/* Artífice reformulado: reserva de Projetos, Livro e Engenhocas */
+.epm-reserva-projetos { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.epm-pip-projeto { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--epm-latao); }
+.epm-pip-projeto.aberto { background: var(--epm-latao); box-shadow: 0 0 6px rgba(226, 194, 122, .5); }
+.epm-pip-projeto.ocupado { background: var(--epm-base); border-color: var(--epm-base); }
+.epm-pip-projeto.gasto { background: transparent; opacity: .55; }
+.epm-livro-projetos { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.epm-livro-projetos li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 6px; border-bottom: 1px dotted var(--epm-linha-forte); }
+.epm-livro-projetos li .epm-dica { flex: 1 1 200px; }
+.epm-livro-projetos li.quebrada { opacity: .7; }
+.epm-cenas { display: inline-flex; gap: 2px; }
+.epm-pip-cena { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--epm-latao); }
+.epm-pip-cena.cheio { background: var(--epm-latao); }
+.epm-tag-alerta { background: color-mix(in srgb, var(--epm-alerta) 22%, transparent); color: var(--epm-alerta); border: 1px solid var(--epm-alerta); }

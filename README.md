@@ -14,6 +14,21 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.29
+
+**Testes no Quench.** Com o módulo [Quench](https://foundryvtt.com/packages/quench) ativo, a janela dele mostra 6 lotes do EPM:
+
+| Lote | O que confere |
+| --- | --- |
+| EPM: regras (sem criar nada) | Contas da criação guiada, Habilidade Única, CD de Projeto, Afiação e Placas, quem vê quais fichas |
+| EPM: ficha de personagem | Cria um personagem, calcula a ficha e abre a ficha com as abas |
+| EPM: mochila compartilhada | Pegar, passar entre mochilas, guardar empilhando e quem saiu não pega mais |
+| EPM: Projetos do Artífice | CD com Ofício e Tecnologia, Afiação na arma de outro, Torreta no inventário de outro e Recolher |
+| EPM: NPCs | NPC rápido na pasta automática (sem duplicar) e os 35 NPCs modelo no compêndio |
+| EPM: grupos separados | Ficha num grupo e o filtro por grupo (a configuração do Escudo volta ao que era) |
+
+Como rodar: ative o Quench no mundo (de preferência um mundo de teste), entre como Mestre, abra a janela do Quench, marque os lotes "EPM" e rode. As fichas de teste se chamam "[Teste EPM] …", ficam na pasta "EPM · Testes (Quench)" e são apagadas no fim, junto com as mensagens que geraram no chat. Quem não é Mestre só roda o lote de regras (os outros pulam). Sem o Quench, nada disso é carregado.
+
 ## Novidades da 0.8.28
 
 - **Mochila compartilhada**: cada personagem recolhe as mochilas compartilhadas pela setinha, só na própria ficha. Os itens de lá têm "Mover para…" (seu inventário, uma mochila sua ou outra compartilhada) e podem ser arrastados direto para uma mochila sua ou para outra compartilhada. O "Mover para…" do inventário também lista as compartilhadas.

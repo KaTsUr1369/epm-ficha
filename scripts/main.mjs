@@ -38,6 +38,8 @@ import("./erros-amigaveis.mjs").then(m => { m.registrarBarraToken(); Hooks.once(
 import("./atalhos.mjs").then(m => m.registrarAtalhos()).catch(err => console.warn("EPM | Atalhos", err));
 import("./integracoes.mjs").then(m => m.registrarIntegracoes()).catch(err => console.warn("EPM | Integrações", err));
 import("./mochila-compartilhada.mjs").then(m => m.registrarMochilasCompartilhadas()).catch(err => console.warn("EPM | Mochilas compartilhadas", err));
+// Testes no Quench (só quando o módulo Quench está ativo)
+import("./quench.mjs").then(m => m.registrarQuench()).catch(err => console.warn("EPM | Quench", err));
 import("./ressonancia.mjs").then(m => m.registrarRessonancia()).catch(err => console.warn("EPM | Ressonância de Alma", err));
 // Fichas e itens antigos recebem as mudanças das versões novas (Mestre ativo, ao abrir o mundo)
 Hooks.once("ready", () => { import("./migracoes-mundo.mjs").then(m => m.migrarMundo()).catch(err => console.warn("EPM | migração do mundo", err)); });

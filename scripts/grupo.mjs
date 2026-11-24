@@ -3,6 +3,7 @@
  * numa janela só (com qualquer ator adicionado à mão ou arrastado), e "Dar aos marcados" para entregar PEv, PT e PH de uma vez.
  */
 import { FLAG, CAMINHO, RECURSOS } from "./config.mjs";
+import * as GS from "./grupos-separados.mjs";
 import { int } from "./data.mjs";
 import { lerAtor } from "./context.mjs";
 import { listaPericias } from "./settings.mjs";
@@ -29,7 +30,11 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
       marcarTodos: function () { this._marcados = new Set(this._atores().map(a => a.id)); this.render(); },
       desmarcarTodos: function () { this._marcados = new Set(); this.render(); },
       adicionarAtor: function () { return this._escolherAtor(); },
-      tirarAtor: function (ev, alvo) { return this._tirar(alvo.dataset.id); }
+      tirarAtor: function (ev, alvo) { return this._tirar(alvo.dataset.id); },
+      escolherGrupo: function (ev, alvo) { this._grupoAtivo = alvo.dataset.grupo ?? ""; this._marcados = null; this.render(); },
+      novoGrupo: async function () { const id = await GS.novoGrupo([...(this._marcados ?? [])]); if (id) { this._grupoAtivo = id; this._marcados = null; this.render(); } },
+      renomearGrupo: async function (ev, alvo) { await GS.renomearGrupo(alvo.dataset.grupo); this.render(); },
+      apagarGrupo: async function (ev, alvo) { await GS.apagarGrupo(alvo.dataset.grupo); this._grupoAtivo = ""; this.render(); }
     }
   };
 
@@ -38,10 +43,12 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Mesma lista do grupo do Escudo: fichas adicionadas à mão e personagens de jogador tirados. */
   _cfg() {
     const c = game.settings.get(FLAG, "escudoGrupo") ?? {};
-    return { extras: Array.isArray(c.extras) ? [...c.extras] : [], fora: Array.isArray(c.fora) ? [...c.fora] : [] };
+    return { ...c, extras: Array.isArray(c.extras) ? [...c.extras] : [], fora: Array.isArray(c.fora) ? [...c.fora] : [] };
   }
 
-  _atores() {
+  _atores() { return GS.filtrarGrupo(this._atoresTodos(), this._cfg(), this._grupoAtivo ?? ""); }
+
+  _atoresTodos() {
     const { extras, fora } = this._cfg();
     const base = game.actors.filter(a => a.type === "character" && (this._todos || a.hasPlayerOwner) && !fora.includes(a.id));
     const mais = extras.map(id => game.actors.get(id)).filter(a => a && !base.includes(a));
@@ -53,6 +60,8 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
     const cfg = this._cfg();
     cfg.fora = cfg.fora.filter(id => id !== actor.id);
     if (!cfg.extras.includes(actor.id)) cfg.extras.push(actor.id);
+    const ativo = this._grupoAtivo ?? "";
+    if (ativo && ativo !== "-sem") cfg.grupos = GS.lerGrupos(cfg).map(g => ({ ...g, ids: g.id === ativo ? [...new Set([...g.ids, actor.id])] : g.ids.filter(x => x !== actor.id) }));
     await game.settings.set(FLAG, "escudoGrupo", cfg);
     this._marcados?.add(actor.id);
     this.render();
@@ -69,16 +78,10 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   async _escolherAtor() {
-    const dentro = new Set(this._atores().map(a => a.id));
-    const opcoes = game.actors.filter(a => !dentro.has(a.id)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
-      .map(a => `<option value="${a.id}">${escapar(a.name)}${a.type !== "character" ? " (NPC)" : ""}</option>`).join("");
-    if (!opcoes) return ui.notifications.info("Todos os atores já estão no painel.");
-    const id = await foundry.applications.api.DialogV2.prompt({
-      window: { title: "Adicionar ao Painel do grupo" },
-      content: `<label class="epm-campo"><span>Ator</span><select name="ator">${opcoes}</select></label><p class="hint">Dica: também dá para arrastar um ator da aba Atores para o painel.</p>`,
-      ok: { label: "Adicionar", callback: (ev, botao) => botao.form.elements.ator.value }, rejectClose: false
-    });
-    if (id) return this._incluir(game.actors.get(id));
+    const dentro = this._atoresTodos().map(a => a.uuid);
+    const { escolherAtores } = await import("./escolher-ator.mjs");
+    const r = await escolherAtores({ titulo: "Adicionar ao Painel do grupo", multiplos: true, ok: "Adicionar", excluir: dentro, dica: "Também dá para arrastar um ator da aba Atores para o painel." });
+    for (const uuid of r?.uuids ?? []) await this._incluir(await fromUuid(uuid));
   }
 
   async _prepareContext() {
@@ -105,12 +108,16 @@ export class PainelGrupo extends HandlebarsApplicationMixin(ApplicationV2) {
         return { id: a.id, name: a.name, img: a.img, erro: true, marcado: this._marcados.has(a.id), recursos: [], condicoes: [] };
       }
     });
-    return { atores: lista, vazio: !lista.length, todos: this._todos, marcados: lista.filter(a => a.marcado).length };
+    const cfgG = this._cfg();
+    for (const a of lista) a.grupoId = GS.grupoDoAtor(cfgG, a.id);
+    return { atores: lista, vazio: !lista.length, todos: this._todos, marcados: lista.filter(a => a.marcado).length,
+      grupos: GS.contextoGrupos(cfgG, this._grupoAtivo ?? "", this._atoresTodos()) };
   }
 
   _onRender(context, options) {
     super._onRender?.(context, options);
     const raiz = this.element;
+    GS.ligarSeletores(raiz, () => this.render());
     raiz.addEventListener("dragover", ev => ev.preventDefault());
     raiz.addEventListener("drop", async ev => {
       ev.preventDefault();

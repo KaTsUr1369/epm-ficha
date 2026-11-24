@@ -219,8 +219,8 @@
   {{#if mochila.temMembros}}
   <section class="epm-painel epm-mochila-membros">
     <header class="epm-painel-titulo"><h3>Compartilhar</h3><span class="epm-dica">Os personagens marcados veem o que está nesta mochila e podem pegar e guardar itens. O peso continua com quem carrega.</span></header>
-    {{#if mochila.membros.length}}<div class="epm-membros">{{#each mochila.membros}}<label class="epm-check"><input type="checkbox" data-action="alternarMembroMochila" data-ator-id="{{this.id}}" {{#if marcado}}checked{{/if}} {{#unless @root.editavel}}disabled{{/unless}}> <img src="{{this.img}}" alt="" width="20" height="20" /> {{this.nome}}</label>{{/each}}</div>
-    {{else}}<p class="epm-vazio">Nenhum outro personagem no mundo.</p>{{/if}}
+    <div class="epm-membros">{{#each mochila.membros}}<span class="epm-chip-membro"><img src="{{this.img}}" alt="" width="20" height="20" /> {{this.nome}}{{#if @root.editavel}} <button type="button" class="epm-icone-botao" data-action="alternarMembroMochila" data-ator-id="{{this.id}}" title="Parar de compartilhar com {{this.nome}}" aria-label="Tirar {{this.nome}}"><i class="fa-solid fa-xmark"></i></button>{{/if}}</span>{{else}}<span class="epm-vazio">Ainda não compartilhada.</span>{{/each}}
+    {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="escolherMembrosMochila"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Escolher personagens</button>{{/if}}</div>
   </section>
   {{/if}}
   <section class="epm-painel">

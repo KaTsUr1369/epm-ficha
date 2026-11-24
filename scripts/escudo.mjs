@@ -3,6 +3,7 @@
  * dar itens e moedas, pedir testes ao grupo e consultar as regras. Só o Mestre abre.
  */
 import { FLAG, CAMINHO, MOEDAS, RECURSOS, COR_PADRAO, BRILHO_PADRAO, SUGESTOES, TRANSFORMACOES_PRONTAS } from "./config.mjs";
+import * as GS from "./grupos-separados.mjs";
 import { int, num, danoRecebido } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import { aplicarPaleta } from "./personalizacao.mjs";
@@ -27,7 +28,8 @@ const ACOES = [
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia", "avancarRelogio", "inicioSessao",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "abrirGrimorio", "rolarTestes", "rolarLivre", "abrirItem",
   "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
-  "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo"
+  "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo",
+  "escolherGrupo", "novoGrupo", "renomearGrupo", "apagarGrupo"
 ];
 
 export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -53,16 +55,28 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Configuração do grupo: fichas adicionadas à mão e personagens de jogador tirados. */
   _cfgGrupo() {
     const c = game.settings.get(FLAG, "escudoGrupo") ?? {};
-    return { extras: Array.isArray(c.extras) ? c.extras : [], fora: Array.isArray(c.fora) ? c.fora : [] };
+    return { ...c, extras: Array.isArray(c.extras) ? c.extras : [], fora: Array.isArray(c.fora) ? c.fora : [] };
   }
 
-  /** Grupo = personagens de jogador (menos os tirados) + qualquer ficha adicionada. */
-  _grupo() {
+  /** Grupo = personagens de jogador (menos os tirados) + qualquer ficha adicionada, filtrado pelo grupo aberto. */
+  _grupoTodo() {
     const { extras, fora } = this._cfgGrupo();
     const base = game.actors.filter(a => a.type === "character" && a.hasPlayerOwner && !fora.includes(a.id));
     const mais = extras.map(id => game.actors.get(id)).filter(a => a && !base.includes(a));
     return [...base, ...mais].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }
+
+  _grupo() { return GS.filtrarGrupo(this._grupoTodo(), this._cfgGrupo(), this._grupoAtivo ?? ""); }
+
+  /* Grupos separados (0.8.28) */
+  _escolherGrupo(ev, alvo) { this._grupoAtivo = alvo.dataset.grupo ?? ""; this._marcados = new Set(); this.render(); }
+  async _novoGrupo() {
+    const ids = [...this._marcados].map(u => this._grupoTodo().find(a => a.uuid === u)?.id).filter(Boolean);
+    const id = await GS.novoGrupo(ids);
+    if (id) { this._grupoAtivo = id; this._marcados = new Set(); this.render(); }
+  }
+  async _renomearGrupo(ev, alvo) { await GS.renomearGrupo(alvo.dataset.grupo); this.render(); }
+  async _apagarGrupo(ev, alvo) { await GS.apagarGrupo(alvo.dataset.grupo); this._grupoAtivo = ""; this.render(); }
 
   async _salvarGrupo(cfg) {
     await game.settings.set(FLAG, "escudoGrupo", cfg);
@@ -74,25 +88,19 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const cfg = this._cfgGrupo();
     cfg.fora = cfg.fora.filter(id => id !== actor.id);
     if (!(actor.type === "character" && actor.hasPlayerOwner) && !cfg.extras.includes(actor.id)) cfg.extras.push(actor.id);
+    // Com um grupo aberto, a ficha entra nele
+    const ativo = this._grupoAtivo ?? "";
+    if (ativo && ativo !== "-sem") cfg.grupos = GS.lerGrupos(cfg).map(g => ({ ...g, ids: g.id === ativo ? [...new Set([...g.ids, actor.id])] : g.ids.filter(x => x !== actor.id) }));
     await this._salvarGrupo(cfg);
     ui.notifications.info(`${actor.name} entrou no grupo do Escudo.`);
   }
 
   async _adicionarAoGrupo() {
-    const dentro = new Set(this._grupo().map(a => a.id));
-    const opcoes = game.actors.filter(a => !dentro.has(a.id)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-    if (!opcoes.length) return ui.notifications.info("Todas as fichas do mundo já estão no grupo.");
-    const tipo = a => a.hasPlayerOwner ? "jogador" : (a.type === "npc" ? "NPC" : "sem jogador");
-    const id = await foundry.applications.api.DialogV2.wait({
-      window: { title: "Adicionar ficha ao grupo" }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
-      content: `<p class="epm-dica">Qualquer ficha do mundo: NPC, aliado, montaria, invocação… Também dá para arrastar da aba Atores para esta aba.</p>
-        <label class="epm-campo"><span>Ficha</span><select name="ator">${opcoes.map(a => `<option value="${a.id}">${escapar(a.name)} (${tipo(a)})</option>`).join("")}</select></label>`,
-      buttons: [
-        { action: "ok", label: "Adicionar", icon: "fa-solid fa-user-plus", default: true, callback: (ev, b) => b.form?.elements?.ator?.value ?? null },
-        { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
-      ]
-    });
-    if (id && id !== "cancelar") await this._incluirNoGrupo(game.actors.get(id));
+    const dentro = this._grupoTodo().map(a => a.uuid);
+    const { escolherAtores } = await import("./escolher-ator.mjs");
+    const r = await escolherAtores({ titulo: "Adicionar fichas ao grupo", multiplos: true, ok: "Adicionar", excluir: dentro,
+      dica: "Qualquer ficha do mundo: NPC, aliado, montaria, invocação… Também dá para arrastar da aba Atores para esta aba." });
+    for (const uuid of r?.uuids ?? []) await this._incluirNoGrupo(await fromUuid(uuid));
   }
 
   async _tirarDoGrupo(ev, alvo) {
@@ -148,6 +156,10 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
         condicoesDosAlvos, pericias, notas: game.settings.get(FLAG, "escudoNotas") ?? "", notion: conteudoNotion(),
         grupoAjustado: (() => { const c = this._cfgGrupo(); return c.extras.length + c.fora.length > 0; })() }
     });
+    // Grupos separados: abas e o grupo de cada ficha
+    const cfgG = this._cfgGrupo();
+    ctx.grupos = GS.contextoGrupos(cfgG, this._grupoAtivo ?? "", this._grupoTodo());
+    for (const g of ctx.grupo ?? []) g.grupoId = GS.grupoDoAtor(cfgG, g.id);
     ctx.dtTeste = this._ui.dtTeste ?? 15;
     ctx.novasMestre = contextoEscudoNovas();
     ctx.mundo = this._contextoMundo();
@@ -159,6 +171,7 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     await super._onRender(context, options);
     aplicarPaleta(this.element, COR_PADRAO, BRILHO_PADRAO);
     const raiz = this.element;
+    GS.ligarSeletores(raiz, () => this.render());
     // Seções <details> abertas continuam abertas ao redesenhar
     this._detalhes ??= new Set();
     const chave = d => `${this._aba}|${(d.querySelector(":scope > summary")?.textContent ?? "").replace(/[\d()]/g, "").replace(/\s+/g, " ").trim()}`;

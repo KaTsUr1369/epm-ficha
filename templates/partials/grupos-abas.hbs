@@ -1,0 +1,6 @@
+<nav class="epm-grupos-abas" aria-label="Grupos">
+  {{#each grupos.abas}}<button type="button" class="epm-grupo-aba{{#if ativo}} ativo{{/if}}" data-action="escolherGrupo" data-grupo="{{this.id}}" aria-pressed="{{#if ativo}}true{{else}}false{{/if}}">{{this.nome}} <span class="epm-contador">{{this.qtd}}</span></button>{{/each}}
+  <button type="button" class="epm-link" data-action="novoGrupo" title="Separa as fichas em outro grupo (as marcadas já entram nele)"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo grupo</button>
+  {{#if grupos.grupoAberto}}<button type="button" class="epm-link" data-action="renomearGrupo" data-grupo="{{grupos.grupoAberto.id}}"><i class="fa-solid fa-pen" aria-hidden="true"></i> Renomear</button>
+  <button type="button" class="epm-link perigo" data-action="apagarGrupo" data-grupo="{{grupos.grupoAberto.id}}"><i class="fa-solid fa-trash" aria-hidden="true"></i> Apagar grupo</button>{{/if}}
+</nav>

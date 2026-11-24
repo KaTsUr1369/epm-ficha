@@ -197,7 +197,7 @@ export function dadosPadrao(listaPericias = PERICIAS_PADRAO) {
     rd: {},
     receitas: {},
     producoes: {},
-    artificeLivro: {},
+    artificeLivro: {}, projetosEnviados: {},
     projetosCriacao: { gastos: 0 },
     arquetipoOpcoes: { combatente: { tipoFavorito: "", maestrias: [], maestriaTipos: {}, estilos: [] }, artifice: { utensilios: [], modificacao: { parte: "", opcao: 0 } }, conjurador: { dominio: "", assinaturas: [], elemento: "" } },
     usos: { ataqueExtraTurno: false, gemeaTurno: false, recuperarMana: false, presa: "" },

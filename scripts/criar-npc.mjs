@@ -107,14 +107,16 @@ export async function criarNpcRapido() {
       <label class="epm-campo"><span>Quantas fichas</span><input type="number" name="qtd" min="1" max="20" value="1"></label>
     </div>
     <label class="epm-check"><input type="checkbox" name="inteligente" checked> Criatura inteligente (pensa, fala e planeja; sem isso, Inteligência, Carisma e Aparência ficam em 0)</label>
+    <label class="epm-check"><input type="checkbox" name="pasta" checked> Guardar na pasta "${PASTA_NPC}" da aba Atores (com uma subpasta por natureza)</label>
     <label class="epm-check"><input type="checkbox" name="abrir" checked> Abrir a ficha depois de criar</label>`, { botao: "Criar", largura: 600 });
   if (!r) return null;
   const qtd = Math.max(1, Math.min(20, int(r.qtd, 1)));
   const criados = [];
+  const folder = r.pasta !== false ? await pastaNpcRapido(r.natureza) : null;
   for (let i = 0; i < qtd; i++) {
     const c = gerarCriatura({ ...r, nome: r.nome ? (qtd > 1 ? `${r.nome} ${i + 1}` : r.nome) : "", inteligente: r.inteligente !== false });
     if (!r.nome && qtd > 1) c.nome = `${c.nome} ${i + 1}`;
-    criados.push(await criarAtorDaCriatura(c));
+    criados.push(await criarAtorDaCriatura(c, { folder }));
   }
   ui.notifications.info(`${criados.length} ficha(s) de NPC criada(s) na aba Atores.`);
   if (r.abrir !== false) criados[0]?.sheet?.render(true);
@@ -122,7 +124,22 @@ export async function criarNpcRapido() {
 }
 
 /** Cria o ator com a ficha EPM a partir dos números gerados. */
-export async function criarAtorDaCriatura(c) {
+export const PASTA_NPC = "NPCs rápidos";
+
+/** Pasta automática da aba Atores para os NPCs rápidos (e a subpasta da natureza). Cria se não existir. */
+export async function pastaNpcRapido(natureza = "") {
+  try {
+    const pastas = game.folders?.filter?.(f => f.type === "Actor") ?? [];
+    let raiz = pastas.find(f => f.name === PASTA_NPC && !f.folder);
+    raiz ??= await Folder.create({ name: PASTA_NPC, type: "Actor", color: "#7a3b3b", sorting: "a" });
+    if (!raiz || !natureza) return raiz?.id ?? null;
+    let sub = (game.folders?.filter?.(f => f.type === "Actor") ?? []).find(f => f.name === natureza && (f.folder?.id ?? f.folder) === raiz.id);
+    sub ??= await Folder.create({ name: natureza, type: "Actor", folder: raiz.id, sorting: "a" });
+    return sub?.id ?? raiz.id;
+  } catch (err) { console.warn("EPM | pasta dos NPCs rápidos", err); return null; }
+}
+
+export async function criarAtorDaCriatura(c, { folder = null } = {}) {
   let base = {};
   try { const { listaPericias } = await import("./settings.mjs"); base = dadosPadrao(listaPericias?.()); } catch { base = dadosPadrao(); }
   const dados = foundry.utils.mergeObject(base, {
@@ -135,7 +152,7 @@ export async function criarAtorDaCriatura(c) {
     sobre: { outros: `<p>${escapar(c.natureza)} ${escapar(c.forcaLabel.toLowerCase())}, nível ${c.nivel}${c.inteligente ? ", inteligente" : ", não inteligente"}. Criado pelo NPC rápido.</p>` }
   }, { inplace: false });
   const ator = await Actor.create({
-    name: c.nome, type: "npc", img: "icons/svg/mystery-man.svg",
+    name: c.nome, type: "npc", img: "icons/svg/mystery-man.svg", ...(folder ? { folder } : {}),
     system: { attributes: { hp: { value: c.pv, max: c.pv } } },
     prototypeToken: { name: c.nome, actorLink: false, disposition: ["Hostil", "Desconfiado"].includes(c.disposicao) ? -1 : c.disposicao === "Neutro" ? 0 : 1 },
     flags: { [FLAG]: dados, core: { sheetClass: `${MODULE_ID}.EPMActorSheet` } }

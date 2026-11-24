@@ -21,7 +21,7 @@ const P = `flags.${FLAG}`;
 
 export const TIPOS_EDITOR_ITEM = ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"];
 
-const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "alternarMembroMochila", "adicionarMelhoria", "removerMelhoria", "trocarMaterial", "trabalharMelhoria", "desistirMelhoria", "imbuirPergaminho", "marcarFeitoMelhoria", "adicionarPropriedade", "removerPropriedade", "novaFormaItem", "editarFormasItem"];
+const ACOES = ["editarImagem", "adicionarEfeito", "removerEfeito", "guardarMoedas", "pegarMoedas", "tirarItem", "abrirItem", "recarregar", "novoModo", "removerModo", "alternarMembroMochila", "escolherMembrosMochila", "adicionarMelhoria", "removerMelhoria", "trocarMaterial", "trabalharMelhoria", "desistirMelhoria", "imbuirPergaminho", "marcarFeitoMelhoria", "adicionarPropriedade", "removerPropriedade", "novaFormaItem", "editarFormasItem"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -188,6 +188,7 @@ export function abrirEditorItem(item) {
 
 /* 0.8.21: Mochilas compartilhadas */
 Object.assign(EPMItemSheet.prototype, {
+  async acaoEscolherMembrosMochila() { const { escolherMembros } = await import("./mochila-compartilhada.mjs"); return escolherMembros(this.item); },
   async acaoAlternarMembroMochila(ev, alvo) { const { alternarMembro } = await import("./mochila-compartilhada.mjs"); return alternarMembro(this.item, alvo.dataset.atorId); }
 });
 

@@ -394,7 +394,9 @@ export async function moverItemPara(actor, item) {
   const mochilas = actor.items.filter(i => eMochila(i));
   const qtd = Math.max(0, Number(item.system?.quantity ?? 1) || 0);
   const atual = item.system?.container ?? "";
-  const opcoes = [{ id: "", nome: "Inventário (fora das mochilas)" }, ...mochilas.map(m => ({ id: m.id, nome: m.name }))]
+  const MC = await import("./mochila-compartilhada.mjs");
+  const comps = MC.compartilhadasCom(actor).map(c => ({ id: `comp:${c.dono.id}:${c.mochila.id}`, nome: `${c.mochila.name} (compartilhada, com ${c.dono.name})` }));
+  const opcoes = [{ id: "", nome: "Inventário (fora das mochilas)" }, ...mochilas.map(m => ({ id: m.id, nome: m.name })), ...comps]
     .filter(o => o.id !== atual);
   if (!opcoes.length) return ui.notifications.info("Não há outro lugar para mover.");
   const r = await dialogo({
@@ -404,8 +406,12 @@ export async function moverItemPara(actor, item) {
     callback: el => ({ destino: el.destino?.value ?? "", qtd: el.qtd ? Number(el.qtd.value) : qtd })
   });
   if (!r) return;
-  const destino = r.destino || null;
   const n = Math.min(qtd, Math.max(1, Math.floor(r.qtd || qtd)));
+  if (String(r.destino).startsWith("comp:")) {
+    const [, donoId, mochilaId] = String(r.destino).split(":");
+    return MC.guardarQtd(actor, donoId, mochilaId, item.id, Math.max(1, n));
+  }
+  const destino = r.destino || null;
   // Se o destino já tem o mesmo item, soma nele
   const igual = actor.items.find(i => i.id !== item.id && i.type === item.type && i.name === item.name && (i.system?.container ?? null) === destino);
   if (qtd <= 1 || n >= qtd) {

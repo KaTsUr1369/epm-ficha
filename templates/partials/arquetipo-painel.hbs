@@ -67,7 +67,8 @@
 
   {{#if artifice}}
   <div class="epm-arq-bloco epm-artifice">
-    <h4>Projetos de Criação <span class="epm-contador">{{artifice.reserva.disponivel}} em aberto de {{artifice.reserva.max}}</span> <span class="epm-contador">Grau máx. {{artifice.grauMax}}</span> <span class="epm-contador">CD de Projeto {{artifice.cd}}</span></h4>
+    <h4>Projetos de Criação <span class="epm-contador">{{artifice.reserva.disponivel}} em aberto de {{artifice.reserva.max}}</span> <span class="epm-contador">Grau máx. {{artifice.grauMax}}</span> <span class="epm-contador" title="{{artifice.cdDica}}">CD de Projeto {{artifice.cd}}</span></h4>
+    <label class="epm-campo epm-campo-linha" title="A CD usa metade do bônus desta perícia (sem o atributo); os ataques de Projeto usam o total dela"><span>Perícia do Projeto</span>{{#if @root.editavel}}<select name="flags.epm-ficha.arquetipoOpcoes.artifice.periciaProjeto">{{#each artifice.periciasProjeto}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select>{{else}}<strong>{{artifice.periciaNome}}</strong>{{/if}}</label>
     <div class="epm-reserva-projetos" aria-label="Reserva: ocupados por Engenhocas, gastos e em aberto">{{#each artifice.reserva.pips}}<span class="epm-pip-projeto {{this}}" title="{{#if (epmEq this "ocupado")}}Ocupado por Engenhoca{{else if (epmEq this "gasto")}}Gasto (volta no descanso){{else}}Em aberto{{/if}}"></span>{{/each}}</div>
     <p class="epm-dica">Reserva = {{artifice.reserva.formula}}. Volta no Descanso Longo (menos o que as Engenhocas ocupam); ¼ no Descanso Curto. Consumíveis carregados: {{artifice.carregados}} de {{artifice.carregar}}.{{#if artifice.proximo}} Próximo Grau no nível {{artifice.proximo}}.{{/if}}</p>
     {{#with artifice.valores}}<div class="epm-arq-projetos"><span><strong>Dano</strong> {{dano}}</span><span><strong>Cura</strong> {{cura}}</span><span><strong>Soma</strong> +{{soma}}</span><span><strong>Proteção</strong> +{{protecao}}</span><span><strong>Aprimoramento</strong> {{aprimoramento}}</span><span><strong>Engenhoca</strong> {{cenas}} cenas, ocupa {{ocupa}}</span></div>{{/with}}
@@ -90,11 +91,21 @@
         {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="usarProjeto" data-item-id="{{this.id}}" {{#if quebrada}}disabled{{/if}}>Usar</button>
         {{#if ../artifice.sobrecarga}}{{#unless ../artifice.mente}}<button type="button" class="epm-botao" data-action="sobrecargaProjeto" data-item-id="{{this.id}}" {{#if quebrada}}disabled{{/if}} title="Funciona 1 Grau acima neste uso e perde 1 cena">Sobrecarga</button>{{/unless}}{{/if}}
         <button type="button" class="epm-link" data-action="repararEngenhoca" data-item-id="{{this.id}}" title="Reparo Rápido: Ação Bônus e 5 PE, +1 cena (1× por cena)"><i class="fa-solid fa-wrench" aria-hidden="true"></i></button>
+        <button type="button" class="epm-link" data-action="enviarProjeto" data-item-id="{{this.id}}" title="Enviar ou instalar em outra ficha (Afiação na arma de um aliado, Placas na armadura, Torreta, Escudo…)"><i class="fa-solid fa-share-from-square" aria-hidden="true"></i></button>
         <button type="button" class="epm-link" data-action="desmontarEngenhoca" data-item-id="{{this.id}}" title="Desmontar (ação livre): os Projetos voltam"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>{{/if}}</li>
       {{/each}}
     </ul>
-    {{#if artifice.mente}}<p class="epm-dica">Mente Inventora: as Engenhocas funcionam sempre 1 Grau acima, sem perder cenas.</p>{{/if}}
     {{/if}}
+    {{#if artifice.enviados.length}}
+    <h4>Em outras fichas</h4>
+    <ul class="epm-livro-projetos">
+      {{#each artifice.enviados}}
+      <li><strong>{{this.nome}}</strong> <span class="epm-dica">{{#if alvoItemNome}}instalada em {{this.alvoItemNome}} de {{else}}com {{/if}}{{this.alvoNome}} · ocupa {{this.ocupa}}</span>
+        {{#if @root.editavel}}<button type="button" class="epm-link" data-action="recolherProjeto" data-enviado="{{this.id}}" title="Recolher: volta para o seu inventário (com as cenas que sobraram)"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Recolher</button>{{/if}}</li>
+      {{/each}}
+    </ul>
+    {{/if}}
+    {{#if artifice.mente}}<p class="epm-dica">Mente Inventora: as Engenhocas funcionam sempre 1 Grau acima, sem perder cenas.</p>{{/if}}
     {{#if artifice.consumiveis.length}}
     <h4>Consumíveis</h4>
     <ul class="epm-livro-projetos">{{#each artifice.consumiveis}}<li><strong>{{this.nome}}</strong>{{#if (epmMenor 1 this.qtd)}} ×{{this.qtd}}{{/if}} {{#if @root.editavel}}<button type="button" class="epm-botao" data-action="usarProjeto" data-item-id="{{this.id}}">Usar</button>{{/if}}</li>{{/each}}</ul>

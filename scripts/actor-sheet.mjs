@@ -62,7 +62,7 @@ const ACOES_FICHA = [
   "corPronta", "corPadrao", "moverAba", "restaurarOrdemAbas", "alternarAbaOpcional",
   "favoritarPericia", "favoritasNoTopo", "moverPericia", "ordemPericiasPadrao", "recolherPainel",
   "treinoGanharPT", "treinoConversa", "novoTreinamento", "exemploTreinamento", "excluirTreinamento", "comecarTreinamento",
-  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila", "pegarCompartilhada", "guardarCompartilhada", "assistenteCriacao",
+  "treinarHoras", "adicionarModTreino", "removerModTreino", "minijogo", "guardarMoedasMochila", "pegarMoedasMochila", "pegarCompartilhada", "guardarCompartilhada", "moverCompartilhada", "assistenteCriacao",
   // 0.5.4
   "selecionarPoderes", "selecaoTudo", "selecaoLimpar", "selecaoAcao", "abrirCompendioClasses",
   "novaTransformacao", "excluirTransformacao", "transformar", "imagemTransformacao", "adicionarModTransf", "removerModTransf",
@@ -77,7 +77,7 @@ const ACOES_FICHA = [
   "novaRd", "removerRd",
   "novaReceita", "apagarReceita", "alternarProfissao", "novoIngrediente", "removerIngrediente", "ligarResultado",
   "produzir", "testarProducao", "terminarProducao", "apagarProducao",
-  "novaReceitaArtifice", "esquecerReceita", "fabricarProjeto", "montagemCampo", "usarProjeto", "sobrecargaProjeto", "repararEngenhoca", "desmontarEngenhoca", "usarUtensilios",
+  "novaReceitaArtifice", "esquecerReceita", "fabricarProjeto", "montagemCampo", "usarProjeto", "sobrecargaProjeto", "repararEngenhoca", "desmontarEngenhoca", "enviarProjeto", "recolherProjeto", "usarUtensilios",
   // 0.6.0
   ...NOMES_ACOES_060,
   // Novas mecânicas
@@ -816,7 +816,13 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const dono = item.parent;
     if (dono?.documentName === "Actor" && dono.uuid !== this.actor.uuid && item.system?.container) {
       const m = dono.items.get(item.system.container);
-      if (m && MC.membrosDe(m).includes(this.actor.id)) return MC.pegar(this.actor, dono.id, m.id, item.id);
+      if (m && MC.membrosDe(m).includes(this.actor.id)) {
+        // Solto noutra mochila compartilhada: passa direto; numa mochila minha: entra nela; no resto: inventário
+        if (comp && comp.dataset.compartilhadaMochila !== m.id) return MC.passar(this.actor, dono.id, m.id, item.id, comp.dataset.donoId, comp.dataset.compartilhadaMochila);
+        if (comp) return;
+        const minha = event?.target?.closest?.("[data-container-id]")?.dataset.containerId;
+        return MC.pegar(this.actor, dono.id, m.id, item.id, minha && this.actor.items.get(minha) ? minha : null);
+      }
     }
     const mochilaId = event?.target?.closest?.("[data-container-id]")?.dataset.containerId ?? null;
     const mochila = mochilaId ? this.actor.items.get(mochilaId) : null;
@@ -1227,6 +1233,11 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   async acaoAssistenteCriacao() {
     const { assistenteCriacao } = await import("./assistente-criacao.mjs");
     return assistenteCriacao(this.actor);
+  }
+
+  async acaoMoverCompartilhada(ev, alvo) {
+    const { moverDaCompartilhada } = await import("./mochila-compartilhada.mjs");
+    return moverDaCompartilhada(this.actor, alvo.dataset.donoId, alvo.dataset.mochilaId, alvo.dataset.itemId);
   }
 
   async acaoPegarCompartilhada(ev, alvo) {
@@ -2076,6 +2087,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoSobrecargaProjeto(ev, alvo) { return PJ.usarProjeto(this.actor, alvo.dataset.itemId, { sobrecarga: true }); }
   acaoRepararEngenhoca(ev, alvo) { return PJ.repararEngenhoca(this.actor, alvo.dataset.itemId); }
   acaoDesmontarEngenhoca(ev, alvo) { return PJ.desmontarEngenhoca(this.actor, alvo.dataset.itemId); }
+  acaoEnviarProjeto(ev, alvo) { return PJ.enviarProjeto(this.actor, alvo.dataset.itemId); }
+  acaoRecolherProjeto(ev, alvo) { return PJ.recolherProjeto(this.actor, alvo.dataset.enviado); }
   acaoUsarUtensilios() { return PJ.usarUtensilios(this.actor); }
   acaoCacadorNatural() { return X.cacadorNatural(this.actor); }
   acaoFolegoCombate() { return X.folegoCombate(this.actor); }

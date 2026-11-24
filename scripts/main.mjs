@@ -66,6 +66,7 @@ Hooks.once("init", () => {
 
   fvtt.loadTemplates({
     "epm-item-linha": `${CAMINHO}/partials/item-linha.hbs`,
+    "epm-grupos-abas": `${CAMINHO}/partials/grupos-abas.hbs`,
     "epm-poder-linha": `${CAMINHO}/partials/poder-linha.hbs`,
     "epm-busca": `${CAMINHO}/partials/busca.hbs`,
     "epm-exaustao": `${CAMINHO}/partials/exaustao.hbs`,

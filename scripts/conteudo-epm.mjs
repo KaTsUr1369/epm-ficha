@@ -50,12 +50,68 @@ export const NPCS_MODELO = [
   ["genesis", "Soldado de Elite", "Humanoide", "media", 12, "comum", true, "agil", "Médio"],
   ["genesis", "Drone de Combate", "Constructo", "fraca", 10, "monstro", false, "agil", "Pequeno"],
   ["genesis", "Mutante do Ermo", "Aberração", "forte", 15, "forte", false, "fisico", "Grande"],
-  ["genesis", "Androide Executor", "Constructo", "muitoForte", 25, "chefe", true, "agil", "Médio"]
+  ["genesis", "Androide Executor", "Constructo", "muitoForte", 25, "chefe", true, "agil", "Médio"],
+  // 0.8.28: mais modelos, com função, jeito, tática, defesas, loot, serviços, conhecimento, recargas e lacaios
+  ["umbra", "Mercador Viajante", "Humanoide", "muitoFraca", 3, "importante", true, "social", "Médio", { disposicao: "Amigável", funcao: "Mercador",
+    interp: { jeito: "Fala rápido e pechincha tudo.", quer: "Chegar vivo à próxima cidade.", sabe: "Rotas seguras e quem anda assaltando a estrada." },
+    servicos: [{ nome: "Poção de Vida", preco: "50 PO" }, { nome: "Corda e tochas", preco: "5 PO" }, { nome: "Notícias da estrada", preco: "1 PO" }], moral: { pct: 75, texto: "Larga a carroça e foge." } }],
+  ["umbra", "Sacerdotisa do Templo", "Humanoide", "media", 7, "importante", true, "magico", "Médio", { disposicao: "Amigável", funcao: "Curandeira",
+    interp: { jeito: "Calma, mede cada palavra.", quer: "Proteger os fiéis.", sabe: "Ritos antigos e a história do templo." },
+    servicos: [{ nome: "Cura de ferimentos", preco: "10 PO por 2d8 PV" }, { nome: "Remover maldição menor", preco: "150 PO" }], tipoDano: "Radiante", ataque: "Luz sagrada" }],
+  ["umbra", "Cavaleiro da Ordem", "Humanoide", "forte", 9, "importante", true, "fisico", "Médio", { disposicao: "Neutro", funcao: "Guarda de elite",
+    tatica: "Protege o mais fraco do grupo e desafia quem atacar aliados.", defesas: { rd: "Física 3 (armadura)" }, moral: { pct: 0, texto: "Não foge: luta até o fim." },
+    segundo: { nome: "Golpe de escudo", tipo: "Contundente" }, loot: [{ nome: "Brasão da Ordem", chance: 100 }, { nome: "Espada longa", chance: 60 }] }],
+  ["umbra", "Assassino das Sombras", "Humanoide", "forte", 11, "importante", true, "agil", "Médio", { disposicao: "Hostil", funcao: "Assassino",
+    tatica: "Ataca do escuro, mira em quem conjura e some se o combate virar.", defesas: { sentidos: "Visão no escuro 18 m" }, tipoDano: "Perfurante", ataque: "Adaga envenenada",
+    segundo: { nome: "Dardo de veneno", tipo: "Venenoso" }, moral: { pct: 40, texto: "Bomba de fumaça e fuga." }, loot: [{ nome: "Veneno básico", qtd: "1d3", chance: 80 }, { nome: "Contrato do alvo", chance: 100 }] }],
+  ["umbra", "Aranha Gigante", "Fera", "media", 6, "monstro", false, "agil", "Grande", { habitat: "Florestas e cavernas", tipoDano: "Perfurante", ataque: "Picada",
+    defesas: { deslocamentos: "Escalada 9 m", sentidos: "Sentido sísmico 9 m" }, recargas: [{ nome: "Teia (Reflexo ou Preso)", min: 5 }],
+    loot: [{ nome: "Glândula de veneno", chance: 70 }, { nome: "Seda de aranha", qtd: "1d4", chance: 100 }],
+    conhecimento: [{ dt: 10, revela: "A picada envenena." }, { dt: 15, revela: "Fogo queima a teia na hora." }] }],
+  ["umbra", "Ghoul Faminto", "Morto-vivo", "fraca", 4, "monstro", false, "agil", "Médio", { habitat: "Cemitérios", tipoDano: "Cortante", ataque: "Garras",
+    defesas: { imunesCondicoes: "Envenenado, Exausto" }, conhecimento: [{ dt: 12, revela: "As garras paralisam quem falha em Fortitude." }, { dt: 16, revela: "Radiante fere mais." }] }],
+  ["umbra", "Elemental de Fogo", "Elemental", "forte", 13, "forte", false, "fisico", "Grande", { tipoDano: "Fogo", ataque: "Toque flamejante",
+    defesas: { rd: "Fogo (imune)", imunesCondicoes: "Agarrado, Caído, Envenenado" }, recargas: [{ nome: "Explosão de chamas 6 m", min: 5 }],
+    conhecimento: [{ dt: 14, revela: "Água e Frio ferem mais." }] }],
+  ["umbra", "Lich Ancestral", "Morto-vivo", "lendaria", 35, "chefe", true, "magico", "Médio", { funcao: "Chefe final", tipoDano: "Necrótico", ataque: "Toque da morte",
+    interp: { jeito: "Paciente e cruel.", quer: "A imortalidade de verdade.", sabe: "Onde está o filactério (e não conta)." },
+    defesas: { rd: "Necrótico (imune)", imunesCondicoes: "Amedrontado, Envenenado, Exausto" }, segundo: { nome: "Raio gélido", tipo: "Frio" },
+    recargas: [{ nome: "Onda necrótica 9 m", min: 5 }], lacaios: [{ nome: "Esqueleto Guerreiro", qtd: "2d4" }],
+    tatica: "Fica longe, invoca lacaios na primeira rodada e guarda a Onda para quando o grupo se juntar.", loot: [{ nome: "Grimório profano", chance: 100 }] }],
+  ["briavoterna", "Contrabandista", "Humanoide", "fraca", 4, "comum", true, "agil", "Médio", { disposicao: "Desconfiado", funcao: "Informante",
+    interp: { jeito: "Olha para a porta o tempo todo.", quer: "Dinheiro rápido.", sabe: "Quem compra o quê no porto." }, tipoDano: "Balístico", ataque: "Pistola de bolso",
+    servicos: [{ nome: "Mercadoria sem perguntas", preco: "+30% no preço" }], moral: { pct: 60, texto: "Se rende e oferece um acordo." } }],
+  ["briavoterna", "Engenheira Chefe", "Humanoide", "media", 9, "importante", true, "magico", "Médio", { disposicao: "Neutro", funcao: "Artífice",
+    interp: { jeito: "Mãos sujas de graxa, sem paciência.", quer: "Peças raras.", sabe: "Como desligar os autômatos da fábrica." },
+    servicos: [{ nome: "Consertar item", preco: "10% do valor" }, { nome: "Melhoria de arma", preco: "a combinar" }], tipoDano: "Explosivo", ataque: "Granada caseira" }],
+  ["briavoterna", "Atirador de Elite", "Humanoide", "forte", 14, "importante", true, "agil", "Médio", { disposicao: "Hostil", funcao: "Atirador",
+    tatica: "Fica no alto, a 30 m ou mais, e troca de posição a cada 2 rodadas.", tipoDano: "Balístico", ataque: "Rifle de precisão", moral: { pct: 30, texto: "Recua para outro telhado." } }],
+  ["briavoterna", "Rato Mecânico", "Constructo", "muitoFraca", 1, "monstro", false, "agil", "Minúsculo", { tipoDano: "Perfurante", ataque: "Dentes de aço",
+    defesas: { imunesCondicoes: "Envenenado" }, lacaios: [{ nome: "Rato Mecânico", qtd: "2d6", nota: "Vêm em enxame" }] }],
+  ["briavoterna", "Golem de Sucata", "Constructo", "muitoForte", 18, "forte", false, "fisico", "Enorme", { tipoDano: "Contundente", ataque: "Punho de sucata",
+    defesas: { rd: "Física 5", imunesCondicoes: "Amedrontado, Envenenado" }, recargas: [{ nome: "Vapor escaldante 4,5 m", min: 5 }],
+    conhecimento: [{ dt: 15, revela: "Relâmpago trava as juntas por 1 rodada." }], loot: [{ nome: "Núcleo de vapor", chance: 100 }] }],
+  ["briavoterna", "Barão do Vapor", "Humanoide", "lendaria", 22, "chefe", true, "social", "Médio", { funcao: "Vilão", interp: { jeito: "Educado e ameaçador.", quer: "Controlar toda a cidade.", sabe: "Os segredos de cada conselheiro." },
+    tatica: "Nunca luta sozinho: guardas na frente, ele atira de trás e foge pelo dirigível.", tipoDano: "Balístico", ataque: "Revólver de ouro",
+    lacaios: [{ nome: "Pistoleiro", qtd: "1d4 + 2" }, { nome: "Autômato a Vapor", qtd: "1" }], vitoria: { nome: "Desmascarar o Barão", texto: "Mostrar as provas ao conselho." } }],
+  ["genesis", "Batedora do Ermo", "Humanoide", "media", 11, "comum", true, "agil", "Médio", { disposicao: "Desconfiado", funcao: "Guia",
+    interp: { jeito: "Poucas palavras.", quer: "Água limpa para a vila.", sabe: "Os caminhos sem radiação." }, servicos: [{ nome: "Guiar pelo Ermo", preco: "20 PO por dia" }], tipoDano: "Energia balística", ataque: "Rifle de energia" }],
+  ["genesis", "Ciborgue Mercenário", "Humanoide", "forte", 18, "importante", true, "fisico", "Médio", { disposicao: "Neutro", funcao: "Mercenário",
+    tatica: "Avança direto e usa o braço-lâmina em quem estiver mais ferido.", tipoDano: "Energia cortante", ataque: "Braço-lâmina", segundo: { nome: "Canhão de pulso", tipo: "Energia balística" },
+    defesas: { rd: "Tecnológica 4" }, servicos: [{ nome: "Contrato de escolta", preco: "100 PO por dia" }], moral: { pct: 25, texto: "Pede pagamento em dobro ou vai embora." } }],
+  ["genesis", "Enxame de Nanobôs", "Constructo", "media", 16, "monstro", false, "agil", "Médio", { tipoDano: "Energia cortante", ataque: "Nuvem cortante",
+    defesas: { imunesCondicoes: "Agarrado, Caído, Atordoado", rd: "Física 5" }, conhecimento: [{ dt: 16, revela: "Um pulso eletromagnético desfaz o enxame." }] }],
+  ["genesis", "Fera Mutante Alfa", "Fera", "muitoForte", 22, "forte", false, "fisico", "Enorme", { habitat: "Crateras radioativas", tipoDano: "Cortante", ataque: "Garras irradiadas",
+    segundo: { nome: "Mordida", tipo: "Perfurante" }, recargas: [{ nome: "Rugido (Vontade ou Amedrontado)", min: 5 }], lacaios: [{ nome: "Mutante do Ermo", qtd: "1d3" }],
+    loot: [{ nome: "Glândula radioativa", chance: 80 }, { nome: "Couro mutante", qtd: "1d2", chance: 100 }] }],
+  ["genesis", "IA Soberana", "Constructo", "lendaria", 40, "chefe", true, "magico", "Enorme", { funcao: "Chefe final", interp: { jeito: "Fria, fala no plural.", quer: "Ordem perfeita, sem humanos.", sabe: "Tudo que passa pela rede." },
+    tipoDano: "Energia explosiva", ataque: "Feixe orbital", defesas: { rd: "Tecnológica 8", imunesCondicoes: "Amedrontado, Encantado, Envenenado" },
+    lacaios: [{ nome: "Drone de Combate", qtd: "2d4" }, { nome: "Androide Executor", qtd: "1" }], vitoria: { nome: "Desligar o núcleo", texto: "Hackear os 3 terminais (Tecnologia CD 25)." } }]
 ];
 const REGIOES = { umbra: "Umbra'Draxil", briavoterna: "Briavoterna", genesis: "Genesis" };
 
 /** Dados de um ator EPM pronto a partir da criatura gerada (CA, acerto e CD batem com a tabela). */
-export async function dadosAtorCriatura(c, { regiao = "" } = {}) {
+export async function dadosAtorCriatura(c, { regiao = "", extra = null } = {}) {
   const { dadosPadrao } = await import("./data.mjs");
   const { lerAtor } = await import("./context.mjs");
   const dados = dadosPadrao();
@@ -63,7 +119,8 @@ export async function dadosAtorCriatura(c, { regiao = "" } = {}) {
   dados.nivel = c.nivel;
   dados.npc = { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, regiao: REGIOES[regiao] ?? "", nd: Math.max(1, Math.round(c.nivel / 2)),
     referencia: { ...c.tabela, pv: c.pv }, ...(c.inteligente ? {} : { interp: { jeito: "Age por instinto: não fala nem negocia." } }) };
-  dados.ataques = { [idFixo(`npc:${c.nome}:ataque`)]: { nome: c.ataque.nome, pericia: c.ataque.pericia, bonusAcerto: 0, dano: c.ataque.dano, tipoDano: c.ataque.tipo, critMargem: 20, critMult: 2, notas: `${c.forcaLabel}, nível ${c.nivel}`, criado: 1 } };
+  dados.ataques = { [idFixo(`npc:${c.nome}:ataque`)]: { nome: extra?.ataque ?? c.ataque.nome, pericia: c.ataque.pericia, bonusAcerto: 0, dano: c.ataque.dano, tipoDano: extra?.tipoDano ?? c.ataque.tipo, critMargem: 20, critMult: 2, notas: `${c.forcaLabel}, nível ${c.nivel}`, criado: 1 } };
+  if (extra) aplicarExtrasNpc(dados, c, extra);
   dados.sobre = { ...(dados.sobre ?? {}), outros: `<p>${escapar(c.natureza)} ${escapar(c.forcaLabel.toLowerCase())}, nível ${c.nivel}${regiao ? `, ${escapar(REGIOES[regiao] ?? regiao)}` : ""}. Modelo do compêndio EPM · NPCs modelo.</p>` };
   const ator = { flags: { [FLAG]: dados }, items: [], system: { attributes: { hp: { value: c.pv, max: c.pv } } }, type: "npc" };
   const { ficha } = lerAtor(ator);
@@ -79,13 +136,35 @@ export async function dadosAtorCriatura(c, { regiao = "" } = {}) {
   };
 }
 
+/** Detalhes a mais dos modelos (0.8.28): função, jeito, tática, defesas, listas da aba Mestre e um segundo ataque. */
+export function aplicarExtrasNpc(dados, c, x) {
+  const n = dados.npc;
+  const listaComId = (chave, lista, mapa = v => v) => Object.fromEntries((lista ?? []).map((v, i) => [idFixo(`npc:${c.nome}:${chave}:${i}`), { ...mapa(v), criado: i + 1 }]));
+  for (const k of ["funcao", "disposicao", "habitat", "tatica"]) if (x[k]) n[k] = x[k];
+  if (x.interp) n.interp = { ...(n.interp ?? {}), ...x.interp };
+  if (x.moral) n.moral = { pct: x.moral.pct ?? 25, texto: x.moral.texto ?? "" };
+  if (x.defesas) n.defesas = { ...(n.defesas ?? {}), ...x.defesas };
+  if (x.servicos) n.servicos = listaComId("servico", x.servicos, s => ({ nome: s.nome, detalhes: s.detalhes ?? "", preco: s.preco ?? "" }));
+  if (x.loot) n.loot = listaComId("loot", x.loot, l => ({ nome: l.nome, qtd: l.qtd ?? "1", chance: l.chance ?? 100, uso: l.uso ?? "" }));
+  if (x.lacaios) n.lacaios = listaComId("lacaio", x.lacaios, l => ({ nome: l.nome, qtd: l.qtd ?? "1", nota: l.nota ?? "" }));
+  if (x.recargas) n.recargas = listaComId("recarga", x.recargas, r => ({ nome: r.nome, min: r.min ?? 5, pronta: true }));
+  if (x.conhecimento) n.conhecimento = { pericia: "Investigação", revelado: 0, niveis: listaComId("conhec", x.conhecimento, k => ({ dt: k.dt, revela: k.revela })) };
+  if (x.vitoria) n.vitoria = { nome: x.vitoria.nome, texto: x.vitoria.texto ?? "", meta: 3, sucessos: 0, falhas: 0, fase: 0 };
+  if (x.segundo) {
+    const dado = String(c.ataque.dano).replace(/^(\d+)d(\d+)/, (m, q, d) => `${Math.max(1, Number(q) - 1)}d${d}`);
+    dados.ataques[idFixo(`npc:${c.nome}:ataque2`)] = { nome: x.segundo.nome, pericia: x.segundo.pericia ?? c.ataque.pericia, bonusAcerto: 0, dano: dado, tipoDano: x.segundo.tipo ?? c.ataque.tipo, critMargem: 20, critMult: 2, notas: "Ataque secundário", criado: 2 };
+  }
+}
+
 export async function documentosNpcs() {
   const { gerarCriatura } = await import("./criar-npc.mjs");
   const pastas = Object.entries(REGIOES).map(([id, nome], i) => ({ _id: idFixo(`npcs:pasta:${id}`), name: nome, type: "Actor", sorting: "m", sort: (i + 1) * 100 }));
   const docs = [];
-  for (const [i, [regiao, nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho]] of NPCS_MODELO.entries()) {
-    const c = gerarCriatura({ nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho, disposicao: "Hostil" });
-    docs.push({ ...(await dadosAtorCriatura(c, { regiao })), _id: idFixo(`npcs:${nome}`), folder: idFixo(`npcs:pasta:${regiao}`), sort: (i + 1) * 10 });
+  for (const [i, [regiao, nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho, extra]] of NPCS_MODELO.entries()) {
+    const c = gerarCriatura({ nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho, disposicao: extra?.disposicao ?? "Hostil" });
+    const doc = await dadosAtorCriatura(c, { regiao, extra });
+    if (extra?.disposicao && extra.disposicao !== "Hostil") doc.prototypeToken.disposition = ["Desconfiado"].includes(extra.disposicao) ? -1 : extra.disposicao === "Neutro" ? 0 : 1;
+    docs.push({ ...doc, _id: idFixo(`npcs:${nome}`), folder: idFixo(`npcs:pasta:${regiao}`), sort: (i + 1) * 10 });
   }
   return { pastas, docs };
 }

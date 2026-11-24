@@ -426,5 +426,15 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
   ok(umAcima.armadura === 5, "armadura 1 nível acima: −2 na CA");
   ok(avaliarRequisitos("nível de tecnologia 2", { extras: { tecnologia: 1 } }, {}).ok === false && avaliarRequisitos("nível de tecnologia 2", { extras: { tecnologia: 2 } }, {}).ok, "requisito \"nível de tecnologia 2\" (Adaptação nível 3)");
 }
+{
+  // 0.8.28: CD de Projeto e Projetos instalados
+  const PJ = await import("/home/claude/epm-ficha/scripts/projetos.mjs");
+  ok(PJ.cdDeProjeto(6, { pontos: 5, outros: 3, mod: 0 }) === 20, "CD de Projeto: 10 + Int 6 + (5 + 3)/2 = 20");
+  ok(PJ.cdDeProjeto(6, { bonusProprio: 9 }) === 20 && PJ.cdDeProjeto(0, null) === 10, "CD de Projeto arredonda a metade para baixo");
+  const af = PJ.efeitoInstalado("afiacao", 2, 4, { modo: "acoplamento", tipoDano: "Fogo" });
+  ok(af.tipo === "danoExtra" && af.formula === "3d8 + 4" && af.tipoDano === "Fogo", "Afiação Grau II (Acoplamento Fogo): +3d8 + Int");
+  ok(PJ.efeitoInstalado("afiacao", 6, 3).formula === "10d10 + 3", "Afiação acima do Grau V: +2 dados");
+  ok(PJ.efeitoInstalado("placas-reforco", 3, 0).valor === 5 && PJ.efeitoInstalado("torreta", 1, 0) === null, "Placas de Reforço Grau III: RD física 5; Torreta não se instala");
+}
 console.log(falhas ? `\n${falhas} falha(s)` : "\nregras ok");
 process.exit(falhas ? 1 : 0);

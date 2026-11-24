@@ -14,6 +14,18 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.28
+
+- **Mochila compartilhada**: cada personagem recolhe as mochilas compartilhadas pela setinha, só na própria ficha. Os itens de lá têm "Mover para…" (seu inventário, uma mochila sua ou outra compartilhada) e podem ser arrastados direto para uma mochila sua ou para outra compartilhada. O "Mover para…" do inventário também lista as compartilhadas.
+- **Escolher fichas com busca**: compartilhar mochila, enviar Projeto, Relações e "Adicionar ficha" do Escudo e do Painel do grupo usam a mesma lista com busca pelo nome (o Mestre também filtra por tipo). O jogador só vê fichas que têm jogador: NPCs e chefes do Mestre não aparecem, nem pelo nome.
+- **Projetos do Artífice em outras fichas**: botão "Enviar" nas Engenhocas. Afiação ou Acoplamento vira dano extra na arma escolhida (de qualquer personagem, ou a sua); Placas de Reforço vira RD física na armadura; as outras Engenhocas vão para o inventário de quem recebe, com botão Usar (que usa os números do Artífice). Continuam ocupando a reserva até "Recolher" (no painel, em "Em outras fichas"). Sem ser dono da outra ficha, o Mestre conectado faz a troca.
+- **CD de Projeto** = 10 + Inteligência + metade (para baixo) do bônus do Ofício sem o atributo (pontos + Outros + bônus). Ex.: Int 6, Ofício 5 e +3 em Outros → 10 + 6 + 4 = 20. Novo campo "Perícia do Projeto" para usar Tecnologia no lugar do Ofício (vale para a CD e os ataques de Projeto).
+- **Grupos separados** no Escudo do Mestre (aba Grupo) e no Painel do grupo: abas Todos / cada grupo / Sem grupo, "Novo grupo" (as fichas marcadas já entram), seletor de grupo em cada ficha, renomear e apagar. Marcar, dar pontos e descansos valem para o grupo aberto.
+- **Pasta automática**: o NPC rápido e a ficha rápida de NPC do Mundo guardam as fichas na pasta "NPCs rápidos" da aba Atores, com subpasta por natureza (ou raça). Dá para desligar no diálogo.
+- **NPCs modelo**: 19 novos (35 no total), com função, jeito, tática, defesas, serviços, loot, conhecimento por CD, recargas, lacaios, segundo ataque e vitória alternativa nos chefes. Os modelos cobrem os 5 tipos de ficha e disposições diferentes (mercadores e curandeiros amigáveis).
+
+**Decisões tomadas**: Afiação e Placas instaladas não gastam cenas (são passivas) e valem com o item equipado; o Acoplamento escolhe entre os tipos Naturais e Tecnológicos; a ficha só fica num grupo por vez; o jogador continua vendo as fichas que ele controla, mesmo sem jogador (ex.: um companheiro dele).
+
 ## Novidades da 0.8.27
 
 **Arquétipos reformulados** (do documento "Reformulação do Arquétipo"):

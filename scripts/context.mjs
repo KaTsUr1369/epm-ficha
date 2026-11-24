@@ -763,6 +763,10 @@ function painelArquetipos({ dados, ficha, itens, poderes, tipoDe, edicao, editav
         reserva: { max: est.criacao.projetos, ocupados: est.ocupados, gastos: est.gastos, disponivel: est.disponivel, formula: est.criacao.formula,
           pips: Array.from({ length: est.criacao.projetos }, (_, k) => k < est.ocupados ? "ocupado" : k < est.ocupados + est.gastos ? "gasto" : "aberto") },
         grauMax: grauRomano(est.criacao.grauMax), proximo: est.criacao.proximo, cd: est.cd, carregados: est.carregados, carregar: est.criacao.carregar,
+        cdDica: `10 + Inteligência ${est.intel} + metade do bônus de ${est.periciaNome} sem o atributo (${est.bonusPericia} → ${Math.floor(est.bonusPericia / 2)})`,
+        periciaProjeto: est.periciaProjeto, periciaNome: est.periciaNome,
+        periciasProjeto: [["oficio", "Ofício"], ["tecnologia", "Tecnologia"]].map(([id, nome]) => ({ id, nome, selected: id === est.periciaProjeto })),
+        enviados: est.enviados.map(e => ({ ...e, grau: grauRomano(e.grau) })),
         valores: v, montagem: est.montagem?.label ?? "", sobrecarga: est.sobrecarga, mente: est.menteInventora,
         livro: est.livro.map(r => ({ chave: r.chave, nome: r.nome, categoria: r.categoria === "engenhoca" ? "Engenhoca" : "Consumível", engenhoca: r.categoria === "engenhoca",
           tipo: TIPOS_PROJETO[r.tipo]?.label ?? r.tipo, uso: r.uso, efeito: r.efeito, valor: r.valores[est.criacao.grauMax - 1] ?? "", temporaria: r.temporaria, propria: r.propria })),
@@ -1588,6 +1592,9 @@ export function montarContexto({
       formulaUso: f.formula ?? "",
       tecPenal: (() => { try { return penalidadeTec(item, ficha.extras?.tecnologia ?? 1)?.texto ?? ""; } catch { return ""; } })(),
       containerNome: item.system?.container ? (nomes[item.system.container] ?? "") : "",
+      // Projeto recebido de um Artífice (0.8.28): botão Usar na linha
+      projetoRecebido: f.projeto?.artificeId && f.projeto.artificeId !== actor?.id ? { cenas: int(f.projeto.cenas), cenasMax: int(f.projeto.cenasMax), de: globalThis.game?.actors?.get(f.projeto.artificeId)?.name ?? "" } : null,
+      projetosInstalados: Object.values(f.projetosInstalados ?? {}).map(p => `${p.nome} (de ${p.artificeNome})`).join(", "),
       expandido: expandidos.has(item.id),
       descricao: enriquecidos.itens?.[item.id] ?? "",
       busca: textoDeBusca(item.name, item.system?.description?.value),
@@ -1659,7 +1666,7 @@ export function montarContexto({
       const membros = membrosDe(mi).map(id => globalThis.game?.actors?.get(id)?.name).filter(Boolean);
       if (membros.length) m.compartilhadaTexto = membros.join(", ");
     }
-    ctx.mochilasCompartilhadas = actor ? contextoCompartilhadas(actor) : [];
+    ctx.mochilasCompartilhadas = actor ? contextoCompartilhadas(actor, ui.mochilasFechadas ?? new Set()) : [];
   } catch (err) { console.warn("EPM | mochilas compartilhadas", err); ctx.mochilasCompartilhadas = []; }
   ctx.temCompartilhadas = ctx.mochilasCompartilhadas.length > 0;
   // Criação guiada: aparece em personagem novo (sem arquétipo) até ser usada

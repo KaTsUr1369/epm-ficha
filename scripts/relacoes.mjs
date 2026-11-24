@@ -3,6 +3,7 @@
  * e a "Relação múltipla" do Mestre (mudar a afinidade de vários de uma vez).
  */
 import { FLAG, AFINIDADE, TIPOS_RELACAO, TEXTOS_SOBRE } from "./config.mjs";
+import { atoresVisiveis as atoresVisiveisGeral, escolherAtores as escolherAtoresGeral } from "./escolher-ator.mjs";
 import { int, novoId, normalizarDados } from "./data.mjs";
 import { conteudoRevelacoes } from "./context.mjs";
 import { fvtt, enriquecer, escapar } from "./helpers.mjs";
@@ -74,56 +75,13 @@ export async function conectar(actor, outro, { tipo = "aliado" } = {}) {
   return true;
 }
 
-/**
- * Quem aparece para escolher: o Mestre vê todos; o jogador vê os personagens de jogadores (mesmo sem permissão
- * na ficha deles) e os que ele mesmo controla. NPCs do Mestre ficam de fora.
- */
-function atoresVisiveis(excluir = []) {
-  return (game.actors?.contents ?? [])
-    .filter(a => !excluir.includes(a.uuid) && (game.user.isGM || a.hasPlayerOwner || a.isOwner))
-    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-}
+/** Quem aparece para escolher (o jogador não vê NPCs do Mestre): ver escolher-ator.mjs. */
+const atoresVisiveis = (excluir = []) => atoresVisiveisGeral({ excluir });
 
-/** Diálogo para escolher um ou mais personagens (com busca). */
-async function escolherAtores({ titulo, excluir = [], multiplos = false, dica = "", extra = "" }) {
-  const lista = atoresVisiveis(excluir);
-  if (!lista.length) {
-    ui.notifications.info("Não há outros personagens disponíveis.");
-    return null;
-  }
-  const linhas = lista.map(a => `
-    <label class="epm-escolha-ator" data-nome="${escapar(a.name.toLowerCase())}">
-      <input type="${multiplos ? "checkbox" : "radio"}" name="ator" value="${a.uuid}">
-      <img src="${escapar(a.img)}" alt=""><span>${escapar(a.name)}</span>
-      <em>${a.type === "character" ? "Personagem" : "NPC"}${a.hasPlayerOwner ? ", de jogador" : ""}</em>
-    </label>`).join("");
-  const r = await fvtt.DialogV2.wait({
-    window: { title: titulo }, classes: ["epm-dialogo", "epm-dialogo-atores"], rejectClose: false, modal: true,
-    position: { width: 460 },
-    content: `${dica ? `<p class="epm-dica">${dica}</p>` : ""}${extra}
-      <input type="search" class="epm-busca-ator" placeholder="Buscar pelo nome" aria-label="Buscar">
-      <div class="epm-lista-atores">${linhas}</div>`,
-    render: (ev, arg) => {
-      const raiz = arg instanceof HTMLElement ? arg : (arg?.element ?? ev?.target?.element);
-      const busca = raiz?.querySelector(".epm-busca-ator");
-      busca?.addEventListener("input", () => {
-        const t = busca.value.trim().toLowerCase();
-        for (const l of raiz.querySelectorAll(".epm-escolha-ator")) l.hidden = !!t && !l.dataset.nome.includes(t);
-      });
-    },
-    buttons: [
-      {
-        action: "ok", label: multiplos ? "Aplicar" : "Conectar", icon: "fa-solid fa-check", default: true,
-        callback: (ev, b) => {
-          const f = b.form.elements;
-          const marcados = [...b.form.querySelectorAll('input[name="ator"]:checked')].map(i => i.value);
-          return { uuids: marcados, delta: f.delta?.value, tipo: f.tipo?.value, origem: f.origem?.value, mutua: !!f.mutua?.checked, motivo: f.motivo?.value ?? "" };
-        }
-      },
-      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
-    ]
-  });
-  return r && typeof r === "object" ? r : null;
+async function escolherAtores(opcoes) {
+  const r = await escolherAtoresGeral({ ok: opcoes.multiplos ? "Aplicar" : "Conectar", ...opcoes });
+  if (r) r.mutua = r.mutua === true || r.mutua === "on";
+  return r;
 }
 
 export async function dialogoConectar(actor) {

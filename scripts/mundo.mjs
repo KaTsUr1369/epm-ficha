@@ -94,6 +94,13 @@ async function tratarPedido({ tipo, dados, userId }) {
     const { pedidoNoMestre } = await import("./ressonancia.mjs");
     return pedidoNoMestre(dados);
   }
+  if (tipo === "projetoEnviar" || tipo === "projetoRecolher") {
+    const PJ = await import("./projetos.mjs");
+    const usuario = game.users.get(userId);
+    const art = game.actors.get(dados.artificeId);
+    if (!usuario || !art?.testUserPermission?.(usuario, "OWNER")) return console.warn("EPM | projeto: pedido de quem não é dono do Artífice");
+    return tipo === "projetoEnviar" ? PJ.executarEnvio(dados) : PJ.executarRecolher(dados);
+  }
   if (tipo === "mochilaCompartilhada") {
     const { executarTroca } = await import("./mochila-compartilhada.mjs");
     const usuario = game.users.get(userId);
@@ -650,7 +657,9 @@ export function gerarNpc({ raca = "humano", arquetipo = "combatente", nivel = 1,
 
 /** Diálogo: gera o NPC e põe em Companheiros ou no Bestiário de uma ficha (ou mostra no chat). */
 export async function fichaRapidaNpc(actorDestino = null) {
-  const atores = game.actors.filter(a => a.flags?.[FLAG] || a.type === "character").sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  // O jogador só vê fichas com jogador (nada de nomes de NPCs do Mestre)
+  const { atorVisivel } = await import("./escolher-ator.mjs");
+  const atores = game.actors.filter(a => (a.flags?.[FLAG] || a.type === "character") && atorVisivel(a) && (game.user.isGM || a.isOwner)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const r = await formulario("Ficha rápida de NPC", `
     <label class="epm-campo"><span>Nome (opcional)</span><input type="text" name="nome"></label>
     <label class="epm-campo"><span>Raça</span><select name="raca">${opcoes(RACAS.filter(x => !x.mestico).map(x => [x.id, x.nome]))}</select></label>
@@ -698,8 +707,11 @@ export async function criarAtorNpc(npc, escolha = {}) {
       tipoDano: npc.ataque.tipo, critMargem: npc.ataque.critMargem, critMult: npc.ataque.critMult, notas: `${npc.regiao}`, criado: Date.now() } },
     sobre: { origem: npc.regiao, outros: `<p>${escapar(npc.patente)}, ND ${npc.nd}${npc.armadura ? `, ${escapar(npc.armadura)}` : ""}. Gerado pela ficha rápida de NPC.</p>` }
   };
+  // Pasta automática "NPCs rápidos" (subpasta pela raça)
+  const { pastaNpcRapido } = await import("./criar-npc.mjs");
+  const folder = escolha.pasta === false ? null : await pastaNpcRapido(npc.raca);
   const ator = await Actor.create({
-    name: npc.nome, type: "npc", img: "icons/svg/mystery-man.svg",
+    name: npc.nome, type: "npc", img: "icons/svg/mystery-man.svg", ...(folder ? { folder } : {}),
     system: { attributes: { hp: { value: npc.recursos.pv, max: npc.recursos.pv } } },
     prototypeToken: { name: npc.nome, actorLink: false, disposition: -1 },
     flags: { [FLAG]: dados, core: { sheetClass: `${MODULE_ID}.EPMActorSheet` } }

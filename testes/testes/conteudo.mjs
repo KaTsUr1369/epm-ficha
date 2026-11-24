@@ -8,6 +8,17 @@ const pgs = m.docs[0].pages;
 ok(pgs.length === 5 && pgs.at(-1).name === "Patch notes" && /Versão 0\.8\.2/.test(pgs.at(-1).text.content), "Manual: 5 abas, a última é Patch notes com as versões");
 const n = await C.documentosNpcs();
 ok(n.docs.length === C.NPCS_MODELO.length && n.pastas.length === 3, `NPCs modelo: ${n.docs.length} em 3 regiões`);
+{
+  const porNome = nome => n.docs.find(d => d.name === nome);
+  const merc = porNome("Mercador Viajante"), lich = porNome("Lich Ancestral"), aranha = porNome("Aranha Gigante");
+  ok(n.docs.length >= 35, `0.8.28: mais NPCs modelo (${n.docs.length})`);
+  ok(merc.flags["epm-ficha"].npc.disposicao === "Amigável" && Object.keys(merc.flags["epm-ficha"].npc.servicos).length === 3 && merc.prototypeToken.disposition === 1, "Mercador: amigável, com serviços e token aliado");
+  ok(Object.keys(lich.flags["epm-ficha"].ataques).length === 2 && Object.values(lich.flags["epm-ficha"].npc.lacaios)[0]?.nome === "Esqueleto Guerreiro" && lich.flags["epm-ficha"].npc.tipo === "chefe", "Lich: chefe com 2 ataques e lacaios");
+  ok(Object.values(aranha.flags["epm-ficha"].npc.recargas)[0]?.min === 5 && Object.values(aranha.flags["epm-ficha"].npc.conhecimento.niveis).length === 2, "Aranha: recarga 5–6 e conhecimento por CD");
+  ok(new Set(n.docs.map(d => d._id)).size === n.docs.length, "ids únicos nos NPCs modelo");
+  const tipos = new Set(n.docs.map(d => d.flags["epm-ficha"].npc.tipo));
+  ok(["comum", "importante", "monstro", "forte", "chefe"].every(t => tipos.has(t)), "NPCs modelo cobrem os 5 tipos de ficha");
+}
 const bate = n.docs.every(d => { const { ficha } = lerAtor({ ...d, items: [] }); const r = d.flags["epm-ficha"].npc.referencia; return ficha.ca.total === r.ca && ficha.cd.valor === r.cd && ficha.periciaPorId.luta.total === r.acerto; });
 ok(bate, "NPCs modelo: CA, CD e acerto batem com a tabela de inimigos");
 const l = await C.documentosLoot();
@@ -24,6 +35,19 @@ ok(!A.conferirPericias({ luta: 6 }, 14).ok && A.conferirPericias({ luta: 10 }, 1
 ok(A.aumentosDoNivel(1) === 0 && A.aumentosDoNivel(10) === 5 && A.aumentosDoNivel(50) === 26, "criação guiada: Aumentos de Status por nível");
 ok(A.conferirAumentos({ forca: 5 }, { forca: 3 }, 10).ok && !A.conferirAumentos({ forca: 5 }, { forca: 4 }, 10).ok && A.conferirAumentos({ forca: 5 }, { forca: 4 }, 21).ok, "criação guiada: Aumentos respeitam o teto do nível");
 ok(!A.conferirAumentos({ forca: 3, destreza: 3 }, {}, 10).ok, "criação guiada: Aumentos não passam do disponível");
+{
+  // 0.8.28: o jogador só vê fichas com jogador; o Mestre vê todas
+  const EA = await import("/home/claude/epm-ficha/scripts/escolher-ator.mjs");
+  const atores = [{ id: "pj", uuid: "Actor.pj", name: "Aurelia", type: "character", hasPlayerOwner: true },
+    { id: "chefe", uuid: "Actor.chefe", name: "Rei Lich", type: "npc", hasPlayerOwner: false },
+    { id: "meu", uuid: "Actor.meu", name: "Lobo do Jogador", type: "npc", hasPlayerOwner: false, isOwner: true }];
+  const jogador = { isGM: false }, mestre = { isGM: true };
+  globalThis.game = { actors: atores, user: jogador };
+  const visJ = EA.atoresVisiveis({ usuario: jogador }).map(a => a.id);
+  ok(visJ.includes("pj") && visJ.includes("meu") && !visJ.includes("chefe"), "escolher ficha: o jogador não vê o chefe do Mestre");
+  ok(EA.atoresVisiveis({ usuario: mestre }).length === 3 && EA.atoresVisiveis({ usuario: mestre, excluir: ["Actor.pj"] }).length === 2, "escolher ficha: o Mestre vê todas (e dá para excluir)");
+  delete globalThis.game;
+}
 const R = await import("/home/claude/epm-ficha/scripts/racas.mjs");
 const mut = R.racaPorId("mutante");
 if (mut) {

@@ -3696,3 +3696,22 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-pip-cena { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--epm-latao); }
 .epm-pip-cena.cheio { background: var(--epm-latao); }
 .epm-tag-alerta { background: color-mix(in srgb, var(--epm-alerta) 22%, transparent); color: var(--epm-alerta); border: 1px solid var(--epm-alerta); }
+
+/* 0.8.28: escolha de atores com busca; membros da mochila compartilhada em chips */
+.epm-dialogo-atores .epm-busca-ator-linha { display: flex; gap: 6px; margin-bottom: 6px; }
+.epm-dialogo-atores .epm-busca-ator-linha .epm-busca-ator { flex: 1; }
+.epm-dialogo-atores .epm-filtro-ator { flex: 0 0 auto; width: auto; }
+.epm-mochila-membros .epm-membros { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.epm-chip-membro { display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px 2px 6px; border: 1px solid rgba(226, 194, 122, 0.45); border-radius: 999px; font-size: 12.5px; }
+.epm-chip-membro img { border-radius: 50%; object-fit: cover; }
+.epm-chip-membro .epm-icone-botao { width: 18px; height: 18px; font-size: 10px; }
+.epm-ficha .epm-campo.epm-campo-linha { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin: 4px 0 8px; }
+.epm-ficha .epm-campo.epm-campo-linha > span { flex: 0 0 auto; text-align: left; }
+.epm-ficha .epm-campo.epm-campo-linha select { width: auto; min-width: 140px; flex: 0 0 auto; }
+/* 0.8.28: grupos separados (Escudo e Painel do grupo) */
+.epm-grupos-abas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px; }
+.epm-grupo-aba { padding: 3px 10px; border: 1px solid rgba(226, 194, 122, 0.35); border-radius: 999px; background: transparent; color: inherit; font-size: 12.5px; cursor: pointer; width: auto; line-height: 1.6; }
+.epm-grupo-aba.ativo { background: rgba(226, 194, 122, 0.18); border-color: #E2C27A; font-weight: 600; }
+.epm-grupo-aba .epm-contador { margin-left: 4px; }
+.epm-grupos-abas .perigo { color: #e07a6a; }
+.epm-grupo-seletor { width: auto; max-width: 180px; font-size: 12px; height: 24px; }

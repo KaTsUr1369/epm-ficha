@@ -107,6 +107,7 @@
         {{#if novasMestre.regras.feitos}}<span class="epm-linha-campos"><select data-feito-escolha aria-label="Feito">{{#each novasMestre.feitos}}<option value="{{this.id}}">{{this.nome}}{{#if pev}} (+{{this.pev}} PEv){{/if}}</option>{{/each}}</select><button type="button" class="epm-botao" data-action="novasMestre" data-op="feito"><i class="fa-solid fa-trophy"></i> Dar feito</button></span>{{/if}}
       </div>
     </section>
+    {{> "epm-grupos-abas"}}
     <div class="epm-escudo-barra epm-escudo-soltar" data-soltar-grupo>
       <button type="button" class="epm-botao" data-action="adicionarAoGrupo"><i class="fa-solid fa-user-plus"></i> Adicionar ficha</button>
       <span class="epm-dica">ou arraste qualquer ficha da aba Atores para cá (NPC, aliado, montaria…)</span>
@@ -132,6 +133,7 @@
           {{#if temCondicoes}}<div class="epm-escudo-conds">{{#each condicoes}}<button type="button" class="epm-escudo-cond{{#if automatica}} auto{{/if}}" data-action="removerCondicao" data-uuid="{{../uuid}}" data-id="{{this.id}}" title="{{this.label}}" {{#if automatica}}disabled{{/if}}><img src="{{this.icone}}" alt="{{this.label}}" /></button>{{/each}}</div>{{/if}}
         </div>
         <div class="epm-escudo-acoes"><button type="button" class="epm-icone-botao" data-action="abrirFicha" data-uuid="{{this.uuid}}" title="Abrir ficha"><i class="fa-solid fa-id-card"></i></button>
+          {{#if @root.grupos.temGrupos}}<select class="epm-grupo-seletor" data-grupo-de="{{this.id}}" aria-label="Grupo de {{this.name}}" title="Grupo">{{#each @root.grupos.opcoes}}<option value="{{this.id}}" {{#if (epmEq this.id ../grupoId)}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select>{{/if}}
           <button type="button" class="epm-icone-botao" data-action="tirarDoGrupo" data-id="{{this.id}}" title="Tirar do grupo (a ficha não é apagada)"><i class="fa-solid fa-user-minus"></i></button></div>
       </li>
       {{/each}}

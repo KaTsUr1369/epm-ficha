@@ -15,6 +15,7 @@
       <label class="epm-check"><input type="checkbox" data-incluir-todos="1" {{#if todos}}checked{{/if}} /> Incluir personagens sem jogador</label>
     </div>
   </section>
+  {{> "epm-grupos-abas"}}
   {{#if vazio}}<p class="epm-vazio">Nenhum personagem no painel. Use "Adicionar ator" ou arraste um ator da aba Atores.</p>{{/if}}
   <ol class="epm-grupo-lista">
     {{#each atores}}
@@ -34,6 +35,7 @@
           {{#if maisCondicoes}}<span class="epm-dica">+{{this.maisCondicoes}}</span>{{/if}}
         </div>
       </div>
+      {{#if @root.grupos.temGrupos}}<select class="epm-grupo-seletor" data-grupo-de="{{this.id}}" aria-label="Grupo de {{this.name}}">{{#each @root.grupos.opcoes}}<option value="{{this.id}}" {{#if (epmEq this.id ../grupoId)}}selected{{/if}}>{{this.nome}}</option>{{/each}}</select>{{/if}}
       <button type="button" class="epm-icone-botao perigo" data-action="tirarAtor" data-id="{{this.id}}" title="Tirar do painel"><i class="fa-solid fa-xmark"></i></button>
     </li>
     {{/each}}

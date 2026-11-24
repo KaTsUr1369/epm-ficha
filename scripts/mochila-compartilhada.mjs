@@ -7,6 +7,7 @@
 import { FLAG } from "./config.mjs";
 import { num } from "./data.mjs";
 import { escapar, fvtt } from "./helpers.mjs";
+import { atorVisivel, escolherAtores } from "./escolher-ator.mjs";
 
 const P = `flags.${FLAG}`;
 const TIPOS_MOCHILA = ["container", "backpack"];
@@ -31,7 +32,7 @@ export function compartilhadasCom(actor) {
 }
 
 /** Para a aba Inventário: as mochilas compartilhadas com este personagem e o que tem nelas. */
-export function contextoCompartilhadas(actor) {
+export function contextoCompartilhadas(actor, fechadas = new Set()) {
   return compartilhadasCom(actor).map(({ dono, mochila }) => {
     const conteudo = (dono.items?.contents ?? [...(dono.items ?? [])]).filter(i => i.system?.container === mochila.id)
       .map(i => ({ id: i.id, uuid: i.uuid, name: i.name, img: i.img, qtd: num(i.system?.quantity, 1), peso: num(i.system?.weight?.value ?? i.system?.weight, 0) }))
@@ -39,18 +40,32 @@ export function contextoCompartilhadas(actor) {
     const outros = membrosDe(mochila).filter(id => id !== actor.id).map(id => globalThis.game?.actors?.get(id)?.name).filter(Boolean);
     return {
       id: mochila.id, donoId: dono.id, nome: mochila.name, img: mochila.img, dono: dono.name, conteudo, vazia: !conteudo.length,
-      membrosTexto: outros.join(", ")
+      membrosTexto: outros.join(", "), aberta: !fechadas.has(`comp-${mochila.id}`), chave: `comp-${mochila.id}`
     };
   });
 }
 
 /** Opções do editor da mochila: personagens que podem receber o compartilhamento. */
 export function opcoesMembros(mochila) {
-  const dono = mochila?.parent;
-  const marcados = new Set(membrosDe(mochila));
-  return (globalThis.game?.actors ?? []).filter(a => a.id !== dono?.id && (a.type === "character" || a.hasPlayerOwner))
-    .map(a => ({ id: a.id, nome: a.name, img: a.img, marcado: marcados.has(a.id) }))
+  // Só os membros atuais (como fichas); a escolha é pelo diálogo com busca
+  return membrosDe(mochila).map(id => globalThis.game?.actors?.get(id)).filter(a => a && atorVisivel(a))
+    .map(a => ({ id: a.id, nome: a.name, img: a.img, marcado: true }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+/** Diálogo com busca para escolher com quem compartilhar (o jogador só vê fichas de jogadores). */
+export async function escolherMembros(mochila) {
+  const dono = mochila?.parent;
+  if (!dono) return;
+  const r = await escolherAtores({
+    titulo: `Compartilhar ${mochila.name}`, multiplos: true, ok: "Compartilhar", excluir: [dono.uuid],
+    marcados: membrosDe(mochila),
+    dica: "Marque quem pode ver, pegar e guardar itens nesta mochila. O peso continua com quem carrega."
+  });
+  if (!r) return;
+  // Mantém quem o jogador não pode ver na lista (ex.: um NPC posto pelo Mestre)
+  const invisiveis = membrosDe(mochila).filter(id => !atorVisivel(globalThis.game?.actors?.get(id)));
+  return mochila.update({ [`${P}.compartilhada`]: [...new Set([...invisiveis, ...r.ids])] });
 }
 
 export async function alternarMembro(mochila, actorId) {
@@ -83,7 +98,7 @@ export async function moverItem(origem, itemId, destino, qtd, containerId = null
 }
 
 /** Faz a troca (no Mestre ou em quem é dono dos dois). op: "pegar" (da mochila para o membro) ou "guardar". */
-export async function executarTroca({ op, membroId, donoId, mochilaId, itemId, qtd }) {
+export async function executarTroca({ op, membroId, donoId, mochilaId, itemId, qtd, destino = null, paraDonoId = null, paraMochilaId = null }) {
   const membro = game.actors.get(membroId);
   const dono = game.actors.get(donoId);
   const mochila = dono?.items.get(mochilaId);
@@ -92,8 +107,23 @@ export async function executarTroca({ op, membroId, donoId, mochilaId, itemId, q
   if (op === "pegar") {
     const it = dono.items.get(itemId);
     if (!it || it.system?.container !== mochila.id) return false;
-    const r = await moverItem(dono, itemId, membro, qtd, null);
-    await aviso(membro, `<p><i class="fa-solid fa-people-carry-box" aria-hidden="true"></i> <strong>${escapar(membro.name)}</strong> pegou ${escapar(r.nome)} ×${r.qtd} da mochila compartilhada <strong>${escapar(mochila.name)}</strong> (com ${escapar(dono.name)}).</p>`);
+    // Destino: solto no inventário (null) ou numa mochila do próprio membro
+    const destMochila = destino ? membro.items.get(destino) : null;
+    const containerId = destMochila && TIPOS_MOCHILA.includes(destMochila.type) ? destMochila.id : null;
+    const r = await moverItem(dono, itemId, membro, qtd, containerId);
+    await aviso(membro, `<p><i class="fa-solid fa-people-carry-box" aria-hidden="true"></i> <strong>${escapar(membro.name)}</strong> pegou ${escapar(r.nome)} ×${r.qtd} da mochila compartilhada <strong>${escapar(mochila.name)}</strong> (com ${escapar(dono.name)})${destMochila ? ` e pôs em ${escapar(destMochila.name)}` : ""}.</p>`);
+    return true;
+  }
+  if (op === "passar") {
+    // De uma mochila compartilhada para outra (o membro precisa estar nas duas)
+    const dono2 = game.actors.get(paraDonoId);
+    const mochila2 = dono2?.items.get(paraMochilaId);
+    if (!dono2 || !mochila2 || !membrosDe(mochila2).includes(membro.id)) return false;
+    const it = dono.items.get(itemId);
+    if (!it || it.system?.container !== mochila.id) return false;
+    if (dono2.id === dono.id) { await moverDentro(dono, it, mochila2.id, qtd); }
+    else await moverItem(dono, itemId, dono2, qtd, mochila2.id);
+    await aviso(membro, `<p><i class="fa-solid fa-people-carry-box" aria-hidden="true"></i> <strong>${escapar(membro.name)}</strong> passou ${escapar(it.name)} de <strong>${escapar(mochila.name)}</strong> para <strong>${escapar(mochila2.name)}</strong>.</p>`);
     return true;
   }
   if (op === "guardar") {
@@ -103,12 +133,23 @@ export async function executarTroca({ op, membroId, donoId, mochilaId, itemId, q
   }
   return false;
 }
+/** Move parte (ou toda) a pilha para outra mochila do mesmo personagem. */
+async function moverDentro(ator, item, containerId, qtd) {
+  const tem = num(item.system?.quantity, 1);
+  const leva = Math.max(1, Math.min(tem, Math.floor(num(qtd, tem))));
+  if (leva >= tem) return item.update({ "system.container": containerId });
+  await item.update({ "system.quantity": tem - leva });
+  const d = item.toObject(); delete d._id;
+  d.system = { ...d.system, quantity: leva, container: containerId };
+  return ator.createEmbeddedDocuments("Item", [d]);
+}
 const aviso = (actor, html) => ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: `<div class="epm-chat epm-chat-nota" style="--cor: #6FA8DC">${html}</div>` });
 
 async function pedirTroca(dados) {
   const dono = game.actors.get(dados.donoId);
   const membro = game.actors.get(dados.membroId);
-  if (dono?.isOwner && membro?.isOwner) return executarTroca(dados);
+  const dono2 = dados.paraDonoId ? game.actors.get(dados.paraDonoId) : null;
+  if (dono?.isOwner && membro?.isOwner && (!dono2 || dono2.isOwner)) return executarTroca(dados);
   const { pedirAoMestre } = await import("./mundo.mjs");
   return pedirAoMestre("mochilaCompartilhada", dados);
 }
@@ -124,13 +165,54 @@ async function perguntarQtd(titulo, max) {
   return typeof r === "number" ? Math.max(1, Math.min(max, Math.floor(r))) : 0;
 }
 
-export async function pegar(membro, donoId, mochilaId, itemId) {
+export async function pegar(membro, donoId, mochilaId, itemId, destino = null) {
   const dono = game.actors.get(donoId);
   const it = dono?.items.get(itemId);
   if (!it) return;
   const qtd = await perguntarQtd(`Pegar ${it.name}`, num(it.system?.quantity, 1));
   if (!qtd) return;
-  return pedirTroca({ op: "pegar", membroId: membro.id, donoId, mochilaId, itemId, qtd });
+  return pedirTroca({ op: "pegar", membroId: membro.id, donoId, mochilaId, itemId, qtd, destino: destino || null });
+}
+
+/** Passa um item de uma mochila compartilhada para outra (as duas com este membro). */
+export async function passar(membro, donoId, mochilaId, itemId, paraDonoId, paraMochilaId) {
+  const dono = game.actors.get(donoId);
+  const it = dono?.items.get(itemId);
+  if (!it) return;
+  const qtd = await perguntarQtd(`Mover ${it.name}`, num(it.system?.quantity, 1));
+  if (!qtd) return;
+  return pedirTroca({ op: "passar", membroId: membro.id, donoId, mochilaId, itemId, qtd, paraDonoId, paraMochilaId });
+}
+
+/**
+ * "Mover para…" de um item que está numa mochila compartilhada: inventário, uma mochila do membro
+ * ou outra mochila compartilhada com ele.
+ */
+export async function moverDaCompartilhada(membro, donoId, mochilaId, itemId) {
+  const dono = game.actors.get(donoId);
+  const it = dono?.items.get(itemId);
+  if (!it) return;
+  const opcoes = [{ v: "inv:", t: "Seu inventário (fora das mochilas)" },
+    ...membro.items.filter(i => TIPOS_MOCHILA.includes(i.type)).map(m => ({ v: `minha:${m.id}`, t: `Sua mochila: ${m.name}` })),
+    ...compartilhadasCom(membro).filter(c => c.mochila.id !== mochilaId).map(c => ({ v: `comp:${c.dono.id}:${c.mochila.id}`, t: `${c.mochila.name} (com ${c.dono.name})` }))];
+  const max = num(it.system?.quantity, 1);
+  const r = await fvtt.DialogV2.wait({
+    window: { title: `Mover ${it.name}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+    content: `<label class="epm-campo"><span>Para</span><select name="destino">${opcoes.map(o => `<option value="${escapar(o.v)}">${escapar(o.t)}</option>`).join("")}</select></label>`
+      + (max > 1 ? `<label class="epm-campo"><span>Quantos (de ${max})</span><input type="number" name="qtd" min="1" max="${max}" value="${max}"></label>` : ""),
+    buttons: [{ action: "ok", label: "Mover", icon: "fa-solid fa-right-left", default: true, callback: (ev, b) => ({ destino: b.form.elements.destino.value, qtd: b.form.elements.qtd ? num(b.form.elements.qtd.value, max) : max }) },
+      { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }]
+  });
+  if (!r || typeof r !== "object") return;
+  const qtd = Math.max(1, Math.min(max, Math.floor(num(r.qtd, max))));
+  const [tipo, a, b] = String(r.destino).split(":");
+  if (tipo === "comp") return pedirTroca({ op: "passar", membroId: membro.id, donoId, mochilaId, itemId, qtd, paraDonoId: a, paraMochilaId: b });
+  return pedirTroca({ op: "pegar", membroId: membro.id, donoId, mochilaId, itemId, qtd, destino: tipo === "minha" ? a : null });
+}
+
+/** Guarda direto (sem perguntar o item), para o "Mover para…" do inventário. */
+export async function guardarQtd(membro, donoId, mochilaId, itemId, qtd) {
+  return pedirTroca({ op: "guardar", membroId: membro.id, donoId, mochilaId, itemId, qtd });
 }
 
 export async function guardar(membro, donoId, mochilaId, itemId = "") {

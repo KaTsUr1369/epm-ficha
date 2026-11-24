@@ -73,6 +73,15 @@ export function registrarRelogioProjetos() {
 /* ---------------- Estado ---------------- */
 
 const flagProjeto = item => item?.flags?.[FLAG]?.projeto ?? null;
+
+/**
+ * CD de Projeto = 10 + Inteligência + metade (para baixo) do bônus da perícia do Projeto sem o atributo
+ * (pontos + Outros + bônus). Ex.: Int 6, Ofício 5 pontos e +3 em Outros → 10 + 6 + 8/2 = 20.
+ */
+export function cdDeProjeto(inteligencia, pericia) {
+  const bonus = Math.floor(Number(pericia?.bonusProprio ?? (int(pericia?.pontos) + int(pericia?.outros) + int(pericia?.mod))) || 0);
+  return 10 + (Number(inteligencia) || 0) + Math.floor(bonus / 2);
+}
 const listaItens = actor => actor?.items?.contents ?? [...(actor?.items ?? [])];
 
 /** Livro de Projetos da ficha (receitas conhecidas, já normalizadas). */
@@ -102,14 +111,21 @@ export function estadoArtificeDe(dados, f, todosItens = []) {
   const itens = todosItens.filter(i => flagProjeto(i));
   const engenhocas = itens.filter(i => flagProjeto(i).categoria === "engenhoca");
   const consumiveis = itens.filter(i => flagProjeto(i).categoria !== "engenhoca");
-  const ocupados = engenhocas.reduce((s, i) => s + Math.max(0, int(flagProjeto(i).ocupa, 1)), 0);
+  const ocupados = engenhocas.reduce((s, i) => s + Math.max(0, int(flagProjeto(i).ocupa, 1)), 0)
+    + Object.values(dados.projetosEnviados ?? {}).reduce((s, e) => s + Math.max(0, int(e?.ocupa, 1)), 0);
   const gastos = Math.max(0, int(dados.projetosCriacao?.gastos));
   const carregados = consumiveis.reduce((s, i) => s + Math.max(1, int(i.system?.quantity, 1)), 0);
-  const oficio = Math.floor(Number(f.periciaPorId?.oficio?.total) || 0);
+  // Perícia do Projeto: Ofício (padrão) ou Tecnologia
+  const periciaProjeto = dados.arquetipoOpcoes?.artifice?.periciaProjeto === "tecnologia" ? "tecnologia" : "oficio";
+  const per = f.periciaPorId?.[periciaProjeto];
+  const oficio = Math.floor(Number(per?.total) || 0);
+  const cd = cdDeProjeto(intel, per);
   const livro = livroDaFicha(dados);
+  const enviados = Object.entries(dados.projetosEnviados ?? {}).filter(([, e]) => e && typeof e === "object").map(([id, e]) => ({ id, ...e }));
   return {
     nivel, intel, criacao: cri, ocupados, gastos, disponivel: Math.max(0, cri.projetos - ocupados - gastos),
-    carregados, podeCarregar: carregados < cri.carregar, cd: 10 + oficio, oficio,
+    carregados, podeCarregar: carregados < cri.carregar, cd, oficio, periciaProjeto, periciaNome: per?.nome ?? (periciaProjeto === "tecnologia" ? "Tecnologia" : "Ofício"),
+    bonusPericia: per ? Math.floor(Number(per.bonusProprio) || 0) : 0, enviados,
     livro, livroCheio: livro.filter(r => !r.temporaria).length >= cri.livro,
     sobrecarga: nivel >= ARQUETIPOS.artifice.sobrecargaNivel, menteInventora: nivel >= ARQUETIPOS.artifice.menteInventora,
     montagem: montagemDe(nivel), encantados: encantadosDe(nivel), utensilios: dadoUtensilios(nivel),
@@ -264,7 +280,9 @@ export async function usarProjeto(actor, itemId, { sobrecarga = false } = {}) {
   const item = actor.items.get(itemId);
   const pj = flagProjeto(item);
   if (!pj) return;
-  const est = estadoArtifice(actor);
+  // Engenhoca enviada por um Artífice: usa os números dele (Inteligência, CD, Livro)
+  const criador = pj.artificeId && pj.artificeId !== actor.id ? game.actors.get(pj.artificeId) : null;
+  const est = (criador ? estadoArtifice(criador) : null) ?? estadoArtifice(actor);
   const dados = actor.flags?.[FLAG] ?? {};
   const eng = pj.categoria === "engenhoca";
   const receita = est?.livro.find(r => r.chave === pj.chaveLivro || (pj.receita && r.id === pj.receita)) ?? normalizarReceita(receitaPorId(pj.receita) ?? { nome: pj.nome });
@@ -299,8 +317,9 @@ export async function usarProjeto(actor, itemId, { sobrecarga = false } = {}) {
   };
   if (md === "ataque") {
     const atk = await new Roll(`1d20 + ${est?.oficio ?? 0}`).evaluate();
+    const nomePer = est?.periciaNome ?? "Ofício";
     const dmg = await new Roll(`${formulaDano()}${enc ? ` + ${enc.dano}` : ""}`).evaluate();
-    html += `<p>Ataque (d20 + Ofício): <strong>${atk.total}</strong>${atk.dice[0]?.total === 20 ? " (20 natural)" : ""} · Dano: <strong>${dmg.total}</strong> ${escapar(receita.rolar?.tipoDano ?? "")}${enc ? ` (com Itens Encantados ${enc.dano}, 1×/turno)` : ""}</p>`;
+    html += `<p>Ataque (d20 + ${escapar(nomePer)}): <strong>${atk.total}</strong>${atk.dice[0]?.total === 20 ? " (20 natural)" : ""} · Dano: <strong>${dmg.total}</strong> ${escapar(receita.rolar?.tipoDano ?? "")}${enc ? ` (com Itens Encantados ${enc.dano}, 1×/turno)` : ""}</p>`;
     botoes += `<button type="button" data-epm-action="dano" data-valor="${dmg.total}" ${alvos.length ? `data-alvos="${alvos.map(a => a.uuid).join(",")}"` : ""} data-tipo-dano="${escapar(receita.rolar?.tipoDano ?? "")}" data-rotulo="${escapar(item.name)}"><i class="fa-solid fa-burst"></i> Aplicar ${dmg.total} de dano</button>`;
   } else if (md === "area") {
     const dmg = await new Roll(formulaDano()).evaluate();
@@ -415,4 +434,140 @@ export async function curaDoCartao(actor, botao) {
     }
   }
   ui.notifications.info(`${valor} de cura em ${alvos.map(a => a.name).join(", ")}.`);
+}
+
+/* ---------------- Projetos em outras fichas (0.8.28) ---------------- */
+
+/**
+ * Engenhocas que se instalam num item de quem recebe: viram um efeito no item (e saem do inventário do Artífice).
+ * As outras vão como item para o inventário de quem recebe, que usa pela própria ficha.
+ */
+export const INSTALAVEIS = {
+  afiacao: { alvo: "arma", tipos: ["weapon"], rotulo: "arma" },
+  "placas-reforco": { alvo: "armadura", tipos: ["equipment"], rotulo: "armadura" }
+};
+const DADOS_AFIACAO = ["2d6", "3d8", "4d10", "6d10", "8d10"];
+const RD_PLACAS = [3, 4, 5, 6, 8];
+
+/** Efeito que o Projeto instalado põe no item (Afiação: dano extra; Placas: RD física). */
+export function efeitoInstalado(receitaId, grau, intel, { modo = "afiacao", tipoDano = "" } = {}) {
+  const i = Math.max(0, Math.min(4, int(grau, 1) - 1));
+  const extra = Math.max(0, int(grau, 1) - 5) * 2;
+  if (receitaId === "afiacao") {
+    const dado = DADOS_AFIACAO[i].replace(/^(\d+)d/, (m, n) => `${Number(n) + extra}d`);
+    return { tipo: "danoExtra", formula: `${dado} + ${Math.max(0, int(intel))}`, tipoDano: modo === "acoplamento" ? tipoDano : "", quando: "acerto", valor: 0, alvo: "", recurso: "pv" };
+  }
+  if (receitaId === "placas-reforco") return { tipo: "rd", valor: RD_PLACAS[i] + extra, tipoDano: "Físico", alvo: "", formula: "", quando: "uso", recurso: "pv" };
+  return null;
+}
+
+const itensDoTipo = (ator, tipos) => (ator?.items?.contents ?? [...(ator?.items ?? [])]).filter(i => tipos.includes(i.type) && !i.flags?.[FLAG]?.projeto);
+
+/** Escolhe quem recebe (diálogo com busca) e, nos instaláveis, em qual item. */
+export async function enviarProjeto(actor, itemId) {
+  const item = actor.items.get(itemId);
+  const pj = flagProjeto(item);
+  if (!pj || pj.categoria !== "engenhoca") return ui.notifications.warn("Só Engenhocas vão para outra ficha.");
+  const inst = INSTALAVEIS[pj.receita];
+  const { escolherAtores } = await import("./escolher-ator.mjs");
+  const r = await escolherAtores({
+    titulo: `Enviar ${item.name}`, ok: inst ? "Escolher" : "Enviar",
+    excluir: inst ? [] : [actor.uuid],
+    filtro: inst ? null : a => a.id !== actor.id,
+    dica: inst ? `Escolha de quem é a ${inst.rotulo} (pode ser você). O Projeto continua ocupando a sua reserva até ser recolhido.`
+      : "A Engenhoca vai para o inventário da ficha escolhida, que usa pela própria ficha. Ela continua ocupando a sua reserva até ser recolhida."
+  });
+  const uuid = r?.uuids?.[0];
+  if (!uuid) return;
+  const alvo = await fromUuid(uuid);
+  if (!alvo) return;
+  const dados = { artificeId: actor.id, itemId, alvoId: alvo.id, alvoItemId: null, modo: "afiacao", tipoDano: "" };
+  if (inst) {
+    const opcoes = itensDoTipo(alvo, inst.tipos);
+    if (!opcoes.length) return ui.notifications.warn(`${alvo.name} não tem ${inst.rotulo} no inventário.`);
+    const { TIPOS_DANO } = await import("./config.mjs");
+    const tipos = TIPOS_DANO.filter(t => !t.extra && ["naturais", "tecnologicos"].includes(t.grupo)).map(t => t.label);
+    const e = await fvtt.DialogV2.wait({
+      window: { title: `Instalar ${item.name}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+      content: `<label class="epm-campo"><span>${inst.rotulo === "arma" ? "Arma" : "Armadura"} de ${escapar(alvo.name)}</span><select name="alvoItem">${opcoes.map(o => `<option value="${o.id}">${escapar(o.name)}${o.system?.equipped ? " (equipada)" : ""}</option>`).join("")}</select></label>
+        ${pj.receita === "afiacao" ? `<label class="epm-campo"><span>Modo</span><select name="modo"><option value="afiacao">Afiação: dano do tipo da arma</option><option value="acoplamento">Acoplamento: dano de um tipo Natural ou Energia</option></select></label>
+        <label class="epm-campo"><span>Tipo (Acoplamento)</span><select name="tipoDano">${tipos.map(t => `<option>${escapar(t)}</option>`).join("")}</select></label>` : ""}
+        <p class="epm-dica">O efeito vale enquanto o item estiver equipado.</p>`,
+      buttons: [{ action: "ok", label: "Instalar", icon: "fa-solid fa-screwdriver-wrench", default: true, callback: (ev, b) => ({ alvoItem: b.form.elements.alvoItem.value, modo: b.form.elements.modo?.value ?? "afiacao", tipoDano: b.form.elements.tipoDano?.value ?? "" }) },
+        { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }]
+    });
+    if (!e || typeof e !== "object") return;
+    Object.assign(dados, { alvoItemId: e.alvoItem, modo: e.modo, tipoDano: e.modo === "acoplamento" ? e.tipoDano : "" });
+  }
+  if (alvo.isOwner) return executarEnvio(dados);
+  const { pedirAoMestre } = await import("./mundo.mjs");
+  return pedirAoMestre("projetoEnviar", dados);
+}
+
+/** Faz o envio (no Mestre, ou em quem é dono das duas fichas). */
+export async function executarEnvio({ artificeId, itemId, alvoId, alvoItemId = null, modo = "afiacao", tipoDano = "" }) {
+  const art = game.actors.get(artificeId);
+  const alvo = game.actors.get(alvoId);
+  const item = art?.items.get(itemId);
+  const pj = flagProjeto(item);
+  if (!art || !alvo || !pj) return false;
+  const est = estadoArtifice(art);
+  const enviadoId = novoId();
+  const registro = { nome: item.name, receita: pj.receita, grau: int(pj.grau, 1), ocupa: int(pj.ocupa, 1), cenas: int(pj.cenas), cenasMax: int(pj.cenasMax),
+    alvoId: alvo.id, alvoNome: alvo.name, alvoItemId: null, alvoItemNome: "", projeto: pj, itemDados: item.toObject() };
+  delete registro.itemDados._id;
+  if (INSTALAVEIS[pj.receita]) {
+    const alvoItem = alvo.items.get(alvoItemId);
+    if (!alvoItem) return false;
+    const ef = efeitoInstalado(pj.receita, int(pj.grau, 1) + (est?.menteInventora ? 1 : 0), est?.intel ?? 0, { modo, tipoDano });
+    await alvoItem.update({
+      [`flags.${FLAG}.efeitos.proj${enviadoId}`]: { ...ef, criado: Date.now(), projeto: { artificeId: art.id, enviadoId, nome: item.name } },
+      [`flags.${FLAG}.projetosInstalados.${enviadoId}`]: { artificeId: art.id, artificeNome: art.name, nome: item.name }
+    });
+    Object.assign(registro, { alvoItemId: alvoItem.id, alvoItemNome: alvoItem.name, modo, tipoDano });
+  } else {
+    const d = item.toObject(); delete d._id;
+    foundry.utils.setProperty(d, `flags.${FLAG}.projeto.artificeId`, art.id);
+    foundry.utils.setProperty(d, `flags.${FLAG}.projeto.enviadoId`, enviadoId);
+    foundry.utils.setProperty(d, `flags.${FLAG}.projeto.portador`, alvo.name);
+    const [novo] = await alvo.createEmbeddedDocuments("Item", [d]);
+    registro.alvoItemId = novo?.id ?? null;
+  }
+  await art.update({ [`${P}.projetosEnviados.${enviadoId}`]: registro });
+  await item.delete();
+  await cartao(art, `<p><strong>${escapar(art.name)}</strong> ${INSTALAVEIS[pj.receita] ? `instalou <strong>${escapar(item.name)}</strong> em ${escapar(registro.alvoItemNome)} de ${escapar(alvo.name)}${modo === "acoplamento" && tipoDano ? ` (Acoplamento: ${escapar(tipoDano)})` : ""}` : `entregou <strong>${escapar(item.name)}</strong> para ${escapar(alvo.name)}`}. Continua ocupando ${registro.ocupa} Projeto${registro.ocupa > 1 ? "s" : ""} da reserva.</p>`);
+  return true;
+}
+
+/** Recolhe um Projeto enviado: tira o efeito (ou o item) de quem recebeu e devolve a Engenhoca ao Artífice. */
+export async function recolherProjeto(actor, enviadoId) {
+  const reg = actor.flags?.[FLAG]?.projetosEnviados?.[enviadoId];
+  if (!reg) return;
+  const alvo = game.actors.get(reg.alvoId);
+  if (!alvo || alvo.isOwner) return executarRecolher({ artificeId: actor.id, enviadoId });
+  const { pedirAoMestre } = await import("./mundo.mjs");
+  return pedirAoMestre("projetoRecolher", { artificeId: actor.id, enviadoId });
+}
+
+export async function executarRecolher({ artificeId, enviadoId }) {
+  const art = game.actors.get(artificeId);
+  const reg = art?.flags?.[FLAG]?.projetosEnviados?.[enviadoId];
+  if (!art || !reg) return false;
+  const alvo = game.actors.get(reg.alvoId);
+  const alvoItem = alvo?.items.get(reg.alvoItemId);
+  let cenas = int(reg.cenas);
+  if (alvoItem) {
+    if (INSTALAVEIS[reg.receita]) await alvoItem.update({ [`flags.${FLAG}.efeitos.-=proj${enviadoId}`]: null, [`flags.${FLAG}.projetosInstalados.-=${enviadoId}`]: null });
+    else { cenas = int(alvoItem.flags?.[FLAG]?.projeto?.cenas, cenas); await alvoItem.delete(); }
+  }
+  const d = foundry.utils.deepClone(reg.itemDados ?? {});
+  if (d.name) {
+    foundry.utils.setProperty(d, `flags.${FLAG}.projeto.cenas`, cenas);
+    foundry.utils.setProperty(d, `flags.${FLAG}.projeto.portador`, art.name);
+    for (const k of ["artificeId", "enviadoId"]) if (d.flags?.[FLAG]?.projeto) delete d.flags[FLAG].projeto[k];
+    await art.createEmbeddedDocuments("Item", [d]);
+  }
+  await art.update({ [`${P}.projetosEnviados.-=${enviadoId}`]: null });
+  await cartao(art, `<p><strong>${escapar(art.name)}</strong> recolheu <strong>${escapar(reg.nome)}</strong>${alvo ? ` de ${escapar(alvo.name)}` : ""}.</p>`);
+  return true;
 }

@@ -299,6 +299,7 @@ export async function sincronizarConteudo() {
   for (const [chave, gerar] of tarefas) {
     try { await sincronizarPacote(chave, gerar, versao); } catch (err) { console.warn(`EPM | compêndio ${chave}`, err); }
   }
+  try { await organizarCompendios(); } catch (err) { console.warn("EPM | pasta dos compêndios", err); }
 }
 
 /** Abre o Manual (ou direto a aba de Patch notes). */
@@ -324,10 +325,44 @@ async function avisoVersao() {
   if (r === "abrir") setTimeout(() => abrirManual({ patch: true }), 1500);
 }
 
+/* ---------------- Pasta dos compêndios ---------------- */
+
+export const PASTA_COMPENDIOS = "EPM · Escolhidos pelo Multiverso";
+
+/** Nomes de todos os compêndios do mundo criados pelo EPM. */
+export async function nomesCompendiosEpm() {
+  const nomes = Object.values(PACOTES).map(p => p.nome);
+  try { nomes.push((await import("./compendio-classes.mjs")).NOME_PACOTE); } catch { /* sem o compêndio de classes */ }
+  try { nomes.push((await import("./compendio-itens.mjs")).NOME_PACOTE_ITENS); } catch { /* sem o compêndio de itens */ }
+  return nomes;
+}
+
+const pacoteDoMundo = nome => game.packs?.get?.(`world.${nome}`) ?? [...(game.packs?.values?.() ?? [])].find(p => p.metadata?.name === nome && (p.metadata?.packageType ?? "world") === "world") ?? null;
+
+/** Junta os compêndios do EPM numa pasta da aba Compêndios (cria a pasta se não existir). Só o Mestre. */
+export async function organizarCompendios() {
+  if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return null;
+  const pastas = game.folders?.filter?.(f => f.type === "Compendium") ?? [];
+  let pasta = pastas.find(f => f.name === PASTA_COMPENDIOS && !f.folder);
+  pasta ??= await Folder.create({ name: PASTA_COMPENDIOS, type: "Compendium", color: "#4b3a78", sorting: "a" });
+  if (!pasta) return null;
+  for (const nome of await nomesCompendiosEpm()) {
+    const pack = pacoteDoMundo(nome);
+    if (!pack) continue;
+    const atual = pack.folder?.id ?? pack.folder ?? null;
+    if (atual === pasta.id) continue;
+    try { if (typeof pack.setFolder === "function") await pack.setFolder(pasta); else await pack.configure({ folder: pasta.id }); }
+    catch (err) { console.warn(`EPM | pasta do compêndio ${nome}`, err); }
+  }
+  return pasta;
+}
+
 export function registrarConteudo() {
   game.settings.register(MODULE_ID, "assinaturasConteudo", { scope: "world", config: false, type: Object, default: {} });
   game.settings.register(MODULE_ID, "ultimaVersaoVista", { scope: "client", config: false, type: String, default: "" });
   Hooks.once("ready", () => {
     sincronizarConteudo().then(() => avisoVersao()).catch(err => console.warn("EPM | conteúdo pronto", err));
+    // Os compêndios de classes e itens sincronizam por conta própria; a pasta é arrumada depois de todos
+    setTimeout(() => organizarCompendios().catch(err => console.warn("EPM | pasta dos compêndios", err)), 8000);
   });
 }

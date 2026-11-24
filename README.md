@@ -14,6 +14,13 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.8.30
+
+- **Compêndios numa pasta**: os 8 compêndios do EPM (Manual, NPCs modelo, Tabelas de loot, Macros, Melhorias, Receitas do Artífice, Arquétipos e Classes, Itens) ficam juntos na pasta "EPM · Escolhidos pelo Multiverso" da aba Compêndios. O Mestre arruma sozinho ao abrir o mundo.
+- **Mais testes no Quench**: de 22 para 66, em 10 lotes. Novos: combate e recursos (Vida temporária, cura, consumível, condição, cena da Engenhoca), compêndios (existem, têm conteúdo e estão na pasta), listas e catálogos (bênçãos, condições, raças, kits, receitas, NPCs modelo, migração, custo de nível, grupos) e **fluxos com janelas**, que o teste responde sozinho: criação guiada no nível 4, kit de outro arquétipo recusado, raça Mutante com a Fera e raça comum com uma Única só, subir de nível (com e sem PEv), descanso longo, criar/renomear/apagar grupo, compartilhar mochila e Mover para, fabricar/enviar/recolher/desmontar Projeto, conectar Relação e NPC rápido na pasta.
+- Os testes apagam no fim as fichas, as mensagens e as pastas de atores que criaram (pastas que já existiam ficam).
+- Correção: fechar a ficha logo depois de abrir uma seção dava um erro no console (`_onAbrirCategoria`).
+
 ## Novidades da 0.8.29
 
 **Testes no Quench.** Com o módulo [Quench](https://foundryvtt.com/packages/quench) ativo, a janela dele mostra 6 lotes do EPM:

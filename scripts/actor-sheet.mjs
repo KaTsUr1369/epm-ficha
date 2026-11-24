@@ -618,6 +618,8 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   }
 
   _onAbrirCategoria(ev) {
+    // O "toggle" chega depois da mudança; se a ficha fechou nesse meio-tempo, não há o que lembrar
+    if (!this.element || !this.rendered) return;
     const det = ev.target;
     if (det?.tagName === "DETAILS" && !det.matches(".epm-categoria-condicao")) {
       this._detalhesAbertos ??= new Set();

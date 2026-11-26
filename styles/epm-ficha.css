@@ -3761,3 +3761,27 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-escudo-lista-hui { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
 .epm-escudo-lista-hui li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .epm-escudo-lista-hui img { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }
+
+/* 0.9.1: barra de rolagem em todo lugar com texto grande */
+/* Janelas de diálogo (as do EPM e as do Foundry): nunca passam da tela; o conteúdo rola e os botões ficam visíveis */
+dialog.application.dialog, .application.dialog { max-height: 94vh; }
+dialog.application.dialog .window-content, .application.dialog .window-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.application.dialog .window-content > form { min-height: 0; }
+.application.dialog .dialog-content, .application.dialog .epm-form-060 { overflow-wrap: anywhere; }
+.application.dialog .form-footer { position: sticky; bottom: 0; z-index: 1; background: inherit; padding-top: 6px; }
+/* Janelas próprias do EPM: se o conteúdo passar da altura, rola */
+.application.epm .window-content { min-height: 0; }
+.application.epm.epm-ficha .window-content, .application.epm.epm-poder .window-content, .application.epm.epm-item-janela .window-content { overflow-y: auto; }
+/* Dicas com muitas linhas (cálculos, bônus): rolam em vez de sair da tela */
+#tooltip, .locked-tooltip, .epm-dica-html { max-height: 70vh; overflow-y: auto; overscroll-behavior: contain; }
+/* Campos de texto: sempre com rolagem e dá para puxar o tamanho */
+.epm textarea, .application.dialog textarea, .epm-form-060 textarea { overflow-y: auto; resize: vertical; min-height: 3.2em; max-height: 60vh; }
+/* Cartões do chat muito longos (descrição de habilidade, magia, item): rolam dentro do cartão */
+.chat-message .epm-chat { max-height: 70vh; overflow-y: auto; overscroll-behavior: contain; }
+/* Descrições abertas na ficha e no Escudo */
+.epm-poder-descricao, .epm-item-descricao, .epm-descricao, .epm-escudo-lista-hui, .epm-classe-regras ul { max-height: 60vh; overflow-y: auto; }
+/* Textos cortados com "…" (nome, efeitos, chips): mostram tudo ao passar o mouse */
+.epm-item-titulo:hover, .epm-item-efeitos:hover, .epm-ataque-nome:hover, .epm-efeito-linha em:hover, .epm-cat-resumo:hover, .epm-npcv-chip:hover, .epm-escudo-item-nome:hover, .epm-puxar-nome:hover, .epm-ataque-sub:hover {
+  white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+}
+.epm-npcv-chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }

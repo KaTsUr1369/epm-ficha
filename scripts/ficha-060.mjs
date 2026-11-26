@@ -554,21 +554,42 @@ export async function kitInicial(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
   const arqFicha = idArquetipo(dados.arquetipo);
   const arq = arqFicha || "combatente";
-  // Com o arquétipo escolhido, só os kits dele (os dos outros arquétipos ficam travados)
-  const lista = Object.entries(KITS_INICIAIS).flatMap(([a, kits]) => kits.map(k => [`${a}:${k.id}`, `${a[0].toUpperCase()}${a.slice(1)} · ${k.nome}: ${k.itens.map(i => i[0] + (i[2] ? ` (${i[2]})` : "")).join(", ")}${Object.keys(k.moedas).length ? ` + ${Object.values(k.moedas)[0]} PO` : ""}`]));
+  const { ITENS_KIT, regiaoKit } = await import("./catalogos.mjs");
+  const { itemCatalogoPorId, dadosItemCatalogo } = await import("./itens-catalogo.mjs");
+  const { idRegiao, REGIAO_DO_NIVEL } = await import("./tecnologia.mjs");
+  // Itens comuns da região de origem (aba Sobre) ou do nível de tecnologia da ficha
+  const regiao = regiaoKit(idRegiao(dados.regiaoOrigem) || REGIAO_DO_NIVEL[Math.max(1, Math.min(3, int(dados.tecnologia, 1)))]);
+  const itemDe = papel => itemCatalogoPorId(ITENS_KIT[regiao][papel] ?? ITENS_KIT.umbra[papel]);
+  const nomeKit = k => k.itens.map(([papel, qtd]) => { const x = itemDe(papel); return `${x?.nome ?? papel}${qtd ? ` (${qtd})` : ""}`; }).join(", ");
+  const lista = Object.entries(KITS_INICIAIS).flatMap(([a, kits]) => kits.map(k => [`${a}:${k.id}`, `${a[0].toUpperCase()}${a.slice(1)} · ${k.nome}: ${nomeKit(k)}${Object.keys(k.moedas).length ? ` + ${Object.values(k.moedas)[0]} PO` : ""}`]));
+  const { NOMES_REGIAO } = await import("./tecnologia.mjs");
   const r = await formulario("Kit inicial do arquétipo", `<label class="epm-campo"><span>Kit</span><select name="kit">${lista.map(([v, t]) => { const trava = arqFicha && !v.startsWith(`${arqFicha}:`); return `<option value="${v}" ${v === `${arq}:a` ? "selected" : ""} ${trava ? "disabled" : ""}>${escapar(t)}${trava ? " (outro arquétipo)" : ""}</option>`; }).join("")}</select></label>
     ${arqFicha ? `<p class="epm-dica">Só os kits do seu arquétipo; os dos outros ficam travados.</p>` : ""}
-    <p class="epm-dica">Cria itens genéricos (troque pelas armas e armaduras de verdade depois) e soma as moedas.</p>`, { botao: "Criar kit", largura: 640 });
+    <p class="epm-dica">Os itens vêm prontos do compêndio EPM · Itens (dano, CA, propriedades e preço), comuns de ${escapar(NOMES_REGIAO[regiao])}, pela região de origem da ficha. As moedas somam no que você já tem.</p>`, { botao: "Criar kit", largura: 680 });
   if (!r) return;
   const [a, id] = String(r.kit).split(":");
   if (arqFicha && a !== arqFicha) return ui.notifications.warn("Só os kits do seu arquétipo.");
   const kit = KITS_INICIAIS[a]?.find(k => k.id === id);
   if (!kit) return;
-  await actor.createEmbeddedDocuments("Item", kit.itens.map(([nome, type, qtd]) => ({ name: nome, type, system: qtd ? { quantity: qtd } : {} })));
+  let artes = {};
+  try { artes = (await import("./compendio-itens.mjs")).artesSalvas(); } catch { artes = {}; }
+  let imagemItem = () => "";
+  try { imagemItem = (await import("./itens-imagens.mjs")).imagemItem; } catch { /* sem imagens */ }
+  const { idFixo } = await import("./compendio-classes.mjs");
+  const { ID_PACOTE_ITENS } = await import("./compendio-itens.mjs");
+  const dadosItens = kit.itens.map(([papel, qtd]) => {
+    const x = itemDe(papel);
+    if (!x) return null;
+    const d = dadosItemCatalogo(x, { qtd: 1, flag: FLAG, img: imagemItem(x, artes) });
+    if (qtd) foundry.utils.setProperty(d, "system.quantity", qtd);
+    foundry.utils.setProperty(d, "_stats.compendiumSource", `Compendium.${ID_PACOTE_ITENS}.Item.${idFixo(`itens:${x.id}`)}`);
+    return d;
+  }).filter(Boolean);
+  await actor.createEmbeddedDocuments("Item", dadosItens);
   const upd = {};
   for (const [m, v] of Object.entries(kit.moedas)) upd[`${P}.moedas.${m}`] = int(dados.moedas?.[m]) + v;
   if (Object.keys(upd).length) await actor.update(upd);
-  ui.notifications.info(`Kit criado: ${kit.itens.length} item(ns).`);
+  ui.notifications.info(`Kit criado: ${dadosItens.map(d => d.name).join(", ")}.`);
 }
 
 /* -------------------------------------------- */

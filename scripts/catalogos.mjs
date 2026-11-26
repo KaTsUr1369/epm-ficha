@@ -29,22 +29,46 @@ export const TREINAMENTOS_NOTION = [
 /*  Kits iniciais por arquétipo                 */
 /* -------------------------------------------- */
 
-/** Itens genéricos (o jogador troca pelas armas/armaduras de verdade depois). */
+/**
+ * Kits iniciais (0.9.1): cada vaga é um papel ("armaduraMedia", "corpoLeve"…) que vira um item comum do catálogo
+ * (o mesmo do compêndio EPM · Itens), da região de origem do personagem. [papel, tipo de reserva, quantidade]
+ */
 export const KITS_INICIAIS = {
   combatente: [
-    { id: "a", nome: "Kit A", itens: [["Armadura Média", "equipment"], ["Arma Corpo a Corpo Média", "weapon"], ["Arma à Distância Leve", "weapon"], ["Escudo", "equipment"], ["Kit de Aventura", "loot"]], moedas: { po: 60 } },
-    { id: "b", nome: "Kit B", itens: [["Armadura Pesada", "equipment"], ["Arma Corpo a Corpo Pesada", "weapon"], ["Kit de Aventura", "loot"]], moedas: { po: 25 } },
-    { id: "c", nome: "Kit C", itens: [["Armadura Leve", "equipment"], ["Arma Corpo a Corpo Leve", "weapon"], ["Arma Corpo a Corpo Média", "weapon"], ["Arma à Distância Leve", "weapon"]], moedas: { po: 120 } }
+    { id: "a", nome: "Kit A", itens: [["armaduraMedia"], ["corpoMedia"], ["distLeve"], ["escudo"], ["aventura"]], moedas: { po: 60 } },
+    { id: "b", nome: "Kit B", itens: [["armaduraPesada"], ["corpoPesada"], ["aventura"]], moedas: { po: 25 } },
+    { id: "c", nome: "Kit C", itens: [["armaduraLeve"], ["corpoLeve"], ["corpoMedia"], ["distLeve"]], moedas: { po: 120 } }
   ],
   conjurador: [
-    { id: "a", nome: "Kit A", itens: [["Componentes Mágicos", "consumable", 20], ["Kit Botânico", "tool"], ["Grimório", "loot"]], moedas: {} },
-    { id: "b", nome: "Kit B", itens: [["Foco Arcano", "loot"], ["Livro de Runas", "loot"], ["Grimório", "loot"]], moedas: {} }
+    { id: "a", nome: "Kit A", itens: [["componentes", 20], ["botanico"], ["grimorio"]], moedas: {} },
+    { id: "b", nome: "Kit B", itens: [["foco"], ["runas"], ["grimorio"]], moedas: {} }
   ],
   artifice: [
-    { id: "a", nome: "Kit A", itens: [["Kit Mecânico", "tool"], ["Arma à Distância Pesada", "weapon"], ["Armadura Leve", "equipment"], ["Kit de Aventura", "loot"]], moedas: { po: 50 } },
-    { id: "b", nome: "Kit B", itens: [["Kit Mecânico", "tool"], ["Arma de Fogo", "weapon"], ["Armadura Leve", "equipment"], ["Kit de Aventura", "loot"]], moedas: { po: 50 } }
+    { id: "a", nome: "Kit A", itens: [["mecanico"], ["distPesada"], ["armaduraLeve"], ["aventura"]], moedas: { po: 50 } },
+    { id: "b", nome: "Kit B", itens: [["mecanico"], ["fogo"], ["armaduraLeve"], ["aventura"]], moedas: { po: 50 } }
   ]
 };
+
+/** Papel do kit → id do item comum no catálogo, por região (Genesis usa os de Briavoterna: não tem itens comuns). */
+export const ITENS_KIT = {
+  umbra: {
+    armaduraLeve: "armaduras.couro-batido", armaduraMedia: "armaduras.cota-de-malha", armaduraPesada: "armaduras.armadura-de-talas", escudo: "escudos.escudo-redondo",
+    corpoLeve: "armas.espada-curta", corpoMedia: "armas.espada-longa", corpoPesada: "armas.montante",
+    distLeve: "armas.arco-curto", distPesada: "armas.besta", fogo: "armas.besta-de-mao",
+    aventura: "aventura.kit-de-aventura", mecanico: "ferramentas.kit-mecanico", botanico: "ferramentas.kit-botanico",
+    componentes: "conjuracao.componentes-magicos", grimorio: "conjuracao.grimorio", foco: "conjuracao.foco-arcano-cristal", runas: "conjuracao.livro-de-runas"
+  },
+  briavoterna: {
+    armaduraLeve: "armaduras.colete-balistico", armaduraMedia: "armaduras.armadura-tatica", armaduraPesada: "armaduras.traje-militar-pesado", escudo: "escudos.escudo-policial",
+    corpoLeve: "armas.faca-tatica", corpoMedia: "armas.taco", corpoPesada: "armas.motosserra",
+    distLeve: "armas.pistola", distPesada: "armas.rifle-de-caca", fogo: "armas.revolver",
+    aventura: "aventura.kit-de-sobrevivencia", mecanico: "ferramentas.kit-mecanico", botanico: "ferramentas.kit-botanico",
+    componentes: "conjuracao.componentes-magicos", grimorio: "conjuracao.grimorio", foco: "conjuracao.foco-arcano-cristal", runas: "conjuracao.livro-de-runas"
+  }
+};
+
+/** Região dos itens do kit pela origem/tecnologia do personagem. */
+export function regiaoKit(regiao = "") { return regiao === "briavoterna" || regiao === "genesis" ? "briavoterna" : "umbra"; }
 
 /* -------------------------------------------- */
 /*  Propriedades de arma (Notion)               */

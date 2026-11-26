@@ -281,6 +281,7 @@ export async function aplicarInimigo(actor, v, { vida = true, ataques = false, c
   if (vida) { upd["system.attributes.hp.max"] = v.pv; upd["system.attributes.hp.value"] = v.pv; }
   const { ataques: _a, area: _ar, ...ref } = v;
   upd[`${P}.npc.referencia`] = ref;
+  upd[`${P}.npc.nd`] = v.nivel;
   upd[`${P}.npc.raridade`] = v.raridade ?? "comum";
   upd[`${P}.npc.custo`] = v.custo ?? custoInimigo(v.tipo, v.raridade);
   if (ataques && v.ataques?.length) {

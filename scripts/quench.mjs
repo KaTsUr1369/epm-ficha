@@ -410,6 +410,7 @@ export function registrarLotes(quench) {
         assert.equal(ator.system.attributes.hp.max, Math.round(551 * 1.6));
         assert.equal(npc.raridade, "epico");
         assert.equal(npc.custo, 8);
+        assert.equal(npc.nd, 10, "ND = nível do inimigo");
         const gerados = Object.values(ator.flags[FLAG].ataques ?? {}).filter(a => a.gerado);
         assert.equal(gerados.length, 5, "4 ataques + área");
         assert.equal(gerados.filter(a => /Lendária/.test(a.nome)).length, 2);
@@ -447,6 +448,7 @@ export function registrarLotes(quench) {
         assert.equal(ator.flags[FLAG].npc.raridade, "comum");
         assert.equal(ator.flags[FLAG].npc.custo, 1);
         assert.equal(ator.system.attributes.hp.max, 89);
+        assert.equal(ator.flags[FLAG].npc.nd, 5, "ND = nível");
         assert.ok(ator.flags[FLAG].npcs090);
       });
     });
@@ -767,6 +769,27 @@ export function registrarLotes(quench) {
         assert.isAtLeast(itensDe(ator).length, antes + 1);
       });
 
+      it("kit inicial (0.9.1): itens do compêndio com números, da região de origem", async () => {
+        const F6 = await import("./ficha-060.mjs");
+        const um = await h.ator("Guerreiro de Umbra", { flags: { arquetipo: "Combatente", nivel: 1, regiaoOrigem: "Umbra'Draxil" } });
+        await comRespostas([{ kit: "combatente:a" }], () => F6.kitInicial(um));
+        const espada = itensDe(um).find(i => i.name === "Espada Longa");
+        assert.ok(espada, `itens: ${itensDe(um).map(i => i.name).join(", ")}`);
+        assert.equal(espada.flags[FLAG].catalogo, "armas.espada-longa");
+        assert.ok(itensDe(um).some(i => i.name === "Cota de Malha") && itensDe(um).some(i => i.name === "Escudo Redondo"));
+        const br = await h.ator("Guarda de Briavoterna", { flags: { arquetipo: "Combatente", nivel: 1, regiaoOrigem: "Briavoterna" } });
+        await comRespostas([{ kit: "combatente:a" }], () => F6.kitInicial(br));
+        assert.ok(itensDe(br).some(i => i.name === "Pistola") && itensDe(br).some(i => i.name === "Armadura Tática"), `itens: ${itensDe(br).map(i => i.name).join(", ")}`);
+      });
+      it("migração (0.9.1): itens genéricos do kit antigo viram os do compêndio", async () => {
+        const MM = await import("./migracoes-mundo.mjs");
+        const a = await h.ator("Kit antigo", { flags: { arquetipo: "Combatente", nivel: 1, regiaoOrigem: "Umbra'Draxil" } });
+        await a.createEmbeddedDocuments("Item", [{ name: "Arma Corpo a Corpo Média", type: "weapon", system: { quantity: 1 } }, { name: "Armadura Leve", type: "equipment", system: { quantity: 1 } }]);
+        await MM.kits091();
+        const nomes = itensDe(a).map(i => i.name);
+        assert.ok(nomes.includes("Espada Longa") && nomes.includes("Couro Batido") && !nomes.includes("Armadura Leve"), nomes.join(", "));
+      });
+
       it("raça Mutante com Compatibilidade à Fera escolhe 3 Habilidades Únicas", async () => {
         const F6 = await import("./ficha-060.mjs");
         const R = await import("./racas.mjs");
@@ -924,6 +947,9 @@ export function registrarLotes(quench) {
         const { KITS_INICIAIS } = await import("./catalogos.mjs");
         assert.deepEqual(Object.keys(KITS_INICIAIS).sort(), ["artifice", "combatente", "conjurador"]);
         assert.ok(Object.values(KITS_INICIAIS).flat().every(k => k.itens?.length), "todo kit tem itens");
+        const { ITENS_KIT } = await import("./catalogos.mjs");
+        const { itemCatalogoPorId } = await import("./itens-catalogo.mjs");
+        assert.deepEqual(Object.values(ITENS_KIT).flatMap(m => Object.values(m)).filter(id => !itemCatalogoPorId(id)), [], "todo item de kit existe no catálogo");
       });
       it("Receitas do Artífice: 5 valores por receita e categorias certas", async () => {
         const R = await import("./receitas-artifice.mjs");

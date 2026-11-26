@@ -569,6 +569,9 @@ export async function npcs090() {
     const npc = f.npc ?? {};
     const upd = { [`${P}.npcs090`]: true };
     if (!npc.raridade) upd[`${P}.npc.raridade`] = "comum";
+    // ND = nível do inimigo (antes era a metade): só quem ainda tinha o ND automático antigo
+    const nvRef = Math.floor(Number(npc.referencia?.nivel) || 0);
+    if (nvRef && Number(npc.nd) === Math.max(1, Math.round(nvRef / 2)) && nvRef > 1) upd[`${P}.npc.nd`] = nvRef;
     if (npc.custo === undefined || npc.custo === "") upd[`${P}.npc.custo`] = I.custoDoNpc({ ...npc, raridade: npc.raridade || "comum", custo: undefined });
     const ref = npc.referencia;
     if (ref?.nivel && !ref.raridade && Number(a.system?.attributes?.hp?.max) === Number(ref.pv)) {
@@ -604,6 +607,48 @@ export async function hui090() {
   return n;
 }
 
+/** Itens genéricos dos kits antigos (sem números) → papel do kit novo (0.9.1). */
+export const KIT_ANTIGO_091 = {
+  "Armadura Leve": "armaduraLeve", "Armadura Média": "armaduraMedia", "Armadura Pesada": "armaduraPesada", "Escudo": "escudo",
+  "Arma Corpo a Corpo Leve": "corpoLeve", "Arma Corpo a Corpo Média": "corpoMedia", "Arma Corpo a Corpo Pesada": "corpoPesada",
+  "Arma à Distância Leve": "distLeve", "Arma à Distância Pesada": "distPesada", "Arma de Fogo": "fogo",
+  "Kit de Aventura": "aventura", "Kit Mecânico": "mecanico", "Kit Botânico": "botanico", "Componentes Mágicos": "componentes",
+  "Grimório": "grimorio", "Foco Arcano": "foco", "Livro de Runas": "runas"
+};
+
+/** Kits iniciais (0.9.1): os itens genéricos sem números viram os itens comuns do catálogo da região da ficha. */
+export async function kits091() {
+  const { ITENS_KIT, regiaoKit } = await import("./catalogos.mjs");
+  const { itemCatalogoPorId, dadosItemCatalogo } = await import("./itens-catalogo.mjs");
+  const { idRegiao, REGIAO_DO_NIVEL } = await import("./tecnologia.mjs");
+  const { artesSalvas } = await import("./compendio-itens.mjs");
+  const { imagemItem } = await import("./itens-imagens.mjs");
+  const artes = artesSalvas();
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.kits091) continue;
+    const regiao = regiaoKit(idRegiao(f.regiaoOrigem) || REGIAO_DO_NIVEL[Math.max(1, Math.min(3, Number(f.tecnologia) || 1))]);
+    const velhos = (a.items?.contents ?? []).filter(i => KIT_ANTIGO_091[i.name] && !i.flags?.[FLAG]?.catalogo && !String(i.system?.description?.value ?? "").trim() && !Object.keys(i.flags?.[FLAG]?.efeitos ?? {}).length);
+    const novos = velhos.map(i => {
+      const x = itemCatalogoPorId(ITENS_KIT[regiao][KIT_ANTIGO_091[i.name]]);
+      if (!x) return null;
+      const d = dadosItemCatalogo(x, { qtd: 1, flag: FLAG, img: imagemItem(x, artes) });
+      foundry.utils.setProperty(d, "system.quantity", i.system?.quantity ?? 1);
+      if (i.system?.equipped) foundry.utils.setProperty(d, "system.equipped", true);
+      if (i.system?.container) foundry.utils.setProperty(d, "system.container", i.system.container);
+      return d;
+    }).filter(Boolean);
+    if (novos.length) {
+      await a.deleteEmbeddedDocuments("Item", velhos.map(i => i.id), { epmMigracao: true });
+      await a.createEmbeddedDocuments("Item", novos, { render: false });
+      n++;
+    }
+    await a.update({ [`${P}.kits091`]: true }, { render: false });
+  }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -634,6 +679,7 @@ export async function migrarMundo() {
   try { const n = await classesFinais090(); if (n) feitos.push(`${n} ficha(s) com as classes nas versões finais`); } catch (err) { console.warn("EPM | classes 0.9.0", err); }
   try { const n = await npcs090(); if (n) feitos.push(`${n} NPC(s) com raridade, custo do encontro e a tabela nova de inimigos`); } catch (err) { console.warn("EPM | NPCs 0.9.0", err); }
   try { const n = await hui090(); if (n) feitos.push(`${n} ficha(s) com a Habilidade Única Inicial (personagens pendentes, NPCs sem)`); } catch (err) { console.warn("EPM | HUI 0.9.0", err); }
+  try { const n = await kits091(); if (n) feitos.push(`${n} ficha(s) com os itens do kit inicial trocados pelos do compêndio`); } catch (err) { console.warn("EPM | kits 0.9.1", err); }
   try { avisoAtiradorArcano(); } catch (err) { console.warn("EPM | aviso do Atirador Arcano", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

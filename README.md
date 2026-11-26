@@ -14,6 +14,12 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.9.1
+
+- **Kits iniciais com itens de verdade**: o kit entrega os itens do compêndio EPM · Itens (dano, CA, propriedades, peso e preço), comuns da região de origem da ficha. Umbra'Draxil: Espada Longa, Cota de Malha, Arco Curto, Escudo Redondo…; Briavoterna (e Genesis): Pistola, Armadura Tática, Escudo Policial… Fichas antigas trocam os itens genéricos do kit ("Arma Corpo a Corpo Média" etc.) pelos do compêndio.
+- **ND = nível do inimigo** (antes era a metade; o sistema vai até o 50): PEv ao derrotar = 5 × ND. NPC rápido, NPCs modelo e o "Preencher pelo nível" gravam assim; NPCs antigos com o ND automático antigo são corrigidos.
+- **Barra de rolagem em todo lugar com texto grande**: janelas de diálogo (do EPM e do Foundry) não passam da tela e o conteúdo rola com os botões sempre visíveis; ficha, habilidade e item rolam; dicas compridas, cartões longos do chat, descrições abertas e campos de texto ganham rolagem; nomes e efeitos cortados com "…" mostram o texto inteiro ao passar o mouse.
+
 ## Novidades da 0.9.0
 
 **Sistema de Habilidades, Magias e Rituais**

@@ -149,7 +149,7 @@ export async function criarAtorDaCriatura(c, { folder = null } = {}) {
   const dados = foundry.utils.mergeObject(base, {
     atributos: Object.fromEntries(Object.entries(c.atributos).map(([id, v]) => [id, { base: v }])),
     nivel: c.nivel,
-    npc: { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, nd: Math.max(1, Math.round(c.nivel / 2)),
+    npc: { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, nd: c.nivel,
       raridade: c.raridade, custo: c.tabela.custo,
       referencia: { nivel: c.nivel, tipo: c.tabela.tipo, dano: c.danoMedio }, interp: c.inteligente ? {} : { jeito: "Age por instinto: não fala nem negocia." },
       ...(c.tabela.area ? { recargas: { epminiArea: { nome: "Ataque em área", min: c.tabela.area.recarga, pronta: true } } } : {}) },

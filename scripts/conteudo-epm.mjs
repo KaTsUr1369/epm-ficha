@@ -120,7 +120,7 @@ export async function dadosAtorCriatura(c, { regiao = "", extra = null } = {}) {
   dados.nivel = c.nivel;
   const { ataquesDoInimigo } = await import("./inimigos-nivel.mjs");
   const { ataques: _a, area, ...ref } = c.tabela;
-  dados.npc = { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, regiao: REGIOES[regiao] ?? "", nd: Math.max(1, Math.round(c.nivel / 2)),
+  dados.npc = { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, regiao: REGIOES[regiao] ?? "", nd: c.nivel,
     raridade: c.raridade ?? "comum", custo: c.tabela.custo, referencia: ref, ...(c.inteligente ? {} : { interp: { jeito: "Age por instinto: não fala nem negocia." } }),
     ...(area ? { recargas: { [idFixo(`npc:${c.nome}:area`)]: { nome: "Ataque em área", min: area.recarga, pronta: true, criado: 99 } } } : {}) };
   dados.ataques = ataquesDoInimigo(c.tabela, { nome: extra?.ataque ?? c.ataque.nome, tipoDano: extra?.tipoDano ?? c.ataque.tipo, pericia: c.ataque.pericia });

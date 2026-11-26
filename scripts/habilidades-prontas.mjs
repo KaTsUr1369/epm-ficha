@@ -17,10 +17,10 @@ export const HABILIDADES_PRONTAS = [
     tipo: "habilidade", origem: "meme", tipoHab: "Habilidade Global", raridade: "comum",
     // "Global" no nome, mas só quem o Mestre der tem; não conta no limite da raridade
     foraDoLimite: true,
-    resumo: "Passa o dano de um ataque que iria para você para um aliado. Quem receber o ataque tem +5 no teste ou no dano do próximo ataque.",
+    resumo: "Ação livre, quando quiser: passa o dano de um ataque que iria para você para um aliado. Quem receber o ataque tem +5 no teste de ataque ou no dano do próximo ataque.",
     formas: [{
-      nome: "Dobro e Passo", acao: "reacao",
-      efeito: "<p>Passe o dano de um ataque que iria para você para um aliado.</p><p>Quem receber o ataque tem <strong>+5</strong> no teste ou no dano do próximo ataque.</p>"
+      nome: "Dobro e Passo", acao: "livre",
+      efeito: "<p>Ação livre, quando quiser (até depois de tentar a defesa): passe o dano de um ataque que iria para você para um aliado.</p><p>Quem receber o ataque tem <strong>+5</strong> no teste de ataque ou no dano do próximo ataque.</p>"
     }]
   }
 ];

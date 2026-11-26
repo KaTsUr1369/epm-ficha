@@ -881,6 +881,7 @@ export async function defenderDoCartao(defensor, defesaId, { acerto, dano = 0, t
   await defensor.update({ [`${P}.acoes.defesas`]: usadas });
   const botoes = [];
   if (dano > 0 && recebe > 0) botoes.push(`<button type="button" data-epm-action="dano" data-valor="${recebe}" data-alvos="${escapar(defensor.uuid)}"${tipoDano ? ` data-tipo-dano="${escapar(tipoDano)}"` : ""}${critico ? " data-critico=\"1\"" : ""}${tipoArma ? ` data-tipo-arma="${escapar(tipoArma)}"` : ""} data-rotulo="Dano após ${escapar(def.label)}"><i class="fa-solid fa-burst" aria-hidden="true"></i> Aplicar ${recebe} de dano em ${escapar(defensor.name)}</button>`);
+  if (dano > 0 && recebe > 0 && temDobroPasso(defensor)) botoes.push(botaoDobroPasso(defensor, recebe, { tipoDano, critico, tipoArma }));
   if (defesaId === "contra" && !passou) botoes.push(`<button type="button" data-epm-action="contraatacar" data-defensor="${escapar(defensor.uuid)}" data-rotulo="Contra-ataque"><i class="fa-solid fa-hand-fist" aria-hidden="true"></i> ${escapar(defensor.name)} contra-ataca</button>`);
   const fracTexto = fracao === 1 ? "todo o dano" : fracao === 0 ? "nenhum dano" : fracao > 0.6 ? "2/3 do dano" : "metade do dano";
   return ChatMessage.create({
@@ -911,6 +912,63 @@ export async function resistirDoCartao(defensor, { pericia, dt, rotulo = "" }) {
   await defensor.update({ [`${P}.acoes.reacao`]: true });
   const passou = roll.total >= dt;
   return nota(defensor, `<p><strong>${escapar(defensor.name)}</strong> ${passou ? "resistiu" : "não resistiu"}: ${roll.total} contra DT ${dt} (${escapar(per?.nome ?? pericia)}). Gastou a Reação.</p>`, passou ? "#6FAE8C" : "#D2544A");
+}
+
+/* ---------------- Dobro e Passo (habilidade pronta) ---------------- */
+
+/** A ficha tem a habilidade pronta "Dobro e Passo"? */
+export function temDobroPasso(actor) {
+  return (actor?.items?.contents ?? [...(actor?.items ?? [])]).some(i => i.flags?.[FLAG]?.pronta === "dobro-e-passo" || i.name === "Dobro e Passo");
+}
+
+function botaoDobroPasso(defensor, valor, { tipoDano = "", critico = false, tipoArma = "" } = {}) {
+  return `<button type="button" data-epm-action="dobroPasso" data-defensor="${escapar(defensor.uuid)}" data-valor="${int(valor)}"${tipoDano ? ` data-tipo-dano="${escapar(tipoDano)}"` : ""}${critico ? " data-critico=\"1\"" : ""}${tipoArma ? ` data-tipo-arma="${escapar(tipoArma)}"` : ""} data-rotulo="Dobro e Passo" title="Ação livre: passa este dano para um aliado na cena; quem receber ganha +5 no teste ou no dano do próximo ataque"><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> Dobro e Passo: passar para um aliado</button>`;
+}
+
+/** Cartão com só o botão do Dobro e Passo (quem não reagiu e foi acertado). */
+export async function cartaoDobroPasso(defensor, valor, extra = {}) {
+  if (!temDobroPasso(defensor) || int(valor) <= 0) return null;
+  return ChatMessage.create({
+    speaker: falar(defensor),
+    content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:#7FB0C9"><p><strong>${escapar(defensor.name)}</strong> foi acertado (${int(valor)} de dano) e tem <strong>Dobro e Passo</strong>.</p><div class="epm-chat-botoes">${botaoDobroPasso(defensor, valor, extra)}</div></div>`,
+    flags: { [FLAG]: { tipo: "defesa" } }
+  });
+}
+
+/** Aliados na cena: fichas com token na cena atual, do mesmo lado (disposição) do defensor. */
+export function aliadosNaCena(defensor) {
+  const tokens = [...(globalThis.canvas?.scene?.tokens ?? [])];
+  const meu = tokens.find(t => t.actor?.id === defensor.id || t.actorId === defensor.id);
+  const lado = meu?.disposition ?? 1;
+  const ids = new Set(tokens.filter(t => (t.disposition ?? 1) === lado && t.actorId && t.actorId !== defensor.id).map(t => t.actorId));
+  return ids;
+}
+
+/** Usa o Dobro e Passo: escolhe o aliado, gasta a Reação, manda o dano para ele e dá +5 no próximo ataque. */
+export async function usarDobroPasso(defensor, { valor = 0, tipoDano = "", critico = false, tipoArma = "" } = {}) {
+  const { escolherAtores } = await import("./escolher-ator.mjs");
+  const naCena = aliadosNaCena(defensor);
+  const r = await escolherAtores({
+    titulo: `Dobro e Passo: ${defensor.name}`, excluir: [defensor.uuid], filtro: a => !naCena.size || naCena.has(a.id),
+    dica: `Passa ${int(valor)} de dano para um aliado${naCena.size ? " na cena" : ""}. Quem receber ganha +5 no próximo ataque.`,
+    extra: `<label class="epm-campo"><span>Bônus de quem recebe</span><select name="bonus"><option value="acerto">+5 no teste de ataque do próximo ataque</option><option value="dano">+5 no dano do próximo ataque</option></select></label>`,
+    ok: "Passar o dano"
+  });
+  if (!r?.uuids?.length) return null;
+  const aliado = await fromUuid(r.uuids[0]);
+  if (!aliado) return null;
+  // Ação livre: pode ser usada quando quiser, sem gastar Reação nem ações
+  const bonus = { nome: `Dobro e Passo (de ${defensor.name})`, ativo: true, acerto: r.bonus === "dano" ? 0 : 5, dano: r.bonus === "dano" ? "5" : "", umaVez: true, soAtaque: true, cena: true, criado: Date.now() };
+  const { pedirAoMestre } = await import("./mundo.mjs");
+  if (aliado.isOwner) await aliado.update({ [`${P}.bonusCena.${foundry.utils.randomID()}`]: bonus });
+  else await pedirAoMestre("bonusCenaAtor", { uuid: aliado.uuid, bonus });
+  return ChatMessage.create({
+    speaker: falar(defensor),
+    content: `<div class="epm-chat epm-chat-nota" style="--epm-cor-cartao:#7FB0C9"><p><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> <strong>${escapar(defensor.name)}</strong> usou <strong>Dobro e Passo</strong>: o dano vai para <strong>${escapar(aliado.name)}</strong>, que ganha +5 ${r.bonus === "dano" ? "no dano" : "no teste de ataque"} do próximo ataque.</p>
+      <p class="epm-chat-requisitos">Use este botão no lugar do "Aplicar dano" do ataque e da defesa.</p>
+      <div class="epm-chat-botoes"><button type="button" data-epm-action="dano" data-valor="${int(valor)}" data-alvos="${escapar(aliado.uuid)}"${tipoDano ? ` data-tipo-dano="${escapar(tipoDano)}"` : ""}${critico ? " data-critico=\"1\"" : ""}${tipoArma ? ` data-tipo-arma="${escapar(tipoArma)}"` : ""} data-rotulo="Dobro e Passo"><i class="fa-solid fa-burst" aria-hidden="true"></i> Aplicar ${int(valor)} de dano em ${escapar(aliado.name)}</button></div></div>`,
+    flags: { [FLAG]: { tipo: "defesa" } }
+  });
 }
 
 /** Trata os botões novos do chat. Devolve true se tratou. */
@@ -947,6 +1005,19 @@ export async function cliqueChatExtra(acao, actor, botao) {
     if (cliqueChatExtra.usados.has(chaveDef)) { ui.notifications.info(`${defensor.name} já respondeu a este cartão.`); return true; }
     cliqueChatExtra.usados.add(chaveDef);
     await revelarAtaque(msgIdDef, defensor.uuid, { reacao: "Nenhuma" });
+    const oc = game.messages?.get(msgIdDef)?.flags?.[FLAG]?.oculto;
+    if (oc && int(oc.dano) > 0) await cartaoDobroPasso(defensor, int(oc.dano), { tipoDano: oc.tipoDano ?? "", critico: !!oc.critico, tipoArma: oc.tipoArma ?? "" });
+    return true;
+  }
+  if (acao === "dobroPasso") {
+    const defensor = botao.dataset.defensor ? await fromUuid(botao.dataset.defensor) : null;
+    if (!defensor) return true;
+    if (!defensor.isOwner) { ui.notifications.warn(`Só quem controla ${defensor.name} usa o Dobro e Passo.`); return true; }
+    const chave = `${msgIdDef}:dobroPasso:${defensor.uuid}`;
+    cliqueChatExtra.usados ??= new Set();
+    if (cliqueChatExtra.usados.has(chave)) { ui.notifications.info("Dobro e Passo já usado neste cartão."); return true; }
+    const r = await usarDobroPasso(defensor, { valor: int(botao.dataset.valor), tipoDano: botao.dataset.tipoDano ?? "", critico: !!botao.dataset.critico, tipoArma: botao.dataset.tipoArma ?? "" });
+    if (r) cliqueChatExtra.usados.add(chave);
     return true;
   }
   if (acao === "defender" || acao === "resistir" || acao === "contraatacar") {

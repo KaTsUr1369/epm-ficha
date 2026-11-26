@@ -649,6 +649,24 @@ export async function kits091() {
   return n;
 }
 
+/** Dobro e Passo (0.9.2): virou ação livre; as fichas que já têm a habilidade acompanham. */
+export async function dobroPasso092() {
+  const { HABILIDADES_PRONTAS } = await import("./habilidades-prontas.mjs");
+  const h = HABILIDADES_PRONTAS.find(x => x.id === "dobro-e-passo");
+  let n = 0;
+  for (const a of game.actors ?? []) for (const it of a.items ?? []) {
+    const f = it.flags?.[FLAG];
+    if (f?.pronta !== "dobro-e-passo") continue;
+    const upd = {};
+    for (const [id, fo] of Object.entries(f.formas ?? {})) {
+      if (fo?.acao === "reacao") upd[`flags.${FLAG}.formas.${id}.acao`] = "livre";
+      if (fo?.efeito && !/Ação livre/.test(fo.efeito)) upd[`flags.${FLAG}.formas.${id}.efeito`] = h.formas[0].efeito;
+    }
+    if (Object.keys(upd).length) { await it.update({ ...upd, "system.description.value": `<p>${h.resumo}</p>` }); n++; }
+  }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -680,6 +698,7 @@ export async function migrarMundo() {
   try { const n = await npcs090(); if (n) feitos.push(`${n} NPC(s) com raridade, custo do encontro e a tabela nova de inimigos`); } catch (err) { console.warn("EPM | NPCs 0.9.0", err); }
   try { const n = await hui090(); if (n) feitos.push(`${n} ficha(s) com a Habilidade Única Inicial (personagens pendentes, NPCs sem)`); } catch (err) { console.warn("EPM | HUI 0.9.0", err); }
   try { const n = await kits091(); if (n) feitos.push(`${n} ficha(s) com os itens do kit inicial trocados pelos do compêndio`); } catch (err) { console.warn("EPM | kits 0.9.1", err); }
+  try { const n = await dobroPasso092(); if (n) feitos.push(`${n} Dobro e Passo virou ação livre`); } catch (err) { console.warn("EPM | Dobro e Passo 0.9.2", err); }
   try { avisoAtiradorArcano(); } catch (err) { console.warn("EPM | aviso do Atirador Arcano", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

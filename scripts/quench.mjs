@@ -612,6 +612,26 @@ export function registrarLotes(quench) {
         assert.ok(bloqueado, "Concluir bloqueado");
         assert.ok(resultado === null);
       });
+      it("Dobro e Passo: depois da defesa, passa o dano para um aliado, gasta a Reação e dá +5 no próximo ataque", async () => {
+        const X = await import("./extras.mjs");
+        const HP = await import("./habilidades-prontas.mjs");
+        const def = await h.ator("Dobro", { flags: { nivel: 3, arquetipo: "Combatente" } });
+        const aliado = await h.ator("Aliado", { flags: { nivel: 3, arquetipo: "Combatente" } });
+        assert.notOk(X.temDobroPasso(def));
+        await def.createEmbeddedDocuments("Item", [HP.dadosHabilidadePronta(HP.HABILIDADES_PRONTAS.find(x => x.id === "dobro-e-passo"))]);
+        assert.ok(X.temDobroPasso(def), "tem a habilidade");
+        const msg = await X.defenderDoCartao(def, "esquiva", { acerto: 999, dano: 12, tipoDano: "Cortante" });
+        assert.ok(/data-epm-action="dobroPasso"/.test(msg?.content ?? ""), "o cartão da defesa tem o botão Dobro e Passo");
+        const r = await comRespostas([{ uuids: [aliado.uuid], ids: [aliado.id], bonus: "dano" }], () => X.usarDobroPasso(def, { valor: 12, tipoDano: "Cortante" }));
+        assert.ok(r.resultado, "passou o dano");
+        assert.ok(/Aplicar 12 de dano em/.test(r.resultado.content ?? ""), "botão de dano no aliado");
+        assert.notOk(def.flags[FLAG].acoes?.reacao, "ação livre: não gasta a Reação");
+        const b = Object.values(aliado.flags[FLAG].bonusCena ?? {}).find(x => /Dobro e Passo/.test(x.nome));
+        assert.ok(b && b.dano === "5" && b.umaVez && b.soAtaque, "+5 no dano do próximo ataque");
+        const M = await import("./mecanicas.mjs");
+        assert.equal((await M.consumirBonusUmaVez(aliado, { soAtaque: false })).length, 0, "um teste comum não gasta o bônus do ataque");
+        assert.equal((await M.consumirBonusUmaVez(aliado)).length, 1, "o próximo ataque gasta");
+      });
       it("compêndio de habilidades de exemplo tem os 32 modelos com receita", async () => {
         const C = await import("./conteudo-epm.mjs");
         const { docs } = await C.documentosHabilidades();

@@ -14,6 +14,10 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.9.2
+
+- **Dobro e Passo no fluxo de defesa**: depois de Esquiva, Bloqueio ou Contra-ataque (ou sem reação), se o ataque acertou, quem tem a habilidade passa o dano para um aliado na cena com um clique. É ação livre: usa quando quiser, sem gastar a Reação. O aliado recebe o botão de dano e +5 no teste de ataque ou no dano do próximo ataque (um teste comum não gasta esse bônus). Fichas que já tinham a habilidade passam para ação livre.
+
 ## Novidades da 0.9.1
 
 - **Kits iniciais com itens de verdade**: o kit entrega os itens do compêndio EPM · Itens (dano, CA, propriedades, peso e preço), comuns da região de origem da ficha. Umbra'Draxil: Espada Longa, Cota de Malha, Arco Curto, Escudo Redondo…; Briavoterna (e Genesis): Pistola, Armadura Tática, Escudo Policial… Fichas antigas trocam os itens genéricos do kit ("Arma Corpo a Corpo Média" etc.) pelos do compêndio.

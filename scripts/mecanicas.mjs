@@ -147,7 +147,7 @@ export async function rolarTeste(actor, { rotulo, bonus = 0, evento = null, desv
   await roll.evaluate();
   const partes = [];
   // Bônus "só no próximo teste" (um por ativação): entrou neste e some
-  const umaVez = await consumirBonusUmaVez(actor);
+  const umaVez = await consumirBonusUmaVez(actor, { soAtaque: false });
   if (umaVez.length) partes.push(`usou ${umaVez.join(", ")}`);
   if (vantagem && desvantagem) partes.push(`vantagem${vantagens.length ? ` (${vantagens.join(", ")})` : ""} e desvantagem se anulam`);
   else if (vantagem) partes.push(vantagens.length ? `com vantagem (${vantagens.join(", ")})` : "com vantagem");
@@ -164,8 +164,9 @@ export async function rolarTeste(actor, { rotulo, bonus = 0, evento = null, desv
 }
 
 /** Tira os bônus de cena "só no próximo teste" depois que entraram numa rolagem. Devolve os nomes. */
-export async function consumirBonusUmaVez(actor) {
-  const lista = Object.entries(actor?.flags?.[FLAG]?.bonusCena ?? {}).filter(([, b]) => b?.ativo && b.umaVez);
+export async function consumirBonusUmaVez(actor, { soAtaque = true } = {}) {
+  // Num teste comum, o bônus "só no próximo ataque" (Dobro e Passo) fica guardado para o ataque
+  const lista = Object.entries(actor?.flags?.[FLAG]?.bonusCena ?? {}).filter(([, b]) => b?.ativo && b.umaVez && (soAtaque || !b.soAtaque));
   if (!lista.length) return [];
   await actor.update(Object.fromEntries(lista.map(([id]) => [`${P}.bonusCena.-=${id}`, null])));
   return lista.map(([, b]) => b.nome || "bônus");

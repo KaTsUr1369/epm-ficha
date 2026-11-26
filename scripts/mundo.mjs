@@ -116,6 +116,14 @@ async function tratarPedido({ tipo, dados, userId }) {
     const { aplicarEfeitoNoAlvo } = await import("./mecanicas.mjs");
     return aplicarEfeitoNoAlvo(await fromUuid(dados.alvo), dados.pacote ?? {});
   }
+  if (tipo === "bonusCenaAtor") {
+    // Dobro e Passo (e afins): bônus de cena numa ficha que quem pediu não controla
+    const alvo = await fromUuid(dados.uuid).catch(() => null);
+    if (!alvo?.flags?.[FLAG] || !dados.bonus) return false;
+    const b = dados.bonus;
+    await alvo.update({ [`flags.${FLAG}.bonusCena.${foundry.utils.randomID()}`]: { nome: String(b.nome ?? "Bônus"), ativo: true, acerto: Number(b.acerto) || 0, dano: String(b.dano ?? ""), umaVez: !!b.umaVez, soAtaque: !!b.soAtaque, cena: true, criado: Date.now() } });
+    return true;
+  }
   if (tipo === "revelarAtaque") {
     const { aplicarRevelacao } = await import("./extras.mjs");
     return aplicarRevelacao(game.messages?.get(dados.msgId), dados.defensor ?? "", { forcar: !!dados.forcar, reacao: dados.reacao ?? "" });

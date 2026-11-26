@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grimório do Multiverso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fundo: #0D0A12; --cartao: #17131D; --cartao2: #1d1825; --linha: #2c2535; --linha2: #3a3146;
+    --texto: #D0C7D8; --claro: #ded5e4; --fraco: #8d8393; --muito-fraco: #665f6c;
+    --roxo: #6D3FA9; --roxo2: #8B5CC7; --lilas: #b98ce8; --roxo-escuro: #4B286D;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--fundo); color: var(--texto); font-family: Manrope, system-ui, sans-serif; font-size: 15px; }
+  body { background-image: radial-gradient(circle at 15% -10%, rgba(109,63,169,0.16), transparent 40%), radial-gradient(circle at 100% 0%, rgba(75,40,109,0.18), transparent 35%); background-attachment: fixed; min-height: 100vh; }
+  button, input, select { font: inherit; color: inherit; }
+  .mono { font-family: "DM Mono", monospace; }
+
+  header.topo { position: sticky; top: 0; z-index: 5; background: rgba(13,10,18,0.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--linha); }
+  .topo-linha { max-width: 1200px; margin: 0 auto; padding: 14px 24px 0; display: flex; align-items: center; gap: 14px; }
+  .logo { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(145deg, var(--roxo-escuro), #241933); border: 1px solid var(--linha2); color: var(--lilas); }
+  .marca strong { display: block; font-family: Unbounded, sans-serif; font-weight: 600; letter-spacing: 0.06em; font-size: 17px; color: var(--claro); }
+  .marca strong span { color: var(--roxo2); }
+  .marca small { display: block; font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fraco); margin-top: 2px; }
+  .topo-extra { margin-left: auto; font-family: "DM Mono", monospace; font-size: 11px; color: var(--fraco); text-align: right; }
+  nav.abas { max-width: 1200px; margin: 0 auto; padding: 10px 24px 0; display: flex; gap: 4px; overflow-x: auto; }
+  nav.abas button { background: none; border: 0; padding: 10px 14px 12px; display: flex; align-items: center; gap: 8px; color: var(--fraco); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; font-weight: 500; }
+  nav.abas button:hover { color: var(--texto); }
+  nav.abas button.ativo { color: var(--claro); border-bottom-color: var(--roxo2); }
+  nav.abas .qtd { font-family: "DM Mono", monospace; font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--fraco); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 34px 24px 80px; }
+  .sobretitulo { display: flex; align-items: center; gap: 12px; font-family: "DM Mono", monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--roxo2); }
+  .sobretitulo::before { content: ""; width: 28px; height: 1px; background: var(--roxo2); }
+  h1 { font-family: Unbounded, sans-serif; font-weight: 600; font-size: clamp(36px, 6vw, 56px); margin: 10px 0 8px; color: #f1ebf5; letter-spacing: -0.01em; }
+  .subtitulo { margin: 0 0 24px; color: var(--fraco); max-width: 760px; line-height: 1.55; }
+
+  .filtros { display: grid; grid-template-columns: minmax(0, 1fr) 200px 200px 180px; gap: 10px; margin-bottom: 14px; }
+  .busca { position: relative; }
+  .busca svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muito-fraco); pointer-events: none; }
+  .filtros input, .filtros select { width: 100%; height: 44px; border-radius: 8px; border: 1px solid var(--linha); background: rgba(23,19,29,0.85); padding: 0 12px; outline: none; }
+  .filtros input { padding-left: 38px; }
+  .filtros input:focus, .filtros select:focus { border-color: var(--roxo2); }
+  .filtros select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238d8393' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { height: 32px; padding: 0 15px; border-radius: 999px; border: 1px solid var(--linha2); background: rgba(23,19,29,0.7); color: var(--fraco); cursor: pointer; font-size: 13px; }
+  .chip:hover { color: var(--texto); border-color: var(--roxo2); }
+  .chip.ativo { background: rgba(109,63,169,0.28); border-color: var(--roxo2); color: var(--claro); }
+  .chip .n { font-family: "DM Mono", monospace; font-size: 10.5px; margin-left: 4px; opacity: 0.7; }
+  .contagem { font-family: "DM Mono", monospace; font-size: 11px; color: var(--fraco); margin: 0 0 18px; }
+
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 18px; align-items: start; }
+  .cartao { position: relative; background: linear-gradient(180deg, rgba(29,24,37,0.95), rgba(23,19,29,0.95)); border: 1px solid var(--linha); border-radius: 12px; padding: 18px 18px 14px; }
+  .cartao::before { content: ""; position: absolute; top: -1px; left: 18px; width: 38px; height: 2px; background: var(--roxo2); border-radius: 0 0 2px 2px; }
+  .cartao-topo { display: flex; align-items: center; gap: 6px; }
+  .etiqueta { font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--linha2); color: var(--fraco); }
+  .etiqueta.forte { color: var(--lilas); background: rgba(109,63,169,0.2); border-color: rgba(139,92,199,0.45); }
+  .cartao-topo .icone { margin-left: auto; color: var(--roxo2); opacity: 0.8; }
+  .cartao h2 { font-family: Unbounded, sans-serif; font-weight: 500; font-size: 21px; color: #ece4f2; margin: 14px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--linha2); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding-bottom: 12px; border-bottom: 1px solid var(--linha2); }
+  .stat span { display: block; font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muito-fraco); margin-bottom: 3px; }
+  .stat b { font-weight: 500; font-size: 13px; color: var(--texto); }
+  .stat.largo { grid-column: 1 / -1; }
+  .texto { font-size: 13.5px; line-height: 1.6; color: #bdb3c6; margin-top: 12px; }
+  .texto p { margin: 0 0 10px; }
+  .texto ul { margin: 0 0 10px; padding-left: 18px; }
+  .texto li { margin-bottom: 4px; }
+  .texto strong { color: var(--claro); font-weight: 600; }
+  .efeito { margin-top: 6px; border-left: 2px solid var(--roxo); padding: 4px 0 4px 14px; }
+  .efeito > span { display: block; font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--roxo2); margin-bottom: 6px; }
+  .efeito p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.55; color: var(--claro); }
+  .efeito .asc { color: #bdb3c6; }
+  .efeito .asc b { color: var(--lilas); font-weight: 600; }
+  .mais { display: none; }
+  .cartao.aberto .mais { display: block; }
+  .cartao.longo:not(.aberto) .corpo { max-height: 210px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
+  .rodape-cartao { display: flex; align-items: center; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--linha2); }
+  .acao { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; color: var(--fraco); font-size: 12px; cursor: pointer; }
+  .acao:hover { color: var(--lilas); }
+  .acao.ok { color: #8fd19e; }
+  .acao.direita { margin-left: auto; }
+
+  .vazio { padding: 60px 0; text-align: center; color: var(--fraco); }
+  .regras { display: grid; gap: 14px; max-width: 860px; }
+  .regras .cartao h2 { font-size: 18px; }
+  .tabela { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .tabela th, .tabela td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linha2); }
+  .tabela th { font-family: "DM Mono", monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fraco); font-weight: 400; }
+  .passos { margin: 0; padding-left: 20px; line-height: 1.7; }
+  code.k { font-family: "DM Mono", monospace; font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; color: var(--lilas); }
+  .aviso { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; transition: 0.2s; background: #241a33; border: 1px solid var(--roxo2); color: var(--claro); padding: 10px 16px; border-radius: 8px; font-size: 13px; pointer-events: none; }
+  .aviso.ver { opacity: 1; transform: translateX(-50%); }
+
+  /* Habilidades */
+  .etiqueta.r-comum { color: #c9c2cf; background: rgba(255,255,255,0.05); border-color: #4a4252; }
+  .etiqueta.r-incomum { color: #8fd19e; background: rgba(143,209,158,0.1); border-color: rgba(143,209,158,0.4); }
+  .etiqueta.r-rara { color: #7fb4ec; background: rgba(127,180,236,0.1); border-color: rgba(127,180,236,0.4); }
+  .etiqueta.r-lendaria { color: #f0b75a; background: rgba(227,161,58,0.12); border-color: rgba(227,161,58,0.45); }
+  .etiqueta.r-mitica { color: #ef7f8b; background: rgba(224,96,111,0.12); border-color: rgba(224,96,111,0.45); }
+  .etiqueta.r-unica { color: #fff; background: linear-gradient(90deg, rgba(109,63,169,0.55), rgba(224,96,111,0.4), rgba(227,161,58,0.4)); border-color: rgba(255,255,255,0.35); }
+  .criador { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .criador .lado { position: sticky; top: 118px; display: grid; gap: 14px; }
+  #hab-custos h2 { font-size: 17px; margin-top: 4px; }
+  .campo { margin-bottom: 16px; }
+  .campo > label, .campo > .rot { display: block; font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muito-fraco); margin-bottom: 7px; }
+  .campo input[type=text], .campo textarea, .mod select { width: 100%; border-radius: 8px; border: 1px solid var(--linha); background: rgba(13,10,18,0.6); padding: 9px 12px; outline: none; }
+  .campo textarea { resize: vertical; min-height: 72px; }
+  .campo input:focus, .campo textarea:focus, .mod select:focus { border-color: var(--roxo2); }
+  .chips.seg { margin-bottom: 6px; }
+  .dica { margin: 4px 0 0; font-size: 12.5px; color: var(--fraco); line-height: 1.5; }
+  .dica b { color: var(--texto); font-weight: 600; }
+  .grupo-mods { border-top: 1px solid var(--linha2); padding-top: 6px; margin-bottom: 16px; }
+  .grupo-mods h3 { font-family: Unbounded, sans-serif; font-weight: 500; font-size: 14px; color: var(--claro); margin: 12px 0 10px; }
+  .grupo-mods h3 small { font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--fraco); margin-left: 8px; text-transform: uppercase; }
+  .grupo-mods h4 { font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--roxo2); font-weight: 400; margin: 14px 0 6px; }
+  .mods { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .mod { display: flex; align-items: center; gap: 9px; font-size: 12.5px; line-height: 1.35; padding: 7px 9px; border: 1px solid var(--linha); border-radius: 7px; background: rgba(13,10,18,0.35); cursor: pointer; }
+  .mod:hover { border-color: var(--linha2); }
+  .mod.off { opacity: 0.38; cursor: not-allowed; }
+  .mod.sel { flex-direction: column; align-items: stretch; gap: 5px; cursor: default; }
+  .mod.sel > span { font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muito-fraco); }
+  .mod select { padding: 6px 30px 6px 9px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238d8393' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }
+  .mod input[type=checkbox] { accent-color: var(--roxo2); width: 15px; height: 15px; flex: none; }
+  .mod input[type=number] { width: 46px; height: 26px; flex: none; border-radius: 6px; border: 1px solid var(--linha2); background: rgba(13,10,18,0.6); padding: 0 6px; }
+  .mod .pts { margin-left: auto; flex: none; font-family: "DM Mono", monospace; font-size: 11px; color: var(--lilas); padding-left: 6px; }
+  .medidor { margin-top: 12px; }
+  .medidor-topo { display: flex; justify-content: space-between; font-family: "DM Mono", monospace; font-size: 11px; color: var(--fraco); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .medidor-topo b { color: var(--claro); font-weight: 500; }
+  .medidor .barra { height: 6px; border-radius: 3px; background: var(--linha); overflow: hidden; }
+  .medidor .barra i { display: block; height: 100%; background: linear-gradient(90deg, var(--roxo), var(--lilas)); }
+  .medidor.estourou .barra i { background: #d2544a; }
+  .medidor small { display: block; margin-top: 5px; font-size: 11.5px; color: var(--muito-fraco); }
+  .alerta { margin: 8px 0 0; font-size: 12.5px; color: #f0a0a0; }
+  .nota { margin: 8px 0 0; font-size: 12.5px; color: var(--fraco); line-height: 1.5; }
+  .ok-msg { margin: 10px 0 0; font-size: 12.5px; color: #8fd19e; }
+  .acao[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .regras.largo { max-width: none; }
+  .rolagem { overflow-x: auto; }
+  .criar-atalho { margin: -8px 0 18px; }
+  .btn-criar { height: 36px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--roxo2); background: rgba(109,63,169,0.28); color: var(--claro); cursor: pointer; font-weight: 600; }
+  .btn-criar:hover { background: rgba(109,63,169,0.45); }
+  .tec-bloco { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--linha2); }
+  .tec-bloco.unica-tec { border-top: 0; padding-top: 0; margin-top: 0; }
+  .tec-bloco h3 { font-family: Unbounded, sans-serif; font-weight: 500; font-size: 15px; color: #ece4f2; margin: 0 0 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tec-bloco h3 .n { font-family: "DM Mono", monospace; font-size: 12px; color: var(--roxo2); }
+  .tema { font-size: 13px; color: var(--fraco); margin: -2px 0 10px; line-height: 1.5; }
+  .tema b { color: var(--texto); font-weight: 600; }
+  .chip.add { border-style: dashed; }
+  .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .campo input[type=number] { width: 100%; border-radius: 8px; border: 1px solid var(--linha); background: rgba(13,10,18,0.6); padding: 9px 12px; outline: none; }
+  .mod.sel input[type=number] { width: 100%; height: 34px; }
+  .mod.remover { justify-content: center; color: #f0a0a0; font: inherit; font-size: 12.5px; }
+  .pendente { margin: 10px 0 0; font-size: 12.5px; color: #f0b75a; }
+  .conceitos { margin: 0; }
+  .conceitos dt { font-weight: 600; color: var(--claro); margin-top: 12px; }
+  .conceitos dd { margin: 3px 0 0; color: #bdb3c6; font-size: 13.5px; line-height: 1.55; }
+  @media (max-width: 600px) { .duas { grid-template-columns: 1fr; } }
+  @media (max-width: 960px) { .criador { grid-template-columns: 1fr; } .criador .lado { position: static; } }
+  @media (max-width: 600px) { .mods { grid-template-columns: 1fr; } }
+
+  @media (max-width: 860px) {
+    .filtros { grid-template-columns: 1fr 1fr; }
+    .filtros .busca { grid-column: 1 / -1; }
+    .grade { grid-template-columns: 1fr; }
+    .topo-extra { display: none; }
+  }
+  /* Foundry: arrastar ou clicar para adicionar na ficha */
+  .cartao[draggable="true"] { cursor: grab; }
+  .cartao[draggable="true"]:active { cursor: grabbing; }
+  .acao.ficha { color: var(--destaque, #c9a227); font-weight: 600; }
+  .faixa-foundry { position: sticky; top: 0; z-index: 20; margin: 0; padding: 8px 16px; font-size: 13px; text-align: center; background: #17131D; border-bottom: 1px solid #2c2535; color: #d8cde3; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-linha">
+    <div class="logo" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2.5Z"/><path d="M6 21.5h13"/><path d="m12 6.5 1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.5-2.5 1.5.6-2.8-2.1-1.9 2.8-.3Z"/></svg>
+    </div>
+    <div class="marca"><strong>GRIMÓRIO <span>DO MULTIVERSO</span></strong><small>Escolhidos pelo Multiverso</small></div>
+    <div class="topo-extra" id="versao"></div>
+  </div>
+  <nav class="abas" role="tablist" aria-label="Seções">
+    <button type="button" data-aba="magias" class="ativo" role="tab" aria-selected="true">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m15 4 5 5L9 20H4v-5Z"/><path d="M3 3l2 2M8 2v2M2 8h2"/></svg>
+      Magias <span class="qtd" id="qtd-magias">0</span></button>
+    <button type="button" data-aba="rituais" role="tab" aria-selected="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+      Rituais <span class="qtd" id="qtd-rituais">0</span></button>
+    <button type="button" data-aba="habilidades" role="tab" aria-selected="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+      Habilidades <span class="qtd" id="qtd-habilidades">0</span></button>
+    <button type="button" data-aba="regras" role="tab" aria-selected="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+      Regras e Foundry</button>
+  </nav>
+</header>
+
+<main>
+  <section id="vista-lista">
+    <div class="sobretitulo" id="sobretitulo">Arquivos recuperados · Magias</div>
+    <h1 id="titulo">Magias</h1>
+    <p class="subtitulo" id="subtitulo">Todas as magias do sistema, adaptadas para o EPM. No Foundry, o botão <b>Grimório</b> da aba Magias tem esta mesma lista e põe a magia na ficha com um clique.</p>
+    <div class="criar-atalho"><button type="button" class="btn-criar" id="btn-criar-magia">+ Criar magia</button></div>
+    <div class="filtros">
+      <label class="busca"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="busca" placeholder="Pesquisar magias…" aria-label="Pesquisar"></label>
+      <select id="f-escola" aria-label="Escola"><option value="">Todas as escolas</option></select>
+      <select id="f-exec" aria-label="Execução"><option value="">Todas as ações</option></select>
+      <select id="f-dano" aria-label="Tipo de dano"><option value="">Qualquer dano</option></select>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Círculo"></div>
+    <p class="contagem" id="contagem"></p>
+    <div class="grade" id="grade"></div>
+    <p class="vazio" id="vazio" hidden>Nenhuma magia encontrada com esses filtros.</p>
+  </section>
+
+  <section id="vista-regras" hidden>
+    <div class="sobretitulo">Como usar</div>
+    <h1>Regras e Foundry</h1>
+    <p class="subtitulo">As regras gerais do grimório e como levar as magias para a ficha no Foundry.</p>
+    <div class="regras" id="regras"></div>
+  </section>
+
+  <section id="vista-habilidades" hidden>
+    <div class="sobretitulo">Técnicas do Multiverso · Habilidades</div>
+    <h1>Habilidades</h1>
+    <p class="subtitulo">Qualquer personagem pode criar, aprender, aprimorar e evoluir habilidades, magias e rituais. Monte as técnicas com raridade, modo e modificadores: o criador calcula o custo, a CD, os PH e o tempo sozinho, e o que passa nas regras vale sem revisão do Mestre.</p>
+    <div class="chips" id="hab-sub" role="group" aria-label="Seção de habilidades">
+      <button type="button" class="chip ativo" data-sub="exemplos">Exemplos</button>
+      <button type="button" class="chip" data-sub="criar">Criar habilidade</button>
+      <button type="button" class="chip" data-sub="tabelas">Conceitos e tabelas</button>
+    </div>
+    <div id="hab-exemplos">
+      <div class="filtros">
+        <label class="busca"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="hab-busca" placeholder="Pesquisar habilidades…" aria-label="Pesquisar habilidades"></label>
+        <select id="hab-f-rar" aria-label="Raridade"><option value="">Todas as raridades</option></select>
+        <select id="hab-f-modo" aria-label="Modo"><option value="">Todos os modos</option></select>
+        <select id="hab-f-nat" aria-label="Categoria"><option value="">Todas as categorias</option></select>
+      </div>
+      <p class="contagem" id="hab-contagem"></p>
+      <div class="grade" id="hab-grade"></div>
+    </div>
+    <div id="hab-criar" hidden>
+      <div class="criador">
+        <div class="cartao" id="hab-form"></div>
+        <div class="lado"><div id="hab-previa"></div><div class="cartao" id="hab-custos"></div></div>
+      </div>
+    </div>
+    <div id="hab-tabelas" hidden><div class="regras largo" id="hab-regras"></div></div>
+  </section>
+</main>
+<div class="aviso" id="aviso" role="status"></div>
+
+<script>
+(() => {
+  const TIPOS_DANO = ["Contundente","Cortante","Perfurante","Fogo","Água","Ar","Terra","Gelo","Raio","Ácido","Sonoro","Força","Radiante","Luz","Necrótico","Sombra","Espiritual","Temporal","Psíquico","Venenoso"];
+  const SECOES = [
+    { id: "c0", label: "Truques" }, { id: "c1", label: "1º Círculo" }, { id: "c2", label: "2º Círculo" }, { id: "c3", label: "3º Círculo" },
+    { id: "c4", label: "4º Círculo" }, { id: "c5", label: "5º Círculo" }, { id: "c6", label: "6º Círculo" }
+  ];
+  const EXEC = { acao: "1 Ação", bonus: "Ação Bônus", acaoBonus: "1 Ação + Ação Bônus", reacao: "Reação", varias: "Várias execuções", longa: "Minutos ou mais" };
+  const ICONE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg>';
+  const ICO_MAIS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>';
+  // Aberto dentro da janela do Foundry (módulo epm-ficha): mostra "Adicionar à ficha"
+  const NO_FOUNDRY = new URLSearchParams(location.search).has("foundry");
+  const ICO_COPIAR = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>';
+
+  const norm = t => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const esc = t => String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const md = t => String(t ?? "").trim().split(/\n\s*\n/).filter(Boolean).map(b => {
+    const ls = b.split("\n").map(x => x.trim()).filter(Boolean);
+    if (ls.every(x => /^[-•]\s/.test(x))) return `<ul>${ls.map(x => `<li>${inline(x.replace(/^[-•]\s*/, ""))}</li>`).join("")}</ul>`;
+    return `<p>${ls.map(inline).join("<br>")}</p>`;
+  }).join("");
+
+  function tipoExec(e) {
+    const n = norm(e);
+    if (/^reacao/.test(n)) return "reacao";
+    if (/^acao bonus \(|ou 1 acao/.test(n)) return "varias";
+    if (/^1 acao \+ acao bonus/.test(n)) return "acaoBonus";
+    if (/^acao bonus/.test(n)) return "bonus";
+    if (/^1 acao/.test(n)) return "acao";
+    return "longa";
+  }
+  function danos(m) {
+    const t = ` ${norm([...(m.mecanica || []), m.texto].join(" ")).replace(/[^a-z0-9]+/g, " ")} `;
+    return TIPOS_DANO.filter(d => new RegExp(` ${norm(d)} `).test(t) && /\d+d\d+|dano/.test(t));
+  }
+  const curtoExec = e => /^rea[cç][aã]o/i.test(e || "") ? "Reação" : (String(e || "").replace(/\s*\(.*$/, "").length > 26 ? "Várias (veja abaixo)" : String(e || "").replace(/\s*\(.*$/, ""));
+
+  // Mesmo formato do "Copiar registro" do Códex do Vazio, que a ficha EPM já sabe ler.
+  function registro(m) {
+    const c = m.campos || {};
+    const efeito = [...(m.mecanica || []), ...(m.ascensoes || []).map(a => `Ascensão — ${a.quando}: ${a.texto}`)].join("\n");
+    const outros = Object.entries(c).filter(([k]) => !["Execução", "Custo PM", "Alcance", "Duração"].includes(k)).map(([k, v]) => `${k}: ${v}`);
+    return [m.nome, `Nível ${m.circulo} · ${m.escola}`, `Custo: ${Number(c["Custo PM"]) || 0} PM · ${c["Execução"] || "1 Ação"}`,
+      `Alcance: ${c["Alcance"] || "—"} · Duração: ${c["Duração"] || "—"}`,
+      [...outros, "", String(m.texto || "").replace(/\*\*/g, "")].join("\n").trim(), efeito ? `Efeito: ${efeito}` : ""].filter(x => x !== "").join("\n");
+  }
+
+  let DADOS = null, aba = "magias", secao = "c0";
+  const $ = id => document.getElementById(id);
+
+  function cartao(m) {
+    const c = m.campos || {};
+    const pm = Number(c["Custo PM"]) || 0;
+    const stats = m.tipo === "ritual"
+      ? [["Execução", c["Execução"]], ["Custo", c["Custo"], true], ["Teste principal", c["Teste principal"], true], ["Testes de apoio", c["Testes de apoio"]], ["Ajudantes", c["Ajudantes"]],
+         ["Alcance", c["Alcance"]], ["Duração", c["Duração"]], [c["Área"] ? "Área" : "Alvo", c["Área"] || c["Alvo"] || c["Área ou Alvo"], true], ["Resistência", c["Resistência"], true]]
+      : [["Custo", `${pm} PM`], ["Ação", curtoExec(c["Execução"])], ["Alcance", c["Alcance"]], ["Duração", c["Duração"]],
+         [c["Área"] ? "Área" : c["Área ou Alvo"] ? "Área ou alvo" : "Alvo", c["Área"] || c["Área ou Alvo"] || c["Alvo"], true], ["Resistência", c["Resistência"], true]];
+    if (m.tipo !== "ritual" && curtoExec(c["Execução"]) !== c["Execução"]) stats.push(["Execução completa", c["Execução"], true]);
+    const efeito = (m.mecanica || []).map(l => `<p>${inline(l)}</p>`).join("")
+      + (m.ascensoes || []).map(a => `<p class="asc"><b>Ascensão — ${esc(a.quando)}:</b> ${inline(a.texto)}</p>`).join("");
+    const tamanho = (m.texto || "").length + efeito.length;
+    const rotulo = m.tipo === "ritual" ? m.rotulo.replace("Ritual de ", "") : m.tipo === "truque" ? "Truque" : `${m.circulo}º Círculo`;
+    return `<article class="cartao${tamanho > 900 ? " longo" : ""}" id="${m.id}" draggable="true" data-fmagia="${m.id}">
+      <div class="cartao-topo"><span class="etiqueta forte">${esc(m.tipo === "ritual" ? "Ritual · " + rotulo : rotulo)}</span><span class="etiqueta">${esc(m.escola)}</span><span class="icone" aria-hidden="true">${ICONE}</span></div>
+      <h2>${esc(m.nome)}</h2>
+      <div class="stats">${stats.filter(s => s[1] && s[1] !== "—").map(([k, v, largo]) => `<div class="stat${largo && String(v).length > 26 ? " largo" : ""}"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div>
+      <div class="corpo"><div class="texto">${md(m.texto)}</div>${efeito ? `<div class="efeito"><span>Efeito</span>${efeito}</div>` : ""}</div>
+      <div class="rodape-cartao">
+        ${NO_FOUNDRY ? `<button type="button" class="acao ficha" data-fadd title="Adiciona na ficha aberta no Foundry">${ICO_MAIS} Adicionar à ficha</button>` : ""}
+        <button type="button" class="acao" data-copiar="${m.id}" title="Copia o registro completo (a ficha EPM sabe ler)">${ICO_COPIAR} Copiar registro</button>
+        <button type="button" class="acao" data-nome="${m.id}" title="Copia só o nome">${ICO_COPIAR} Copiar nome</button>
+        ${tamanho > 900 ? `<button type="button" class="acao direita" data-expandir="${m.id}">Ler tudo</button>` : ""}
+      </div>
+    </article>`;
+  }
+
+  function lista() {
+    const busca = norm($("busca").value).trim().split(/\s+/).filter(Boolean);
+    const escola = $("f-escola").value, exec = $("f-exec").value, dano = $("f-dano").value;
+    const base = DADOS.magias.filter(m => aba === "rituais" ? m.tipo === "ritual" : m.tipo !== "ritual");
+    const filtradas = base.filter(m => (aba === "rituais" || busca.length || `c${m.circulo}` === secao)
+      && (!escola || m.escola === escola) && (!exec || tipoExec(m.campos["Execução"]) === exec) && (!dano || m._danos.includes(dano))
+      && (!busca.length || busca.every(t => m._busca.includes(t))));
+    $("grade").innerHTML = filtradas.map(cartao).join("");
+    $("vazio").hidden = filtradas.length > 0;
+    $("contagem").textContent = busca.length && aba === "magias" ? `${filtradas.length} resultado(s) em todos os círculos` : `${filtradas.length} ${aba === "rituais" ? "ritual(is)" : "magia(s)"}`;
+    for (const b of $("chips").querySelectorAll(".chip")) b.classList.toggle("ativo", !busca.length && b.dataset.secao === secao);
+  }
+
+  function trocarAba(nova) {
+    aba = nova;
+    for (const b of document.querySelectorAll("nav.abas button")) { const a = b.dataset.aba === aba; b.classList.toggle("ativo", a); b.setAttribute("aria-selected", String(a)); }
+    $("vista-lista").hidden = aba === "regras" || aba === "habilidades";
+    $("vista-regras").hidden = aba !== "regras";
+    $("vista-habilidades").hidden = aba !== "habilidades";
+    if (aba !== "regras" && aba !== "habilidades") {
+      $("titulo").textContent = aba === "rituais" ? "Rituais" : "Magias";
+      $("sobretitulo").textContent = `Arquivos recuperados · ${aba === "rituais" ? "Rituais" : "Magias"}`;
+      $("subtitulo").innerHTML = aba === "rituais" ? md(DADOS.introRituais) : "Todas as magias do sistema, adaptadas para o EPM. No Foundry, o botão <b>Grimório</b> da aba Magias tem esta mesma lista e põe a magia na ficha com um clique.";
+      $("chips").hidden = aba === "rituais";
+      $("btn-criar-magia").textContent = aba === "rituais" ? "+ Criar ritual" : "+ Criar magia";
+      lista();
+    }
+    try { history.replaceState(null, "", "#" + aba); } catch {}
+    window.scrollTo(0, 0);
+  }
+
+  function regras() {
+    const tabela = `<table class="tabela"><thead><tr><th>Círculo</th><th>Custo</th><th>Equivale no PF2</th></tr></thead><tbody>
+      ${[["Truque","0 PM","Truques"],["1º","6 PM","Níveis 1 e 2"],["2º","10 PM","Níveis 3 e 4"],["3º","14 PM","Níveis 5 e 6"],["4º","18 PM","Níveis 7 e 8"],["5º","24 PM","Nível 9"],["6º","32 PM","Nível 10"]]
+        .map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    $("regras").innerHTML = `
+      <article class="cartao"><h2>Círculos e custo</h2>${tabela}</article>
+      <article class="cartao"><h2>Regras gerais</h2><div class="texto">${DADOS.regras.map(md).join("")}</div></article>
+      <article class="cartao"><h2>No Foundry</h2><div class="texto">
+        <ol class="passos">
+          <li>Abra a ficha EPM, vá na aba <b>Magias</b> e clique em <b>Grimório</b>.</li>
+          <li>Procure pelo nome, filtre por círculo, escola, ação ou tipo de dano e clique no nome para ler a magia.</li>
+          <li>Marque as que quiser e clique em <b>Adicionar à ficha</b>. Custo em PM, ação, alcance, duração, teste e dano já vêm preenchidos.</li>
+          <li>Quando o grimório mudar, <b>Atualizar as da ficha</b> reescreve as magias que vieram dele.</li>
+          <li>O Mestre também acha o Grimório no Escudo (aba Itens), para dar magias a qualquer ficha ou importar tudo para a aba Itens.</li>
+        </ol>
+        <p>Ainda dá para usar o <b>Copiar registro</b> deste site e colar em <b>Colar texto / Códex</b> na ficha.</p>
+      </div></article>`;
+  }
+
+  function avisar(t) { const a = $("aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(avisar.t); avisar.t = setTimeout(() => a.classList.remove("ver"), 1800); }
+  async function copiar(texto, botao) {
+    try { await navigator.clipboard.writeText(texto); botao.classList.add("ok"); setTimeout(() => botao.classList.remove("ok"), 1500); avisar("Copiado."); }
+    catch { avisar("O navegador não deixou copiar. Selecione o texto e copie à mão."); }
+  }
+
+  async function iniciar() {
+    try { DADOS = await fetch("grimorio.json").then(r => r.json()); }
+    catch { $("grade").innerHTML = '<p class="vazio">Não foi possível carregar o grimório.</p>'; return; }
+    const porId = new Map();
+    for (const m of DADOS.magias) {
+      m._busca = norm([m.nome, m.escola, Object.values(m.campos).join(" "), m.texto, (m.mecanica || []).join(" ")].join(" "));
+      m._danos = danos(m);
+      porId.set(m.id, m);
+    }
+    const magias = DADOS.magias.filter(m => m.tipo !== "ritual");
+    $("qtd-magias").textContent = magias.length;
+    $("qtd-rituais").textContent = DADOS.magias.length - magias.length;
+    $("versao").textContent = `${DADOS.magias.length} registros · ${DADOS.versao.split("-").reverse().join("/")}${DADOS.modulo ? ` · EPM ${DADOS.modulo}` : ""}`;
+    $("chips").innerHTML = SECOES.map(s => `<button type="button" class="chip" data-secao="${s.id}">${s.label}<span class="n">${magias.filter(m => "c" + m.circulo === s.id).length}</span></button>`).join("");
+    for (const e of [...new Set(DADOS.magias.map(m => m.escola))].sort((a, b) => a.localeCompare(b, "pt-BR"))) $("f-escola").insertAdjacentHTML("beforeend", `<option>${esc(e)}</option>`);
+    for (const [k, l] of Object.entries(EXEC)) $("f-exec").insertAdjacentHTML("beforeend", `<option value="${k}">${l}</option>`);
+    const usados = new Set(DADOS.magias.flatMap(m => m._danos));
+    for (const d of TIPOS_DANO.filter(d => usados.has(d))) $("f-dano").insertAdjacentHTML("beforeend", `<option>${d}</option>`);
+    regras();
+
+    $("busca").addEventListener("input", lista);
+    for (const s of ["f-escola", "f-exec", "f-dano"]) $(s).addEventListener("change", lista);
+    $("chips").addEventListener("click", ev => { const b = ev.target.closest(".chip"); if (!b) return; secao = b.dataset.secao; $("busca").value = ""; lista(); });
+    for (const b of document.querySelectorAll("nav.abas button")) b.addEventListener("click", () => trocarAba(b.dataset.aba));
+    $("grade").addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      if (b.dataset.copiar) copiar(registro(porId.get(b.dataset.copiar)), b);
+      else if (b.dataset.nome) copiar(porId.get(b.dataset.nome).nome, b);
+      else if (b.dataset.expandir) { const c = $(b.dataset.expandir); c.classList.toggle("aberto"); b.textContent = c.classList.contains("aberto") ? "Recolher" : "Ler tudo"; }
+    });
+    const inicial = (location.hash || "").slice(1);
+    trocarAba(["magias", "rituais", "habilidades", "regras"].includes(inicial) ? inicial : "magias");
+    window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (["magias", "rituais", "habilidades", "regras"].includes(h) && h !== aba) trocarAba(h); });
+  }
+  /* ================= Habilidades, magias e rituais (criação guiada) ================= */
+  const RAR = [
+    { id: "comum", nome: "Comum", dif: "Trivial", lim: 0, tec: 1, golpe: "1d6", fixo: 4, dano: "2d6", buff: "1d4", buffFixo: 2, v: 2, orc: 1, custo: 3, manter: 2, cd: 0, ph: 5, aprender: 3, horas: 2, dt: 10, circulo: 0, mat: 10, pt: 10, extra: "" },
+    { id: "incomum", nome: "Incomum", dif: "Simples", lim: 0, tec: 2, golpe: "2d4", fixo: 5, dano: "3d6", buff: "1d6", buffFixo: 4, v: 3, orc: 2, custo: 5, manter: 4, cd: 0, ph: 7, aprender: 4, horas: 4, dt: 13, circulo: 1, mat: 25, pt: 10, extra: "" },
+    { id: "rara", nome: "Rara", dif: "Moderada", lim: 0, tec: 3, golpe: "2d8", fixo: 10, dano: "3d10", buff: "2d4", buffFixo: 5, v: 4, orc: 3, custo: 10, manter: 6, cd: 0, ph: 10, aprender: 5, horas: 8, dt: 16, circulo: 2, mat: 100, pt: 15, extra: "" },
+    { id: "epica", nome: "Épica", dif: "Complexa", lim: 3, tec: 4, golpe: "3d8", fixo: 15, dano: "5d10", buff: "2d8", buffFixo: 10, v: 5, orc: 5, custo: 15, manter: 8, cd: 1, ph: 20, aprender: 10, horas: 16, dt: 20, circulo: 3, mat: 500, pt: 20, extra: "" },
+    { id: "lendaria", nome: "Lendária", dif: "Árdua", lim: 3, tec: 4, golpe: "2d12+7", fixo: 20, dano: "4d12+15", buff: "3d8", buffFixo: 15, v: 6, orc: 7, custo: 20, manter: 10, cd: 2, ph: 35, aprender: 18, horas: 24, dt: 24, circulo: 4, mat: 2000, pt: 25, extra: "" },
+    { id: "mitica", nome: "Mítica", dif: "Extrema", lim: 2, tec: 5, golpe: "3d10+10", fixo: 28, dano: "8d10+10", buff: "2d12+7", buffFixo: 20, v: 8, orc: 9, custo: 25, manter: 12, cd: 3, ph: 42, aprender: 21, horas: 40, dt: 28, circulo: 5, mat: 10000, pt: 30, extra: "Catalisador (o Mestre marca)" },
+    { id: "unica", nome: "Única", dif: "Transcendente", lim: 2, tec: 5, golpe: "4d12+14", fixo: 40, dano: "10d12+15", buff: "3d10+10", buffFixo: 28, v: 10, orc: 12, custo: 35, manter: 15, cd: 4, ph: 50, aprender: 0, horas: 60, dt: 32, circulo: 6, mat: 50000, pt: 40, extra: "Catalisador + Despertar (o Mestre aprova o conceito uma vez)" }
+  ];
+  const NAT = {
+    fisica: { nome: "Física", rec: "PE", attr: "Força, Destreza ou Constituição", cd: "10 + atributo", per: "Luta, Pontaria, Atletismo ou Acrobacia", arq: "Combatente" },
+    mistica: { nome: "Mística", rec: "PM", attr: "Núcleo", cd: "10 + Arcanismo", per: "Arcanismo", arq: "Conjurador" },
+    tecnica: { nome: "Técnica", rec: "PE", attr: "Inteligência", cd: "10 + Inteligência", per: "Ofício ou Tecnologia", arq: "Artífice" },
+    mental: { nome: "Mental", rec: "PE", attr: "Inteligência, Carisma, Autocontrole ou Aparência", cd: "10 + atributo", per: "Liderança, Persuasão ou Intuição", arq: "" }
+  };
+  const CAT = {
+    habilidade: { nome: "Habilidade", txt: "Paga PE ou PM conforme a natureza e fica na aba Habilidades." },
+    magia: { nome: "Magia", txt: "Sempre Mística. Paga os PM do círculo (a raridade define o círculo) e fica na aba Magias. O Conjurador pode potencializá-la com as habilidades do arquétipo." },
+    ritual: { nome: "Ritual", txt: "Leva 10 minutos e não gasta PE nem PM: gasta materiais. Não se usa em combate, dura até o próximo descanso longo e ganha +2 de Orçamento. Ajudantes fazem testes de apoio." },
+    inicial: { nome: "Única Inicial", txt: "Feita a partir do questionário. Cada técnica tem peso Leve (1), Regular (2) ou Suprema (3): peso total até 10, até 5 técnicas e no máximo 1 Suprema. A raridade sai do peso e do estágio. Não custa PH, horas nem teste e não ocupa espaço de raridade." }
+  };
+  const PM_CIRC = [0, 6, 10, 14, 18, 24, 32];
+  const NOME_CIRC = ["Truque", "1º círculo", "2º círculo", "3º círculo", "4º círculo", "5º círculo", "6º círculo"];
+  const m15 = n => String(n).replace(".", ",");
+  const dadoFixo = (d, f) => `+${d} (ou +${f} fixo)`;
+  const MODOS = {
+    passiva: { nome: "Passiva", acao: "— (sempre ligada)", ef: r => { const p = [`+${r.v} numa perícia, num teste de resistência ou na iniciativa`, `RD ${r.v} contra um grupo de dano (Físico, Elemental ou Místico)`, `+${5 * r.v} de PV máximo`, `+${m15(1.5 * Math.floor(r.v / 2))} m de deslocamento`]; if (r.v >= 3) p.push(`+${Math.floor(r.v / 3)} de CA`); return "Um benefício: " + p.join("; ") + "."; } },
+    golpe: { nome: "Golpe", acao: "Ação Padrão (inclui um ataque com a arma)", ef: r => `O ataque causa ${dadoFixo(r.golpe, r.fixo)} de dano.` },
+    disparo: { nome: "Disparo", acao: "Ação Padrão · ataque contra a CA · 9 m", ef: r => `Causa ${r.dano} + atributo de dano num alvo.` },
+    explosao: { nome: "Explosão", acao: "Ação Padrão · teste de resistência (passou = metade)", ef: r => `Causa ${r.dano} + atributo de dano na área.` },
+    cura: { nome: "Cura", acao: "Ação Padrão · toque", ef: r => `Cura ${r.golpe} + atributo (ou ${r.fixo} + atributo).` },
+    defesa: { nome: "Defesa", acao: "Reação · 1x por rodada", ef: r => `Reduz o dano de um ataque em ${r.golpe} + atributo (ou ${r.fixo} + atributo).` },
+    buff: { nome: "Buff", acao: "Ação Bônus · em si mesmo · até o fim do próximo turno", ef: r => `Os seus acertos causam ${dadoFixo(r.buff, r.buffFixo)} de dano, ou +${Math.ceil(r.v / 2)} num número (acerto, manobra, CA ou testes).` },
+    suporte: { nome: "Suporte", acao: "Ação Bônus · um aliado a até 9 m", ef: r => `O aliado ganha +${Math.ceil(r.v / 2)} no acerto, nos testes ou na CA, ou recupera ${r.golpe} + atributo de PV.` },
+    movimento: { nome: "Movimento", acao: "Ação de Movimento", ef: r => `Anda o deslocamento + ${m15(1.5 * r.v)} m.` },
+    utilidade: { nome: "Utilidade", acao: "Ação Bônus (ou 1 minuto fora de combate)", ef: r => `+${r.v} num teste (ataque, manobra, resistência ou perícia) até o início do seu próximo turno, ou uma condição informativa (ex.: Revelado).` }
+  };
+  const SELS = [
+    { id: "alcance", nome: "Alcance", ops: [["9 m", 1], ["18 m", 2], ["36 m", 3]] },
+    { id: "area", nome: "Área", ops: [["Nível 1: cone 4,5 m, linha 9 m ou 1,5 m ao redor", 2], ["Nível 2: esfera 3 m, cone 9 m ou todos os aliados a 9 m", 3], ["Nível 3: esfera 6 m ou linha 18 m", 4], ["Nível 4: esfera 9 m", 5]] },
+    { id: "acao", nome: "Ação", ops: [["Padrão → Bônus", 2], ["Bônus → Movimento", 1], ["Ação Livre", 4, 4]] },
+    { id: "duracao", nome: "Duração", ops: [["2 ou 3 rodadas", 1], ["1 minuto (10 rodadas)", 2], ["Cena", 3], ["10 minutos ou 1 hora (fora de combate)", 2], ["Sustentada (paga por turno)", 1]] }
+  ];
+  const ACAO_TROCA = ["Ação Bônus", "Ação de Movimento", "Ação Livre"];
+  const MODS = [
+    { id: "seletiva", g: "Área e alvos", nome: "Área seletiva (você escolhe quem é afetado)", c: 1 },
+    { id: "alvo", g: "Área e alvos", nome: "Alvo extra (sem área)", c: 2, max: 2 },
+    { id: "leve", g: "Condições", nome: "Condição leve (Desestabilizado, Desprevenido, Lento, Abalado, Caído, Revelado, Enredado, Surdo)", c: 1, max: 3 },
+    { id: "media", g: "Condições", nome: "Condição média (Cego, Silenciado, Preso, Sangrando, Em Chamas, Envenenado, Eletrizado, Enregelado, Fraco)", c: 2, max: 3 },
+    { id: "forte", g: "Condições", nome: "Condição forte (Atordoado, Paralisado, Incapacitado, Apavorado)", c: 4, min: 3, max: 2 },
+    { id: "dominado", g: "Condições", nome: "Dominado", c: 6, min: 5 },
+    { id: "critMedia", g: "Condições", nome: "Condição média só no crítico", c: 1, max: 2 },
+    { id: "critForte", g: "Condições", nome: "Condição forte só no crítico", c: 2, min: 3 },
+    { id: "rodada", g: "Condições", nome: "+1 rodada de condição leve ou média", c: 1, max: 3 },
+    { id: "rodadaForte", g: "Condições", nome: "+1 rodada de condição forte", c: 2, min: 3, max: 2 },
+    { id: "remLeve", g: "Condições", nome: "Remover condição leve (de si ou de aliado)", c: 1, max: 2 },
+    { id: "remMedia", g: "Condições", nome: "Remover condição média", c: 2, max: 2 },
+    { id: "remForte", g: "Condições", nome: "Remover condição forte", c: 3 },
+    { id: "tipo", g: "Dano", nome: "Escolher o tipo de dano na hora de usar", c: 1 },
+    { id: "rd", g: "Dano", nome: "Ignorar 5 de RD", c: 1, max: 2 },
+    { id: "condicional", g: "Dano", nome: "Bônus condicional (sobe para a Potência da raridade seguinte quando algo acontece)", c: 1, max: 2 },
+    { id: "resist", g: "Dano", nome: "Ignorar Resistência (não Imunidade)", c: 3, min: 3 },
+    { id: "verdadeiro", g: "Dano", nome: "Dano Verdadeiro", c: 5, min: 5 },
+    { id: "margem", g: "Dano", nome: "Margem de crítico +1 (não garante o acerto)", c: 2 },
+    { id: "golpe2", g: "Dano", nome: "O Golpe vale para 2 ataques no turno", c: 3 },
+    { id: "vant", g: "Precisão", nome: "Vantagem no ataque ou no teste da habilidade", c: 2 },
+    { id: "desv", g: "Precisão", nome: "Desvantagem no teste de resistência do alvo", c: 3 },
+    { id: "empurrar", g: "Movimento e defesa", nome: "Empurrar ou puxar 3 m", c: 1, max: 2 },
+    { id: "desloc", g: "Movimento e defesa", nome: "Deslocamento +3 m enquanto durar", c: 1 },
+    { id: "teleporte", g: "Movimento e defesa", nome: "Teletransporte de 9 m", c: 2 },
+    { id: "voo", g: "Movimento e defesa", nome: "Voo enquanto durar", c: 3 },
+    { id: "proteger", g: "Movimento e defesa", nome: "Também protege um aliado a até 1,5 m", c: 2 },
+    { id: "ocultar", g: "Movimento e defesa", nome: "Ataques contra você têm desvantagem", c: 3 },
+    { id: "invisivel", g: "Movimento e defesa", nome: "Invisível", c: 5, min: 4 },
+    { id: "beneficio", g: "Outros", nome: "Benefício extra (soma outro benefício do modo, ex.: +V/2 no acerto)", c: 2, max: 2 },
+    { id: "gatilho", g: "Outros", nome: "Gatilho automático (dispara sozinho quando algo acontece)", c: 3 },
+    { id: "menor", g: "Outros", nome: "Efeito menor (pegar o projétil, não provocar ataque de oportunidade, luz, silêncio, terreno difícil)", c: 1, max: 3 }
+  ];
+  const FREQ = [["Livre", 0], ["1x por cena ou combate", 1], ["1x por dia", 2], ["1x por sessão", 3]];
+  const RESTR = [
+    { id: "uso", nome: "Condição de uso (só o primeiro acerto da rodada, arma específica, ambiente…)", c: 1 },
+    { id: "lenta", nome: "Ação mais lenta (Movimento → Bônus ou Bônus → Padrão)", c: 1 },
+    { id: "conc", nome: "Concentração", c: 1 },
+    { id: "termina", nome: "Termina com um gatilho (ficar inconsciente, trocar de alvo, luz forte…)", c: 1 },
+    { id: "colLeve", nome: "Efeito colateral leve (fica Desprevenido ou sofre um pouco de dano depois)", c: 1 },
+    { id: "colPesado", nome: "Efeito colateral pesado (+1 de Exaustão ou perde a próxima ação de movimento)", c: 2 },
+    { id: "sacrificio", nome: "Sacrifício: paga com Vida (2 PV por ponto) ou Sanidade (1 PS por ponto)", c: 1 }
+  ];
+  const T = (nome, r, m, o) => ({ nome, r, m, ...o });
+  const EXEMPLOS = [
+    { nome: "O Legado do Errante", cat: "habilidade", n: "fisica", inicial: "Estágio I · Centelha", tipo: "Ofensiva / Especial", tema: "Liberdade, estratégia, superação e conquista.", desc: "Aquele que deseja deixar sua marca no mundo não aceita caminhos impostos nem se curva diante de quem parece invencível. Ele encontra oportunidades onde outros enxergam derrotas e transforma cada confronto em mais um capítulo de seu legado.", tecs: [
+      T("A Fortuna do Estrategista", 1, "utilidade", { acao: "Ação Bônus", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Escolha uma criatura que possa ver a até 18 m. Até o início do seu próximo turno, você recebe +3 em um teste de ataque, manobra ou resistência diretamente relacionado a ela. Escolha o teste antes de rolar; vale para um teste só por ativação.", mold: "Alcance 18 m (2)" }),
+      T("Desafio aos Imortais", 2, "buff", { acao: "Ação Padrão · 3 rodadas", custo: "10 PE", freq: "Livre", orc: "5/5", texto: "Escolha uma criatura que possa ver a até 18 m e declare o desafio. Enquanto durar:\n\n- O seu primeiro ataque que acertar nela em cada rodada causa +5 de dano.\n- Se ela tiver mais PV máximos que você, o bônus sobe para +8.\n- Uma vez por rodada, quando ela causar dano a você, o seu próximo ataque contra ela causa +10, no lugar do bônus normal daquela rodada.\n\nO desafio termina antes se você ficar inconsciente ou deixar o confronto de propósito para atacar outra criatura.", mold: "Alcance 18 m (2) · 2 ou 3 rodadas (1) · bônus condicional ×2 (2) · ação mais lenta, só o primeiro acerto e termina com gatilho (+2, o máximo da Rara)" }),
+      T("Além dos Próprios Limites", 2, "buff", { acao: "Ação Bônus · 2 rodadas", custo: "10 PE", freq: "1x por combate", orc: "4/5", texto: "Você força o corpo a superar o que deveria suportar. Durante a duração, ganha +2 em testes de ataque e manobra, +3 m de deslocamento e +5 de dano no primeiro ataque que acertar em cada rodada. Quando o efeito termina, sofre 5 de dano direto, que a RD não reduz.", mold: "2 ou 3 rodadas (1) · benefício extra: +2 no ataque e na manobra (2) · deslocamento +3 m (1) · 1x por combate, colateral e só o primeiro acerto (+2, o máximo da Rara)" }),
+      T("A Canção que Sobrevive aos Séculos", 3, "golpe", { acao: "Ação Padrão", custo: "15 PE", freq: "1x por combate", orc: "3/6", texto: "Escolha uma criatura que possa ver e faça um ataque decisivo contra ela: +3 no ataque e, se acertar, +15 de dano. Se o alvo tiver mais PV máximos que você, o ataque também ignora 5 de RD.\n\nO golpe é a sua recusa em ser só mais um nome esquecido: mesmo diante de um adversário superior, você luta para deixar uma marca que sobreviva ao confronto.", mold: "Benefício extra: +3 no ataque (2) · ignorar 5 de RD com condição (1) · 1x por combate (+1)" })
+    ] },
+    { nome: "Olhar Analítico", cat: "habilidade", n: "mental", tecs: [T("", 0, "utilidade", { acao: "Ação Bônus (ou 1 minuto fora de combate)", custo: "3 PE", freq: "Livre", orc: "1/1", texto: "O alvo faz Vontade CD 10 + Inteligência. Se falhar, fica **Revelado** para você: você fica sabendo da RD, das resistências, das imunidades e das vulnerabilidades dele.", mold: "Condição leve: Revelado (1)" })] },
+    { nome: "Avanço Rasteiro", cat: "habilidade", n: "fisica", tecs: [T("", 0, "movimento", { acao: "Ação de Movimento", custo: "3 PE", freq: "Livre", orc: "1/1", texto: "Anda o deslocamento + 3 m sem provocar ataque de oportunidade.", mold: "Efeito menor: não provoca ataque de oportunidade (1)" })] },
+    { nome: "Pele Calejada", cat: "habilidade", n: "fisica", tecs: [T("", 1, "passiva", { acao: "— (sempre ligada)", custo: "—", freq: "—", orc: "2/2", texto: "RD 3 contra dano Físico (Contundente, Cortante e Perfurante) e +3 em Fortitude.", mold: "Benefício extra (2)" })] },
+    { nome: "Golpe Desequilibrante", cat: "habilidade", n: "fisica", tecs: [T("", 1, "golpe", { acao: "Ação Padrão", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Faz um ataque com a arma, que causa +2d4 (ou +5) de dano. O alvo faz Fortitude CD 10 + Força. Se falhar, fica **Desestabilizado** até o fim do próximo turno dele e é empurrado 3 m.", mold: "Condição leve (1) · empurrar 3 m (1)" })] },
+    { nome: "Toque Revigorante", cat: "habilidade", n: "mistica", tecs: [T("", 1, "cura", { acao: "Ação Padrão · até 9 m", custo: "5 PM", freq: "Livre", orc: "2/2", texto: "Cura 2d4 + Núcleo de um aliado e remove uma condição leve dele.", mold: "Alcance 9 m (1) · remover condição leve (1)" })] },
+    { nome: "Grito de Guerra", cat: "habilidade", n: "mental", tecs: [T("", 2, "suporte", { acao: "Ação Bônus", custo: "15 PE (10 + 50% da área)", freq: "1x por combate", orc: "4/4", texto: "Todos os aliados a até 9 m que ouvirem ganham +2 no acerto até o fim do seu próximo turno e perdem **Abalado**.", mold: "Área nível 2: todos os aliados a 9 m (3) · remover condição leve (1) · 1x por combate (+1)" })] },
+    { nome: "Desvio de Projétil", cat: "habilidade", n: "fisica", tecs: [T("", 2, "defesa", { acao: "Reação · 1x por rodada", custo: "10 PE", freq: "Livre", orc: "4/4", texto: "Só contra ataques à distância. Reduz o dano em 2d8 + Destreza e pode proteger um aliado a até 9 m. Se o dano chegar a 0, você pega o projétil.", mold: "Proteger aliado (2) · alcance 9 m (1) · efeito menor: pegar o projétil (1) · condição de uso (+1)" })] },
+    { nome: "Arma Imbuída", cat: "habilidade", n: "mistica", tecs: [T("", 2, "buff", { acao: "Ação Bônus · 1 minuto", custo: "10 PM", freq: "Livre", orc: "3/3", texto: "Os ataques com a arma causam +2d4 (ou +5) do elemento escolhido na criação (Fogo, Frio ou Relâmpago). No crítico, o alvo fica **Em Chamas**, **Enregelado** ou **Eletrizado**, conforme o elemento.", mold: "1 minuto (2) · condição média só no crítico (1)" })] },
+    { nome: "Onda de Choque", cat: "magia", n: "mistica", tecs: [T("", 2, "explosao", { acao: "Ação Padrão · cone de 4,5 m · 2º círculo", custo: "15 PM (10 do círculo + 50% da área)", freq: "1x por combate", orc: "4/4", texto: "Reflexo CD 10 + Arcanismo. Causa 3d10 + Núcleo de Relâmpago, e quem falha fica **Eletrizado**. Quem passa sofre metade e não fica com a condição.", mold: "Área nível 1 (2) · condição média: Eletrizado (2) · 1x por combate (+1)" })] },
+    { nome: "Vigília das Runas", cat: "ritual", n: "mistica", tecs: [T("", 2, "utilidade", { acao: "Ritual · 10 minutos", custo: "100 PO em materiais", freq: "—", orc: "5/5", texto: "Você desenha runas numa esfera de 6 m. Até o próximo descanso longo, quem entrar na área sem ser convidado fica **Revelado** para você, que acorda se estiver dormindo.", mold: "Esfera de 6 m (4) · condição leve: Revelado (1) · Orçamento 3 + 2 do ritual" })] },
+    { nome: "Manto de Sombras", cat: "habilidade", n: "mistica", tecs: [T("", 3, "buff", { acao: "Ação de Movimento · sustentada", custo: "15 PM + 8 PM por turno", freq: "Livre", orc: "6/6", texto: "Ataques contra você têm desvantagem, você ganha +3 em Furtividade e os seus passos não fazem som. Termina quando você para de pagar, sofre dano Radiante ou entra em luz forte.", mold: "Sustentada (1) · ataques contra você com desvantagem (3) · Bônus → Movimento (1) · efeito menor: silêncio (1) · termina com gatilho (+1)" })] },
+    { nome: "Lâmina do Vendaval", cat: "habilidade", n: "fisica", tipo: "Ofensiva", tecs: [
+      T("Corte", 3, "golpe", { acao: "Ação Padrão", custo: "15 PE", freq: "Livre", orc: "4/5", texto: "Ataque com a arma: +3 no acerto e +3d8 (ou +15) de dano Cortante. Ignora 5 de RD e empurra o alvo 3 m.", mold: "Benefício extra: +3 no acerto (2) · ignorar 5 de RD (1) · empurrar 3 m (1)" }),
+      T("Ciclone", 2, "golpe", { acao: "Ação Padrão", custo: "15 PE (10 + 50% da área)", freq: "1x por combate", orc: "2/4", texto: "Um ataque contra cada criatura a até 1,5 m, cada um com +2d8 (ou +10) de dano Cortante.", mold: "Área nível 1: 1,5 m ao redor (2) · 1x por combate (+1)" })
+    ] },
+    { nome: "Pacto de Sangue", cat: "habilidade", n: "fisica", tecs: [T("", 4, "buff", { acao: "Ação Livre · 3 rodadas", custo: "40 PV ou 20 PS (pode misturar)", freq: "1x por combate", orc: "11/11", texto: "Os seus ataques e magias causam +3d8 (ou +15) por acerto e ignoram Resistência (não Imunidade). Se cair a 0 PV durante o pacto, continua de pé até ele acabar. No fim, ganha +1 de Exaustão.", mold: "2 ou 3 rodadas (1) · ignorar Resistência (3) · gatilho automático: não cai (3) · Ação Livre (4) · sacrifício (+1) · colateral pesado (+2) · 1x por combate (+1)" })] },
+    { nome: "Lança do Fim", cat: "magia", n: "mistica", tecs: [T("", 5, "disparo", { acao: "Ação Padrão · 36 m · 5º círculo", custo: "24 PM", freq: "1x por combate", orc: "12/12", texto: "Ataque com Arcanismo contra a CA: 8d10 + 10 + Núcleo de dano **Verdadeiro**, ignorando 5 de RD. Você perde a ação de movimento do próximo turno.", mold: "Alcance 36 m (3) · dano Verdadeiro (5) · ignorar 5 de RD (1) · 1x por combate (+1) · colateral pesado (+2)" })] },
+    { nome: "Ruptura do Multiverso", cat: "habilidade", n: "mistica", tecs: [T("", 6, "explosao", { acao: "Ação Padrão · esfera de 6 m a até 36 m", custo: "53 PM (35 + 50% da área)", freq: "1x por sessão", orc: "15/15", texto: "Só nas criaturas que você escolher. Vontade CD 10 + Arcanismo + 4. Causa 10d12 + 15 + Núcleo de Psíquico, ignorando 10 de RD, e quem falha fica **Incapacitado** até o fim do próximo turno; quem passa sofre metade e não fica com a condição. A área vira terreno difícil por 3 rodadas.", mold: "Área nível 3 (4) · seletiva (1) · alcance 36 m (3) · condição forte (4) · 2 ou 3 rodadas (1) · ignorar 5 de RD ×2 (2) · 1x por sessão (+3)" })] },
+    { nome: "Corte Abissal", cat: "habilidade", n: "fisica", tipo: "Ofensiva", tema: "Adaptada do Notion.", tecs: [T("", 2, "golpe", { acao: "Ação Padrão · 9 m", custo: "10 PE", freq: "1x por combate", orc: "4/4", texto: "Um corte que viaja até 9 m: ataque com a arma, +2d8 (ou +10) de dano. O alvo faz Fortitude CD 10 + Força; se falhar, fica **Lento** e **Fraco** até o fim do próximo turno dele.\n\n**Evoluído (Épica):** +3d8 (ou +15) de dano e atinge um segundo alvo (alvo extra, 2).", mold: "Alcance 9 m (1) · condição leve: Lento (1) · condição média: Fraco (2) · 1x por combate (+1)" })] },
+    { nome: "Noção de Vitalidade", cat: "habilidade", n: "mental", tema: "Adaptada do Notion.", tecs: [T("", 1, "utilidade", { acao: "Ação Bônus", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Pela experiência de batalha, você lê a postura do inimigo. Escolha uma criatura a até 18 m: o Mestre diz em que faixa a Vida dela está: Intocado (100%), Ferido (75%), Machucado (50%) ou No Limite (25%).", mold: "Alcance 18 m (2)" })] },
+    { nome: "Visão Noturna", cat: "habilidade", n: "mistica", tema: "Adaptada do Notion.", tecs: [T("", 0, "passiva", { acao: "— (sempre ligada)", custo: "—", freq: "—", orc: "1/1", texto: "Enxerga no escuro até 9 m como se fosse penumbra e ganha +2 em Percepção no escuro.", mold: "Efeito menor: visão no escuro (1)" })] },
+    { nome: "Eco Localização", cat: "habilidade", n: "mistica", tema: "Adaptada do Notion.", tecs: [T("", 2, "passiva", { acao: "— (sempre ligada)", custo: "—", freq: "—", orc: "3/4", texto: "Um estalo com a boca basta para você “ver” pelo som o formato do que está a até 9 m, como um morcego: não fica **Cego** enquanto puder ouvir e ganha +4 em Percepção pela audição. Se ficar **Surdo**, perde a passiva enquanto a surdez durar.", mold: "Remover condição média: Cego (2) · efeito menor: percepção pelo som a 9 m (1) · termina com gatilho: Surdo (+1)" })] },
+    { nome: "Estocada Precisa", cat: "habilidade", n: "fisica", tecs: [T("", 0, "golpe", { acao: "Ação Padrão", custo: "3 PE", freq: "Livre", orc: "1/1", texto: "Ataque com a arma, +1d6 (ou +4) de dano Perfurante, ignorando 5 de RD.", mold: "Ignorar 5 de RD (1)" })] },
+    { nome: "Aparar", cat: "habilidade", n: "fisica", tecs: [T("", 0, "defesa", { acao: "Reação · 1x por rodada", custo: "3 PE", freq: "Livre", orc: "1/2", texto: "Contra um ataque corpo a corpo: reduz o dano em 1d6 + Força ou Destreza. Se o dano chegar a 0, o atacante fica **Desprevenido** até o fim do turno dele.", mold: "Condição leve: Desprevenido (1) · condição de uso: só corpo a corpo (+1)" })] },
+    { nome: "Leitura Fria", cat: "habilidade", n: "mental", tecs: [T("", 0, "utilidade", { acao: "1 minuto de conversa", custo: "3 PE", freq: "Livre", orc: "1/1", texto: "+2 em Intuição contra a criatura, e você descobre a emoção mais forte dela naquele momento.", mold: "Efeito menor: descobre a emoção (1)" })] },
+    { nome: "Dardo Arcano", cat: "magia", n: "mistica", tecs: [T("", 0, "disparo", { acao: "Ação Padrão · 9 m · Truque", custo: "0 PM", freq: "Livre", orc: "1/1", texto: "Ataque com Arcanismo contra a CA: 2d6 + Núcleo de dano do tipo que você escolher ao conjurar (Força, Fogo, Frio ou Relâmpago).", mold: "Escolher o tipo de dano ao usar (1)" })] },
+    { nome: "Mensageiro Etéreo", cat: "ritual", n: "mistica", tecs: [T("", 0, "utilidade", { acao: "Ritual · 10 minutos", custo: "10 PO em materiais", freq: "—", orc: "3/3", texto: "Envia uma mensagem de até 25 palavras a alguém que você conheça, no mesmo mundo, a qualquer distância. A pessoa pode responder uma vez, no mesmo tamanho.", mold: "Efeito menor ×3 (3) · Orçamento 1 + 2 do ritual" })] },
+    { nome: "Rastreador Nato", cat: "habilidade", n: "fisica", tecs: [T("", 1, "passiva", { acao: "— (sempre ligada)", custo: "—", freq: "—", orc: "2/2", texto: "+3 em Sobrevivência e +3 em Percepção.", mold: "Benefício extra (2)" })] },
+    { nome: "Escudo de Mana", cat: "habilidade", n: "mistica", tecs: [T("", 1, "defesa", { acao: "Reação · 1x por rodada", custo: "5 PM", freq: "Livre", orc: "2/2", texto: "Uma película de mana reduz o dano de um ataque em 2d4 + Núcleo, em você ou num aliado a até 1,5 m.", mold: "Também protege um aliado (2)" })] },
+    { nome: "Salto do Falcão", cat: "habilidade", n: "fisica", tecs: [T("", 1, "movimento", { acao: "Ação de Movimento", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Anda o deslocamento + 4,5 m, podendo saltar essa distância (na horizontal ou para cima) e correr por paredes até o fim do movimento.", mold: "Efeito menor ×2: salto e correr por paredes (2)" })] },
+    { nome: "Presença Inspiradora", cat: "habilidade", n: "mental", tecs: [T("", 1, "suporte", { acao: "Ação Bônus · aliado a até 9 m", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Um aliado que ouça você ganha +2 nos testes por 3 rodadas e perde **Abalado**.", mold: "2 ou 3 rodadas (1) · remover condição leve (1)" })] },
+    { nome: "Ajuste de Campo", cat: "habilidade", n: "tecnica", tecs: [T("", 1, "suporte", { acao: "Ação Bônus · aliado a até 9 m", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Você aperta correias e regula placas: o aliado ganha +2 na CA por 3 rodadas, e o equipamento dele recupera 10 de durabilidade.", mold: "2 ou 3 rodadas (1) · efeito menor: conserta 10 de durabilidade (1)" })] },
+    { nome: "Círculo de Proteção", cat: "ritual", n: "mistica", tecs: [T("", 1, "utilidade", { acao: "Ritual · 10 minutos", custo: "25 PO em materiais", freq: "—", orc: "4/4", texto: "Um círculo de 3 m de raio contra um tipo de criatura escolhido (mortos-vivos, demônios, fadas…). Até o próximo descanso longo, quem for desse tipo e tentar entrar faz Vontade; se falhar, não entra e fica **Abalado**.", mold: "Área nível 2: esfera de 3 m (3) · condição leve: Abalado (1) · Orçamento 2 + 2 do ritual" })] },
+    { nome: "Chuva de Flechas", cat: "habilidade", n: "fisica", tecs: [T("", 2, "golpe", { acao: "Ação Padrão · cone de 4,5 m", custo: "15 PE (10 + 50% da área)", freq: "Livre", orc: "3/3", texto: "Um ataque contra cada criatura que você escolher num cone de 4,5 m, cada um com +2d8 (ou +10) de dano.", mold: "Área nível 1 (2) · seletiva (1)" })] },
+    { nome: "Passo Sombrio", cat: "habilidade", n: "mistica", tecs: [T("", 2, "movimento", { acao: "Ação de Movimento", custo: "10 PM", freq: "Livre", orc: "3/3", texto: "Você some numa sombra e reaparece em outra que consiga ver a até 9 m, sem provocar ataque de oportunidade. Se preferir, anda o deslocamento + 6 m.", mold: "Teletransporte de 9 m (2) · efeito menor: não provoca ataque de oportunidade (1)" })] },
+    { nome: "Voz Imperiosa", cat: "habilidade", n: "mental", tecs: [T("", 2, "utilidade", { acao: "Ação Bônus · até 9 m", custo: "10 PE", freq: "Livre", orc: "3/3", texto: "Você dá uma ordem curta a uma criatura que entenda você. Ela faz Vontade CD 10 + Carisma; se falhar, fica **Lento** e **Caído** (“Ajoelhe-se!”) até o fim do próximo turno dela.", mold: "Alcance 9 m (1) · condição leve ×2: Lento e Caído (2)" })] },
+    { nome: "Bálsamo Vital", cat: "habilidade", n: "mistica", tecs: [T("", 2, "cura", { acao: "Ação Padrão · até 9 m", custo: "10 PM", freq: "Livre", orc: "3/3", texto: "Cura 2d8 + Núcleo em até dois aliados a até 9 m.", mold: "Alcance 9 m (1) · alvo extra (2)" })] },
+    { nome: "Granada Improvisada", cat: "habilidade", n: "tecnica", tecs: [T("", 2, "explosao", { acao: "Ação Padrão · esfera de 3 m a até 9 m", custo: "15 PE (10 + 50% da área)", freq: "1x por combate", orc: "4/4", texto: "Reflexo CD 10 + Inteligência. 3d10 + Inteligência de dano de Fogo; quem passa sofre metade.", mold: "Área nível 2: esfera de 3 m (3) · alcance 9 m (1) · 1x por combate (+1)" })] },
+    { nome: "Escudo Arcano", cat: "magia", n: "mistica", tecs: [T("", 2, "defesa", { acao: "Reação · 2º círculo", custo: "10 PM", freq: "Livre", orc: "3/3", texto: "Reduz o dano de um ataque em 2d8 + Núcleo, em você ou num aliado a até 9 m.", mold: "Protege aliado (2) · alcance 9 m (1)" })] },
+    { nome: "Fúria do Berserker", cat: "habilidade", n: "fisica", tecs: [T("", 3, "buff", { acao: "Ação Bônus · 1 minuto", custo: "15 PE", freq: "1x por combate", orc: "8/8", texto: "Por 1 minuto: +2d8 (ou +10) de dano por acerto, +3 no acerto, RD 5 contra dano Físico, +3 m de deslocamento, e você não pode ser empurrado. Durante a fúria não conjura magias nem mantém concentração. Quando acaba, ganha +1 de Exaustão.", mold: "1 minuto (2) · benefício extra ×2: +3 no acerto e RD 5 (4) · deslocamento +3 m (1) · efeito menor: não é empurrado (1) · 1x por combate, condição de uso e colateral pesado (+3, o máximo da Épica)" })] },
+    { nome: "Golpe Atordoante", cat: "habilidade", n: "fisica", tecs: [T("", 3, "golpe", { acao: "Ação Padrão", custo: "15 PE", freq: "1x por combate", orc: "5/6", texto: "Ataque com a arma, +3d8 (ou +15) de dano. O alvo faz Fortitude CD 10 + Força + 1; se falhar, fica **Atordoado** até o fim do próximo turno dele e é empurrado 3 m.", mold: "Condição forte: Atordoado (4) · empurrar 3 m (1) · 1x por combate (+1)" })] },
+    { nome: "Muralha de Ferro", cat: "habilidade", n: "fisica", tecs: [T("", 3, "buff", { acao: "Ação Bônus · sustentada", custo: "23 PE (15 + 50% da área) + 8 PE por turno", freq: "Livre", orc: "6/6", texto: "Você finca os pés. Você e os aliados a até 1,5 m ganham +3 na CA, e você ganha RD 5 contra dano Físico e não pode ser empurrado. Enquanto mantém, não pode se mover.", mold: "Sustentada (1) · área: 1,5 m ao redor (2) · benefício extra: RD 5 (2) · efeito menor: não é empurrado (1) · condição de uso: parado (+1)" })] },
+    { nome: "Investida Trovejante", cat: "habilidade", n: "fisica", tecs: [T("", 3, "golpe", { acao: "Ação Padrão", custo: "15 PE", freq: "Livre", orc: "5/5", texto: "Avança até o deslocamento + 3 m em linha reta, sem provocar ataque de oportunidade, e ataca com a arma: +3d8 (ou +15) de dano. O alvo faz Fortitude CD 10 + Força + 1; se falhar, é empurrado 6 m e fica **Caído**.", mold: "Deslocamento +3 m (1) · efeito menor: não provoca ataque de oportunidade (1) · empurrar 3 m ×2 (2) · condição leve: Caído (1)" })] },
+    { nome: "Olhos da Verdade", cat: "habilidade", n: "mistica", tecs: [T("", 3, "utilidade", { acao: "Ação Bônus · 1 minuto", custo: "15 PM", freq: "Livre", orc: "5/6", texto: "Por 1 minuto, você vê criaturas e objetos **Invisíveis**, enxerga através de ilusões e enxerga no escuro até 18 m. Precisa de concentração.", mold: "1 minuto (2) · efeito menor ×3 (3) · concentração (+1)" })] },
+    { nome: "Bandeira de Guerra", cat: "habilidade", n: "mental", tecs: [T("", 3, "suporte", { acao: "Ação Bônus · 3 rodadas", custo: "23 PE (15 + 50% da área)", freq: "1x por combate", orc: "6/6", texto: "Você ergue o estandarte. Por 3 rodadas, todos os aliados a até 9 m ganham +3 no acerto e +3 m de deslocamento, e perdem **Abalado**.", mold: "Área: todos os aliados a 9 m (3) · 2 ou 3 rodadas (1) · deslocamento +3 m (1) · remover condição leve (1) · 1x por combate (+1)" })] },
+    { nome: "Prisão de Gelo", cat: "magia", n: "mistica", tecs: [T("", 3, "disparo", { acao: "Ação Padrão · 18 m · 3º círculo", custo: "14 PM", freq: "1x por combate", orc: "6/6", texto: "Ataque com Arcanismo contra a CA: 5d10 + Núcleo de Frio. Se acertar, o alvo faz Fortitude CD 10 + Arcanismo + 1; se falhar, fica **Paralisado** dentro do gelo até o fim do próximo turno dele.", mold: "Alcance 18 m (2) · condição forte: Paralisado (4) · 1x por combate (+1)" })] },
+    { nome: "Caminho do Punho Celeste", cat: "habilidade", n: "fisica", tipo: "Ofensiva / Mobilidade", tema: "Disciplina, leveza e golpes que não erram o centro.", tecs: [
+      T("Passo do Vento", 1, "movimento", { acao: "Ação de Movimento", custo: "5 PE", freq: "Livre", orc: "2/2", texto: "Anda o deslocamento + 4,5 m sem provocar ataque de oportunidade, podendo correr por paredes.", mold: "Efeito menor ×2 (2)" }),
+      T("Palma Ressonante", 2, "golpe", { acao: "Ação Padrão", custo: "10 PE", freq: "Livre", orc: "3/3", texto: "Golpe desarmado com +2d8 (ou +10) de dano, ignorando 5 de RD. O alvo faz Fortitude; se falhar, fica **Desestabilizado** e é empurrado 3 m.", mold: "Ignorar 5 de RD (1) · condição leve: Desestabilizado (1) · empurrar 3 m (1)" }),
+      T("Cem Punhos", 3, "golpe", { acao: "Ação Padrão", custo: "15 PE", freq: "1x por combate", orc: "4/6", texto: "Dois ataques desarmados, cada um com +3d8 (ou +15) de dano. Quem for atingido pelos dois fica **Desprevenido** até o fim do próximo turno dele.", mold: "O Golpe vale para 2 ataques (3) · condição leve: Desprevenido (1) · 1x por combate (+1)" })
+    ] },
+    { nome: "Chuva de Meteoros", cat: "magia", n: "mistica", tecs: [T("", 4, "explosao", { acao: "Ação Padrão · esfera de 6 m a até 18 m · 4º círculo", custo: "27 PM (18 + 50% da área)", freq: "1x por combate", orc: "8/8", texto: "Reflexo CD 10 + Arcanismo + 2. 4d12 + 15 + Núcleo de dano de Fogo; quem falha fica **Em Chamas**, quem passa sofre metade.", mold: "Área nível 3 (4) · alcance 18 m (2) · condição média: Em Chamas (2) · 1x por combate (+1)" })] },
+    { nome: "Égide do Último Bastião", cat: "habilidade", n: "fisica", tecs: [T("", 5, "defesa", { acao: "Reação · 1x por rodada", custo: "38 PE (25 + 50% da área)", freq: "1x por combate", orc: "8/10", texto: "Quando um ataque ou efeito atingir aliados a até 9 m de você, você ergue a égide: o dano de cada um cai 3d10 + 10 + Constituição, cada um perde uma condição forte, e o dano que você reduzir vira PV temporário para quem recebeu.", mold: "Área: todos os aliados a 9 m (3) · remover condição forte (3) · benefício extra: PV temporário (2) · 1x por combate (+1)" })] }
+  ];
+  const limpo = t => String(t ?? "").replace(/\*\*/g, "");
+  const fmtPO = n => n ? `${n.toLocaleString("pt-BR")} PO${n >= 10000 ? ` (${m15(n / 10000)} DR)` : ""}` : "—";
+  const etqR = r => `<span class="etiqueta forte r-${r.id}">${esc(r.nome)}</span>`;
+  const rarHab = e => RAR[Math.max(...e.tecs.map(t => t.r))];
+  const temaHtml = (tipo, tema) => tipo || tema ? `<p class="tema">${tipo ? `<b>Tipo:</b> ${esc(tipo)}` : ""}${tipo && tema ? " · " : ""}${tema ? `<b>Tema:</b> ${esc(tema)}` : ""}</p>` : "";
+
+  function registroExemplo(e) {
+    const r = rarHab(e), l = [e.nome, e.inicial ? `Única Inicial (${e.inicial}) · ${NAT[e.n].nome}` : `${CAT[e.cat].nome} ${r.nome} · ${NAT[e.n].nome}`];
+    if (e.tipo) l.push(`Tipo: ${e.tipo}`);
+    if (e.tema) l.push(`Tema: ${e.tema}`);
+    if (e.desc) l.push(e.desc);
+    e.tecs.forEach((t, j) => {
+      l.push("");
+      if (e.tecs.length > 1) l.push(`${j + 1}. ${t.nome} (${RAR[t.r].nome} · ${MODOS[t.m].nome})`);
+      l.push(`Custo: ${t.custo} · ${t.acao}`, `Frequência: ${t.freq}`, limpo(t.texto), `Moldagem: ${t.mold}`);
+    });
+    return l.join("\n");
+  }
+  function cartaoExemplo(e, i) {
+    const r = rarHab(e), uma = e.tecs.length === 1;
+    const tecs = e.tecs.map((t, j) => {
+      const stats = [["Custo", t.custo], ["Frequência", t.freq], ["Ação", t.acao, true], ["Orçamento", t.orc]];
+      return `<div class="tec-bloco${uma ? " unica-tec" : ""}">
+        ${uma ? "" : `<h3><span class="n">${j + 1}.</span>${esc(t.nome)} ${etqR(RAR[t.r])}<span class="etiqueta">${esc(MODOS[t.m].nome)}</span></h3>`}
+        <div class="stats">${stats.map(([k, v, l]) => `<div class="stat${l || v.length > 26 ? " largo" : ""}"><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>
+        <div class="texto">${md(t.texto)}</div>
+        <div class="efeito"><span>Moldagem</span><p>${inline(t.mold)}</p></div>
+      </div>`;
+    }).join("");
+    return `<article class="cartao" draggable="true" data-fexemplo="${i}">
+      <div class="cartao-topo">${e.inicial ? `<span class="etiqueta forte r-unica">Única Inicial</span><span class="etiqueta">${esc(e.inicial)}</span>` : etqR(r)}<span class="etiqueta">${esc(CAT[e.cat].nome)}</span><span class="etiqueta">${esc(NAT[e.n].nome)}</span><span class="etiqueta">${uma ? esc(MODOS[e.tecs[0].m].nome) : `${e.tecs.length} técnicas`}</span><span class="icone" aria-hidden="true">${ICONE}</span></div>
+      <h2>${esc(e.nome)}</h2>
+      ${temaHtml(e.tipo, e.tema)}
+      ${e.desc ? `<div class="texto"><p><i>${esc(e.desc)}</i></p></div>` : ""}
+      ${tecs}
+      <div class="rodape-cartao">${NO_FOUNDRY ? `<button type="button" class="acao ficha" data-fadd title="${e.inicial ? "A Única Inicial é montada pelo Mestre" : "Abre a janela de aprender na ficha"}">${ICO_MAIS} Adicionar à ficha</button>` : ""}<button type="button" class="acao" data-hcopiar="${i}">${ICO_COPIAR} Copiar registro</button></div>
+    </article>`;
+  }
+  function listaHab() {
+    const busca = norm($("hab-busca").value).trim().split(/\s+/).filter(Boolean);
+    const fr = $("hab-f-rar").value, fm = $("hab-f-modo").value, fc = $("hab-f-nat").value;
+    const itens = EXEMPLOS.map((e, i) => [e, i]).filter(([e]) => (fr === "" || (e.inicial ? fr === "6" : rarHab(e) === RAR[Number(fr)])) && (!fm || e.tecs.some(t => t.m === fm)) && (!fc || (fc === "inicial" ? !!e.inicial : e.cat === fc))
+      && (!busca.length || busca.every(t => norm([e.nome, e.tipo, e.tema, e.desc, rarHab(e).nome, CAT[e.cat].nome, NAT[e.n].nome, ...e.tecs.flatMap(x => [x.nome, MODOS[x.m].nome, x.texto, x.mold])].join(" ")).includes(t))));
+    $("hab-grade").innerHTML = itens.map(([e, i]) => cartaoExemplo(e, i)).join("") || '<p class="vazio">Nada encontrado com esses filtros.</p>';
+    $("hab-contagem").textContent = `${itens.length} exemplo(s)`;
+  }
+
+  const novaTec = () => ({ nome: "", r: 2, m: "golpe", sel: { alcance: -1, area: -1, acao: -1, duracao: -1 }, mods: {}, freq: 0, restr: {}, aprim: 0, brilhante: false, custoProp: "", texto: "" });
+  const S = { nome: "", tipo: "", tema: "", desc: "", cat: "habilidade", n: "fisica", arq: "", aprender: false, tecs: [novaTec()], at: 0 };
+  const tecAt = () => S.tecs[S.at];
+  const TRANS = { id: "unica", nome: "Transcendida", dif: "—", lim: 0, tec: 6, golpe: "5d12+20", fixo: 52, dano: "12d12+20", buff: "4d12+14", buffFixo: 40, v: 12, orc: 15, custo: 40, manter: 18, cd: 5, ph: 0, aprender: 0, horas: 0, dt: 0, circulo: 6, mat: 50000, pt: 40, extra: "" };
+  const PESOS = [{ id: "leve", nome: "Leve", v: 1 }, { id: "regular", nome: "Regular", v: 2 }, { id: "suprema", nome: "Suprema", v: 3 }];
+  const PESO_NOME = { leve: "Leve", regular: "Regular", suprema: "Suprema" };
+  const TRANS2 = { ...TRANS, nome: "Transcendida Ressonante", golpe: "6d12+25", fixo: 64, dano: "14d12+25", buff: "5d12+20", buffFixo: 52, v: 14, orc: 17, cd: 6 };
+  const PESO_RAR = [[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6], [5, 6, 6], [6, 6, 7], [7, 7, 8]];
+  const EST_NOMES = ["Estágio I · Centelha", "Estágio II · Eco", "Estágio III · Desperta", "Estágio IV · Ascensão", "Estágio V · Plena", "Estágio VI · Transcendente"];
+  const EST_NIVEL = ["1", "10", "20", "30", "40", "50 (máximo)"];
+  const USOS = [10, 15, 20, 25, 30, 40];
+  S.estagio = 0; S.ress = false;
+  function syncHUI() {
+    for (const t of S.tecs) {
+      if (!t.peso) t.peso = "regular";
+      if (S.cat === "inicial") { const ix = PESOS.findIndex(p => p.id === t.peso); t.rCusto = PESO_RAR[S.estagio][ix]; t.r = PESO_RAR[S.estagio + (S.ress ? 1 : 0)][ix]; limparInvalidos(t); }
+      else if (t.r > 6) t.r = 6;
+    }
+  }
+  function pesoInfo() {
+    const v = S.estagio === 5;
+    return { total: S.tecs.reduce((s, t) => s + (PESOS.find(p => p.id === t.peso) || PESOS[1]).v, 0), sup: S.tecs.filter(t => t.peso === "suprema").length, limite: 10 + (v ? 2 : 0), maxTec: 5 + (v ? 1 : 0) };
+  }
+
+  function chipsSeg(attr, lista, atual) {
+    return lista.map(([v, l]) => `<button type="button" class="chip${String(v) === String(atual) ? " ativo" : ""}" data-${attr}="${v}">${esc(l)}</button>`).join("");
+  }
+  function linhaMod(m, t) {
+    const off = (m.min || 0) > t.r, q = t.mods[m.id] || 0, varios = (m.max || 1) > 1;
+    const ctrl = varios
+      ? `<input type="number" min="0" max="${m.max}" value="${q}" data-mod="${m.id}" ${off ? "disabled" : ""} aria-label="${esc(m.nome)}">`
+      : `<input type="checkbox" data-mod="${m.id}" ${q ? "checked" : ""} ${off ? "disabled" : ""}>`;
+    return `<label class="mod${off ? " off" : ""}">${ctrl}<span>${esc(m.nome)}${off ? ` <i>(a partir de ${RAR[m.min].nome})</i>` : ""}</span><span class="pts">${m.c}${varios ? " cada" : ""}</span></label>`;
+  }
+  function limparInvalidos(t) {
+    for (const m of MODS) if ((m.min || 0) > t.r) delete t.mods[m.id];
+    for (const s of SELS) { const i = t.sel[s.id]; if (i >= 0 && (s.ops[i][2] || 0) > t.r) t.sel[s.id] = -1; }
+    t.aprim = Math.min(t.aprim || 0, Math.ceil(RAR[t.r].orc / 2));
+  }
+  function rotuloTec(x, i) { return `${i + 1}. ${x.nome || "Técnica"} · ${S.cat === "inicial" ? PESO_NOME[x.peso || "regular"] : RAR[x.r].nome}`; }
+
+  function formHab() {
+    syncHUI();
+    const t = tecAt(), r = RAR[t.r], modo = MODOS[t.m], ritual = S.cat === "ritual", magia = S.cat === "magia", inicial = S.cat === "inicial";
+    const pInfo = pesoInfo();
+    const natId = magia ? "mistica" : S.n;
+    const rMax = RAR[Math.max(...S.tecs.map(x => x.r))];
+    const grupos = [...new Set(MODS.map(m => m.g))];
+    const sels = SELS.map(s => {
+      const bloq = ritual && s.id === "acao";
+      return `<label class="mod sel${bloq ? " off" : ""}"><span>${s.nome}</span><select data-sel="${s.id}" ${bloq ? "disabled" : ""}><option value="-1">—</option>${s.ops.map((o, i) => { const off = (o[2] || 0) > t.r; return `<option value="${i}" ${t.sel[s.id] === i ? "selected" : ""} ${off ? "disabled" : ""}>${esc(o[0])} · ${o[1]}${off ? ` (a partir de ${RAR[o[2]].nome})` : ""}</option>`; }).join("")}</select></label>`;
+    }).join("");
+    const tetoAprim = Math.ceil(r.orc / 2);
+    $("hab-form").innerHTML = `
+      <div class="campo"><label for="c-nome">Nome</label><input type="text" id="c-nome" maxlength="60" placeholder="Ex.: O Legado do Errante" value="${esc(S.nome)}"></div>
+      <div class="campo"><span class="rot">Categoria</span><div class="chips seg">${chipsSeg("cat", Object.entries(CAT).map(([k, v]) => [k, v.nome]), S.cat)}</div><p class="dica">${esc(CAT[S.cat].txt)}</p></div>
+      <div class="campo"><span class="rot">Natureza</span><div class="chips seg">${magia ? '<button type="button" class="chip ativo" disabled>Mística · PM</button>' : chipsSeg("n", Object.entries(NAT).map(([k, v]) => [k, `${v.nome} · ${v.rec}`]), S.n)}</div>
+        <p class="dica">Atributo: ${esc(NAT[natId].attr)}. CD: ${esc(magia ? "10 + Arcanismo" : NAT[natId].cd)}.</p></div>
+      ${inicial ? `<div class="campo"><span class="rot">Estágio</span><div class="chips seg">${chipsSeg("est", EST_NOMES.map((n, i) => [i, n]), S.estagio)}</div><p class="dica">Nível total ${EST_NIVEL[S.estagio]}. Neste estágio: ${PESOS.map((p, i) => `${p.nome} = ${RAR[PESO_RAR[S.estagio][i]].nome}`).join(", ")}.</p>
+        <label class="mod" style="margin-top:8px"><input type="checkbox" data-ress ${S.ress ? "checked" : ""}><span>Ressonância: ${USOS[S.estagio]} usos atingidos ${S.estagio === 5 ? "no Estágio VI (permanente)" : "antes do próximo nível"}. As técnicas usam a Potência, o V e o Orçamento ${S.estagio === 5 ? "da Ressonância final" : "do próximo estágio"}; o custo continua o do estágio atual.</span></label></div>` : ""}
+      <div class="duas"><div class="campo"><label for="c-tipo">Tipo</label><input type="text" id="c-tipo" maxlength="60" placeholder="Ex.: Ofensiva / Especial" value="${esc(S.tipo)}"></div>
+        <div class="campo"><label for="c-tema">Tema</label><input type="text" id="c-tema" maxlength="90" placeholder="Ex.: Liberdade, estratégia e superação" value="${esc(S.tema)}"></div></div>
+      <div class="campo"><label for="c-desc">Descrição</label><textarea id="c-desc" rows="3" placeholder="Opcional. O sabor: o efeito vem das técnicas.">${esc(S.desc)}</textarea></div>
+      <div class="grupo-mods"><h3>Técnicas <small>${inicial ? `peso ${pInfo.total} de ${pInfo.limite} · ${pInfo.sup} de 1 Suprema · ${S.tecs.length} de ${pInfo.maxTec} técnicas` : `${S.tecs.length} de ${rMax.tec} (raridade ${esc(rMax.nome)})`}</small></h3>
+        <div class="chips seg">${S.tecs.map((x, i) => `<button type="button" class="chip${i === S.at ? " ativo" : ""}" data-tec="${i}">${esc(rotuloTec(x, i))}</button>`).join("")}<button type="button" class="chip add" data-tecnova>+ Técnica</button></div>
+        <p class="dica">Cada técnica é montada com a Potência e o Orçamento da própria raridade. A habilidade fica com a raridade da técnica mais alta.</p></div>
+      <div class="campo"><label for="c-tnome">Nome da técnica ${S.at + 1}</label><input type="text" id="c-tnome" maxlength="60" placeholder="Ex.: A Fortuna do Estrategista" value="${esc(t.nome)}"></div>
+      ${inicial ? `<div class="campo"><span class="rot">Peso da técnica</span><div class="chips seg">${chipsSeg("peso", PESOS.map(p => [p.id, `${p.nome} · ${p.v}`]), t.peso)}</div><p class="dica">No ${esc(EST_NOMES[S.estagio])}, esta técnica é ${esc(r.nome)}: Orçamento ${r.orc} e custo de uso ${r.custo}.</p></div>` : ""}
+      <div class="campo"${inicial ? " hidden" : ""}><span class="rot">Raridade da técnica</span><div class="chips seg">${chipsSeg("r", RAR.slice(0, 7).map((x, i) => [i, x.nome]), t.r)}</div>
+        <p class="dica">Criação ${esc(r.dif.toLowerCase())} · Orçamento ${r.orc}${ritual ? " + 2 do ritual" : ""} · ${r.lim ? `limite de ${r.lim} na ficha` : "sem limite na ficha"} · até ${r.tec} técnica(s)${magia ? ` · ${NOME_CIRC[r.circulo]}` : ""}</p></div>
+      <div class="campo"><span class="rot">Modo</span><div class="chips seg">${chipsSeg("m", Object.entries(MODOS).map(([k, v]) => [k, v.nome]), t.m)}</div>
+        <p class="dica"><b>${esc(ritual ? "Ritual · 10 minutos" : modo.acao)}.</b> ${esc(modo.ef(r))}</p></div>
+      <div class="grupo-mods"><h3>Modificadores <small>gastam Orçamento</small></h3><div class="mods">${sels}</div>
+        ${grupos.map(g => `<h4>${esc(g)}</h4><div class="mods">${MODS.filter(m => m.g === g).map(m => linhaMod(m, t)).join("")}</div>`).join("")}</div>
+      <div class="grupo-mods"><h3>Restrições <small>devolvem Orçamento até ${tetoAprim}; nunca PT nem PH</small></h3>
+        <div class="mods"><label class="mod sel"><span>Frequência</span><select data-freq>${FREQ.map((f, i) => `<option value="${i}" ${t.freq === i ? "selected" : ""}>${esc(f[0])}${f[1] ? ` · +${f[1]}` : ""}</option>`).join("")}</select></label>
+        ${RESTR.map(x => `<label class="mod"><input type="checkbox" data-restr="${x.id}" ${t.restr[x.id] ? "checked" : ""}><span>${esc(x.nome)}</span><span class="pts">+${x.c}</span></label>`).join("")}</div></div>
+      <div class="grupo-mods"><h3>Ajustes da técnica</h3><div class="mods">
+        <label class="mod"><input type="number" min="0" max="${tetoAprim}" value="${t.aprim}" data-aprim aria-label="Aprimoramentos"><span>Aprimoramentos com PT (${r.pt} PT cada, até ${tetoAprim})</span><span class="pts">+1 cada</span></label>
+        <label class="mod"><input type="checkbox" data-brilhante ${t.brilhante ? "checked" : ""}><span>Criação brilhante (passou no teste por 10 ou mais)</span><span class="pts">+1</span></label>
+        <label class="mod sel"><span>Custo de uso proposto (pede o Mestre)</span><input type="number" min="0" data-custoprop value="${esc(t.custoProp)}" placeholder="vazio = o calculado"></label>
+        ${S.tecs.length > 1 ? '<button type="button" class="mod remover" data-tecdel>Remover esta técnica</button>' : ""}</div>
+        <div class="campo" style="margin-top:10px"><label for="c-ttexto">Texto da técnica</label><textarea id="c-ttexto" rows="3" placeholder="Opcional. Como a técnica aparece na mesa.">${esc(t.texto)}</textarea></div></div>
+      <div class="grupo-mods"><h3>Criação</h3><div class="mods">
+        <label class="mod sel"><span>Arquétipo de quem cria</span><select data-arq><option value="">—</option>${["Combatente", "Conjurador", "Artífice"].map(a => `<option ${S.arq === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
+        <label class="mod"><input type="checkbox" data-aprender ${S.aprender ? "checked" : ""}><span>Aprender de um professor ou registro (em vez de criar)</span></label></div></div>`;
+    previaHab();
+  }
+
+  function calcTec(t) {
+    const r = RAR[t.r], modo = MODOS[t.m], magia = S.cat === "magia", ritual = S.cat === "ritual";
+    const nat = NAT[magia ? "mistica" : S.n], rec = magia ? "PM" : nat.rec;
+    let gasto = 0; const itens = [];
+    for (const s of SELS) { const i = t.sel[s.id]; if (i >= 0) { const o = s.ops[i]; gasto += o[1]; itens.push(`${s.nome}: ${o[0]} (${o[1]})`); } }
+    for (const m of MODS) { const q = t.mods[m.id] || 0; if (q) { gasto += q * m.c; itens.push(`${m.nome.replace(/\s*\(.*\)$/, "")}${q > 1 ? ` ×${q}` : ""} (${q * m.c})`); } }
+    let dev = FREQ[t.freq][1]; const restr = t.freq ? [`${FREQ[t.freq][0]} (+${FREQ[t.freq][1]})`] : [];
+    for (const x of RESTR) if (t.restr[x.id]) { dev += x.c; restr.push(`${x.nome.replace(/\s*[(:].*$/, "")} (+${x.c})`); }
+    const teto = Math.ceil(r.orc / 2), devUsado = Math.min(dev, teto), aprim = Math.min(t.aprim || 0, teto);
+    const total = r.orc + devUsado + aprim + (t.brilhante ? 1 : 0) + (ritual ? 2 : 0);
+    const area = t.sel.area >= 0, sust = t.sel.duracao === 4;
+    let circulo = null, base;
+    if (magia) { circulo = r.circulo === 0 && (area || sust) ? 1 : r.circulo; base = PM_CIRC[circulo]; }
+    else base = ritual ? r.mat : (S.cat === "inicial" && t.rCusto !== undefined ? RAR[t.rCusto].custo : r.custo);
+    if (area) base = Math.ceil(base * 1.5);
+    const txtProp = String(t.custoProp ?? "").trim();
+    const prop = txtProp === "" ? null : Math.max(0, Number(txtProp) || 0);
+    const ajustado = prop !== null && prop !== base && t.m !== "passiva";
+    const valor = ajustado ? prop : base;
+    let custo;
+    if (t.m === "passiva") custo = "—";
+    else if (ritual) custo = `${fmtPO(valor)} em materiais`;
+    else if (t.restr.sacrificio) custo = `${valor * 2} PV ou ${valor} PS`;
+    else custo = `${valor} ${rec}`;
+    if (sust && t.m !== "passiva" && !ritual) custo += ` + ${r.manter} ${t.restr.sacrificio ? "PS" : rec} por turno`;
+    if (ajustado) custo += ` (ajustado; calculado: ${base})`;
+    let acao = ritual ? "Ritual · 10 minutos" : t.sel.acao >= 0 ? ACAO_TROCA[t.sel.acao] : modo.acao;
+    const lentaOk = !ritual && t.sel.acao < 0 && /Ação Bônus|Ação de Movimento/.test(modo.acao);
+    if (t.restr.lenta && lentaOk) acao = acao.includes("Ação Bônus") ? acao.replace("Ação Bônus", "Ação Padrão") : acao.replace("Ação de Movimento", "Ação Bônus");
+    const dur = t.sel.duracao >= 0 ? SELS[3].ops[t.sel.duracao][0] : ritual ? "Até o próximo descanso longo" : "";
+    const cd = `${magia ? "10 + Arcanismo" : nat.cd}${r.cd ? ` + ${r.cd}` : ""}`;
+    const erros = [], avisos = [];
+    if (gasto > total) erros.push(`Passou do Orçamento em ${gasto - total} ponto(s).`);
+    if (t.m === "explosao" && !area) erros.push("O modo Explosão precisa de uma área.");
+    if (t.mods.seletiva && !area) erros.push("Área seletiva precisa de uma área.");
+    if (t.mods.alvo && area) erros.push("Alvo extra não combina com área.");
+    if (t.mods.golpe2 && t.m !== "golpe") erros.push("“O Golpe vale para 2 ataques” só serve no modo Golpe.");
+    if (t.m === "passiva" && (t.sel.acao >= 0 || t.freq || t.restr.lenta)) erros.push("Passivas não têm ação nem frequência.");
+    if (t.m === "passiva" && ritual) erros.push("Um ritual não pode ser Passiva.");
+    if (t.restr.lenta && !lentaOk && t.m !== "passiva") erros.push("“Ação mais lenta” só serve em modos de Ação Bônus ou de Movimento, sem trocar a ação.");
+    if (t.mods.verdadeiro && t.mods.resist) avisos.push("Dano Verdadeiro já passa pela Resistência: ignorar Resistência fica sobrando.");
+    if (dev > teto) avisos.push(`As restrições somam +${dev}, mas só +${teto} contam nesta raridade.`);
+    if (total > gasto && !erros.length) avisos.push(`Sobram ${total - gasto} ponto(s) de Orçamento.`);
+    return { r, modo, nat, gasto, total, devUsado, aprim, custo, acao, dur, cd, circulo, itens, restr, erros, avisos, ajustado };
+  }
+  function calcHab() {
+    const tcs = S.tecs.map(calcTec);
+    const rMaxI = Math.max(...S.tecs.map(t => t.r)), r = RAR[rMaxI];
+    const nat = NAT[S.cat === "magia" ? "mistica" : S.n];
+    const erros = [], pend = [];
+    if (S.cat !== "inicial" && S.tecs.length > r.tec) erros.push(`Uma habilidade ${r.nome} tem no máximo ${r.tec} técnica(s).`);
+    if (S.cat === "inicial") {
+      const p = pesoInfo();
+      if (p.total > p.limite) erros.push(`O peso total (${p.total}) passa do limite de ${p.limite}.`);
+      if (p.sup > 1) erros.push("A Única Inicial tem no máximo 1 Suprema.");
+      if (S.tecs.length > p.maxTec) erros.push(`A Única Inicial tem no máximo ${p.maxTec} técnicas neste estágio.`);
+    }
+    if (S.aprender && r.id === "unica") erros.push("Uma Única não pode ser aprendida.");
+    tcs.forEach((c, i) => { if (c.ajustado) pend.push(`custo ajustado na técnica ${i + 1}`); });
+    if (r.extra && S.cat !== "inicial") pend.push(r.extra.split(" (")[0]);
+    const idxMax = S.tecs.findIndex(t => t.r === rMaxI), col = S.aprender ? "aprender" : "ph";
+    let ph = 0, horas = 0;
+    S.tecs.forEach((t, i) => { const rr = RAR[t.r], f = i === idxMax ? 1 : 0.5; ph += Math.ceil(rr[col] * f); horas += Math.ceil(rr.horas * f); });
+    if (S.aprender) horas = Math.ceil(horas / 2);
+    const afin = !!S.arq && S.arq === nat.arq;
+    if (afin) horas = Math.ceil(horas * 0.75);
+    const pt = S.tecs.reduce((s, t) => s + Math.min(t.aprim || 0, Math.ceil(RAR[t.r].orc / 2)) * RAR[t.r].pt, 0);
+    const ok = !erros.length && tcs.every(c => !c.erros.length);
+    return { tcs, r, nat, erros, pend, ph, horas, pt, afin, ok, dt: r.dt - (S.aprender ? 5 : 0) };
+  }
+  function registroCriado(h) {
+    const l = [S.nome || "Sem nome", S.cat === "inicial" ? `Única Inicial (${EST_NOMES[S.estagio]}) · ${h.nat.nome}` : `${CAT[S.cat].nome} ${h.r.nome} · ${h.nat.nome}`];
+    if (S.tipo.trim()) l.push(`Tipo: ${S.tipo.trim()}`);
+    if (S.tema.trim()) l.push(`Tema: ${S.tema.trim()}`);
+    if (S.desc.trim()) l.push(S.desc.trim());
+    h.tcs.forEach((c, i) => {
+      const t = S.tecs[i];
+      l.push("");
+      if (S.tecs.length > 1) l.push(`${i + 1}. ${t.nome || "Técnica"} (${S.cat === "inicial" ? PESO_NOME[t.peso || "regular"] + ", " : ""}${c.r.nome} · ${c.modo.nome})`);
+      l.push(`Custo: ${c.custo} · ${c.acao}`);
+      if (c.dur) l.push(`Duração: ${c.dur}`);
+      l.push(`CD: ${c.cd} · Frequência: ${FREQ[t.freq][0]}`);
+      if (c.circulo !== null) l.push(`Círculo: ${NOME_CIRC[c.circulo]}`);
+      if (t.texto.trim()) l.push(t.texto.trim());
+      l.push(`Efeito base: ${c.modo.ef(c.r)}`);
+      if (c.itens.length) l.push(`Modificadores: ${c.itens.join("; ")}`);
+      if (c.restr.length) l.push(`Restrições: ${c.restr.join("; ")}`);
+      l.push(`Orçamento: ${c.gasto}/${c.total}`);
+    });
+    return l.join("\n");
+  }
+  function previaHab() {
+    const h = calcHab(), varias = S.tecs.length > 1;
+    const blocos = h.tcs.map((c, i) => {
+      const t = S.tecs[i], pct = Math.min(100, c.total ? (c.gasto / c.total) * 100 : 0);
+      const fontes = [`${c.r.orc} da raridade`, S.cat === "ritual" ? "2 do ritual" : "", c.devUsado ? `${c.devUsado} das restrições` : "", c.aprim ? `${c.aprim} de aprimoramento` : "", t.brilhante ? "1 da criação brilhante" : ""].filter(Boolean).join(" + ");
+      return `<div class="tec-bloco${varias ? "" : " unica-tec"}">
+        ${varias ? `<h3><span class="n">${i + 1}.</span>${esc(t.nome || "Técnica")} ${S.cat === "inicial" ? `<span class="etiqueta">${PESO_NOME[t.peso || "regular"]}</span>` : ""}${etqR(c.r)}<span class="etiqueta">${esc(c.modo.nome)}</span></h3>` : ""}
+        <div class="stats">
+          <div class="stat${c.custo.length > 26 ? " largo" : ""}"><span>Custo</span><b>${esc(c.custo)}</b></div>
+          <div class="stat"><span>Frequência</span><b>${esc(FREQ[t.freq][0])}</b></div>
+          <div class="stat largo"><span>Ação</span><b>${esc(c.acao)}</b></div>
+          ${c.dur ? `<div class="stat"><span>Duração</span><b>${esc(c.dur)}</b></div>` : ""}
+          <div class="stat"><span>CD</span><b>${esc(c.cd)}</b></div>
+          ${c.circulo !== null ? `<div class="stat"><span>Círculo</span><b>${NOME_CIRC[c.circulo]}</b></div>` : ""}
+        </div>
+        ${t.texto.trim() ? `<div class="texto">${md(t.texto)}</div>` : ""}
+        <div class="efeito" style="margin-top:12px"><span>Efeito base</span><p>${esc(c.modo.ef(c.r))}</p>
+          ${c.itens.length ? `<p class="asc"><b>Modificadores:</b> ${esc(c.itens.join("; "))}</p>` : ""}
+          ${c.restr.length ? `<p class="asc"><b>Restrições:</b> ${esc(c.restr.join("; "))}</p>` : ""}</div>
+        <div class="medidor${c.gasto > c.total ? " estourou" : ""}"><div class="medidor-topo"><span>Orçamento</span><b>${c.gasto} / ${c.total}</b></div><div class="barra"><i style="width:${pct}%"></i></div><small>${esc(fontes)}</small></div>
+        ${c.erros.map(e => `<p class="alerta">✕ ${esc(e)}</p>`).join("")}${c.avisos.map(e => `<p class="nota">• ${esc(e)}</p>`).join("")}
+      </div>`;
+    }).join("");
+    $("hab-previa").innerHTML = `<article class="cartao"${h.ok ? ' draggable="true" data-fcriada="1"' : ""}>
+      <div class="cartao-topo">${etqR(h.r)}<span class="etiqueta">${esc(CAT[S.cat].nome)}${S.cat === "inicial" ? " · " + esc(EST_NOMES[S.estagio]) : ""}</span><span class="etiqueta">${esc(h.nat.nome)}</span><span class="etiqueta">${varias ? `${S.tecs.length} técnicas` : esc(h.tcs[0].modo.nome)}</span><span class="icone" aria-hidden="true">${ICONE}</span></div>
+      <h2>${esc(S.nome || "Sem nome")}</h2>
+      ${temaHtml(S.tipo.trim(), S.tema.trim())}
+      ${S.desc.trim() ? `<div class="texto">${md(S.desc)}</div>` : ""}
+      ${blocos}
+      ${h.erros.map(e => `<p class="alerta">✕ ${esc(e)}</p>`).join("")}
+      ${h.ok ? (h.pend.length ? `<p class="pendente">⚠ Precisa do Mestre: ${esc(h.pend.join("; "))}. O resto vale sem revisão.</p>` : '<p class="ok-msg">✓ Dentro das regras: vale sem revisão do Mestre.</p>') : ""}
+      <div class="rodape-cartao">${NO_FOUNDRY ? `<button type="button" class="acao ficha" data-fadd ${h.ok ? "" : "disabled"} title="Abre o criador da ficha com esta habilidade: confira e vira projeto">${ICO_MAIS} Levar para a ficha</button>` : ""}<button type="button" class="acao" data-ccopiar ${h.ok ? "" : "disabled"}>${ICO_COPIAR} Copiar registro</button><button type="button" class="acao direita" data-climpar>Recomeçar</button></div>
+    </article>`;
+    if (S.cat === "inicial") {
+      const p = pesoInfo(), prox = S.estagio < 5 ? `${EST_NOMES[S.estagio + 1]} no nível ${EST_NIVEL[S.estagio + 1]}` : "Último estágio";
+      $("hab-custos").innerHTML = `<h2>Única Inicial</h2>
+        <table class="tabela"><tbody>
+          <tr><td>Estágio</td><td>${EST_NOMES[S.estagio]} (nível ${EST_NIVEL[S.estagio]})</td></tr>
+          <tr><td>Peso</td><td>${p.total} de ${p.limite} · ${p.sup} de 1 Suprema · ${S.tecs.length} de ${p.maxTec} técnicas</td></tr>
+          <tr><td>Ressonância</td><td>${USOS[S.estagio]} usos ${S.estagio === 5 ? "(permanente no Estágio VI)" : "antes do próximo nível"} · ${S.ress ? "ativa" : "ainda não"}</td></tr>
+          <tr><td>Criação</td><td>Sem PH, horas nem teste</td></tr>
+          <tr><td>Limite na ficha</td><td>Não ocupa espaço de nenhuma raridade</td></tr>
+          <tr><td>Próximo estágio</td><td>${prox}</td></tr>
+        </tbody></table>
+        <p class="nota">Neste estágio, ${PESOS.map((x, i) => `${x.nome} = ${RAR[PESO_RAR[S.estagio][i]].nome}`).join(", ")}. No Estágio VI a HUI ganha +2 de peso e +1 técnica. Cada uso de uma técnica ativa conta, até 3 por combate. Com a Ressonância, os bônus fixos podem passar do Teto de Bônus em até +3. As quantidades de usos ainda são provisórias.</p>`;
+      return;
+    }
+    const sobreAprender = S.aprender ? (h.r.id === "mitica" ? " Mítica: só com professor de afinidade +4 ou mais." : " Aprender: professor com afinidade +2 ou mais (ou um registro), metade das horas e DT −5.") : "";
+    $("hab-custos").innerHTML = `<h2>${S.aprender ? "Aprender" : "Criar"}</h2>
+      <table class="tabela"><tbody>
+        <tr><td>Pontos de Habilidade</td><td>${S.aprender && h.r.id === "unica" ? "Não pode ser aprendida" : `${h.ph} PH (pagos só quando passar no teste)`}</td></tr>
+        <tr><td>Tempo</td><td>${h.horas} h de treino${h.afin ? " (−25% de afinidade)" : ""}</td></tr>
+        <tr><td>Teste</td><td>${esc(S.cat === "magia" ? "Arcanismo" : h.nat.per)} DT ${h.dt}${h.afin ? " · +2 de afinidade" : ""}</td></tr>
+        ${h.pt ? `<tr><td>Aprimoramentos</td><td>${h.pt} PT</td></tr>` : ""}
+        <tr><td>Limite na ficha</td><td>${h.r.lim ? `${h.r.lim} de raridade ${esc(h.r.nome)} (habilidades e magias juntas)` : "Sem limite"}</td></tr>
+        ${h.r.extra ? `<tr><td>Extra</td><td>${esc(h.r.extra)}</td></tr>` : ""}
+      </tbody></table>
+      <p class="nota">Um teste de criação por dia. Se falhar, não gasta PH e as horas feitas continuam valendo: é só tentar de novo no dia seguinte. Passar por 10 ou mais dá +1 de Orçamento numa técnica.${varias ? " Técnicas além da principal custam metade dos PH e das horas." : ""}${sobreAprender}</p>`;
+  }
+
+  function tabelasHab() {
+    const t = (cab, linhas) => `<div class="rolagem"><table class="tabela"><thead><tr>${cab.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${linhas.map(l => `<tr>${l.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    const conceitos = [
+      ["PT (Pontos de Treinamento)", "Vêm dos treinos (6 h de treino = 5 PT). Servem para aprimorar habilidades, magias e rituais que você já tem."],
+      ["PH (Pontos de Habilidade)", "Servem para criar e aprender. 5 PT = 1 PH, ou 2 PEv = 1 PH. Os pontos acumulam."],
+      ["Categoria", "Habilidade, Magia ou Ritual. As três usam o mesmo sistema; muda o que pagam para usar e onde ficam na ficha."],
+      ["Raridade", "O tamanho do poder e o quanto a criação é exigente. Define a Potência, o Orçamento, o custo de uso, o número de técnicas e o limite na ficha. Os limites valem para habilidades e magias juntas."],
+      ["Potência", "O tamanho do efeito: o dano somado ao golpe, o dano próprio, a cura e a defesa. Dá para rolar os dados ou usar o valor fixo."],
+      ["Valor fixo (V)", "O bônus fixo das Passivas, do Buff, do Suporte e da Utilidade. Respeita o Teto de Bônus."],
+      ["Orçamento", "Os pontos para gastar em modificadores: alcance, área, condições, duração, ação e o resto."],
+      ["Técnicas", "Uma habilidade pode reunir várias técnicas com o mesmo tema (como O Legado do Errante). Cada técnica é montada com a própria raridade; a habilidade fica com a raridade da técnica mais alta, que também limita quantas técnicas ela pode ter."],
+      ["Natureza", "De onde vem o poder (Física, Mística, Técnica ou Mental). Define o recurso (PE ou PM), o atributo, a CD e a perícia do teste de criação."],
+      ["Modo", "O que a técnica faz: Golpe, Disparo, Explosão, Cura, Defesa, Buff, Suporte, Movimento, Utilidade ou Passiva."],
+      ["Restrições", "Limites que você aceita (1x por combate, efeito colateral, ação mais lenta…). Devolvem pontos de Orçamento, até metade do Orçamento, mas nunca devolvem PT nem PH."],
+      ["Custo de uso", "Calculado pela raridade, com +50% quando tem área. A sustentada paga por turno conforme a raridade. O jogador pode propor outro custo, e aí precisa da aprovação do Mestre."],
+      ["Afinidade", "Quando a natureza combina com o seu arquétipo (Combatente com Física, Conjurador com Mística, Artífice com Técnica): −25% de horas e +2 no teste de criação."],
+      ["Criar", "Paga as horas de treino e faz o teste. Um teste por dia; se falhar, não perde PH nem horas e tenta de novo no dia seguinte. Os PH só são pagos no sucesso."],
+      ["Aprender", "Copiar uma que já existe, de um professor com afinidade +2 ou de um registro (grimório, manual). Custa menos PH, metade das horas e a DT cai 5. Mítica pede afinidade +4; Única não pode ser aprendida."],
+      ["Aprimorar", "Gastar PT para ganhar pontos de Orçamento numa técnica (até metade do Orçamento dela), ou 40 PT para baixar o custo de uso em 20% (uma vez). Cada compra leva 2 h de treino, sem teste."],
+      ["Evoluir", "Subir uma técnica de raridade: paga a diferença de PH e de horas e faz o teste da nova raridade. Mantém tudo e ganha a nova Potência e o Orçamento a mais."],
+      ["Nova técnica", "Acrescentar uma técnica a uma habilidade que você já tem: metade dos PH e das horas da raridade dela, e o teste."],
+      ["Remodelar", "Trocar os modificadores de uma técnica sem mudar a raridade: 5 PT e um descanso longo."],
+      ["Única Inicial", "Todo personagem pode começar com uma Habilidade Única feita a partir de um questionário, com até 5 técnicas de composição livre (peso total até 10, no máximo 1 Suprema; passivo é opcional). Ela nasce bem abaixo de uma Única comum e evolui sozinha por estágios conforme o nível total, até igualar uma Única no Estágio V (nível 40) e passar dela no VI (nível 50, o máximo). Usar a HUI dá Ressonância: um bônus que passa do teto do estágio. Não custa PH nem horas, não ocupa espaço de nenhuma raridade e não pode ser ensinada."],
+      ["O que nunca pode", "Matar na hora sem uma regra específica, impedir um alvo de agir para sempre, ignorar todas as defesas, resistências e imunidades de uma vez, ou dar ações infinitas."],
+      ["Quando o Mestre entra", "Só no Catalisador (Mítica e Única), no Despertar (Única), num custo de uso ajustado e em efeitos escritos à mão que não estão na lista de modificadores. O resto vale sem revisão."]
+    ];
+    $("hab-regras").innerHTML = `
+      <article class="cartao"><h2>Conceitos</h2><dl class="conceitos">${conceitos.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></article>
+      <article class="cartao"><h2>Raridades</h2>${t(["Raridade", "Criação", "Limite", "Técnicas", "Golpe, cura e defesa", "Dano próprio", "Buff", "V", "Orçamento", "Custo de uso", "Sustentada por turno", "CD"], RAR.map(r => [etqR(r), esc(r.dif), r.lim || "—", r.tec, `${r.golpe} (${r.fixo})`, r.dano, `${r.buff} (${r.buffFixo})`, r.v, r.orc, r.custo, r.manter, "+" + r.cd]))}
+        <div class="texto"><p>O número entre parênteses é o valor fixo, para quem não quer rolar. <b>Golpe</b> soma a um ataque com arma; <b>dano próprio</b> (Disparo e Explosão), cura e defesa somam o atributo. Área custa +50% no uso. A sustentada custa 1 de Orçamento, ativa pelo custo normal e paga o valor da tabela a cada turno.</p></div></article>
+      <article class="cartao"><h2>Criar, aprender e aprimorar</h2>${t(["Raridade", "Criar", "Aprender", "Horas", "DT", "PT por aprimoramento", "Extra"], RAR.map(r => [etqR(r), `${r.ph} PH`, r.aprender ? `${r.aprender} PH` : "Não pode", `${r.horas} h`, r.dt, r.pt, esc(r.extra || "—")]))}
+        <div class="texto"><p>As horas entram no limite de 8 h de treino por dia. Técnicas além da principal custam metade dos PH e das horas da raridade delas. Sem nível, atributo mínimo ou preço para criar.</p></div></article>
+      <article class="cartao"><h2>Magias e rituais</h2>${t(["Raridade", "Círculo da magia", "PM da magia", "Materiais do ritual"], RAR.map((r, i) => [etqR(r), NOME_CIRC[r.circulo] + (i === 0 ? " (1º com área ou sustentada)" : ""), PM_CIRC[r.circulo], fmtPO(r.mat)]))}
+        <div class="texto"><ul>
+          <li><b>Magia:</b> mesmo sistema das habilidades, sempre Mística. Paga os PM do círculo (+50% com área), precisa do círculo liberado e fica na aba Magias. Círculo e raridade são coisas diferentes: o círculo é o nível da magia; a raridade é o limite de construção.</li>
+          <li><b>Ritual:</b> leva 10 minutos, não se usa em combate e dura até o próximo descanso longo. Não gasta PE nem PM: gasta os materiais da tabela (+50% com área). Ganha +2 de Orçamento. O líder faz o teste e os ajudantes fazem testes de apoio.</li>
+        </ul></div></article>
+      <article class="cartao"><h2>Naturezas</h2>${t(["Natureza", "Recurso", "Atributo", "CD", "Teste de criação", "Afinidade"], Object.values(NAT).map(n => [n.nome, n.rec, esc(n.attr), n.cd, esc(n.per), n.arq || "—"]))}
+        <div class="texto"><p><b>Sacrifício:</b> qualquer técnica pode pagar com 2 PV ou 1 PS por ponto de custo (a Vida temporária não paga). Conta como restrição (+1).</p></div></article>
+      <article class="cartao"><h2>Modos</h2>${t(["Modo", "Ação base", "O que faz (exemplo na Rara)"], Object.values(MODOS).map(m => [m.nome, esc(m.acao), esc(m.ef(RAR[2]))]))}</article>
+      <article class="cartao"><h2>Única Inicial: estágios e Ressonância</h2>${t(["Estágio", "Nível total", "Leve", "Regular", "Suprema", "O que muda"], [
+        ["I · Centelha", "1", etqR(RAR[1]), etqR(RAR[2]), etqR(RAR[3]), "Nasce com o questionário"],
+        ["II · Eco", "10", etqR(RAR[2]), etqR(RAR[3]), etqR(RAR[4]), "Sobe tudo um passo"],
+        ["III · Desperta", "20", etqR(RAR[3]), etqR(RAR[4]), etqR(RAR[5]), "Sobe tudo um passo"],
+        ["IV · Ascensão", "30", etqR(RAR[4]), etqR(RAR[5]), etqR(RAR[6]), "Sobe tudo um passo"],
+        ["V · Plena", "40", etqR(RAR[5]), etqR(RAR[6]), etqR(RAR[6]), "Igual a uma Única criada"],
+        ["VI · Transcendente", "50 (máximo)", etqR(RAR[6]), etqR(RAR[6]), '<span class="etiqueta forte r-unica">Transcendida</span>', "Passa de uma Única; +2 de peso e +1 técnica"]
+      ])}
+        <div class="texto"><ul>
+          <li>A cada estágio, Potência, V, custo de uso e CD sobem sozinhos para a raridade nova. O jogador gasta o Orçamento a mais no criador, sem teste, sem PH e sem horas, e pode reescrever um efeito.</li>
+          <li><b>Transcendida:</b> Golpe 5d12+20 (52), dano próprio 12d12+20, Buff 4d12+14 (40), V 12, Orçamento 15, custo 40, sustentada 18 por turno, CD +5. Só existe na Única Inicial.</li>
+          <li><b>Ressonância (usos):</b> cada uso de uma técnica ativa da HUI conta (até 3 por combate). Ao chegar a 10 / 15 / 20 / 25 / 30 usos nos Estágios I a V, antes do próximo nível, a HUI fica Ressonante até o estágio seguinte: as técnicas usam a Potência, o V e o Orçamento do próximo estágio, com o custo do atual, e os bônus fixos podem passar do Teto de Bônus em até +3. No Estágio VI, 40 usos deixam a Ressonância permanente: a Suprema vira Transcendida Ressonante (Golpe 6d12+25, fixo 64; V 14; Orçamento 17) e as outras viram Transcendida.</li>
+          <li><b>Composição livre:</b> até 5 técnicas, cada uma Leve (peso 1), Regular (peso 2) ou Suprema (peso 3), com peso total até 10 e no máximo 1 Suprema (no Estágio VI: +2 de peso e +1 técnica). Passivo é opcional e pode ser Leve ou Regular. O Legado do Errante, por exemplo, não tem passivo. No criador, escolha a categoria Única Inicial para montar uma com o peso conferido sozinho.</li>
+          <li><b>Exemplo:</b> no Legado do Errante, a Canção que Sobrevive aos Séculos dá +15 no Estágio I, +20 no II, +28 no III, +40 no IV e no V, +52 no VI e +64 com a Ressonância final.</li>
+        </ul></div></article>
+      <article class="cartao"><div class="texto"><p class="nota">Proposta em aprovação (25/11/2026).</p></div></article>`;
+  }
+
+  function trocarSub(s) {
+    for (const b of $("hab-sub").querySelectorAll(".chip")) b.classList.toggle("ativo", b.dataset.sub === s);
+    for (const x of ["exemplos", "criar", "tabelas"]) $("hab-" + x).hidden = x !== s;
+  }
+  function habInit() {
+    RAR.forEach((r, i) => $("hab-f-rar").insertAdjacentHTML("beforeend", `<option value="${i}">${r.nome}</option>`));
+    for (const [k, v] of Object.entries(MODOS)) $("hab-f-modo").insertAdjacentHTML("beforeend", `<option value="${k}">${v.nome}</option>`);
+    for (const [k, v] of Object.entries(CAT)) $("hab-f-nat").insertAdjacentHTML("beforeend", `<option value="${k}">${v.nome}</option>`);
+    $("btn-criar-magia").addEventListener("click", () => {
+      S.cat = aba === "rituais" ? "ritual" : "magia";
+      if (S.cat === "ritual") S.tecs.forEach(x => { x.sel.acao = -1; });
+      trocarAba("habilidades"); trocarSub("criar"); formHab();
+    });
+    $("qtd-habilidades").textContent = EXEMPLOS.length;
+    listaHab(); formHab(); tabelasHab();
+    $("hab-busca").addEventListener("input", listaHab);
+    for (const s of ["hab-f-rar", "hab-f-modo", "hab-f-nat"]) $(s).addEventListener("change", listaHab);
+    $("hab-sub").addEventListener("click", ev => { const b = ev.target.closest(".chip"); if (b) trocarSub(b.dataset.sub); });
+    $("hab-grade").addEventListener("click", ev => { const b = ev.target.closest("[data-hcopiar]"); if (b) copiar(registroExemplo(EXEMPLOS[b.dataset.hcopiar]), b); });
+    const f = $("hab-form");
+    f.addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b || b.disabled) return;
+      const t = tecAt();
+      if (b.dataset.cat) { S.cat = b.dataset.cat; if (S.cat === "ritual") S.tecs.forEach(x => { x.sel.acao = -1; }); }
+      else if (b.dataset.n) S.n = b.dataset.n;
+      else if (b.dataset.r !== undefined) { t.r = Number(b.dataset.r); limparInvalidos(t); }
+      else if (b.dataset.m) t.m = b.dataset.m;
+      else if (b.dataset.est !== undefined) S.estagio = Number(b.dataset.est);
+      else if (b.dataset.peso) t.peso = b.dataset.peso;
+      else if (b.dataset.tec !== undefined) S.at = Number(b.dataset.tec);
+      else if (b.hasAttribute("data-tecnova")) { S.tecs.push(novaTec()); S.at = S.tecs.length - 1; }
+      else if (b.hasAttribute("data-tecdel")) { S.tecs.splice(S.at, 1); S.at = Math.max(0, S.at - 1); }
+      else return;
+      formHab();
+    });
+    f.addEventListener("input", ev => {
+      const el = ev.target, t = tecAt();
+      if (el.id === "c-nome") S.nome = el.value;
+      else if (el.id === "c-tipo") S.tipo = el.value;
+      else if (el.id === "c-tema") S.tema = el.value;
+      else if (el.id === "c-desc") S.desc = el.value;
+      else if (el.id === "c-tnome") { t.nome = el.value; const c = f.querySelector(`[data-tec="${S.at}"]`); if (c) c.textContent = rotuloTec(t, S.at); }
+      else if (el.id === "c-ttexto") t.texto = el.value;
+      else if (el.dataset.mod) { const m = MODS.find(x => x.id === el.dataset.mod); t.mods[m.id] = el.type === "checkbox" ? (el.checked ? 1 : 0) : Math.max(0, Math.min(m.max || 1, Number(el.value) || 0)); }
+      else if (el.dataset.sel) t.sel[el.dataset.sel] = Number(el.value);
+      else if (el.hasAttribute("data-freq")) t.freq = Number(el.value);
+      else if (el.dataset.restr) t.restr[el.dataset.restr] = el.checked;
+      else if (el.hasAttribute("data-aprim")) t.aprim = Math.max(0, Math.min(Math.ceil(RAR[t.r].orc / 2), Number(el.value) || 0));
+      else if (el.hasAttribute("data-brilhante")) t.brilhante = el.checked;
+      else if (el.hasAttribute("data-custoprop")) t.custoProp = el.value;
+      else if (el.hasAttribute("data-arq")) S.arq = el.value;
+      else if (el.hasAttribute("data-aprender")) S.aprender = el.checked;
+      else if (el.hasAttribute("data-ress")) { S.ress = el.checked; formHab(); return; }
+      else return;
+      previaHab();
+    });
+    $("hab-previa").addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b || b.disabled) return;
+      if (b.hasAttribute("data-ccopiar")) copiar(registroCriado(calcHab()), b);
+      else if (b.hasAttribute("data-climpar")) { Object.assign(S, { nome: "", tipo: "", tema: "", desc: "", cat: "habilidade", aprender: false, tecs: [novaTec()], at: 0, estagio: 0 }); formHab(); }
+    });
+    RAR.push(TRANS, TRANS2);
+  }
+
+  /* ================= Ponte com o Foundry (módulo epm-ficha 0.9.2) ================= */
+  // Formato do módulo: { type: "EPMGrimorio", kind: "magia"|"exemplo"|"criada", … }. Arrastar o cartão para a ficha
+  // ou, dentro da janela do Foundry, clicar em "Adicionar à ficha" (postMessage para a janela do Foundry).
+  const SEL_MOD = { alcance: ["alcance9", "alcance18", "alcance36"], area: ["area1", "area2", "area3", "area4"], acao: ["acaoBonus", "acaoMovimento", "acaoLivre"], duracao: ["dur3", "dur1min", "durCena", "durFora", "sustentada"] };
+  const MOD_MOD = { seletiva: "seletiva", alvo: "alvoExtra", leve: "condLeve", media: "condMedia", forte: "condForte", dominado: "dominado", critMedia: "critMedia", critForte: "critForte",
+    rodada: "rodadaExtra", rodadaForte: "rodadaForte", remLeve: "removerLeve", remMedia: "removerMedia", remForte: "removerForte", tipo: "tipoDano", rd: "ignorarRd", condicional: "condicional",
+    resist: "ignorarRes", verdadeiro: "verdadeiro", margem: "margem", golpe2: "golpeDuplo", vant: "vantagem", desv: "desvantagemAlvo", empurrar: "empurrar", desloc: "deslocamento",
+    teleporte: "teleporte", voo: "voo", proteger: "protegeAliado", ocultar: "desvantagemAtaques", invisivel: "invisivel", beneficio: "beneficioExtra", gatilho: "gatilho", menor: "efeitoMenor" };
+  const FREQ_MOD = [null, "porCena", "porDia", "porSessao"];
+  const RESTR_MOD = { uso: "condicaoUso", lenta: "acaoLenta", conc: "concentracao", termina: "terminaGatilho", colLeve: "colateralLeve", colPesado: "colateralPesado", sacrificio: "sacrificio" };
+  const RAR_ID = ["comum", "incomum", "rara", "epica", "lendaria", "mitica", "unica"];
+  function receitaModulo() {
+    return {
+      nome: S.nome.trim() || "Sem nome", categoria: S.cat === "inicial" ? "unicaInicial" : S.cat, natureza: S.cat === "magia" ? "mistica" : S.n,
+      tipo: S.tipo.trim(), tema: S.tema.trim(), descricao: S.desc.trim(),
+      tecnicas: S.tecs.map(t => {
+        const mods = {}, restricoes = {};
+        for (const [k, i] of Object.entries(t.sel)) if (i >= 0 && SEL_MOD[k]?.[i]) mods[SEL_MOD[k][i]] = 1;
+        for (const [k, q] of Object.entries(t.mods)) if (Number(q) > 0 && MOD_MOD[k]) mods[MOD_MOD[k]] = (mods[MOD_MOD[k]] || 0) + Number(q);
+        if (FREQ_MOD[t.freq]) restricoes[FREQ_MOD[t.freq]] = 1;
+        for (const [k, v] of Object.entries(t.restr)) if (v && RESTR_MOD[k]) restricoes[RESTR_MOD[k]] = 1;
+        const o = { nome: t.nome.trim() || (S.tecs.length === 1 ? S.nome.trim() : "") || "Técnica", raridade: RAR_ID[Math.min(6, t.r)], modo: t.m, efeito: t.texto.trim(), mods, restricoes };
+        if (S.cat === "inicial") o.peso = t.peso || "regular";
+        if (t.aprim) o.aprimorado = t.aprim;
+        if (t.brilhante) o.bonusTeste = 1;
+        if (String(t.custoProp || "").trim()) o.custoProposto = String(t.custoProp).trim();
+        return o;
+      })
+    };
+  }
+  function payloadDe(el) {
+    const c = el.closest("[data-fmagia],[data-fexemplo],[data-fcriada]"); if (!c) return null;
+    if (c.dataset.fmagia) { const m = DADOS.magias.find(x => x.id === c.dataset.fmagia); return m && { type: "EPMGrimorio", kind: "magia", id: m.id, nome: m.nome, registro: registro(m) }; }
+    if (c.dataset.fexemplo !== undefined) { const e = EXEMPLOS[c.dataset.fexemplo]; return e && { type: "EPMGrimorio", kind: "exemplo", nome: e.nome, registro: registroExemplo(e) }; }
+    const h = calcHab(); if (!h.ok) return null;
+    return { type: "EPMGrimorio", kind: "criada", nome: S.nome.trim() || "Sem nome", receita: receitaModulo(), registro: registroCriado(h) };
+  }
+  document.addEventListener("dragstart", ev => {
+    const d = ev.target.closest?.("[draggable]") && payloadDe(ev.target); if (!d) return;
+    ev.dataTransfer.setData("text/plain", JSON.stringify(d));
+    ev.dataTransfer.effectAllowed = "copy";
+  });
+  document.addEventListener("click", ev => {
+    const b = ev.target.closest("[data-fadd]"); if (!b || b.disabled) return;
+    const d = payloadDe(b); if (!d) return avisar("Ainda não dá para adicionar: corrija os erros da prévia.");
+    window.parent.postMessage(d, "*");
+    avisar(`Enviando ${d.nome}…`);
+  });
+  window.addEventListener("message", ev => {
+    const d = ev.data; if (!d || d.type !== "EPMGrimorioResposta") return;
+    avisar(d.ok ? `✓ ${d.texto}` : `✕ ${d.texto || "Não deu para adicionar."}`);
+  });
+  if (NO_FOUNDRY) {
+    const ficha = new URLSearchParams(location.search).get("ficha");
+    document.body.insertAdjacentHTML("afterbegin", `<p class="faixa-foundry">Arraste um cartão para a ficha${ficha ? ` de <b>${esc(ficha)}</b>` : ""} ou clique em <b>Adicionar à ficha</b>.</p>`);
+  }
+
+  habInit();
+  iniciar();
+})();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /**
- * Grimório do Multiverso dentro do Foundry (0.9.3): o site (GitHub Pages) aberto numa janela.
+ * Grimório do Multiverso dentro do Foundry (0.9.2): o site (GitHub Pages) aberto numa janela.
  *  - Arrastar um cartão do site (magia, ritual, habilidade de exemplo ou a habilidade montada no criador) para a ficha
  *    adiciona na ficha (o drop chega em actor-sheet._onDrop com { type: "EPMGrimorio", … }).
  *  - Clicar em "Adicionar à ficha" no site manda uma mensagem (postMessage) para o Foundry, que adiciona na ficha

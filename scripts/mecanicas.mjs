@@ -942,7 +942,7 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
         label: `${cura ? "Cura" : "Dano"} ${formulaDano}${potente ? " (Magia Potente)" : ""}${somaAfin ? " (Afinidade Elemental)" : ""}`, icone: cura ? "fa-solid fa-heart" : "fa-solid fa-burst"
       });
     }
-    // Condições do efeito (0.9.3): um botão por condição, aplicada nos alvos marcados
+    // Condições do efeito (0.9.2): um botão por condição, aplicada nos alvos marcados
     for (const cid of forma.condicoes ?? []) {
       const cond = condicaoPorId(cid);
       if (!cond) continue;

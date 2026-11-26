@@ -1,5 +1,5 @@
 /**
- * Testes da 0.9.3 (sem Foundry): automação pelo texto, condições da forma e padronização das habilidades existentes.
+ * Testes da 0.9.2 (sem Foundry): automação pelo texto, condições da forma e padronização das habilidades existentes.
  * Uso: node testes/testes/automacao.mjs
  */
 import { lerAutomacao, automatizarForma, receitaDoPoder, condicoesDoTexto, VERSAO_PADRONIZACAO } from "/home/claude/epm-ficha/scripts/habilidade-auto.mjs";

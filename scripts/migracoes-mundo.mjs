@@ -699,7 +699,7 @@ export async function migrarMundo() {
   try { const n = await hui090(); if (n) feitos.push(`${n} ficha(s) com a Habilidade Única Inicial (personagens pendentes, NPCs sem)`); } catch (err) { console.warn("EPM | HUI 0.9.0", err); }
   try { const n = await kits091(); if (n) feitos.push(`${n} ficha(s) com os itens do kit inicial trocados pelos do compêndio`); } catch (err) { console.warn("EPM | kits 0.9.1", err); }
   try { const n = await dobroPasso092(); if (n) feitos.push(`${n} Dobro e Passo virou ação livre`); } catch (err) { console.warn("EPM | Dobro e Passo 0.9.2", err); }
-  try { const { padronizarMundo } = await import("./habilidades-padrao.mjs"); const n = await padronizarMundo(itens); if (n) feitos.push(`${n} habilidade(s) e magia(s) no padrão do Grimório, automatizadas pelo texto`); } catch (err) { console.warn("EPM | padronização 0.9.3", err); }
+  try { const { padronizarMundo } = await import("./habilidades-padrao.mjs"); const n = await padronizarMundo(itens); if (n) feitos.push(`${n} habilidade(s) e magia(s) no padrão do Grimório, automatizadas pelo texto`); } catch (err) { console.warn("EPM | padronização 0.9.2", err); }
   try { avisoAtiradorArcano(); } catch (err) { console.warn("EPM | aviso do Atirador Arcano", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

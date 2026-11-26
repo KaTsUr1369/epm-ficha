@@ -59,7 +59,7 @@ export function formaDaTecnica(t, i, { categoria = "habilidade", natureza = "fis
   if (freq) forma.uso = freq;
   if (modo === "disparo" || modo === "explosao") forma.dano = { formula: c.potencia ? S.RARIDADES_HAB[c.numeros].proprio.replace(/\s/g, "") : "", tipo: "" };
   if (modo === "explosao") forma.teste = { tipo: "resistencia", pericia: "reflexos", nd: "" };
-  // Automação pelo texto (0.9.3): alcance, área, duração, teste, dano e condições do efeito escrito.
+  // Automação pelo texto (0.9.2): alcance, área, duração, teste, dano e condições do efeito escrito.
   // A ação e o custo da receita valem; a frequência do texto só entra se a receita não tiver uma.
   if (t.efeito) {
     const a = automatizarForma(forma, t.efeito, { modo }).forma;

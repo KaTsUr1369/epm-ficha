@@ -120,7 +120,7 @@ export function lerHabilidadeTexto(texto) {
       uso: c.uso ? usoDe(c.uso) : "livre",
       efeito: textoParaHtml(p.texto)
     };
-    // 0.9.3: o resto (teste, dano, condições, alcance, área…) sai do próprio texto do efeito
+    // 0.9.2: o resto (teste, dano, condições, alcance, área…) sai do próprio texto do efeito
     return automatizarForma(forma, p.texto.join("\n")).forma;
   });
   return { nome, tipoHab, tema, descricao: textoParaHtml(abertura), formas };

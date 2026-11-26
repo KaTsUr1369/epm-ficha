@@ -1,5 +1,5 @@
 /**
- * Automação pelo texto (0.9.3): lê o texto de uma habilidade, magia ou ritual e preenche a forma
+ * Automação pelo texto (0.9.2): lê o texto de uma habilidade, magia ou ritual e preenche a forma
  * (ação, custo, custo por turno, uso, alcance, área, duração, teste, dano e condições aplicadas),
  * e monta a receita no padrão do Grimório do Multiverso (categoria, natureza, técnicas com raridade,
  * modo, modificadores e restrições) para as habilidades que já existiam antes do criador.

@@ -1242,7 +1242,7 @@ export function normalizarForma(id, fo = {}) {
     dano: { formula: String(fo.dano?.formula ?? "").trim(), tipo: fo.dano?.tipo ?? "" },
     efeito: fo.efeito ?? "",
     uso: USOS_FORMA[fo.uso] ? fo.uso : "livre",
-    // Condições que a forma aplica (botões no cartão); lidas do texto pela automação (0.9.3)
+    // Condições que a forma aplica (botões no cartão); lidas do texto pela automação (0.9.2)
     condicoes: Array.isArray(fo.condicoes) ? fo.condicoes.filter(c => typeof c === "string" && c) : [],
     requisitos: Object.fromEntries(Object.keys(REQUISITOS).map(k => [k, !!fo.requisitos?.[k]])),
     bonus: normalizarBonusSituacional(fo.bonus)

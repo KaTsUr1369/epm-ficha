@@ -63,7 +63,7 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     return Object.assign(base, montarContextoPoder({ item, ficha, listaPericias: listaPericias(), editores, editavel: this.isEditable }));
   }
 
-  /** 0.9.3: preenche as formas pelo texto (só o que estiver vazio) e, se der, monta a receita do criador. */
+  /** 0.9.2: preenche as formas pelo texto (só o que estiver vazio) e, se der, monta a receita do criador. */
   async acaoLerTexto() {
     const { padronizarItem } = await import("./habilidades-padrao.mjs");
     return padronizarItem(this.item, { forcar: true });

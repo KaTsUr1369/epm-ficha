@@ -1,5 +1,5 @@
 /**
- * Padronização (0.9.3): as habilidades e magias que já existem no Foundry entram no padrão do Grimório do Multiverso.
+ * Padronização (0.9.2): as habilidades e magias que já existem no Foundry entram no padrão do Grimório do Multiverso.
  *  - Cada forma é automatizada pelo próprio texto (ação, custo, uso, alcance, área, duração, teste, dano e condições),
  *    só preenchendo o que estiver vazio: nada do que o jogador ou o Mestre escreveu é apagado.
  *  - Habilidades feitas à mão (sem origem de arquétipo, classe, raça ou treino, fora do Grimório e da HUI) ganham a receita

@@ -182,16 +182,12 @@
   {{#if v.classe.furia}}
   <div class="epm-060-furia{{#if v.classe.furia.ativa}} ativa{{/if}}">
     <button type="button" class="epm-botao{{#if v.classe.furia.ativa}} epm-botao-forte{{/if}}" data-action="furia" {{#unless @root.editavel}}disabled{{/unless}}><i class="fa-solid fa-fire"></i> {{#if v.classe.furia.ativa}}Encerrar Fúria{{else}}Fúria{{/if}}</button>
-    <span class="epm-dica">+{{v.classe.furia.dano}} de dano e RD {{v.classe.furia.rd}} por 1 cena · {{v.classe.furia.usos}}/{{v.classe.furia.max}} neste descanso</span>
+    <span class="epm-dica">+{{v.classe.furia.dano}} de dano corpo a corpo e RD {{v.classe.furia.rd}}{{#if v.classe.furia.fisico}} física{{/if}} · {{v.classe.furia.custo}} PE por turno · {{v.classe.furia.usos}}/{{v.classe.furia.max}} neste descanso</span>
   </div>
   {{/if}}
-  {{#if v.classe.critico}}<p class="epm-dica">{{v.classe.critico}}</p>{{/if}}
-  {{#if v.classe.corpoDePedra}}<p class="epm-dica">{{v.classe.corpoDePedra}}</p>{{/if}}
-  {{#if v.classe.protecaoGuardiao}}<p class="epm-dica">{{v.classe.protecaoGuardiao}}</p>{{/if}}
-  {{#if v.classe.porradaFranca}}<p class="epm-dica">{{v.classe.porradaFranca}}</p>{{/if}}
-  {{#if v.classe.protecoes}}
-  <p class="epm-rotulo">Proteções (até {{v.classe.protecoes.max}})</p>
-  <div class="epm-060-opcoes">{{#each v.classe.protecoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="protecaoBarbaro" data-id="{{this.id}}" data-max="{{v.classe.protecoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
+  {{#if v.classe.posturas}}
+  <p class="epm-rotulo">Posturas (até {{v.classe.posturas.max}} ativa{{#unless (epmEq v.classe.posturas.max 1)}}s{{/unless}})</p>
+  <div class="epm-060-opcoes">{{#each v.classe.posturas.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="posturaGuerreiro" data-id="{{this.id}}" data-max="{{this.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
   {{/if}}
   {{#if v.classe.elemental}}
   <div class="epm-060-corpo"><label class="epm-mini"><span>Elemento Principal</span><select name="flags.epm-ficha.classeEpm.elemento" {{#unless @root.editavel}}disabled{{/unless}}>{{#each v.classe.elemental.opcoes}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label></div>
@@ -237,14 +233,10 @@
     {{/if}}
   </div>
   {{/with}}
-  {{#if v.classe.posicoes}}
-  <p class="epm-rotulo">Posições (até {{v.classe.posicoes.max}})</p>
-  <div class="epm-060-opcoes">{{#each v.classe.posicoes.opcoes}}<button type="button" class="epm-chip{{#if ativo}} ativo{{/if}}" data-action="posicaoLutador" data-id="{{this.id}}" data-max="{{v.classe.posicoes.max}}" title="{{this.texto}}" {{#unless @root.editavel}}disabled{{/unless}}>{{this.nome}}</button>{{/each}}</div>
-  {{/if}}
   <p class="epm-dica"><i class="fa-solid fa-book" aria-hidden="true"></i> As habilidades da classe ficam na aba Arquétipo e Classe, sub-aba Classe.</p>
 </section>
 {{/if}}
-{{#if v.classeElemental}}<p class="epm-dica epm-060-elemental"><i class="fa-solid fa-fire"></i> Elementos: Fogo, Água, Ar e Terra (Nv. 3); Raio e Gelo (12); Som e Pressão (27); Fogo Azul, Raio Negro, Ácido, Zero Absoluto, Vendaval, Ruído, Gravidade e Abalo Sísmico (39). A partir do Nv. 39, um crítico ou 15+ de dano elemental pede Fortitude ao alvo (o botão aparece no cartão do ataque).</p>{{/if}}
+{{#if v.classeElemental}}<p class="epm-dica epm-060-elemental"><i class="fa-solid fa-fire"></i> Elementos: Fogo, Água, Ar e Terra (Nv. 3); Raio e Gelo (12); Som e Pressão (27); Fogo Azul, Raio Negro, Ácido, Zero Absoluto, Vendaval, Ruído e Gravidade (39). A partir do Nv. 39, 20+ de dano elemental num ataque pede Fortitude ao alvo (o botão aparece no cartão do ataque).</p>{{/if}}
 {{/if}}
 
 {{#if (epmEq ../secao "condicoes")}}

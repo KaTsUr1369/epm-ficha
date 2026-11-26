@@ -11,7 +11,7 @@ import { num, int, novoId, formaPadrao } from "./data.mjs";
 import {
   ARQUETIPOS, nivelArquetipo, arquetiposDoPersonagem, idArquetipo as idArquetipoNome, degrau, efeitoMaestria, bonusAutomato, recuperarManaDe, cacadorDe, folegoDe, usosFolego, sobrecargaDe, corpoDeManaDe, zonaDeManaDe
 } from "./arquetipos.mjs";
-import { CLASSES_NOTION, habilidadesDaClasse, habilidadesLiberadas, tipoDoElemento } from "./regras-extras.mjs";
+import { CLASSES_EPM, habilidadesDaClasse, habilidadesLiberadas, tipoDoElemento } from "./regras-extras.mjs";
 import { idClasse } from "./ficha-extras.mjs";
 import { fvtt, escapar } from "./helpers.mjs";
 import { dataDoMundo } from "./calendario.mjs";
@@ -188,7 +188,7 @@ export function dadosHabilidadeArquetipo(arqId, h) {
 /** Classe pronta da ficha, o nível dela (o do arquétipo da classe) e os caminhos escolhidos. */
 export function classeDaFicha(dados = {}) {
   const id = idClasse(dados.classe);
-  const def = id ? CLASSES_NOTION[id] : null;
+  const def = id ? CLASSES_EPM[id] : null;
   if (!def) return null;
   const nivel = arquetiposDoPersonagem(dados).find(a => a.id === (def.arquetipo ?? "combatente"))?.nivel ?? 0;
   const caminhos = Array.isArray(dados.classeEpm?.caminhos) ? dados.classeEpm.caminhos : [];
@@ -204,7 +204,7 @@ export function formaEspecialClasse(ref) {
     const forma = formaPadrao(0, "Escolher elemento");
     forma.acao = "livre"; forma.uso = "curto";
     forma.efeito = "<p>Escolha um elemento desbloqueado: resistência a ele até o próximo descanso. Depois do descanso, pode escolher de novo.</p>";
-    const elementos = (CLASSES_NOTION.guerreiroElemental?.elementos ?? []).flatMap(([nivel, lista]) => lista.map(e => [nivel, e]));
+    const elementos = (CLASSES_EPM.guerreiroElemental?.elementos ?? []).flatMap(([nivel, lista]) => lista.map(e => [nivel, e]));
     forma.bonus = {
       gatilho: "uso", escolha: "escolher", duracao: "descanso",
       opcoes: Object.fromEntries(elementos.map(([nivel, e], i) => [`el${i}`, { tipo: "resistencia", valor: tipoDoElemento(e), rotulo: e, nivel, criado: i + 1 }]))
@@ -215,7 +215,7 @@ export function formaEspecialClasse(ref) {
 }
 
 export function dadosHabilidadeClasse(classeId, h) {
-  const c = CLASSES_NOTION[classeId];
+  const c = CLASSES_EPM[classeId];
   const especial = formaEspecialClasse(h.ref);
   const forma = especial?.forma ?? formaPadrao(0, "Passiva");
   if (!especial) forma.acao = "passiva";
@@ -270,7 +270,7 @@ async function tirarHabilidadesDeOutraClasse(actor, novaId = "") {
 
 /** Escolhe uma classe pronta (só as do arquétipo do personagem) e já cria as habilidades liberadas. */
 export async function escolherClasse(actor, id) {
-  const def = CLASSES_NOTION[id];
+  const def = CLASSES_EPM[id];
   if (!def || !actor?.isOwner) return;
   const dados = actor.flags?.[FLAG] ?? {};
   const arqs = arquetiposDoPersonagem(dados).map(a => a.id);
@@ -313,7 +313,7 @@ export async function definirArquetipo(actor, arqId) {
 
 /** Classe arrastada do compêndio (item Subclasse do D&D). Sem o arquétipo dela na ficha, define antes. */
 export async function definirClassePorItem(actor, classeId) {
-  const def = CLASSES_NOTION[classeId];
+  const def = CLASSES_EPM[classeId];
   if (!def || !actor?.isOwner) return;
   const dados = actor.flags?.[FLAG] ?? {};
   const arqId = def.arquetipo ?? "combatente";

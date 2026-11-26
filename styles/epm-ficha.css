@@ -2909,6 +2909,9 @@ i.epm-pericia-fav { display: inline-grid; place-items: center; }
 .epm-classe-painel { border-left: 3px solid var(--cor, var(--epm-destaque, #A47DDB)); }
 .epm-classe-cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 6px 0; }
 .epm-classe-cartao { border: 1px solid var(--epm-linha, #29304D); border-top: 3px solid var(--cor, #A47DDB); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.epm-classe-regras { margin: 4px 0 8px; font-size: 12px; }
+.epm-classe-regras summary { cursor: pointer; font-weight: 600; }
+.epm-classe-regras ul { margin: 4px 0 0 16px; padding: 0; display: grid; gap: 3px; line-height: 1.35; }
 .epm-classe-cartao h4 { margin: 0; }
 .epm-classe-cartao p { margin: 0; font-size: 0.9em; }
 .epm-classe-cartao .epm-botao { margin-top: auto; align-self: flex-start; }
@@ -3331,6 +3334,10 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-npcv-chip.ac { background: color-mix(in srgb, var(--npc-ac) 25%, #121522); border-color: var(--npc-ac); color: #fff; }
 .epm-npcv-chip.red { background: #3b1c1f; border-color: #7a3036; color: #ffb9b9; }
 .epm-npcv-chip.gm { border-style: dashed; }
+.epm-npcv-chip.raridade { font-weight: 700; letter-spacing: .02em; }
+.epm-npcv-chip.raridade.raro { background: #16304a; border-color: #4f8fd0; color: #cfe6ff; }
+.epm-npcv-chip.raridade.epico { background: #2e1a45; border-color: #9b6ad6; color: #ead9ff; }
+.epm-npcv-chip.raridade.lendario { background: #3d2a0c; border-color: #d9a23c; color: #ffe6b3; }
 .epm-npcv-aff-wrap { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 .epm-npcv-aff { display: inline-flex; gap: 2px; align-items: center; }
 .epm-npcv-aff span { width: 9px; height: 9px; border-radius: 1px; background: #1D2237; display: inline-block; }
@@ -3715,3 +3722,42 @@ button.epm-npcv-pill { cursor: pointer; }
 .epm-grupo-aba .epm-contador { margin-left: 4px; }
 .epm-grupos-abas .perigo { color: #e07a6a; }
 .epm-grupo-seletor { width: auto; max-width: 180px; font-size: 12px; height: 24px; }
+/* 0.9.0: orçamento do encontro no Escudo */
+.epm-escudo-orcamento { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 2px 9px; border-radius: 10px; border: 1px solid var(--epm-linha, #2B3048); }
+.epm-escudo-orcamento.ok { border-color: #3f8f5a; color: #bfe8c9; }
+.epm-escudo-orcamento.aviso { border-color: #c9a35a; color: #f3dfb5; }
+.epm-escudo-orcamento.perigo { border-color: #c4525a; color: #ffc4c8; }
+/* 0.9.0: criador de habilidades e Habilidade Única Inicial */
+.epm-criador-dialogo .window-content { max-height: 82vh; overflow-y: auto; }
+.epm-criador { display: grid; gap: 8px; }
+.epm-criador-tecnicas { display: grid; gap: 8px; }
+.epm-criador-tecnica { border: 1px solid var(--epm-linha, #2B3048); border-left: 3px solid var(--epm-destaque, #A47DDB); border-radius: 6px; padding: 8px; display: grid; gap: 6px; }
+.epm-criador-tecnica > header { display: flex; align-items: center; gap: 8px; }
+.epm-criador-conta { flex: 1; font-size: 11.5px; opacity: .85; }
+.epm-criador-mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px 10px; padding: 4px 0; }
+.epm-criador-mod { display: flex; align-items: center; gap: 5px; font-size: 11.5px; line-height: 1.3; }
+.epm-criador-mod input[type=number] { width: 3.2em; }
+.epm-criador-mod small { opacity: .7; }
+.epm-criador-resumo { border-top: 1px solid var(--epm-linha, #2B3048); padding-top: 6px; font-size: 12.5px; }
+.epm-criador-resumo p { margin: 2px 0; }
+.epm-criador-peso { font-weight: 600; }
+.epm-hui { border: 1px dashed #F0CF62; border-radius: 6px; padding: 8px 10px; margin: 4px 0 8px; display: grid; gap: 6px; }
+.epm-hui.ressonante { border-style: solid; box-shadow: 0 0 0 1px #F0CF6255 inset; }
+.epm-hui.final { border-color: #ffd970; background: color-mix(in srgb, #F0CF62 8%, transparent); }
+.epm-hui-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-hui-selo { font-weight: 700; color: #F0CF62; }
+.epm-hui-usos { display: grid; grid-template-columns: 1fr auto auto auto auto; align-items: center; gap: 6px; font-size: 12px; }
+.epm-hui-usos .epm-barra { height: 6px; border-radius: 3px; background: #2B3048; overflow: hidden; }
+.epm-hui-usos .epm-barra span { display: block; height: 100%; background: #F0CF62; }
+.epm-tag-hui { border-color: #F0CF62; color: #F0CF62; }
+.epm-hui-pergunta { border: 1px solid var(--epm-linha, #2B3048); border-radius: 6px; margin: 0 0 6px; padding: 4px 8px; }
+.epm-hui-pergunta legend { font-weight: 600; }
+.epm-hui-cartao ol { margin: 4px 0 6px 18px; padding: 0; }
+.epm-hui-botoes { display: flex; flex-wrap: wrap; gap: 4px; }
+.epm-hab-projetos .epm-barra { height: 6px; border-radius: 3px; background: #2B3048; overflow: hidden; margin: 4px 0; }
+.epm-hab-projetos .epm-barra span { display: block; height: 100%; background: var(--epm-destaque, #A47DDB); }
+.epm-acoes-linha { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.epm-escudo-hui { margin: 0 0 8px; }
+.epm-escudo-lista-hui { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.epm-escudo-lista-hui li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.epm-escudo-lista-hui img { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }

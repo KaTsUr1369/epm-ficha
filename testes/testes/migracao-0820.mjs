@@ -10,7 +10,7 @@ const itens = [
   it("c", "Revestimento Elemental", "<p>y</p><p>Guerreiro Elemental, nível 6.</p>", { classeRef: "guerreiroElemental:revestimento-elemental" })
 ];
 const log = {};
-game.actors = [{ flags: { "epm-ficha": { arquetipo: "Combatente", nivel: 30, classe: R.CLASSES_NOTION.guerreiroElemental.nome } }, items: { contents: itens },
+game.actors = [{ flags: { "epm-ficha": { arquetipo: "Combatente", nivel: 30, classe: R.CLASSES_EPM.guerreiroElemental.nome } }, items: { contents: itens },
   deleteEmbeddedDocuments: async (_, ids) => log.apagar = ids, updateEmbeddedDocuments: async (_, u) => log.upd = u,
   createEmbeddedDocuments: async (_, c) => log.criar = c.map(x => x.name), update: async u => log.flag = u }];
 const M = await import("/home/claude/epm-ficha/scripts/migracoes-mundo.mjs");

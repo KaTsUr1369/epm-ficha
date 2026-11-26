@@ -162,6 +162,25 @@
 {{/if}}
 
 {{#if (epmEq ../secao "criacao")}}
+<section class="epm-painel epm-novas-criacao epm-hab-projetos">
+  <header class="epm-painel-titulo"><h3><i class="fa-solid fa-wand-sparkles" aria-hidden="true"></i> Habilidades, magias e rituais</h3>{{#if n.editavel}}<span class="epm-acoes-linha"><button type="button" class="epm-link" data-action="criarHabilidade" data-categoria="habilidade"><i class="fa-solid fa-plus" aria-hidden="true"></i> Habilidade</button> <button type="button" class="epm-link" data-action="criarHabilidade" data-categoria="magia"><i class="fa-solid fa-plus" aria-hidden="true"></i> Magia</button> <button type="button" class="epm-link" data-action="criarHabilidade" data-categoria="ritual"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ritual</button></span>{{/if}}</header>
+  <p class="epm-dica">Criar paga as horas de treino (as mesmas 8 h por dia) e faz um teste por dia. Falhou: não perde PH nem horas, tenta amanhã. Os PH só saem no sucesso.</p>
+  {{#unless n.habProjetos.length}}<p class="epm-vazio">Nenhum projeto de habilidade.</p>{{/unless}}
+  {{#each n.habProjetos}}
+  <article class="epm-criacao estado-{{this.estado}}" data-secao="hab-projeto-{{this.id}}">
+    <header class="epm-treino-topo"><strong>{{this.nome}}</strong> <span class="epm-tag">{{this.modoLabel}} · {{this.categoria}} {{this.raridadeLabel}}</span> <span class="epm-contador">{{this.ph}} PH · DT {{this.dt}}</span>
+      {{#if editavel}}<button type="button" class="epm-icone-botao perigo" data-action="apagarProjetoHab" data-projeto="{{this.id}}" title="Apagar"><i class="fa-solid fa-trash"></i></button>{{/if}}</header>
+    <div class="epm-barra" title="{{this.feitas}} de {{this.horas}} h"><span style="width: {{this.pct}}%"></span></div>
+    <p class="epm-dica">{{this.feitas}} de {{this.horas}} h{{#if testouHoje}} · já testou hoje{{/if}}{{#if catalisador}} · falta o Catalisador do Mestre{{/if}}{{#if despertar}} · falta o Mestre aprovar o Despertar{{/if}}</p>
+    <div class="epm-acoes-linha">
+      {{#if andamento}}{{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="trabalharProjetoHab" data-projeto="{{this.id}}"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i> Treinar</button>{{/if}}{{/if}}
+      {{#if pronto}}{{#if editavel}}<button type="button" class="epm-botao epm-botao-forte" data-action="testarProjetoHab" data-projeto="{{this.id}}" {{#if testouHoje}}disabled title="Um teste por dia"{{/if}}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i> Fazer o teste</button>{{/if}}{{/if}}
+      {{#if @root.isGM}}{{#if catalisador}}<button type="button" class="epm-botao" data-action="liberarProjetoHab" data-projeto="{{this.id}}" data-campo="catalisador">Mestre: marcar Catalisador</button>{{/if}}{{#if despertar}}<button type="button" class="epm-botao" data-action="liberarProjetoHab" data-projeto="{{this.id}}" data-campo="despertar">Mestre: aprovar Despertar</button>{{/if}}{{/if}}
+      {{#if concluido}}<span class="epm-tag epm-tag-ok">Concluído</span>{{/if}}
+    </div>
+  </article>
+  {{/each}}
+</section>
 <section class="epm-painel epm-novas-criacao">
   <header class="epm-painel-titulo"><h3><i class="fa-solid fa-hammer" aria-hidden="true"></i> Criação de itens</h3>{{#if n.editavel}}<button type="button" class="epm-link" data-action="novaCriacao"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo projeto</button>{{/if}}{{#if n.editavel}}{{#if @root.edicao}}<button type="button" class="epm-link" data-action="pularHoras" title="Timeskip: passa horas de criação (e de treino) de uma vez, sem o limite do dia"><i class="fa-solid fa-forward" aria-hidden="true"></i> Pular tempo</button>{{/if}}{{/if}}</header>
   <p class="epm-dica">As horas saem das mesmas 8 h por dia dos treinos. No fim, teste da perícia: sucesso cria o item e gasta os materiais; falha gasta metade dos materiais e pede metade das horas de novo.</p>

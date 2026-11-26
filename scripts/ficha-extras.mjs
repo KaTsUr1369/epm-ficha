@@ -14,7 +14,7 @@ import { efeitosDaRaca } from "./racas.mjs";
 import { estadoSanidade } from "./insanidades.mjs";
 import { efeitosDosTraumas, dotsDeAcumulos, DANO_ACUMULO_PADRAO, ROTULOS_ACUMULAVEIS } from "./opcionais.mjs";
 import {
-  bonusAtributosAltos, tetoAtributo, maximoRecurso, tabelaRecursos, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, valorPorNivel, tipoDoElemento,
+  bonusAtributosAltos, tetoAtributo, maximoRecurso, tabelaRecursos, idArquetipo, ATRIBUTO_RECURSO_PADRAO, CLASSES_EPM, valorPorNivel, tipoDoElemento,
   faixaIdade, FAIXAS_IDADE, limiteVotos, TIPOS_PACTO, TAMANHO_EFEITOS, grauNucleo, MARCOS_CORRUPCAO, CONQUISTAS, META_CACADOR
 } from "./regras-extras.mjs";
 
@@ -78,10 +78,11 @@ function aplicarBonusExtras(d, out) {
 function aplicarAjustesBonus(d, out) {
   for (const m of out.mods) if (m.origem === "classe") ajustarBonus(d, m, m.alvo);
   for (const r of out.rd) if (r.origem === "classe") ajustarBonus(d, r, `rd.${r.tipos ?? ""}`);
-  for (const [k, l] of Object.entries(out.extrasAtaque)) for (const x of l) if (x.origem === "classe") ajustarBonus(d, x, `dano.${k}`, "formula");
+  const acerto = k => k.startsWith("acerto");
+  for (const [k, l] of Object.entries(out.extrasAtaque)) for (const x of l) if (x.origem === "classe") ajustarBonus(d, x, acerto(k) ? `${k}.${x.fonte}` : `dano.${k}`, acerto(k) ? undefined : "formula");
   out.mods = out.mods.filter(m => m.origem !== "classe" || n(m.valor));
   out.rd = out.rd.filter(r => r.origem !== "classe" || n(r.valor));
-  for (const k of Object.keys(out.extrasAtaque)) out.extrasAtaque[k] = out.extrasAtaque[k].filter(x => x.origem !== "classe" || (x.formula && x.formula !== "0"));
+  for (const k of Object.keys(out.extrasAtaque)) out.extrasAtaque[k] = out.extrasAtaque[k].filter(x => x.origem !== "classe" || (acerto(k) ? n(x.valor) : x.formula && x.formula !== "0"));
 }
 
 /** Atirador Arcano da ficha: { nivel } da classe (nível de Conjurador) ou null. */
@@ -117,6 +118,17 @@ export function idClasse(texto) {
   if (t.includes("vazio")) return "guerreiroVazio";
   if (t.includes("vitalista")) return "vitalista";
   if (t.includes("mecanico")) return "mecanicoGuerra";
+  if (t.includes("arqueiro")) return "arqueiro";
+  if (t.includes("mago de guerra") || t.includes("magoguerra")) return "magoGuerra";
+  if (t.includes("mago")) return "mago";
+  if (t.includes("clerigo")) return "clerigo";
+  if (t.includes("invocador")) return "invocador";
+  if (t.includes("xama")) return "xama";
+  if (t.includes("alquimista")) return "alquimista";
+  if (t.includes("armadura viva")) return "armaduraViva";
+  if (t.includes("curandeiro")) return "curandeiro";
+  if (t.includes("puppets") || t.includes("marionet")) return "masterPuppets";
+  if (t.includes("guerreiro")) return "guerreiro";
   return "";
 }
 
@@ -126,7 +138,7 @@ export function idClasse(texto) {
  */
 export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = {}) {
   const regras = opcoes.regras ?? {};
-  const out = { imunidades: [], implica: [], fontesEfeito: [], mods: [], rd: [], resistencias: [], vantagensPericia: [], extrasAtaque: { armado: [], desarmado: [], todos: [], corpo: [] }, avisos: [] };
+  const out = { imunidades: [], implica: [], fontesEfeito: [], mods: [], rd: [], resistencias: [], vantagensPericia: [], extrasAtaque: { armado: [], desarmado: [], todos: [], corpo: [], distancia: [], acertoCorpo: [], acertoDist: [] }, avisos: [] };
 
   // Raça pronta (habilidades e únicas escolhidas)
   const raca = efeitosDaRaca(d.racaEscolha, Array.isArray(d.racaAtivas) ? d.racaAtivas : []);
@@ -235,58 +247,82 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
   // Classes completas do Notion (tudo o que entra aqui fica marcado como bônus da classe, ajustável na ficha)
   const marcaClasse = { mods: out.mods.length, rd: out.rd.length, ...Object.fromEntries(Object.entries(out.extrasAtaque).map(([k, l]) => [k, l.length])) };
   const classe = idClasse(d.classe);
-  const comb = nivelDe(d, CLASSES_NOTION[classe]?.arquetipo ?? "combatente");
+  const comb = nivelDe(d, CLASSES_EPM[classe]?.arquetipo ?? "combatente");
   const opc = d.classeEpm ?? {};
-  out.classe = { id: classe, nivel: comb, arquetipo: CLASSES_NOTION[classe]?.arquetipo ?? "combatente" };
+  out.classe = { id: classe, nivel: comb, arquetipo: CLASSES_EPM[classe]?.arquetipo ?? "combatente" };
+  const faixaDe = (tab) => valorPorNivel(tab, comb)?.[1];
+  const intMais = (tab) => { const v = valorPorNivel(tab, comb)?.[1]; return v === undefined ? "" : v === "metade" ? "metade da Inteligência (mín. 2)" : v ? `Inteligência + ${v}` : "Inteligência"; };
+  if (classe === "guerreiro" && comb >= 3) {
+    const def = CLASSES_EPM.guerreiro;
+    const max = valorPessoal(d, "cla-guerreiro-posturas", 1 + (comb >= 24 ? 1 : 0) + (comb >= 45 ? 1 : 0));
+    const ativas = (opc.posturas ?? []).filter(id => def.posturas[id]).slice(0, Math.max(0, max));
+    out.classe.posturas = { max, ativas };
+    for (const id of ativas) {
+      const p = def.posturas[id]; const fonte = `Postura: ${p.nome}`;
+      if (p.dano) out.extrasAtaque[p.quando === "distancia" ? "distancia" : "corpo"].push({ formula: faixaDe(p.dano), fonte });
+      if (p.acerto) out.extrasAtaque[p.quando === "distancia" ? "acertoDist" : "acertoCorpo"].push({ valor: faixaDe(p.acerto), fonte });
+      if (p.ca) out.mods.push({ alvo: "ca", valor: faixaDe(p.ca), fonte });
+      if (p.rd) out.rd.push({ valor: faixaDe(p.rd), tipos: "Contundente, Cortante, Perfurante", fonte });
+      if (p.defesa) out.mods.push({ alvo: "defesa.bloqueio", valor: faixaDe(p.defesa), fonte });
+    }
+  }
   if (classe === "guerreiroElemental" && comb >= 3) {
-    const def = CLASSES_NOTION.guerreiroElemental;
-    const dado = valorPessoal(d, "cla-ge-arma-elemental", valorPorNivel(def.armaElemental, comb)?.[1]);
-    const nucleo = valorPessoal(d, "cla-ge-nucleo-dano", valorPorNivel(def.nucleoVermelho, comb)?.[1] ?? 0);
-    const margem = valorPessoal(d, "cla-ge-nucleo-margem", valorPorNivel(def.margem, comb)?.[1] ?? 0);
+    const def = CLASSES_EPM.guerreiroElemental;
+    const dado = valorPessoal(d, "cla-ge-arma-elemental", faixaDe(def.arma));
+    const nucleo = valorPessoal(d, "cla-ge-nucleo-dano", faixaDe(def.nucleoVermelho) ?? 0);
+    const margem = valorPessoal(d, "cla-ge-nucleo-margem", faixaDe(def.margem) ?? 0);
     const liberados = def.elementos.filter(([nv]) => nv <= comb).flatMap(([, l]) => l);
     const elemento = liberados.includes(opc.elemento) ? opc.elemento : liberados[0];
     const tipo = elemento ? `[${tipoDoElemento(elemento)}]` : "";
     if (dado) out.extrasAtaque.todos.push({ formula: `${dado}${tipo}`, fonte: "Arma Elemental" });
-    // Núcleo Vermelho: só no primeiro acerto do turno (opção no diálogo de ataque), não multiplica no crítico
+    // Núcleo Vermelho: fixo em cada acerto, não multiplica no crítico (opção no diálogo de ataque)
     out.classe.elemental = { dado, nucleo, bonus: nucleo, margem, elemento, tipo: elemento ? tipoDoElemento(elemento) : "", liberados };
     out.classe.elemental.efeitoNivel = def.efeitoNivel;
     out.classe.elemental.efeitoDano = valorPessoal(d, "cla-ge-efeito-dano", def.efeitoDano);
     out.classe.elemental.efeitoDt = valorPessoal(d, "cla-ge-efeito-dt", 20);
-    if (comb >= 9) { const cmf = valorPessoal(d, "cla-ge-corpo-mente", 2); for (const alvo of ["pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: cmf, fonte: "Corpo e Mente Fortificados" }); }
+    if (comb >= 9) { const cmf = valorPessoal(d, "cla-ge-corpo-mente", 5); for (const alvo of ["acerto", "pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: cmf, fonte: "Corpo e Mente Fortificados" }); }
   }
   if (classe === "alice" && comb >= 3) {
-    out.classe.formas = valorPessoal(d, "cla-alice-formas", valorPorNivel(CLASSES_NOTION.alice.formas, comb)?.[1] ?? 3);
+    out.classe.formas = valorPessoal(d, "cla-alice-formas", faixaDe(CLASSES_EPM.alice.formas) ?? 3);
     const danoHist = valorPessoal(d, "cla-alice-histeria-dano", comb >= 45 ? "2d10" : "1d10");
+    const acertoHist = valorPessoal(d, "cla-alice-histeria-acerto", 5);
     if (opc.histeria && comb >= 15) {
-      if (comb < 45) out.mods.push({ alvo: "acerto", valor: valorPessoal(d, "cla-alice-histeria-acerto", 3), fonte: "Histeria" });
+      out.mods.push({ alvo: "acerto", valor: acertoHist, fonte: "Histeria" });
       out.extrasAtaque.todos.push({ formula: danoHist, fonte: comb >= 45 ? "Histeria Absoluta (Faca)" : "Histeria (Faca)" });
     }
-    out.classe.histeria = comb >= 15 ? { ativa: !!opc.histeria, dano: danoHist, limiar: "um quarto dos PV máximos", acerto: comb < 45 ? valorPessoal(d, "cla-alice-histeria-acerto", 3) : 0 } : null;
+    if (comb >= 39) out.extrasAtaque.todos.push({ formula: valorPessoal(d, "cla-alice-pesadelo", "2d10"), fonte: "Arsenal do Pesadelo (Faca, não no Corte Vorpal)" });
+    out.classe.histeria = comb >= 15 ? { ativa: !!opc.histeria, dano: danoHist, limiar: `${valorPessoal(d, "cla-alice-limiar", faixaDe(CLASSES_EPM.alice.limiarHisteria) ?? 40)} PV`, acerto: acertoHist } : null;
   }
   if (classe === "cacador" && comb >= 3) {
-    out.classe.pistola = valorPessoal(d, "cla-cacador-pistola", valorPorNivel(CLASSES_NOTION.cacador.pistola, comb)?.[1]);
-    out.classe.balas = Math.max(0, valorPessoal(d, "cla-cacador-balas", valorPorNivel(CLASSES_NOTION.cacador.balas, comb)?.[1] ?? 5));
+    out.classe.pistola = valorPessoal(d, "cla-cacador-pistola", faixaDe(CLASSES_EPM.cacador.pistola));
+    out.classe.balas = "Inteligência (mín. 3)";
+    if (comb >= 12) out.classe.municaoOficina = valorPessoal(d, "cla-cacador-municao", faixaDe(CLASSES_EPM.cacador.municaoOficina) ?? 3);
   }
   if (classe === "trovador" && comb >= 3) {
-    out.classe.inspiracao = valorPessoal(d, "cla-trovador-inspiracao", valorPorNivel(CLASSES_NOTION.trovador.inspiracao, comb)?.[1]);
-    out.classe.inspiracaoAliados = valorPessoal(d, "cla-trovador-aliados", valorPorNivel(CLASSES_NOTION.trovador.inspiracaoAliados, comb)?.[1] ?? 1);
-    out.classe.inspiracaoCusto = Math.max(0, valorPessoal(d, "cla-trovador-custo", CLASSES_NOTION.trovador.inspiracaoCusto));
+    out.classe.inspiracao = valorPessoal(d, "cla-trovador-inspiracao", faixaDe(CLASSES_EPM.trovador.inspiracao));
+    out.classe.inspiracaoAliados = valorPessoal(d, "cla-trovador-aliados", faixaDe(CLASSES_EPM.trovador.inspiracaoAliados) ?? 1);
+    out.classe.inspiracaoCusto = Math.max(0, valorPessoal(d, "cla-trovador-custo", CLASSES_EPM.trovador.inspiracaoCusto));
   }
   if (classe === "bastiao" && comb >= 3) {
-    const nivelTotal = Math.max(1, Math.floor(n(d.nivel) || 1)) + (String(d.arquetipo2 ?? "").trim() ? Math.max(0, Math.floor(n(d.nivel2))) : 0);
-    out.mods.push({ alvo: "recurso.pv", valor: valorPessoal(d, "cla-bastiao-pv-por-nivel", 1) * nivelTotal, fonte: "Defesa Absoluta (+1 PV por nível)" });
-    const tr = valorPessoal(d, "cla-bastiao-tr", 1);
+    const pv = 20 + (comb >= 12 ? 20 : 0) + (comb >= 33 ? 30 : 0);
+    out.mods.push({ alvo: "recurso.pv", valor: valorPessoal(d, "cla-bastiao-pv", pv), fonte: "Defesa Absoluta / Estrutura" });
+    const tr = valorPessoal(d, "cla-bastiao-tr", 2);
     for (const alvo of ["pericia.fortitude", "pericia.reflexos", "pericia.vontade"]) out.mods.push({ alvo, valor: tr, fonte: "Defesa Absoluta" });
-    const ca = valorPessoal(d, "cla-bastiao-ca", (comb >= 12 ? 1 : 0) + (comb >= 33 ? 1 : 0));
-    if (ca) out.mods.push({ alvo: "ca", valor: ca, fonte: "Estrutura Reforçada / Colossal" });
-    out.classe.corpoInabalavel = comb >= 6 ? valorPessoal(d, "cla-bastiao-corpo", valorPorNivel(CLASSES_NOTION.bastiao.corpoInabalavel, comb)?.[1] ?? "") : "";
+    const ca = valorPessoal(d, "cla-bastiao-ca", 1 + (comb >= 12 ? 1 : 0) + (comb >= 33 ? 1 : 0));
+    if (ca) out.mods.push({ alvo: "ca", valor: ca, fonte: "Defesa Absoluta / Estrutura" });
+    if (comb >= 27) out.resistencias.push(...["Contundente", "Cortante", "Perfurante"].map(tipo => ({ tipo, fonte: "Corpo Inquebrável" })));
+    const dado = faixaDe(CLASSES_EPM.bastiao.corpoInabalavel);
+    out.classe.corpoInabalavel = comb >= 6 ? valorPessoal(d, "cla-bastiao-corpo", dado ? `${dado} + @atr.constituicao` : "") : "";
+  }
+  if (classe === "masterPuppets" && comb >= 3) {
+    const def = CLASSES_EPM.masterPuppets;
+    const grau = Math.min(4, Math.floor((Math.max(3, comb) - 1) / 10));
+    out.classe.marionetes = { qtd: intMais(def.marionetes), pv: [5, 15, 30, 45, 60][grau], dado: valorPessoal(d, "cla-mop-dado", def.dadoEnxame[grau]), rd: comb >= 33 ? [3, 4, 5, 6, 8][grau] : 0 };
   }
   if (classe === "mecanicoGuerra" && comb >= 3) {
-    const def = CLASSES_NOTION.mecanicoGuerra;
-    out.mods.push({ alvo: "defesa.bloqueio", valor: valorPessoal(d, "cla-mecanico-defesa", 2), fonte: "Blindagem de Guerra (Chassi)" });
-    out.mods.push({ alvo: "ca", valor: valorPessoal(d, "cla-mecanico-ca", 1), fonte: "Blindagem de Guerra (Chassi)" });
-    out.classe.placas = valorPessoal(d, "cla-mecanico-placas", valorPorNivel(def.placas, comb)?.[1] ?? 2);
-    out.classe.escudoCerco = comb >= 6 ? valorPessoal(d, "cla-mecanico-escudo", valorPorNivel(def.escudoCerco, comb)?.[1] ?? "") : "";
+    const grau = Math.min(4, Math.floor((Math.max(3, comb) - 1) / 10));
+    const modelo = comb >= 48 ? ["Colosso", "Colossal", "15 m", "todos"] : comb >= 45 ? ["Mk-V", "Colossal", "15 m", 8] : comb >= 33 ? ["Mk-IV", "Enorme", "12 m", 6] : comb >= 24 ? ["Mk-III", "Enorme", "12 m", 5] : comb >= 15 ? ["Mk-II", "Grande", "9 m", 4] : ["Mk-I", "Grande", "9 m", comb >= 9 ? 3 : 2];
+    out.classe.mecha = { modelo: modelo[0], tamanho: modelo[1], desl: modelo[2], modulos: modelo[3], pv: valorPessoal(d, "cla-mecanico-pv", 15 * comb), rd: [3, 4, 5, 6, 8][grau], punho: valorPessoal(d, "cla-mecanico-punho", ["1d10", "2d8", "2d10", "3d10", "4d10"][grau]), energia: intMais(CLASSES_EPM.mecanicoGuerra.energia) };
   }
   if (classe === "atiradorArcano" && comb >= 3) {
     // Starlight Step: o Núcleo entra depois, onde a ficha já tem os atributos (contexto e ações)
@@ -294,41 +330,31 @@ export function fontesDaFicha(d, { opcoes = {}, agora = null, statuses = [] } = 
     out.classe.atirador = { ...estadoAtirador(comb, opc, { nucleo: 0, nivelPersonagem: nivelTotal }), nivelPersonagem: nivelTotal };
   }
   if (classe === "vitalista" && comb >= 3) {
-    out.classe.toque = valorPessoal(d, "cla-vitalista-toque", valorPorNivel(CLASSES_NOTION.vitalista.toque, comb)?.[1] ?? "");
-    out.classe.protecaoVital = comb >= 6 ? valorPessoal(d, "cla-vitalista-protecao", valorPorNivel(CLASSES_NOTION.vitalista.protecaoVital, comb)?.[1] ?? "") : "";
+    out.classe.toque = valorPessoal(d, "cla-vitalista-toque", faixaDe(CLASSES_EPM.vitalista.toque) ?? "");
+    out.classe.protecaoVital = comb >= 6 ? valorPessoal(d, "cla-vitalista-protecao", faixaDe(CLASSES_EPM.vitalista.protecaoVital) ?? "") : "";
   }
   if (classe === "barbaro" && comb >= 3) {
-    const f0 = valorPorNivel(CLASSES_NOTION.barbaro.furia.tabela, comb);
-    const f = f0 ? [f0[0], valorPessoal(d, "cla-barbaro-furia-dano", f0[1]), valorPessoal(d, "cla-barbaro-furia-rd", f0[2])] : null;
-    out.classe.furia = f ? { dano: f[1], rd: f[2], ativa: !!opc.furiaAtiva, usosMax: Math.max(0, valorPessoal(d, "cla-barbaro-furia-usos", CLASSES_NOTION.barbaro.furia.usos)) } : null;
+    const f0 = valorPorNivel(CLASSES_EPM.barbaro.furia.tabela, comb);
+    const usosPadrao = faixaDe(CLASSES_EPM.barbaro.furia.usos) ?? 2;
+    const f = f0 ? { dano: valorPessoal(d, "cla-barbaro-furia-dano", f0[1]), rd: valorPessoal(d, "cla-barbaro-furia-rd", f0[2]), custo: valorPessoal(d, "cla-barbaro-furia-custo", f0[3]) } : null;
+    const fisico = comb < 27;
+    out.classe.furia = f ? { ...f, fisico, ativa: !!opc.furiaAtiva, usosMax: Math.max(0, valorPessoal(d, "cla-barbaro-furia-usos", usosPadrao)), semLimite: usosPadrao >= 999 } : null;
     if (f && opc.furiaAtiva) {
-      out.mods.push({ alvo: "danoAtaque", valor: f[1], fonte: "Fúria" });
-      out.rd.push({ valor: f[2], tipos: "todos os danos", fonte: "Fúria" });
-    }
-    const crit = valorPorNivel(CLASSES_NOTION.barbaro.critico, comb);
-    out.classe.critico = crit ? { mult: valorPessoal(d, "cla-barbaro-critico-mult", crit[1]), margem: valorPessoal(d, "cla-barbaro-critico-margem", crit[2]), max: valorPessoal(d, "cla-barbaro-critico-max", crit[3]) } : null;
+      out.extrasAtaque.corpo.push({ formula: String(f.dano), fonte: "Fúria (corpo a corpo)" });
+      out.rd.push({ valor: f.rd, tipos: fisico ? "Contundente, Cortante, Perfurante" : "todos os danos", fonte: "Fúria" });
+    } else if (f && comb >= 36) out.rd.push({ valor: Math.floor(f.rd / 2), tipos: "Contundente, Cortante, Perfurante", fonte: "Pele de Pedra" });
+    if (comb >= 18) out.classe.critico = `Crítico Brutal: no crítico corpo a corpo, +${comb >= 30 ? "2 × " : ""}o multiplicador em dados da arma${comb >= 39 ? "; em Fúria, multiplicador +1" : ""}.`;
   }
-  if (classe === "guardiao" && comb >= 9) {
-    const rd = valorPessoal(d, "cla-guardiao-corpo-de-pedra", valorPorNivel(CLASSES_NOTION.guardiao.corpoDePedra, comb)?.[1] ?? 0);
-    if (rd) out.rd.push({ valor: rd, tipos: "todos os danos", fonte: "Corpo de Pedra" });
-    out.classe.corpoDePedra = rd;
+  if (classe === "guardiao" && comb >= 3) {
+    const rd = comb >= 12 ? valorPessoal(d, "cla-guardiao-couraca", faixaDe(CLASSES_EPM.guardiao.couraca) ?? 0) : 0;
+    if (rd) out.rd.push({ valor: rd, tipos: "todos os danos", fonte: "Couraça" });
+    out.classe.couraca = rd;
+    out.classe.muralha = comb >= 6 ? valorPessoal(d, "cla-guardiao-muralha", faixaDe(CLASSES_EPM.guardiao.muralha) ?? 1) : 0;
   }
-  if (classe === "guardiao" && comb >= 6) out.classe.protecao = valorPessoal(d, "cla-guardiao-protecao", valorPorNivel(CLASSES_NOTION.guardiao.protecao, comb)?.[1] ?? "");
   if (classe === "lutador" && comb >= 3) {
-    const dado = valorPessoal(d, "cla-lutador-porrada-franca", valorPorNivel(CLASSES_NOTION.lutador.porradaFranca, comb)?.[1]);
-    if (dado) out.extrasAtaque.desarmado.push({ formula: dado, fonte: "Porrada Franca" });
-    const maxPos = Math.max(0, valorPessoal(d, "cla-lutador-posicoes", valorPorNivel(CLASSES_NOTION.lutador.posicoesPorNivel, comb)?.[1] ?? 0));
-    const ativas = (opc.posicoes ?? []).slice(0, maxPos);
-    out.classe.posicoes = { max: maxPos, ativas };
-    for (const id of ativas) {
-      const pos = CLASSES_NOTION.lutador.posicoes.find(p => p.id === id);
-      if (!pos || pos.nivel > comb) continue;
-      if (pos.auto?.dano) out.extrasAtaque.todos.push({ formula: pos.auto.tipo ? `${pos.auto.dano}[${pos.auto.tipo}]` : pos.auto.dano, fonte: pos.nome });
-      if (pos.auto?.rd) out.rd.push({ valor: pos.auto.rd, tipos: "todos os danos", fonte: pos.nome });
-    }
-  }
-  if (classe === "barbaro" && comb >= 6) {
-    out.classe.protecoes = (opc.protecoes ?? []).slice(0, CLASSES_NOTION.barbaro.protecao.niveis.filter(x => comb >= x).length);
+    const dado = valorPessoal(d, "cla-lutador-desarmado", faixaDe(CLASSES_EPM.lutador.desarmado));
+    if (dado) out.extrasAtaque.desarmado.push({ formula: dado, fonte: "Artes Marciais" });
+    out.classe.desarmado = dado;
   }
 
   for (const m of out.mods.slice(marcaClasse.mods)) m.origem = "classe";
@@ -414,18 +440,6 @@ export function aposAtributos(d, atributos, { pericias = [] } = {}) {
   const extrasAtaque = { armado: [], desarmado: [] };
   if (altos.danoArmado) extrasAtaque.armado.push({ formula: String(altos.danoArmado), fonte: de("forca") });
   if (altos.danoDesarmado) extrasAtaque.desarmado.push({ formula: altos.danoDesarmado, fonte: de("forca") });
-
-  // Proteções do Bárbaro que somam atributo na CA, Defesa (Bloqueio) e Esquiva
-  if (idClasse(d.classe) === "barbaro") {
-    const comb = nivelDe(d, "combatente");
-    const qtd = CLASSES_NOTION.barbaro.protecao.niveis.filter(x => comb >= x).length;
-    const escolhidas = (d.classeEpm?.protecoes ?? []).slice(0, qtd);
-    for (const [id, atr, nome] of [["semArmadura", "constituicao", "Proteção sem Armadura"], ["divina", "nucleo", "Proteção Divina"]]) {
-      if (!escolhidas.includes(id)) continue;
-      const v = Math.floor(n(totais[atr]));
-      if (v) for (const alvo of ["ca", "defesa.bloqueio", "defesa.esquiva"]) mods.push({ alvo, valor: v, fonte: nome });
-    }
-  }
 
   // Aura de Proteção (treino): 2 × Núcleo de RD ou Núcleo na CA; a Superior dá os dois
   const esp = especiaisConcluidos(d);
@@ -666,7 +680,7 @@ export function movimentosESentidos(d, deslocamentoFinal, raca) {
  */
 export function valoresAjustaveisClasse(d = {}) {
   const classe = idClasse(d.classe);
-  const def = CLASSES_NOTION[classe];
+  const def = CLASSES_EPM[classe];
   if (!def) return [];
   const comb = nivelDe(d, def.arquetipo ?? "combatente");
   const out = [];
@@ -675,52 +689,49 @@ export function valoresAjustaveisClasse(d = {}) {
     out.push({ chave, fonte, rotulo, padrao: String(padrao), formula: typeof padrao !== "number", origem: "classe", atual: d.ajustesBonus?.[chave] ?? "" });
   };
   const nv = (tabela, i = 1) => valorPorNivel(tabela, comb)?.[i];
+  if (classe === "guerreiro" && comb >= 3) add("cla-guerreiro-posturas", "Posturas", "Ativas ao mesmo tempo", 1 + (comb >= 24 ? 1 : 0) + (comb >= 45 ? 1 : 0));
   if (classe === "guerreiroElemental" && comb >= 3) {
-    add("cla-ge-arma-elemental", "Arma Elemental", "Dado de dano", nv(def.armaElemental));
-    add("cla-ge-nucleo-dano", "Núcleo Vermelho", "Dano no primeiro acerto do turno", nv(def.nucleoVermelho));
-    if (comb >= 12) add("cla-ge-nucleo-margem", "Arma Elemental", "Margem de ameaça", nv(def.margem));
+    add("cla-ge-arma-elemental", "Arma Elemental", "Dado de dano", nv(def.arma));
+    add("cla-ge-nucleo-dano", "Núcleo Vermelho", "Dano fixo por acerto", nv(def.nucleoVermelho));
+    add("cla-ge-nucleo-margem", "Arma Elemental", "Margem de ameaça", nv(def.margem));
     if (comb >= def.efeitoNivel) { add("cla-ge-efeito-dano", "Efeito do elemento", "Dano mínimo para aplicar", def.efeitoDano); add("cla-ge-efeito-dt", "Efeito do elemento", "DT da Fortitude", 20); }
-    if (comb >= 9) add("cla-ge-corpo-mente", "Corpo e Mente Fortificados", "Testes de Resistência", 2);
+    if (comb >= 9) add("cla-ge-corpo-mente", "Corpo e Mente Fortificados", "Ataques e testes de resistência", 5);
   }
   if (classe === "alice" && comb >= 3) {
-    add("cla-alice-formas", "Formas", "Quantidade", nv(CLASSES_NOTION.alice.formas) ?? 3);
-    if (comb >= 15) { if (comb < 45) add("cla-alice-histeria-acerto", "Histeria", "Acerto", 3); add("cla-alice-histeria-dano", "Histeria", "Dano da faca", comb >= 45 ? "2d10" : "1d10"); }
+    add("cla-alice-formas", "Formas", "Quantidade", nv(def.formas) ?? 3);
+    if (comb >= 15) { add("cla-alice-limiar", "Histeria", "Limiar de PV", nv(def.limiarHisteria)); add("cla-alice-histeria-acerto", "Histeria", "Acerto", 5); add("cla-alice-histeria-dano", "Histeria", "Dano da faca", comb >= 45 ? "2d10" : "1d10"); }
+    if (comb >= 39) add("cla-alice-pesadelo", "Arsenal do Pesadelo", "Dano da faca", "2d10");
   }
-  if (classe === "cacador" && comb >= 3) { add("cla-cacador-pistola", "Pistola do Caçador", "Dano", nv(CLASSES_NOTION.cacador.pistola)); add("cla-cacador-balas", "Balas de Mercúrio", "Por descanso", nv(CLASSES_NOTION.cacador.balas)); }
+  if (classe === "cacador" && comb >= 3) { add("cla-cacador-pistola", "Pistola do Caçador", "Dano", nv(def.pistola)); if (comb >= 12) add("cla-cacador-municao", "Munição de Oficina", "Usos por descanso", nv(def.municaoOficina)); }
   if (classe === "trovador" && comb >= 3) {
-    add("cla-trovador-inspiracao", "Inspiração", "Dado", nv(CLASSES_NOTION.trovador.inspiracao));
-    add("cla-trovador-custo", "Inspiração", "Custo (PE)", CLASSES_NOTION.trovador.inspiracaoCusto);
-    add("cla-trovador-aliados", "Inspiração", "Aliados ao mesmo tempo", nv(CLASSES_NOTION.trovador.inspiracaoAliados));
+    add("cla-trovador-inspiracao", "Inspiração", "Dado", nv(def.inspiracao));
+    add("cla-trovador-custo", "Inspiração", "Custo (PE)", def.inspiracaoCusto);
+    add("cla-trovador-aliados", "Inspiração", "Aliados ao mesmo tempo", nv(def.inspiracaoAliados));
   }
   if (classe === "bastiao" && comb >= 3) {
-    add("cla-bastiao-pv-por-nivel", "Defesa Absoluta", "PV por nível", 1);
-    add("cla-bastiao-tr", "Defesa Absoluta", "Testes de Resistência", 1);
-    if (comb >= 12) add("cla-bastiao-ca", "Estrutura Reforçada / Colossal", "CA", (comb >= 12 ? 1 : 0) + (comb >= 33 ? 1 : 0));
-    if (comb >= 6) add("cla-bastiao-corpo", "Corpo Inabalável", "Redução de dano", nv(CLASSES_NOTION.bastiao.corpoInabalavel));
+    add("cla-bastiao-pv", "Defesa Absoluta / Estrutura", "PV máximos", 20 + (comb >= 12 ? 20 : 0) + (comb >= 33 ? 30 : 0));
+    add("cla-bastiao-tr", "Defesa Absoluta", "Testes de Resistência", 2);
+    add("cla-bastiao-ca", "Defesa Absoluta / Estrutura", "CA", 1 + (comb >= 12 ? 1 : 0) + (comb >= 33 ? 1 : 0));
+    if (comb >= 6) add("cla-bastiao-corpo", "Corpo Inabalável", "Redução de dano", `${nv(def.corpoInabalavel)} + @atr.constituicao`);
   }
+  if (classe === "masterPuppets" && comb >= 3) add("cla-mop-dado", "Ataque em Enxame", "Dado por Marionete", def.dadoEnxame[Math.min(4, Math.floor((comb - 1) / 10))]);
   if (classe === "mecanicoGuerra" && comb >= 3) {
-    add("cla-mecanico-defesa", "Blindagem de Guerra", "Defesa (Bloqueio)", 2);
-    add("cla-mecanico-ca", "Blindagem de Guerra", "CA", 1);
-    add("cla-mecanico-placas", "Placas Reforçadas", "Redução no primeiro dano da rodada", nv(CLASSES_NOTION.mecanicoGuerra.placas));
-    if (comb >= 6) add("cla-mecanico-escudo", "Escudo de Cerco", "Redução", nv(CLASSES_NOTION.mecanicoGuerra.escudoCerco));
+    add("cla-mecanico-pv", "Mecha", "PV", 15 * comb);
+    add("cla-mecanico-punho", "Punho Hidráulico", "Dano", ["1d10", "2d8", "2d10", "3d10", "4d10"][Math.min(4, Math.floor((comb - 1) / 10))]);
   }
   if (classe === "vitalista" && comb >= 3) {
-    add("cla-vitalista-toque", "Toque Restaurador", "Cura (+ Núcleo)", nv(CLASSES_NOTION.vitalista.toque));
-    if (comb >= 6) add("cla-vitalista-protecao", "Proteção Vital", "PV temporários (+ Núcleo)", nv(CLASSES_NOTION.vitalista.protecaoVital));
+    add("cla-vitalista-toque", "Toque Restaurador", "Cura (+ Núcleo)", nv(def.toque));
+    if (comb >= 6) add("cla-vitalista-protecao", "Proteção Vital", "PV temporários (+ Núcleo)", nv(def.protecaoVital));
   }
   if (classe === "barbaro" && comb >= 3) {
-    const f = valorPorNivel(CLASSES_NOTION.barbaro.furia.tabela, comb);
-    if (f) { add("cla-barbaro-furia-dano", "Fúria", "Dano", f[1]); add("cla-barbaro-furia-rd", "Fúria", "RD", f[2]); add("cla-barbaro-furia-usos", "Fúria", "Usos por descanso", CLASSES_NOTION.barbaro.furia.usos); }
-    const c = valorPorNivel(CLASSES_NOTION.barbaro.critico, comb);
-    if (c) { add("cla-barbaro-critico-mult", "Crítico Brutal", "Multiplicador extra", c[1]); add("cla-barbaro-critico-margem", "Crítico Brutal", "Margem", c[2]); add("cla-barbaro-critico-max", "Crítico Brutal", "Multiplicador máximo", c[3]); }
+    const f = valorPorNivel(def.furia.tabela, comb);
+    if (f) { add("cla-barbaro-furia-dano", "Fúria", "Dano por acerto", f[1]); add("cla-barbaro-furia-rd", "Fúria", "RD", f[2]); add("cla-barbaro-furia-custo", "Fúria", "PE por turno", f[3]); }
+    const u = nv(def.furia.usos); if (u < 999) add("cla-barbaro-furia-usos", "Fúria", "Usos por descanso", u);
   }
   if (classe === "guardiao") {
-    if (comb >= 6) add("cla-guardiao-protecao", "Proteção", "Valor", nv(CLASSES_NOTION.guardiao.protecao));
-    if (comb >= 9) add("cla-guardiao-corpo-de-pedra", "Corpo de Pedra", "RD", nv(CLASSES_NOTION.guardiao.corpoDePedra));
+    if (comb >= 6) add("cla-guardiao-muralha", "Muralha de Escudo", "CA dos aliados", nv(def.muralha));
+    if (comb >= 12) add("cla-guardiao-couraca", "Couraça", "RD", nv(def.couraca));
   }
-  if (classe === "lutador" && comb >= 3) {
-    add("cla-lutador-porrada-franca", "Porrada Franca", "Dano desarmado", nv(CLASSES_NOTION.lutador.porradaFranca));
-    add("cla-lutador-posicoes", "Posições", "Quantas ao mesmo tempo", nv(CLASSES_NOTION.lutador.posicoesPorNivel) ?? 0);
-  }
+  if (classe === "lutador" && comb >= 3) add("cla-lutador-desarmado", "Artes Marciais", "Dano desarmado", nv(def.desarmado));
   return out;
 }

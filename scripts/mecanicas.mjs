@@ -527,6 +527,10 @@ export async function usarPoder(actor, item, { evento = null, automatico = false
     avisos.push(`Sustentada: ${forma.porTurno.valor} ${CUSTO_RECURSOS[forma.porTurno.recurso]?.sigla ?? ""} no começo de cada turno até encerrar.`);
   }
   if (Object.keys(updates).length) await actor.update(updates, { epmCusto: true });
+  // Habilidade Única Inicial: técnica ativa usada conta para a Ressonância (até 3 por combate)
+  if (item.flags?.[FLAG]?.hui && forma && forma.acao !== "passiva") {
+    try { await (await import("./habilidades-ui.mjs")).contarUsoHui(actor, item, forma); } catch (err) { console.warn("EPM | uso da HUI", err); }
+  }
   // Interruptor: com bônus de cena ou sustentação o estado vem deles (some sozinho no fim da cena); sem isso, fica marcada
   if (ativar) {
     if (!forma?.bonus?.opcoes?.length && !eSustentada(forma)) await item.update({ [`${P}.ativa`]: true });
@@ -1082,6 +1086,25 @@ export async function dialogoNovoPoder(actor, tipo, circulo = 0, { origem = "" }
 export async function aprenderPorArraste(actor, itemOrigem) {
   const tipo = itemOrigem.type === "spell" ? "magia" : "habilidade";
   const p = lerPoder(itemOrigem);
+  // 0.9.0: com receita do criador, Aprender vira projeto (PH de aprender, metade das horas, DT −5)
+  const receita = itemOrigem.flags?.[FLAG]?.receita;
+  if (receita && !itemOrigem.flags?.[FLAG]?.hui) {
+    const S = await import("./habilidades-sistema.mjs");
+    const H = await import("./habilidades-ui.mjs");
+    const arqs = [actor.flags?.[FLAG]?.arquetipo, actor.flags?.[FLAG]?.arquetipo2].map(a => String(a ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()).map(a => a.includes("combat") ? "combatente" : a.includes("conjur") ? "conjurador" : a.includes("artif") ? "artifice" : "").filter(Boolean);
+    const conta = S.contaHabilidade(receita, { arquetipos: arqs, modo: "aprender" });
+    const escolha = await fvtt.DialogV2.wait({
+      window: { title: `Adicionar ${itemOrigem.name}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,
+      content: `<p><strong>${escapar(itemOrigem.name)}</strong> (${escapar(conta.label)}).</p>${conta.ok ? `<p class="epm-dica">Aprender: ${conta.ph} PH, ${conta.horas} h de treino e teste DT ${conta.dt} (sub-aba Criação dos Treinamentos). Precisa de um professor com afinidade +2 (Mítica +4) ou de um registro.</p>` : `<p class="epm-aviso-erro">${escapar(conta.erros.join(" "))}</p>`}`,
+      buttons: [
+        ...(conta.ok ? [{ action: "aprender", label: "Aprender (projeto)", icon: "fa-solid fa-book-open", default: true }] : []),
+        { action: "gratis", label: "Sem custo", icon: "fa-solid fa-gift" }, { action: "cancelar", label: "Cancelar", icon: "fa-solid fa-xmark" }
+      ]
+    });
+    if (escolha === "aprender") return H.gravarProjeto(actor, { ...receita, nome: itemOrigem.name }, conta, { modo: "aprender" });
+    if (escolha !== "gratis") return null;
+    return criarPoder(actor, { tipo, raridade: p.raridade, aquisicao: "gratis", dadosBase: itemOrigem.toObject(), passiva: p.passiva });
+  }
   const r = RARIDADES_PODER[p.raridade];
   const escolha = await fvtt.DialogV2.wait({
     window: { title: `Adicionar ${itemOrigem.name}` }, classes: ["epm-dialogo"], rejectClose: false, modal: true,

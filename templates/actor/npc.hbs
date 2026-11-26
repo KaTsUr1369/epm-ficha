@@ -17,6 +17,8 @@
         <label class="epm-mini largo"><span>linha abaixo do nome</span><input type="text" name="flags.epm-ficha.npc.titulo" value="{{npcVisual.titulo}}" placeholder="{{#if npcFicha.eCriatura}}Predador de túneis vulcânicos que caça pelo tremor do chão{{else}}Guarda do Portão Leste · combatente{{/if}}" /></label>
         <label class="epm-mini"><span>ND</span><input type="number" min="0" step="0.25" name="flags.epm-ficha.npc.nd" value="{{npcFicha.nd}}" /></label>
         <div class="epm-mini"><span>PEv ao derrotar</span><strong class="epm-npcv-num">{{npcFicha.pev}}</strong></div>
+        <label class="epm-mini" title="Inimigo acima do comum do mesmo nível. O \"Preencher pelo nível\" soma o bônus; aqui muda só o selo e o custo."><span>raridade</span><select name="flags.epm-ficha.npc.raridade">{{#each npcFicha.raridades}}<option value="{{this.v}}" {{#if sel}}selected{{/if}}>{{this.l}}</option>{{/each}}</select></label>
+        <label class="epm-mini" title="Custo no orçamento do encontro (cada jogador vale 1). Vazio = pelo tipo e pela raridade."><span>custo</span><input type="number" min="0" step="0.05" name="flags.epm-ficha.npc.custo" value="{{npcFicha.custo}}" placeholder="{{npcFicha.custoPadrao}}" /></label>
         {{#if npcFicha.eCriatura}}
         <label class="epm-mini"><span>categoria</span><input type="text" name="flags.epm-ficha.npc.categoria" value="{{npcFicha.categoria}}" placeholder="Besta, Morto-vivo, Construto…" /></label>
         <label class="epm-mini"><span>tamanho</span><select name="flags.epm-ficha.npc.tamanho"><option value="">—</option>{{#each npcFicha.tamanhos}}<option value="{{this.v}}" {{#if sel}}selected{{/if}}>{{this.v}}</option>{{/each}}</select></label>
@@ -42,9 +44,9 @@
         <label class="epm-mini largo"><span>fórmula da Vida</span><input type="text" name="flags.epm-ficha.npc.vidaFormula" value="{{npcFicha.vidaFormula}}" placeholder="4d8 + 6" /></label>
         <button type="button" class="epm-npcv-btn gm" data-action="npcRolarVida">Rolar Vida</button>
         <button type="button" class="epm-npcv-btn gm" data-action="npcRolarVidaTokens">Rolar nos tokens selecionados</button>
-        <button type="button" class="epm-npcv-btn gm" data-action="npcPreencherNivel" title="CA, acerto, CD, Vida e dano por turno pela tabela de inimigos por nível">Preencher pelo nível</button>
+        <button type="button" class="epm-npcv-btn gm" data-action="npcPreencherNivel" title="CA, acerto, CD, Vida e ataques pela tabela de inimigos (níveis 1 a 100), com raridade e poder do grupo">Preencher pelo nível</button>
       </div>
-      {{#if npcFicha.referencia}}<p class="epm-npcv-nota">Referência: {{npcFicha.referencia.tipoLabel}} de nível {{npcFicha.referencia.nivel}} · CA {{npcFicha.referencia.ca}} · Acerto +{{npcFicha.referencia.acerto}} · CD {{npcFicha.referencia.cd}} · Vida {{npcFicha.referencia.pv}} · dano por turno ~{{npcFicha.referencia.dano}}</p>{{/if}}
+      {{#if npcFicha.referencia}}<p class="epm-npcv-nota">Referência: {{npcFicha.referencia.tipoLabel}} de nível {{npcFicha.referencia.nivel}} · CA {{npcFicha.referencia.ca}} · Acerto +{{npcFicha.referencia.acerto}} · CD {{npcFicha.referencia.cd}} · Vida {{npcFicha.referencia.pv}} · dano por turno ~{{npcFicha.referencia.dano}}{{#if npcFicha.referencia.raridadeLabel}} · {{npcFicha.referencia.raridadeLabel}}{{/if}}{{#if npcFicha.referencia.poderLabel}} · grupo {{npcFicha.referencia.poderLabel}}{{/if}}{{#if npcFicha.referencia.projecao}} · projeção (acima do 50){{/if}}</p>{{/if}}
       <p class="epm-npcv-nota">{{#if npcFicha.eElite}}Monstro Forte e Chefe usam Vida fixa: escreva a máxima no cabeçalho (modo edição).{{else}}Cada token não vinculado pode ter a sua Vida rolada.{{/if}}</p>
     </div>
   </section>

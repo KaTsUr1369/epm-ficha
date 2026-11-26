@@ -14,7 +14,7 @@ import { RACAS, racaPorId, qtdUnicas, conferirUnicas, opcoesAmalgama, habilidade
 import { insanidadeTemporaria, insanidadePermanente, estadoSanidade, RECUPERACAO_SANIDADE } from "./insanidades.mjs";
 import { TREINAMENTOS_NOTION, KITS_INICIAIS, ARMAS_REGIAO, ARMADURAS_REGIAO, REGIOES, PROPRIEDADES_ARMA, TIPOS_ARMADURA } from "./catalogos.mjs";
 import {
-  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_NOTION, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo, listaRolagens, tabelaRecursos
+  ATRIBUTOS_ACIMA_4, RECURSOS_ARQUETIPO, custoNomeacao, CLASSES_EPM, PENALIDADE_PACTO, nocaoVitalidade, idArquetipo, listaRolagens, tabelaRecursos
 } from "./regras-extras.mjs";
 import { niveisArquetipos } from "./ficha-extras.mjs";
 import * as mundo from "./mundo.mjs";
@@ -638,12 +638,13 @@ export async function alternarFuria(actor) {
   const ativa = !!dados.classeEpm?.furiaAtiva;
   if (ativa) return actor.update({ [`${P}.classeEpm.furiaAtiva`]: false });
   const usos = int(dados.classeEpm?.furiaUsos);
-  const maxFuria = estadoAtor(actor).ficha.extras?.classe?.furia?.usosMax ?? CLASSES_NOTION.barbaro.furia.usos;
+  const fu = estadoAtor(actor).ficha.extras?.classe?.furia;
+  const maxFuria = fu?.semLimite ? Infinity : fu?.usosMax ?? 2;
   if (usos >= maxFuria) return ui.notifications.warn(`Fúria: os ${maxFuria} usos deste descanso já foram.`);
   await actor.update({ [`${P}.classeEpm.furiaAtiva`]: true, [`${P}.classeEpm.furiaUsos`]: usos + 1 });
   const { ficha } = estadoAtor(actor);
   const f = ficha.extras?.classe?.furia;
-  return notaChat(actor, `<p><strong>Fúria!</strong> +${f?.dano ?? 0} de dano e RD ${f?.rd ?? 0} até o fim da cena (${usos + 1}/2 neste descanso).</p>`, "#D2544A");
+  return notaChat(actor, `<p><strong>Fúria!</strong> +${f?.dano ?? 0} de dano corpo a corpo e RD ${f?.rd ?? 0}${f?.fisico ? " física" : ""} por 1 minuto · ${f?.custo ?? 0} PE no início de cada turno · vantagem em Força e Fortitude, sem magias (${usos + 1}/${f?.semLimite ? "∞" : maxFuria} neste descanso).</p>`, "#D2544A");
 }
 
 export async function alternarLista(actor, caminho, id, max = 99) {
@@ -720,7 +721,7 @@ export const NOMES_ACOES_060 = [
   "escolherRaca", "caminho", "sanidadeDano", "sanidadeRecuperar", "insanidadeRolar", "insanidadeEncerrar", "insanidadeRemover",
   "rolarNiveisRecursos", "treinoCatalogo", "catalogoTreinos", "ligarModeloTreino", "catalogoItens", "catalogoCompleto", "puxarCompendio", "kitInicial", "novaCena",
   "novoVoto", "excluirVoto", "usarVoto", "novoPacto", "excluirPacto", "quebrarPacto",
-  "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "protecaoBarbaro", "posicaoLutador", "converterPadrao", "nocaoVitalidade",
+  "restaurarPacto", "nomearCriatura", "furia", "histeria", "racaAtivavel", "imagemTokenEstado", "enquadrarTokenEstado", "limparTokenEstado", "escolherTokenEstado", "posturaGuerreiro", "converterPadrao", "nocaoVitalidade",
   "acaoCompleta", "resgatarCodigo", "novoTitulo", "excluirTitulo", "insanidadeManual", "cumprirPacto",
   "compendioPegar", "compendioEnviar", "compendioAtualizar", "npcRapido", "estudarCriatura", "presencaCriatura", "exemploCriatura",
   "trilhaRelacao", "rolarComRelacao", "testeTraicao", "novaTrocaBonus", "excluirTrocaBonus", "importarMagias", "abrirGrimorio",
@@ -834,8 +835,7 @@ export const METODOS_060 = {
     await this.actor.update({ [`${P}.classeEpm.histeria`]: !ativa });
     if (!ativa) notaChat(this.actor, `<p><strong>Histeria!</strong> +5 de Acerto, imune a Amedrontada e dano extra com a Faca por 3 rodadas.</p>`, "#B48CE0");
   },
-  acaoProtecaoBarbaro(ev, alvo) { return alternarLista(this.actor, "classeEpm.protecoes", alvo.dataset.id, int(alvo.dataset.max, 1)); },
-  acaoPosicaoLutador(ev, alvo) { return alternarLista(this.actor, "classeEpm.posicoes", alvo.dataset.id, int(alvo.dataset.max, 1)); },
+  acaoPosturaGuerreiro(ev, alvo) { return alternarLista(this.actor, "classeEpm.posturas", alvo.dataset.id, int(alvo.dataset.max, 1)); },
   acaoConverterPadrao(ev, alvo) { return converterPadrao(this.actor, alvo.dataset.para); },
   acaoNocaoVitalidade() { return usarNocaoVitalidade(this.actor); },
   acaoAcaoCompleta() { return acaoCompleta(this.actor); },

@@ -27,7 +27,7 @@ const ACOES = [
   "trocarAba", "abrirFicha", "focarToken", "comecarCombate", "encerrarCombate", "proximoTurno", "turnoAnterior", "rolarIniciativaNpcs",
   "novoTurnoAtual", "alternarDerrotado", "aplicarRapido", "marcarTodos", "limparMarcados", "darPontos", "descansoGrupo", "recarregarRessonancia", "avancarRelogio", "inicioSessao",
   "relacaoMultipla", "alternarCondicao", "removerCondicao", "exaustao", "darItem", "darMoedas", "darTransformacao", "abrirCatalogo", "abrirGrimorio", "rolarTestes", "rolarLivre", "abrirItem",
-  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre",
+  "adicionarAoGrupo", "tirarDoGrupo", "restaurarGrupo", "alternarNotion", "mundo", "novasMestre", "huiEscudo",
   "darHabilidadePronta", "darItemPronto", "criarPoderEscudo", "poderDeTextoEscudo",
   "escolherGrupo", "novoGrupo", "renomearGrupo", "apagarGrupo"
 ];
@@ -64,6 +64,18 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     const base = game.actors.filter(a => a.type === "character" && a.hasPlayerOwner && !fora.includes(a.id));
     const mais = extras.map(id => game.actors.get(id)).filter(a => a && !base.includes(a));
     return [...base, ...mais].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }
+
+  async _huiEscudo(ev, alvo) {
+    const actor = await fromUuid(alvo.dataset.ator);
+    if (!actor) return;
+    const H = await import("./habilidades-ui.mjs");
+    const op = alvo.dataset.op;
+    if (op === "prompt") return H.copiar(H.promptDoAtor(actor), "Prompt da HUI");
+    if (op === "colar") return H.colarRespostaHui(actor);
+    if (op === "montar") return H.montarHui(actor);
+    await H.ajustarHui(actor, op);
+    return this.render();
   }
 
   _grupo() { return GS.filtrarGrupo(this._grupoTodo(), this._cfgGrupo(), this._grupoAtivo ?? ""); }
@@ -161,6 +173,18 @@ export class EscudoMestre extends HandlebarsApplicationMixin(ApplicationV2) {
     ctx.grupos = GS.contextoGrupos(cfgG, this._grupoAtivo ?? "", this._grupoTodo());
     for (const g of ctx.grupo ?? []) g.grupoId = GS.grupoDoAtor(cfgG, g.id);
     ctx.dtTeste = this._ui.dtTeste ?? 15;
+    // Habilidade Única Inicial (0.9.0): estado de cada personagem
+    try {
+      const S = await import("./habilidades-sistema.mjs");
+      const { nivelTotalDe } = await import("./habilidades-ui.mjs");
+      ctx.huis = this._grupoTodo().map(a => {
+        const d = a.flags?.[FLAG] ?? {};
+        const u = S.lerHui(d.unicaInicial, nivelTotalDe(d));
+        return { uuid: a.uuid, nome: a.name, img: a.img, estado: u.estado, estadoLabel: u.estadoLabel, ativa: u.estado === "ativa", respondida: u.estado === "respondida",
+          pendente: u.estado === "pendente", nenhuma: u.estado === "nenhuma", selo: u.selo, usos: `${u.usos}/${u.meta}` };
+      });
+      ctx.huiPendencias = ctx.huis.filter(h => h.respondida).length;
+    } catch (err) { console.warn("EPM | HUI no Escudo", err); ctx.huis = []; }
     ctx.novasMestre = contextoEscudoNovas();
     ctx.mundo = this._contextoMundo();
     ctx.tiposDano = conteudoNotion("danos") ? [...SUGESTOES.dano, ...SUGESTOES.danoExtra] : (SUGESTOES.dano ?? []);

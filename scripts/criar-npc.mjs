@@ -6,7 +6,7 @@
 import { FLAG, MODULE_ID, ATRIBUTOS } from "./config.mjs";
 import { int, dadosPadrao } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
-import { inimigoPorNivel } from "./inimigos-nivel.mjs";
+import { inimigoPorNivel, ataquesDoInimigo, NIVEL_MAX_INIMIGO, RARIDADES_INIMIGO, PODERES_GRUPO } from "./inimigos-nivel.mjs";
 
 const P = `flags.${FLAG}`;
 
@@ -54,10 +54,10 @@ export function formulaDoDano(media, dado = 6) {
 }
 
 /** Gera os números da criatura. */
-export function gerarCriatura({ nome = "", tipo = "monstro", forca = "media", nivel = 1, inteligente = true, foco = "fisico", natureza = "Fera", tamanho = "Médio", disposicao = "Hostil" } = {}) {
+export function gerarCriatura({ nome = "", tipo = "monstro", forca = "media", nivel = 1, inteligente = true, foco = "fisico", natureza = "Fera", tamanho = "Médio", disposicao = "Hostil", raridade = "comum", poder = "normal" } = {}) {
   const f = FORCAS_CRIATURA[forca] ?? FORCAS_CRIATURA.media;
   const fo = FOCOS_CRIATURA[foco] ?? FOCOS_CRIATURA.fisico;
-  const n = Math.max(1, Math.min(50, int(nivel, 1)));
+  const n = Math.max(1, Math.min(NIVEL_MAX_INIMIGO, int(nivel, 1)));
   const pontos = f.pontos + Math.floor(n / 2);
   const pesos = { ...fo.pesos };
   if (!inteligente) { delete pesos.inteligencia; delete pesos.carisma; delete pesos.aparencia; if (!Object.keys(pesos).length) pesos.forca = 1; }
@@ -66,19 +66,19 @@ export function gerarCriatura({ nome = "", tipo = "monstro", forca = "media", ni
   for (const id of Object.keys(ATRIBUTOS)) atributos[id] = f.piso + (extra[id] ?? 0);
   if (!inteligente) { atributos.inteligencia = 0; atributos.carisma = 0; atributos.aparencia = 0; }
   else atributos.inteligencia = Math.max(1, atributos.inteligencia);
-  const bruta = inimigoPorNivel(n, TIPO_TABELA[tipo] ?? "monstro");
-  // A força mexe também na CA, no acerto, na CD e no dano (fraca menos, forte mais)
-  const tab = { ...bruta, ca: bruta.ca + f.ajuste, acerto: bruta.acerto + f.ajuste, cd: bruta.cd + f.ajuste, dano: Math.max(1, Math.round(bruta.dano * f.vida)) };
-  const pv = Math.max(1, Math.round(tab.pv * f.vida));
+  // 0.9.0: CA, acerto, CD, Vida e dano vêm da tabela com a raridade e o poder do grupo; a força mexe só nos atributos
+  const tab = inimigoPorNivel(n, TIPO_TABELA[tipo] ?? "monstro", { raridade, poder });
   const ataqueAtr = foco === "agil" ? "destreza" : foco === "magico" ? "nucleo" : "forca";
+  const ataque = {
+    nome: inteligente && natureza === "Humanoide" ? "Arma" : (ATAQUE_NATURAL[natureza] ?? "Ataque"),
+    pericia: ataqueAtr === "destreza" ? "pontaria" : "luta", atributo: ataqueAtr,
+    dano: tab.ataques[0]?.dano ?? formulaDoDano(tab.dano), tipo: TIPO_DANO_NATURAL[natureza] ?? "Contundente"
+  };
   return {
     nome: nome || `${natureza} ${f.label.toLowerCase()}`, tipo, forca, forcaLabel: f.label, nivel: n, inteligente, foco, natureza, tamanho, disposicao,
-    atributos, pv, ca: tab.ca, acerto: tab.acerto, cd: tab.cd, danoMedio: tab.dano, tabela: tab,
-    ataque: {
-      nome: inteligente && natureza === "Humanoide" ? "Arma" : (ATAQUE_NATURAL[natureza] ?? "Ataque"),
-      pericia: ataqueAtr === "destreza" ? "pontaria" : "luta", atributo: ataqueAtr,
-      dano: formulaDoDano(tab.dano), tipo: TIPO_DANO_NATURAL[natureza] ?? "Contundente"
-    }
+    raridade: tab.raridade, poder: tab.poder,
+    atributos, pv: tab.pv, ca: tab.ca, acerto: tab.acerto, cd: tab.cd, danoMedio: tab.dano, tabela: tab, ataque,
+    ataques: ataquesDoInimigo(tab, { nome: ataque.nome, tipoDano: ataque.tipo, pericia: ataque.pericia })
   };
 }
 
@@ -90,12 +90,16 @@ export async function criarNpcRapido() {
   const { formulario, opcoes } = await import("./mundo.mjs");
   const { TIPOS_NPC, TAMANHOS, DISPOSICOES } = await import("./tipos-npc.mjs");
   const r = await formulario("Criar NPC rápido", `
-    <p class="epm-dica">A ficha nasce pronta: atributos pela força e pelo foco, Vida, CA, acerto e CD pela tabela de inimigos do nível, e um ataque. Dá para editar tudo depois.</p>
+    <p class="epm-dica">A ficha nasce pronta: atributos pela força e pelo foco; Vida, CA, acerto, CD e os ataques pela tabela de inimigos do nível, com a raridade e o poder do grupo. Dá para editar tudo depois.</p>
     <label class="epm-campo"><span>Nome</span><input type="text" name="nome" placeholder="(automático)"></label>
     <div class="epm-dialogo-linha">
       <label class="epm-campo"><span>Tipo de ficha</span><select name="tipo">${opcoes(Object.entries(TIPOS_NPC).map(([id, t]) => [id, t.label]), "monstro")}</select></label>
       <label class="epm-campo"><span>Força da criatura</span><select name="forca">${opcoes(Object.entries(FORCAS_CRIATURA).map(([id, x]) => [id, x.label]), "media")}</select></label>
-      <label class="epm-campo"><span>Nível (1–50)</span><input type="number" name="nivel" min="1" max="50" value="5"></label>
+      <label class="epm-campo"><span>Nível (1–${NIVEL_MAX_INIMIGO})</span><input type="number" name="nivel" min="1" max="${NIVEL_MAX_INIMIGO}" value="5"></label>
+    </div>
+    <div class="epm-dialogo-linha">
+      <label class="epm-campo" title="Inimigo acima do comum do mesmo nível: +CA, acerto e CD; ×Vida e dano"><span>Raridade</span><select name="raridade">${opcoes(Object.entries(RARIDADES_INIMIGO).map(([id, x]) => [id, x.label]), "comum")}</select></label>
+      <label class="epm-campo" title="Multiplica a Vida e o dano"><span>Poder do grupo</span><select name="poder">${opcoes(Object.entries(PODERES_GRUPO).map(([id, x]) => [id, x.label]), (await import("./inimigos-nivel.mjs")).poderDoMundo())}</select></label>
     </div>
     <div class="epm-dialogo-linha">
       <label class="epm-campo"><span>Natureza</span><select name="natureza">${opcoes(NATUREZAS_CRIATURA.map(x => [x, x]), "Fera")}</select></label>
@@ -146,9 +150,10 @@ export async function criarAtorDaCriatura(c, { folder = null } = {}) {
     atributos: Object.fromEntries(Object.entries(c.atributos).map(([id, v]) => [id, { base: v }])),
     nivel: c.nivel,
     npc: { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, nd: Math.max(1, Math.round(c.nivel / 2)),
-      referencia: { nivel: c.nivel, tipo: c.tabela.tipo, dano: c.danoMedio }, interp: c.inteligente ? {} : { jeito: "Age por instinto: não fala nem negocia." } },
-    ataques: { [foundry.utils.randomID()]: { nome: c.ataque.nome, pericia: c.ataque.pericia, bonusAcerto: 0, dano: c.ataque.dano,
-      tipoDano: c.ataque.tipo, critMargem: 20, critMult: 2, notas: `${c.forcaLabel}, nível ${c.nivel}`, criado: Date.now() } },
+      raridade: c.raridade, custo: c.tabela.custo,
+      referencia: { nivel: c.nivel, tipo: c.tabela.tipo, dano: c.danoMedio }, interp: c.inteligente ? {} : { jeito: "Age por instinto: não fala nem negocia." },
+      ...(c.tabela.area ? { recargas: { epminiArea: { nome: "Ataque em área", min: c.tabela.area.recarga, pronta: true } } } : {}) },
+    ataques: c.ataques,
     sobre: { outros: `<p>${escapar(c.natureza)} ${escapar(c.forcaLabel.toLowerCase())}, nível ${c.nivel}${c.inteligente ? ", inteligente" : ", não inteligente"}. Criado pelo NPC rápido.</p>` }
   }, { inplace: false });
   const ator = await Actor.create({
@@ -162,7 +167,7 @@ export async function criarAtorDaCriatura(c, { folder = null } = {}) {
     const { aplicarTipo } = await import("./tipos-npc.mjs");
     await aplicarTipo(ator, c.tipo);
     const { aplicarInimigo } = await import("./inimigos-nivel.mjs");
-    await aplicarInimigo(ator, { ...c.tabela, pv: c.pv });
+    await aplicarInimigo(ator, c.tabela, { chat: false });
   } catch (err) { console.warn("EPM | NPC rápido", err); }
   return ator;
 }

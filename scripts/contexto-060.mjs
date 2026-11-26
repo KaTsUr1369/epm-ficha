@@ -12,7 +12,7 @@ import { ESTADOS_TOKEN } from "./token-estados.mjs";
 import { ESTADOS_SANIDADE } from "./insanidades.mjs";
 import { CATEGORIAS_TREINO, TREINAMENTOS_NOTION } from "./catalogos.mjs";
 import {
-  RECURSOS_ARQUETIPO, ATRIBUTO_RECURSO_PADRAO, CLASSES_NOTION, TIPOS_VOTO, TIPOS_PACTO, PATENTES, REGRAS_HIERARQUIA,
+  RECURSOS_ARQUETIPO, ATRIBUTO_RECURSO_PADRAO, CLASSES_EPM, TIPOS_VOTO, TIPOS_PACTO, PATENTES, REGRAS_HIERARQUIA,
   FAIXAS_NOMEACAO, ROTULOS_BONUS_ALTO, limiteNomeadas, pontosLideranca, ATIVAS_EM_COMBATE, TAMANHO_EFEITOS, valorPorNivel, FAIXAS_IDADE, listaRolagens, tabelaRecursos
 } from "./regras-extras.mjs";
 import { niveisArquetipos, trocasBonus } from "./ficha-extras.mjs";
@@ -148,26 +148,44 @@ export function contexto060({ actor = null, dados = {}, ficha, edicao = false, e
   const cl = ex.classe ?? {};
   const c = {};
   if (cl.id) {
-    const def = CLASSES_NOTION[cl.id];
+    const def = CLASSES_EPM[cl.id];
     c.id = cl.id; c.nome = def?.nome ?? cl.id; c.nivel = cl.nivel;
     c.arquetipoLabel = { combatente: "Combatente", conjurador: "Conjurador", artifice: "Artífice" }[def?.arquetipo ?? "combatente"] ?? "Combatente";
     if (cl.elemental) {
       const e = cl.elemental;
-      c.elemental = { ...e, texto: `Arma Elemental: +${e.dado ?? "—"} de ${e.tipo || e.elemento || "dano elemental"} em todo ataque com arma · Núcleo Vermelho: +${e.nucleo} no primeiro acerto do turno (opção no ataque)${e.margem ? ` · margem de ameaça +${e.margem}` : ""}${cl.nivel >= (e.efeitoNivel ?? 99) ? ` · efeito do elemento com crítico ou ${e.efeitoDano}+ de dano` : ""}`,
+      c.elemental = { ...e, texto: `Arma Elemental: +${e.dado ?? "—"} de ${e.tipo || e.elemento || "dano elemental"} em todo ataque com arma · Núcleo Vermelho: +${e.nucleo} por acerto, fora do crítico (opção no ataque)${e.margem ? ` · margem de ameaça +${e.margem}` : ""}${cl.nivel >= (e.efeitoNivel ?? 99) ? ` · efeito do elemento com ${e.efeitoDano}+ de dano elemental` : ""}`,
         opcoes: e.liberados.map(x => ({ id: x, label: x, selected: x === e.elemento })) };
     }
-    if (cl.formas) c.formas = `Faca Vorpal: ${cl.formas} formas de arma`;
+    if (cl.formas) c.formas = `Faca Vorpal: ${cl.formas} formas de arma · Corte Vorpal 1×/turno (segundo ataque só com o dano básico)`;
     if (cl.histeria) c.histeria = cl.histeria;
-    if (cl.pistola) c.pistola = `Pistola do Caçador: ${cl.pistola} Perfurante, 18 m, Ação Bônus + 1 Bala de Mercúrio · ${cl.balas ?? 5} Balas por descanso`;
-    if (cl.inspiracao) c.inspiracao = `Inspiração (Ação Bônus, ${cl.inspiracaoCusto ?? 3} PE): dado ${cl.inspiracao}, até ${cl.inspiracaoAliados >= 99 ? "todos os" : cl.inspiracaoAliados} aliado${cl.inspiracaoAliados === 1 ? "" : "s"} ao mesmo tempo · +1d4 de dano quando o ataque inspirado acerta`;
+    if (cl.pistola) c.pistola = `Pistola do Caçador: ${cl.pistola} Perfurante, 18 m, Ação Bônus ou Padrão + 1 Bala de Mercúrio · Balas: ${cl.balas} (voltam no Descanso Longo; ¼ no Curto) · 3 Pontos de Impacto = Atordoado${cl.municaoOficina ? ` · Munição de Oficina: ${cl.municaoOficina} usos` : ""}`;
+    if (cl.inspiracao) c.inspiracao = `Inspiração (Ação Bônus${cl.inspiracaoCusto ? `, ${cl.inspiracaoCusto} PE` : ""}): dado ${cl.inspiracao}, até ${cl.inspiracaoAliados >= 99 ? "todos os" : cl.inspiracaoAliados} aliado${cl.inspiracaoAliados === 1 ? "" : "s"} ao mesmo tempo`;
     const linhas = [];
     if (cl.id === "bastiao") {
-      linhas.push(`Defesa Absoluta: +1 PV máximo por nível de personagem e +1 nos Testes de Resistência (já na ficha).`);
+      linhas.push(`Defesa Absoluta / Estrutura: CA, PV máximos e testes de resistência já somados na ficha.`);
       if (cl.corpoInabalavel) linhas.push(`Corpo Inabalável: 1×/rodada, reduz o dano sofrido em ${cl.corpoInabalavel.replace("@atr.constituicao", "Constituição")} (depois de resistências).`);
     }
-    if (cl.id === "mecanicoGuerra") {
-      linhas.push(`Blindagem de Guerra (Chassi): +2 Defesa e +1 CA (já na ficha) · Placas Reforçadas: −${cl.placas} no primeiro dano de cada rodada.`);
-      if (cl.escudoCerco) linhas.push(`Escudo de Cerco (Reação, 5 PE): reduz ${cl.escudoCerco} do ataque interceptado; sem dano se o ataque não passar sua Defesa.`);
+    if (cl.id === "guerreiro" && cl.posturas) {
+      const def = CLASSES_EPM.guerreiro;
+      c.posturas = { max: cl.posturas.max, opcoes: Object.entries(def.posturas).map(([id, p]) => ({ id, nome: `${p.nome} (${p.estilo})`, texto: def.regras[1] ?? "", max: cl.posturas.max, ativo: cl.posturas.ativas.includes(id) })) };
+      linhas.push("Trocar de Postura: Ação Bônus 1×/turno (ação livre no Nv. 18). Os bônus já entram nos ataques, na CA e na Defesa.");
+    }
+    if (cl.id === "guardiao") {
+      linhas.push("Provocação (Ação Bônus, 2 PE) e Guarda (Reação, 2 PE): vira o alvo do ataque contra um aliado próximo.");
+      if (cl.muralha) linhas.push(`Muralha de Escudo: com escudo, aliados ao seu lado ganham +${cl.muralha} de CA.`);
+      if (cl.couraca) linhas.push(`Couraça: RD ${cl.couraca} contra todo dano (já na ficha).`);
+    }
+    if (cl.id === "lutador" && cl.desarmado) linhas.push(`Artes Marciais: golpe desarmado +${cl.desarmado} (já nos ataques desarmados); sem armadura, CA = 10 + Destreza + Autocontrole.`);
+    if (cl.critico) linhas.push(cl.critico);
+    if (cl.marionetes) {
+      const m = cl.marionetes;
+      linhas.push(`Marionetes: ${m.qtd} · ${m.pv} PV cada · CA = CD de Projeto · 9 m${m.rd ? ` · RD física ${m.rd}` : ""}.`);
+      linhas.push(`Ataque em Enxame (Comando, Ação Bônus): um ataque d20 + Ofício; acertou, ${m.dado} por Marionete ao lado do alvo (até 8 Médio, 12 Grande, 16 Enorme).`);
+    }
+    if (cl.mecha) {
+      const m = cl.mecha;
+      linhas.push(`Mecha ${m.modelo}: ${m.tamanho}, ${m.desl}, ${m.modulos} módulos · ${m.pv} PV · CA = CD de Projeto · RD ${m.rd} contra todo dano.`);
+      linhas.push(`Punho Hidráulico: ${m.punho} + Inteligência (d20 + Tecnologia) · Energia: ${m.energia} · a 0 PV vira maleta e o piloto sai ileso.`);
     }
     if (cl.id === "vitalista") {
       if (cl.toque) linhas.push(`Toque Restaurador (Ação Padrão, 8 PE): ${cl.toque} + Núcleo PV.`);
@@ -193,21 +211,7 @@ export function contexto060({ actor = null, dados = {}, ficha, edicao = false, e
       };
     }
     if (linhas.length) c.linhas = linhas;
-    if (cl.furia) c.furia = { ...cl.furia, usos: int(dados.classeEpm?.furiaUsos), max: cl.furia.usosMax ?? CLASSES_NOTION.barbaro.furia.usos };
-    if (cl.critico) c.critico = `Crítico Brutal: ${cl.critico.margem < 20 ? `margem ${cl.critico.margem}–20, ` : ""}multiplicador +${cl.critico.mult} (até ×${cl.critico.max})`;
-    if (cl.id === "barbaro" && cl.nivel >= 6) {
-      const max = CLASSES_NOTION.barbaro.protecao.niveis.filter(x => cl.nivel >= x).length;
-      const escolhidas = dados.classeEpm?.protecoes ?? [];
-      c.protecoes = { max, opcoes: CLASSES_NOTION.barbaro.protecao.opcoes.map(([id, nome, texto]) => ({ id, nome, texto, ativo: escolhidas.includes(id) })) };
-    }
-    if (cl.corpoDePedra) c.corpoDePedra = `Corpo de Pedra: RD ${cl.corpoDePedra}`;
-    if (cl.protecao) c.protecaoGuardiao = `Proteção (ao defender um aliado): ${cl.protecao}`;
-    if (cl.id === "lutador" && cl.nivel >= 3) {
-      c.porradaFranca = `Porrada Franca: +${valorPessoal(dados, "cla-lutador-porrada-franca", valorPorNivel(CLASSES_NOTION.lutador.porradaFranca, cl.nivel)?.[1]) ?? "—"} nos ataques desarmados`;
-      if (cl.posicoes?.max) {
-        c.posicoes = { max: cl.posicoes.max, opcoes: CLASSES_NOTION.lutador.posicoes.filter(p => p.nivel <= cl.nivel).map(p => ({ id: p.id, nome: p.nome, texto: p.texto, ativo: (cl.posicoes.ativas ?? []).includes(p.id) })) };
-      }
-    }
+    if (cl.furia) c.furia = { ...cl.furia, usos: int(dados.classeEpm?.furiaUsos), max: cl.furia.semLimite ? "∞" : cl.furia.usosMax };
   }
   v.classe = cl.id ? c : null;
   v.classeElemental = /elemental/i.test(String(dados.classe ?? ""));

@@ -18,7 +18,8 @@ export const PACOTES = {
   loot: { nome: "epm-tabelas-loot", rotulo: "EPM · Tabelas de loot", tipo: "RollTable" },
   macros: { nome: "epm-macros", rotulo: "EPM · Macros", tipo: "Macro" },
   melhorias: { nome: "epm-melhorias", rotulo: "EPM · Melhorias", tipo: "Item" },
-  receitas: { nome: "epm-receitas-artifice", rotulo: "EPM · Receitas do Artífice", tipo: "Item" }
+  receitas: { nome: "epm-receitas-artifice", rotulo: "EPM · Receitas do Artífice", tipo: "Item" },
+  habilidades: { nome: "epm-habilidades-exemplo", rotulo: "EPM · Habilidades de exemplo", tipo: "Item" }
 };
 export const ID_MANUAL = idFixo("manual:entrada");
 export const UUID_MANUAL = `Compendium.world.${PACOTES.manual.nome}.JournalEntry.${ID_MANUAL}`;
@@ -117,9 +118,13 @@ export async function dadosAtorCriatura(c, { regiao = "", extra = null } = {}) {
   const dados = dadosPadrao();
   dados.atributos = Object.fromEntries(Object.entries(c.atributos).map(([id, v]) => [id, { base: v }]));
   dados.nivel = c.nivel;
+  const { ataquesDoInimigo } = await import("./inimigos-nivel.mjs");
+  const { ataques: _a, area, ...ref } = c.tabela;
   dados.npc = { tipo: c.tipo, categoria: c.natureza, tamanho: c.tamanho, disposicao: c.disposicao, regiao: REGIOES[regiao] ?? "", nd: Math.max(1, Math.round(c.nivel / 2)),
-    referencia: { ...c.tabela, pv: c.pv }, ...(c.inteligente ? {} : { interp: { jeito: "Age por instinto: não fala nem negocia." } }) };
-  dados.ataques = { [idFixo(`npc:${c.nome}:ataque`)]: { nome: extra?.ataque ?? c.ataque.nome, pericia: c.ataque.pericia, bonusAcerto: 0, dano: c.ataque.dano, tipoDano: extra?.tipoDano ?? c.ataque.tipo, critMargem: 20, critMult: 2, notas: `${c.forcaLabel}, nível ${c.nivel}`, criado: 1 } };
+    raridade: c.raridade ?? "comum", custo: c.tabela.custo, referencia: ref, ...(c.inteligente ? {} : { interp: { jeito: "Age por instinto: não fala nem negocia." } }),
+    ...(area ? { recargas: { [idFixo(`npc:${c.nome}:area`)]: { nome: "Ataque em área", min: area.recarga, pronta: true, criado: 99 } } } : {}) };
+  dados.ataques = ataquesDoInimigo(c.tabela, { nome: extra?.ataque ?? c.ataque.nome, tipoDano: extra?.tipoDano ?? c.ataque.tipo, pericia: c.ataque.pericia });
+  for (const a of Object.values(dados.ataques)) a.criado = 1;
   if (extra) aplicarExtrasNpc(dados, c, extra);
   dados.sobre = { ...(dados.sobre ?? {}), outros: `<p>${escapar(c.natureza)} ${escapar(c.forcaLabel.toLowerCase())}, nível ${c.nivel}${regiao ? `, ${escapar(REGIOES[regiao] ?? regiao)}` : ""}. Modelo do compêndio EPM · NPCs modelo.</p>` };
   const ator = { flags: { [FLAG]: dados }, items: [], system: { attributes: { hp: { value: c.pv, max: c.pv } } }, type: "npc" };
@@ -147,7 +152,7 @@ export function aplicarExtrasNpc(dados, c, x) {
   if (x.servicos) n.servicos = listaComId("servico", x.servicos, s => ({ nome: s.nome, detalhes: s.detalhes ?? "", preco: s.preco ?? "" }));
   if (x.loot) n.loot = listaComId("loot", x.loot, l => ({ nome: l.nome, qtd: l.qtd ?? "1", chance: l.chance ?? 100, uso: l.uso ?? "" }));
   if (x.lacaios) n.lacaios = listaComId("lacaio", x.lacaios, l => ({ nome: l.nome, qtd: l.qtd ?? "1", nota: l.nota ?? "" }));
-  if (x.recargas) n.recargas = listaComId("recarga", x.recargas, r => ({ nome: r.nome, min: r.min ?? 5, pronta: true }));
+  if (x.recargas) n.recargas = { ...(n.recargas ?? {}), ...listaComId("recarga", x.recargas, r => ({ nome: r.nome, min: r.min ?? 5, pronta: true })) };
   if (x.conhecimento) n.conhecimento = { pericia: "Investigação", revelado: 0, niveis: listaComId("conhec", x.conhecimento, k => ({ dt: k.dt, revela: k.revela })) };
   if (x.vitoria) n.vitoria = { nome: x.vitoria.nome, texto: x.vitoria.texto ?? "", meta: 3, sucessos: 0, falhas: 0, fase: 0 };
   if (x.segundo) {
@@ -161,7 +166,9 @@ export async function documentosNpcs() {
   const pastas = Object.entries(REGIOES).map(([id, nome], i) => ({ _id: idFixo(`npcs:pasta:${id}`), name: nome, type: "Actor", sorting: "m", sort: (i + 1) * 100 }));
   const docs = [];
   for (const [i, [regiao, nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho, extra]] of NPCS_MODELO.entries()) {
-    const c = gerarCriatura({ nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho, disposicao: extra?.disposicao ?? "Hostil" });
+    // 0.9.0: a força do modelo vira a raridade (forte = Raro, muito forte = Épico, lendária = Lendário)
+    const raridade = { forte: "raro", muitoForte: "epico", lendaria: "lendario" }[forca] ?? "comum";
+    const c = gerarCriatura({ nome, natureza, forca, nivel, tipo, inteligente, foco, tamanho, disposicao: extra?.disposicao ?? "Hostil", raridade });
     const doc = await dadosAtorCriatura(c, { regiao, extra });
     if (extra?.disposicao && extra.disposicao !== "Hostil") doc.prototypeToken.disposition = ["Desconfiado"].includes(extra.disposicao) ? -1 : extra.disposicao === "Neutro" ? 0 : 1;
     docs.push({ ...doc, _id: idFixo(`npcs:${nome}`), folder: idFixo(`npcs:pasta:${regiao}`), sort: (i + 1) * 10 });
@@ -240,6 +247,20 @@ export async function documentosMelhorias() {
 }
 
 /** Receitas do Livro de Projetos do Artífice: arraste na ficha para pôr no Livro. */
+/** Habilidades, magias e rituais de exemplo (0.9.0), com a receita do criador. */
+export async function documentosHabilidades() {
+  const { HABILIDADES_EXEMPLO } = await import("./habilidades-exemplos.mjs");
+  const { dadosItemDaReceita } = await import("./habilidades-ui.mjs");
+  const pastas = [["habilidade", "Habilidades"], ["magia", "Magias"], ["ritual", "Rituais"]].map(([id, nome], i) => ({ _id: idFixo(`habex:pasta:${id}`), name: nome, type: "Item", sorting: "a", sort: (i + 1) * 100 }));
+  const docs = HABILIDADES_EXEMPLO.map(h => {
+    const d = dadosItemDaReceita(h);
+    if (h.origemTexto) d.system.description.value += `<p class="epm-dica">${escapar(h.origemTexto)}.</p>`;
+    d.system.description.value += "<p><em>Arraste para a ficha para Aprender (vira projeto) ou abra no criador.</em></p>";
+    return { ...d, _id: idFixo(`habex:${h.nome}`), folder: idFixo(`habex:pasta:${h.categoria}`) };
+  });
+  return { pastas, docs };
+}
+
 export async function documentosReceitas() {
   const { RECEITAS_ARTIFICE } = await import("./receitas-artifice.mjs");
   const { grauRomano } = await import("./arquetipos.mjs");
@@ -293,6 +314,7 @@ export async function sincronizarConteudo() {
     ["macros", async () => documentosMacros()],
     ["melhorias", documentosMelhorias],
     ["receitas", documentosReceitas],
+    ["habilidades", documentosHabilidades],
     ["npcs", documentosNpcs],
     ["loot", documentosLoot]
   ];

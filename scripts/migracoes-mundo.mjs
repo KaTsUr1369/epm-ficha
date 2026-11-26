@@ -132,7 +132,7 @@ const ARQ_NOVAS_0820 = new Set(["Fôlego de Combate", "Fôlego de Combate 2.0", 
  */
 export async function arquetiposEClasses0820() {
   const { ARQUETIPOS, nivelArquetipo } = await import("./arquetipos.mjs");
-  const { CLASSES_NOTION, habilidadesDaClasse } = await import("./regras-extras.mjs");
+  const { CLASSES_EPM, habilidadesDaClasse } = await import("./regras-extras.mjs");
   const X = await import("./extras.mjs");
   const { escapar } = await import("./helpers.mjs");
   let n = 0;
@@ -168,7 +168,7 @@ export async function arquetiposEClasses0820() {
     const cl = X.classeDaFicha(f);
     if (cl && ["guerreiroElemental", "alice", "cacador", "trovador", "bastiao", "guerreiroVazio", "vitalista", "mecanicoGuerra", "atiradorArcano"].includes(cl.id)) {
       const novas = habilidadesDaClasse(cl.id);
-      const def = CLASSES_NOTION[cl.id];
+      const def = CLASSES_EPM[cl.id];
       const vistas = new Set();
       for (const it of itens) {
         const ref = it.flags?.[FLAG]?.classeRef;
@@ -499,6 +499,111 @@ function avisoAtiradorArcano() {
   return nomes.length;
 }
 
+/** Ajustes da ficha que eram de regras de classe que saíram na 0.9.0 (versões finais das classes). */
+const AJUSTES_FORA_090 = ["cla-lutador-porrada-franca", "cla-lutador-posicoes", "cla-guardiao-protecao", "cla-guardiao-corpo-de-pedra",
+  "cla-barbaro-critico-mult", "cla-barbaro-critico-margem", "cla-barbaro-critico-max", "cla-bastiao-pv-por-nivel", "cla-mecanico-defesa", "cla-mecanico-ca",
+  "cla-mecanico-placas", "cla-mecanico-escudo", "cla-cacador-balas"];
+/** Padrões antigos gravados na ficha que mudaram nas versões finais (voltam a seguir o livro). */
+const AJUSTES_PADRAO_090 = { "cla-bastiao-tr": 1, "cla-ge-corpo-mente": 2, "cla-alice-histeria-acerto": 3 };
+
+/**
+ * Classes nas versões finais (0.9.0), uma vez por ficha: habilidades de classe com nome e texto novos (pela ref ou pelo nível),
+ * as do modelo que saíram somem, as liberadas que faltam entram; opções e ajustes de regras que saíram são limpos.
+ */
+export async function classesFinais090() {
+  const { CLASSES_EPM, habilidadesDaClasse } = await import("./regras-extras.mjs");
+  const X = await import("./extras.mjs");
+  const { escapar } = await import("./helpers.mjs");
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.classes090) continue;
+    const upd = [], apagar = [], criar = [];
+    const itens = a.items?.contents ?? [];
+    const cl = X.classeDaFicha(f);
+    if (cl && CLASSES_EPM[cl.id]) {
+      const novas = habilidadesDaClasse(cl.id);
+      const def = CLASSES_EPM[cl.id];
+      const vistas = new Set();
+      for (const it of itens) {
+        const ref = it.flags?.[FLAG]?.classeRef;
+        if (!ref || ref.split(":")[0] !== cl.id) continue;
+        const desc = String(it.system?.description?.value ?? "");
+        const modelo = desc.includes(`${escapar(def.nome)}, nível`) || /, nível \d+/.test(desc);
+        const nivelVelho = Number(desc.match(/nível (\d+)/)?.[1]) || 0;
+        const h = novas.find(x => x.ref === ref) ?? novas.find(x => x.nivel === nivelVelho && !vistas.has(x.ref));
+        if (!h || vistas.has(h.ref)) { if (modelo) apagar.push(it.id); continue; }
+        vistas.add(h.ref);
+        const textoNovo = X.dadosHabilidadeClasse(cl.id, h).system.description.value;
+        if (it.name === h.nome && ref === h.ref && (!modelo || desc === textoNovo)) continue;
+        upd.push({ _id: it.id, name: h.nome, [`${P}.classeRef`]: h.ref, ...(modelo ? { "system.description.value": textoNovo } : {}) });
+      }
+      const jaTem = new Set([...itens.filter(i => !apagar.includes(i.id)).map(i => i.flags?.[FLAG]?.classeRef).filter(Boolean), ...vistas]);
+      const dispensadas = new Set(Array.isArray(f.classeDispensadas) ? f.classeDispensadas : []);
+      for (const h of novas) if (h.nivel <= cl.nivel && !h.caminho && !jaTem.has(h.ref) && !dispensadas.has(h.ref)) criar.push(X.dadosHabilidadeClasse(cl.id, h));
+    }
+    const mudancas = { [`${P}.classes090`]: true };
+    for (const k of ["protecoes", "posicoes", "caminhos"]) if (f.classeEpm?.[k] !== undefined) mudancas[`${P}.classeEpm.-=${k}`] = null;
+    for (const k of AJUSTES_FORA_090) if (f.ajustesBonus?.[k] !== undefined) mudancas[`${P}.ajustesBonus.-=${k}`] = null;
+    for (const [k, v] of Object.entries(AJUSTES_PADRAO_090)) if (f.ajustesBonus?.[k] !== undefined && Number(f.ajustesBonus[k]) === v) mudancas[`${P}.ajustesBonus.-=${k}`] = null;
+    if (apagar.length) await a.deleteEmbeddedDocuments("Item", apagar, { epmMigracao: true });
+    if (upd.length) await a.updateEmbeddedDocuments("Item", upd, { render: false });
+    if (criar.length) await a.createEmbeddedDocuments("Item", criar, { render: false });
+    await a.update(mudancas, { render: false });
+    if (apagar.length || upd.length || criar.length || Object.keys(mudancas).length > 1) n++;
+  }
+  return n;
+}
+
+/**
+ * NPCs antigos (0.9.0), uma vez por ficha: ganham raridade (Comum) e o custo no orçamento do encontro.
+ * Quem foi preenchido pela tabela antiga e não teve a Vida mexida desde então recebe os números da tabela nova
+ * (mesmo nível e tipo; os ataques não mudam, o Mestre usa o botão de novo se quiser os ataques prontos).
+ */
+export async function npcs090() {
+  const I = await import("./inimigos-nivel.mjs");
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f || f.npcs090 || a.type !== "npc") continue;
+    const npc = f.npc ?? {};
+    const upd = { [`${P}.npcs090`]: true };
+    if (!npc.raridade) upd[`${P}.npc.raridade`] = "comum";
+    if (npc.custo === undefined || npc.custo === "") upd[`${P}.npc.custo`] = I.custoDoNpc({ ...npc, raridade: npc.raridade || "comum", custo: undefined });
+    const ref = npc.referencia;
+    if (ref?.nivel && !ref.raridade && Number(a.system?.attributes?.hp?.max) === Number(ref.pv)) {
+      try { await I.aplicarInimigo(a, I.inimigoPorNivel(ref.nivel, ref.tipo, { raridade: "comum", poder: I.poderDoMundo() }), { vida: true, ataques: false, chat: false }); }
+      catch (err) { console.warn("EPM | NPC 0.9.0", a.name, err); }
+    }
+    await a.update(upd, { render: false });
+    n++;
+  }
+  return n;
+}
+
+/** Habilidade Única Inicial (0.9.0): personagens que já existem ficam pendentes (no estágio do nível); NPCs ficam sem HUI. */
+export function trocasHui090(f = {}, tipo = "character") {
+  if (f.unicaInicial?.estado) return {};
+  if (tipo !== "character") return { [`${P}.unicaInicial`]: { estado: "nenhuma" } };
+  const n1 = Math.max(1, Math.floor(Number(f.nivel) || 1));
+  const n2 = String(f.arquetipo2 ?? "").trim() ? Math.max(0, Math.floor(Number(f.nivel2) || 0)) : 0;
+  const nivel = n1 + n2;
+  const estagio = nivel >= 50 ? 6 : nivel >= 40 ? 5 : nivel >= 30 ? 4 : nivel >= 20 ? 3 : nivel >= 10 ? 2 : 1;
+  return { [`${P}.unicaInicial`]: { estado: "pendente", estagio, usos: 0, respostas: {}, historico: [] } };
+}
+export async function hui090() {
+  let n = 0;
+  for (const a of game.actors ?? []) {
+    const f = a.flags?.[FLAG];
+    if (!f) continue;
+    const upd = trocasHui090(f, a.type);
+    if (!Object.keys(upd).length) continue;
+    await a.update(upd, { render: false });
+    n++;
+  }
+  return n;
+}
+
 export async function migrarMundo() {
   if (!game.user?.isGM || (game.users?.activeGM && !game.users.activeGM.isSelf)) return;
   const itens = todosItens();
@@ -526,6 +631,9 @@ export async function migrarMundo() {
     }
   } catch (err) { console.warn("EPM | números 0.8.27", err); }
   try { const n = await arquetiposReformulados0827(); if (n) feitos.push(`${n} ficha(s) passaram para os arquétipos reformulados`); } catch (err) { console.warn("EPM | arquétipos reformulados", err); }
+  try { const n = await classesFinais090(); if (n) feitos.push(`${n} ficha(s) com as classes nas versões finais`); } catch (err) { console.warn("EPM | classes 0.9.0", err); }
+  try { const n = await npcs090(); if (n) feitos.push(`${n} NPC(s) com raridade, custo do encontro e a tabela nova de inimigos`); } catch (err) { console.warn("EPM | NPCs 0.9.0", err); }
+  try { const n = await hui090(); if (n) feitos.push(`${n} ficha(s) com a Habilidade Única Inicial (personagens pendentes, NPCs sem)`); } catch (err) { console.warn("EPM | HUI 0.9.0", err); }
   try { avisoAtiradorArcano(); } catch (err) { console.warn("EPM | aviso do Atirador Arcano", err); }
   if (feitos.length) ui.notifications.info(`EPM: fichas antigas atualizadas (${feitos.join("; ")}).`);
   return feitos;

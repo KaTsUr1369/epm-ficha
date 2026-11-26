@@ -248,9 +248,17 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
     ok(A.ARQUETIPOS.combatente.estilos.duelista.acertoIsolado === 8 && A.ARQUETIPOS.combatente.estilos.dupla.acerto === 2 && A.ARQUETIPOS.combatente.estilos.atirador.margem === 4 && A.ARQUETIPOS.combatente.estilos.atirador.margemSempre === 1, "estilos reformulados: Duelista +8, Arma Dupla +2, Atirador +1 (ou +4)");
     const I = await import("/home/claude/epm-ficha/scripts/inimigos-nivel.mjs");
     const i1 = I.inimigoPorNivel(1, "chefe"), i12 = I.inimigoPorNivel(12, "monstro"), il = I.inimigoPorNivel(50, "lacaio");
-    ok(i1.ca === 23 && i1.pv === 130 && i1.dano === 10, "inimigo: chefe nível 1");
-    ok(i12.ca === 27 && i12.pv === 69, `inimigo: monstro nível 12 interpolado (${i12.ca}/${i12.pv})`);
-    ok(il.ca === 54 && il.pv === 80 && il.acerto === 46, "lacaio usa CA/acerto do Monstro e a própria Vida");
+    ok(i1.ca === 20 && i1.pv === 227 && i1.dano === 26 && i1.ataques.length === 4 && i1.ataques.filter(a => a.lendaria).length === 2 && i1.area?.alvos === 3, "inimigo (0.9.0): Chefe nível 1 = CA 20, 227 PV, 26 de dano em 4 ataques (2 Lendárias) e área");
+    ok(i12.ca === 24 && i12.pv === 174 && i12.ataques.length === 2 && !i12.area, `inimigo: Monstro nível 12 direto da tabela, 2 ataques (${i12.ca}/${i12.pv})`);
+    ok(il.ca === 40 && il.pv === 277 && il.acerto === 36 && il.dano === 182 && il.ataques.length === 1, "lacaio usa CA/acerto do Monstro e a própria Vida e dano");
+    ok(I.formulaD8(25) === "2d8 + 16" && I.dividirDano(50, 2).join() === "25,25" && I.dividirDano(31, 3).join() === "11,10,10", "dano em d8 (25 → 2d8 + 16) e divisão por ataques");
+    const r6 = I.inimigoPorNivel(6, "monstro", { raridade: "epico" }), p40 = I.inimigoPorNivel(40, "forte", { poder: "equipado" }), p10 = I.inimigoPorNivel(10, "forte", { poder: "equipado" });
+    ok(r6.ca === 23 && r6.acerto === 16 && r6.cd === 22 && r6.pv === Math.round(99 * 1.6) && r6.dano === 80 && r6.custo === 2, "raridade Épica: +2 CA/acerto/CD, ×1,6 PV e dano, custo ×2");
+    ok(p40.pv === Math.round(1506 * 1.1) && p10.pv === Math.round(283 * 1.2) && p40.ca === 41, "poder Equipado: ×1,2 até o 30 e ×1,1 depois; não mexe na CA");
+    ok(I.inimigoPorNivel(2, "lacaio", { raridade: "raro" }).dano === 8.2 && I.inimigoPorNivel(60, "monstro").projecao && !I.inimigoPorNivel(50, "monstro").projecao && I.inimigoPorNivel(500, "monstro").nivel === 100, "lacaio com 1 casa; 51+ é projeção; nível vai até 100");
+    const o = I.orcamentoEncontro([I.custoInimigo("chefe"), I.custoInimigo("lacaio", "raro")], 4);
+    ok(o.custo === 4.38 && o.etiqueta === "Justo" && I.orcamentoEncontro([1, 1], 4).etiqueta === "Fácil" && I.orcamentoEncontro([4, 2], 4).etiqueta === "Difícil", "orçamento: 60% fácil, 120% justo, acima difícil");
+    ok(I.custoDoNpc({ tipo: "chefe", raridade: "lendario" }) === 12 && I.custoDoNpc({ tipo: "comum" }) === 0.25 && I.custoDoNpc({ custo: 3, tipo: "chefe" }) === 3, "custo do NPC pelo tipo e raridade, ou o editado pelo Mestre");
   }
 }
 {
@@ -344,7 +352,7 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
   const RC = await import("/home/claude/epm-ficha/scripts/regras-extras.mjs");
   const FC = await import("/home/claude/epm-ficha/scripts/ficha-extras.mjs");
   const doArq = id => RC.classesDoArquetipo(id).map(c => c.id).join();
-  ok(doArq("combatente") === "barbaro,guardiao,lutador,guerreiroElemental,alice,bastiao,guerreiroVazio" && doArq("conjurador") === "vitalista,trovador,atiradorArcano" && doArq("artifice") === "mecanicoGuerra,cacador",
+  ok(doArq("combatente") === "guerreiro,lutador,barbaro,guardiao,arqueiro,guerreiroElemental,alice,bastiao,guerreiroVazio" && doArq("conjurador") === "mago,clerigo,invocador,xama,magoGuerra,trovador,vitalista,atiradorArcano" && doArq("artifice") === "alquimista,armaduraViva,cacador,curandeiro,masterPuppets,mecanicoGuerra",
     `classes por arquétipo (${doArq("combatente")} | ${doArq("conjurador")} | ${doArq("artifice")})`);
   {
     const AA = await import("/home/claude/epm-ficha/scripts/atirador-arcano.mjs");
@@ -359,16 +367,43 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
     const e30 = AA.estadoAtirador(30, { circuitos: ["mira", "acelerador", "ricochete", "ressonante"], sobrecarga: "acelerador" });
     ok(e30.circuitos.length === 3 && e30.maxCircuitos === 3 && e30.alcanceExtra === 6 && e30.acertoFontes.reduce((t, f) => t + f.valor, 0) === 5, "circuitos até o limite do nível; Acelerador de Mana (+3) acumula com a Mira (+2)");
     ok(AA.maxCircuitos(17) === 0 && AA.maxCircuitos(18) === 1 && AA.maxCircuitos(24) === 2 && AA.maxCircuitos(30) === 3 && AA.categoriaSugerida("Pistola") === "pequena" && AA.categoriaSugerida("Rifle de Precisão") === "grande", "limite de circuitos e porte sugerido");
+    {
+      // 0.9.0: automação das versões finais das classes
+      const F = (classe, arq, nivel, classeEpm = {}) => FC.fontesDaFicha({ classe, arquetipo: arq, nivel, classeEpm });
+      const b = F("Bárbaro", "Combatente", 12, { furiaAtiva: true });
+      ok(b.classe.furia.dano === 3 && b.classe.furia.rd === 4 && b.classe.furia.custo === 3 && b.classe.furia.usosMax === 2 && b.classe.furia.fisico && b.rd.some(r => r.fonte === "Fúria" && r.valor === 4 && /Cortante/.test(r.tipos)), "Bárbaro 12 em Fúria: +3 dano, RD 4 física, 3 PE/turno, 2 usos");
+      ok(F("Bárbaro", "Combatente", 48).classe.furia.semLimite && F("Bárbaro", "Combatente", 30, { furiaAtiva: true }).rd.some(r => r.fonte === "Fúria" && r.tipos === "todos os danos"), "Bárbaro: Fúria sem limite no 48; RD contra todo dano no 27+");
+      ok(F("Bárbaro", "Combatente", 36).rd.some(r => r.fonte === "Pele de Pedra" && r.valor === 4), "Pele de Pedra: metade da RD fora da Fúria");
+      const g = F("Guardião", "Combatente", 12);
+      ok(g.rd.some(r => r.fonte === "Couraça" && r.valor === 5) && g.classe.muralha === 2 && !F("Guardião", "Combatente", 9).rd.some(r => r.fonte === "Couraça"), "Guardião: Couraça RD 5 no 12 (nada antes), Muralha +2");
+      const bas = F("Bastião Inquebrável", "Combatente", 33);
+      ok(bas.mods.find(m => m.alvo === "recurso.pv")?.valor === 70 && bas.mods.find(m => m.alvo === "ca")?.valor === 3 && bas.classe.corpoInabalavel === "4d10 + @atr.constituicao" && bas.resistencias.some(r => r.tipo === "Cortante"), "Bastião 33: +70 PV, +3 CA, Corpo Inabalável 4d10 + Con, resistência física");
+      ok(F("Lutador", "Combatente", 21).extrasAtaque.desarmado.some(x => x.formula === "1d10" && x.fonte === "Artes Marciais"), "Lutador 21: golpe desarmado 1d10");
+      const ge = F("Guerreiro Elemental", "Combatente", 27, { elemento: "Som" });
+      ok(ge.classe.elemental.dado === "2d8" && ge.classe.elemental.nucleo === 15 && ge.classe.elemental.margem === 3 && ge.classe.elemental.elemento === "Som" && ge.mods.some(m => m.alvo === "acerto" && m.valor === 5), "Elemental 27: 2d8, Núcleo +15, margem +3, Som liberado, +5 Corpo e Mente");
+      const gu = F("Guerreiro", "Combatente", 24, { posturas: ["lamina", "muralha", "mira"] });
+      ok(gu.classe.posturas.ativas.join() === "lamina,muralha" && gu.extrasAtaque.corpo.some(x => x.formula === "1d8") && gu.mods.some(m => m.alvo === "ca" && m.valor === 3) && gu.rd.some(r => r.valor === 4), "Guerreiro 24: 2 Posturas ativas (Lâmina 1d8, Muralha +3 CA / RD 4)");
+      ok(F("Guerreiro", "Combatente", 11, { posturas: ["mira"] }).extrasAtaque.acertoDist.some(x => x.valor === 2), "Postura Mira: +2 só a distância no 11");
+      const al = F("Portadora do País Impossível", "Combatente", 21, { histeria: true });
+      ok(al.classe.formas === 5 && al.classe.histeria.limiar === "60 PV" && al.mods.some(m => m.fonte === "Histeria" && m.valor === 5), "Alice 21: 5 formas, Histeria com 60 PV, +5 acerto");
+      ok(F("Trovador", "Conjurador", 30).classe.inspiracao === "2d8" && F("Trovador", "Conjurador", 30).classe.inspiracaoAliados === 3, "Trovador 30: 2d8 em 3 aliados");
+      ok(F("Caçador", "Artífice", 30).classe.pistola === "3d10" && F("Caçador", "Artífice", 24).classe.municaoOficina === 4, "Caçador: Pistola 3d10 no 30, Munição de Oficina 4 no 24");
+      const mg = F("Mecânico de Guerra", "Artífice", 24).classe.mecha;
+      ok(mg.modelo === "Mk-III" && mg.tamanho === "Enorme" && mg.modulos === 5 && mg.pv === 360 && mg.rd === 5 && mg.punho === "2d10" && mg.energia === "Inteligência + 2", "Mecânico 24: Mk-III Enorme, 5 módulos, 360 PV, RD 5, Punho 2d10");
+      const mp = F("Master of Puppets", "Artífice", 33).classe.marionetes;
+      ok(mp.qtd === "Inteligência + 4" && mp.pv === 45 && mp.dado === "1d10" && mp.rd === 6, "Master of Puppets 33: Int + 4 Marionetes, 45 PV, 1d10, RD 6");
+      ok(["Guerreiro", "Arqueiro", "Mago", "Mago de Guerra", "Clérigo", "Xamã", "Invocador", "Alquimista", "Armadura Viva", "Curandeiro", "Master of Puppets", "Guerreiro do Vazio"].every(n => RC.CLASSES_EPM[FC.idClasse(n)]?.nome === n), "todas as classes novas reconhecidas pelo nome");
+    }
     const ex = FC.fontesDaFicha({ classe: "Atirador Arcano", arquetipo: "Conjurador", nivel: 36, classeEpm: { circuitos: ["mira"] } });
     ok(ex.classe?.atirador?.pontaria && ex.classe.atirador.acertoFontes[0]?.valor === 2, "Nv. 36: Disparo Fortificado II soma Pontaria; Mira Estabilizada +2");
   }
-  const ids = Object.keys(RC.CLASSES_NOTION);
-  ok(ids.every(id => RC.CLASSES_NOTION[id].descricao && RC.habilidadesDaClasse(id).length), "toda classe pronta tem descrição e habilidades");
-  ok(ids.every(id => FC.idClasse(RC.CLASSES_NOTION[id].nome) === id) && !FC.idClasse("Arcanista"), "o nome gravado na ficha volta para a mesma classe (e classe escrita à mão fica livre)");
+  const ids = Object.keys(RC.CLASSES_EPM);
+  ok(ids.every(id => RC.CLASSES_EPM[id].descricao && RC.habilidadesDaClasse(id).length), "toda classe pronta tem descrição e habilidades");
+  ok(ids.every(id => FC.idClasse(RC.CLASSES_EPM[id].nome) === id) && !FC.idClasse("Arcanista"), "o nome gravado na ficha volta para a mesma classe (e classe escrita à mão fica livre)");
   ok(ids.every(id => { const r = RC.habilidadesDaClasse(id).map(h => h.ref); return new Set(r).size === r.length && r.every(x => new RegExp(`^${id}:[a-z0-9-]+$`).test(x)); }), "refs das habilidades únicas e sem acento");
-  ok(ids.every(id => RC.habilidadesDaClasse(id).every(h => !h.caminho || RC.CLASSES_NOTION[id].caminhos?.[h.caminho])), "todo caminho usado nas habilidades existe na classe");
-  ok(RC.habilidadesLiberadas("barbaro", 7).map(h => h.nome).join() === "Fúria,Proteção de Bárbaro", "Bárbaro nível 7 sem caminho: Fúria e Proteção de Bárbaro");
-  ok(RC.habilidadesLiberadas("barbaro", 7, ["escudo"]).map(h => h.nome).join() === "Fúria,Mestre dos Escudos,Proteção de Bárbaro", "Caminho do Escudo junta Mestre dos Escudos");
+  ok(ids.every(id => RC.habilidadesDaClasse(id).every(h => !h.caminho || RC.CLASSES_EPM[id].caminhos?.[h.caminho])), "todo caminho usado nas habilidades existe na classe");
+  ok(RC.habilidadesLiberadas("barbaro", 7).map(h => h.nome).join() === "Fúria,Instinto Perigoso", "Bárbaro nível 7: Fúria e Instinto Perigoso (versão final, sem caminhos)");
+  ok(ids.every(id => RC.CLASSES_EPM[id].habilidades.length >= 16 && (RC.CLASSES_EPM[id].regras ?? []).length), "versões finais: 16 habilidades (3 a 48) e regras em toda classe");
   ok(RC.habilidadesLiberadas("trovador", 2).length === 0 && RC.habilidadesLiberadas("trovador", 50).length === 16, "Trovador: nada antes do nível 3, as 16 no 50");
   {
     const novas = ["guerreiroElemental", "alice", "cacador", "trovador", "bastiao", "guerreiroVazio", "vitalista", "mecanicoGuerra"];
@@ -436,5 +471,46 @@ ok(REVELACOES.find(r => r.id === "historia")?.padrao === 5 || REVELACOES.find(r 
   ok(PJ.efeitoInstalado("afiacao", 6, 3).formula === "10d10 + 3", "Afiação acima do Grau V: +2 dados");
   ok(PJ.efeitoInstalado("placas-reforco", 3, 0).valor === 5 && PJ.efeitoInstalado("torreta", 1, 0) === null, "Placas de Reforço Grau III: RD física 5; Torreta não se instala");
 }
+{
+  // 0.9.0: sistema de habilidades e Habilidade Única Inicial
+  const S = await import("/home/claude/epm-ficha/scripts/habilidades-sistema.mjs");
+  const { HABILIDADES_EXEMPLO: E } = await import("/home/claude/epm-ficha/scripts/habilidades-exemplos.mjs");
+  ok(E.length === 32 && E.every(h => S.contaHabilidade(h).ok), "os 31 exemplos + o Legado do Errante fecham o Orçamento");
+  const legado = S.contaHabilidade(E.find(h => h.nome === "O Legado do Errante"), { arquetipos: ["combatente"] });
+  ok(legado.ph === 34 && legado.horas === 20 && legado.dt === 20 && legado.raridade === "epica" && legado.bonusTeste === 2, "Legado do Errante: 34 PH, 26 h (20 com afinidade), DT 20");
+  ok(S.contaHabilidade(E.find(h => h.nome === "O Legado do Errante")).horas === 26, "sem afinidade: 26 h");
+  const desafio = S.contaTecnica({ raridade: "rara", modo: "buff", mods: { alcance18: 1, dur3: 1, condicional: 2 }, restricoes: { acaoLenta: 1, condicaoUso: 1, terminaGatilho: 1 } });
+  ok(desafio.total === 5 && desafio.restricao === 2 && desafio.gasto === 5 && desafio.custo === 10, "restrição devolve até metade (Rara +2)");
+  ok(S.contaTecnica({ raridade: "epica", mods: { area1: 1 } }).custo === 23 && S.contaTecnica({ raridade: "lendaria", mods: { area3: 1 } }, { categoria: "magia" }).custo === 27, "área: +50% no uso (PE e PM)");
+  ok(S.contaTecnica({ raridade: "rara", mods: { condForte: 1 } }).erros.some(e => /Épica/.test(e)) && S.contaTecnica({ raridade: "comum", mods: { alcance9: 1, alcance18: 1 } }).erros.length >= 1, "bloqueia condição forte abaixo da Épica e dois alcances");
+  ok(S.contaHabilidade({ tecnicas: [{ raridade: "comum" }, { raridade: "comum" }] }).erros.some(e => /técnica/.test(e)), "Comum tem 1 técnica só");
+  ok(S.contaHabilidade({ categoria: "ritual", tecnicas: [{ raridade: "comum", mods: { efeitoMenor: 3 } }] }).ok && S.contaTecnica({ raridade: "comum" }, { categoria: "ritual" }).custo === 10, "ritual: +2 de Orçamento e materiais em PO");
+  ok(S.contaHabilidade({ tecnicas: [{ raridade: "unica" }] }, { modo: "aprender" }).erros.some(e => /aprendida/.test(e)), "Única não pode ser aprendida");
+  const lim = S.contarLimites([{ raridade: "epica" }, { raridade: "epica" }, { raridade: "epica" }, { raridade: "epica" }, { raridade: "unica", hui: true }, { raridade: "mitica", foraDoLimite: true }]);
+  ok(lim.epica.cheio && lim.unica.usados === 0 && lim.mitica.usados === 0, "limites: Épica 4; HUI e fora do limite não contam");
+  ok(S.validarHui([{ peso: "suprema" }, { peso: "regular" }, { peso: "regular" }, { peso: "regular" }, { peso: "leve" }]).ok && !S.validarHui([{ peso: "suprema" }, { peso: "regular" }, { peso: "regular" }, { peso: "regular" }, { peso: "regular" }]).ok, "HUI: peso 10 passa, 11 bloqueia");
+  ok(!S.validarHui([{ peso: "suprema" }, { peso: "suprema" }]).ok && !S.validarHui(Array(6).fill({ peso: "leve" })).ok && S.validarHui(Array(6).fill({ peso: "leve" }), 6).ok, "HUI: 2 Supremas bloqueia; 6 técnicas só no Estágio VI");
+  ok(S.validarHui([{ peso: "leve" }, { peso: "regular" }, { peso: "regular" }, { peso: "suprema" }]).peso === 8, "Legado como HUI: peso 8 de 10, sem passivo");
+  ok([1, 10, 20, 30, 40, 50].map(n => S.estagioDoNivel(n).n).join() === "1,2,3,4,5,6" && S.estagioDoNivel(9).n === 1 && S.estagioDoNivel(49).n === 5, "estágios nos níveis 1, 10, 20, 30, 40 e 50");
+  ok(S.raridadeHui("leve", 1).custo === "incomum" && S.raridadeHui("suprema", 4).custo === "unica" && S.raridadeHui("regular", 5).custo === "unica" && S.raridadeHui("suprema", 6).custo === "transcendida" && S.raridadeHui("leve", 6).custo === "transcendida", "raridade pelo peso e estágio (V; VI tudo Transcendida)");
+  const rr = S.raridadeHui("suprema", 1, { ressonante: true });
+  ok(rr.custo === "epica" && rr.numeros === "lendaria" && S.contaTecnica({ raridade: rr.custo, modo: "golpe" }, { numeros: rr.numeros }).custo === 15, "Ressonante: números do próximo estágio, custo do atual");
+  ok(S.raridadeHui("suprema", 6, { final: true }).numeros === "transcendidaRessonante" && S.raridadeHui("leve", 6, { final: true }).numeros === "transcendida" && S.RARIDADES_HAB.transcendidaRessonante.golpeFixo === 64, "Ressonância final: Transcendida Ressonante (64) na Suprema");
+  const r1 = S.registrarUsoHui({ estado: "ativa", estagio: 1, usos: 9 }, { combateId: "c1" });
+  ok(r1.contou && r1.usos === 10 && r1.ressonante && r1.ressoou, "10 usos no Estágio I: Ressonante");
+  ok(!S.registrarUsoHui({ estado: "ativa", estagio: 1, usos: 9, usosCombate: { c1: 3 } }, { combateId: "c1" }).contou && !S.registrarUsoHui({ estado: "ativa" }, { passiva: true }).contou, "máximo de 3 por combate; passiva não conta");
+  const m = S.mudarEstagioHui({ estagio: 1, usos: 12, ressonante: true }, 10);
+  ok(m.estagio === 2 && m.usos === 0 && !m.ressonante && S.mudarEstagioHui({ estagio: 2 }, 5).estagio === 1, "subir de estágio zera usos e Ressonância; nível baixo volta");
+  ok(S.registrarUsoHui({ estado: "ativa", estagio: 6, usos: 39 }).final && S.mudarEstagioHui({ estagio: 6, final: true }, 50) === null, "Estágio VI: 40 usos dão a Ressonância final, que fica");
+  const pr = S.promptHui({ respostas: { q1: "A", q6: "liberdade" }, nome: "Kael", unicas: [{ nome: "Coração de Ferro", tema: "proteção" }] });
+  ok(/Kael/.test(pr) && /A\) Resolveria diretamente/.test(pr) && /Coração de Ferro/.test(pr) && /TÉCNICA:/.test(pr), "prompt preenchido com respostas, personagem e Únicas do mundo");
+  const lida = S.lerRespostaHui("NOME: Eco da Liberdade\nTIPO: Ofensiva\nTEMA: liberdade\nDESCRIÇÃO: Ninguém prende.\nTÉCNICA: Corte Livre | Regular | Golpe | 10 PE | Ação Padrão | — | livre\nEFEITO: +2d8 de dano.\nTÉCNICA: Grito | Suprema | Explosão | 15 PE | Ação Padrão | — | 1x por combate\nEFEITO: 5d10 em área.");
+  ok(lida.nome === "Eco da Liberdade" && lida.tecnicas.length === 2 && lida.tecnicas[1].peso === "suprema" && lida.tecnicas[1].modo === "explosao" && lida.tecnicas[0].custoProposto === 10, "Colar resposta: lê nome, técnicas, peso, modo e custo");
+  ok(S.repetidasHui({ nome: "Coração de Ferro", tecnicas: [] }, [{ nome: "Coração de Ferro" }]).length === 1, "avisa nome igual ao de outra Única");
+  ok(S.respostasCompletas({ q1: "A", q2: "B", q3: "C", q4: "D", q5: "E", q6: "x" }) && !S.respostasCompletas({ q1: "A" }), "questionário completo só com as 6");
+  const MM = await import("/home/claude/epm-ficha/scripts/migracoes-mundo.mjs");
+  ok(MM.trocasHui090({ nivel: 25 })["flags.epm-ficha.unicaInicial"].estagio === 3 && MM.trocasHui090({}, "npc")["flags.epm-ficha.unicaInicial"].estado === "nenhuma" && !Object.keys(MM.trocasHui090({ unicaInicial: { estado: "ativa" } })).length, "migração: personagem pendente no estágio do nível, NPC sem HUI");
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\nregras ok");
 process.exit(falhas ? 1 : 0);

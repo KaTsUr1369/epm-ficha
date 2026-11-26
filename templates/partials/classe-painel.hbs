@@ -6,6 +6,7 @@
     {{#if cp.podeAdicionarTodas}}<button type="button" class="epm-botao epm-botao-sutil" data-action="adicionarHabilidadeClasse" title="Cria na ficha as habilidades de {{cp.nome}} já liberadas que ainda faltam">Adicionar as liberadas ({{cp.faltamAdicionar}})</button>{{/if}}
   </header>
   {{#if cp.descricao}}<p class="epm-dica">{{cp.descricao}} As habilidades entram sozinhas na ficha quando o nível chega.</p>{{/if}}
+  {{#if cp.regras.length}}<details class="epm-classe-regras"><summary>Regras da classe</summary><ul>{{#each cp.regras}}<li>{{this}}</li>{{/each}}</ul></details>{{/if}}
   {{#if cp.foraDoArquetipo}}<p class="epm-aviso"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{cp.nome}} é uma classe de {{cp.arquetipo}}, que não é o arquétipo desta ficha.</p>{{/if}}
   {{#if cp.caminhos.length}}
   <p class="epm-rotulo">Caminho</p>

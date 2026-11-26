@@ -7,7 +7,7 @@
       <div class="epm-poder-meta">
         <span class="epm-raridade">{{this.raridadeLabel}}</span>
         {{#if origemLabel}}<span class="epm-tag">{{this.origemLabel}}</span>{{/if}}
-        {{#if foraDoLimite}}<span class="epm-tag epm-tag-ok" title="Não conta no limite de habilidades/magias da raridade">Fora do limite</span>{{/if}}
+        {{#if hui}}<span class="epm-tag epm-tag-hui" title="Habilidade Única Inicial: não ocupa espaço de raridade">Única Inicial</span>{{else}}{{#if foraDoLimite}}<span class="epm-tag epm-tag-ok" title="Não conta no limite de habilidades/magias da raridade">Fora do limite</span>{{/if}}{{/if}}
         {{#if tipoHab}}<span class="epm-tag" title="{{#if tema}}Tema: {{this.tema}}{{/if}}">{{this.tipoHab}}</span>{{/if}}
         {{#if nivelHab}}<span class="epm-tag" title="Nível da habilidade">Nv {{this.nivelHab}}</span>{{/if}}
         {{#if gatilho}}<span class="epm-tag epm-tag-gatilho" title="Ativação condicional: entra sozinha, uma vez por cena"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{this.gatilho}}</span>{{/if}}
@@ -24,6 +24,7 @@
     <div class="epm-item-controles">
       <button type="button" class="epm-icone-botao epm-favorito{{#if favorito}} ativo{{/if}}" data-action="favoritar" data-item-id="{{this.id}}" title="{{#if favorito}}Tirar dos favoritos{{else}}Favoritar (fica no topo){{/if}}" aria-pressed="{{#if favorito}}true{{else}}false{{/if}}"><i class="fa-{{#if favorito}}solid{{else}}regular{{/if}} fa-star"></i></button>
       <button type="button" class="epm-icone-botao" data-action="chatItem" data-item-id="{{this.id}}" title="Mostrar descrição no chat"><i class="fa-solid fa-comment"></i></button>
+      {{#if temReceita}}{{#unless hui}}{{#if @root.editavel}}<button type="button" class="epm-icone-botao" data-action="menuHabilidade" data-item-id="{{this.id}}" title="Aprimorar, Evoluir, Nova técnica ou Remodelar"><i class="fa-solid fa-arrow-trend-up"></i></button>{{/if}}{{/unless}}{{/if}}
       {{#if @root.edicao}}
       <button type="button" class="epm-icone-botao" data-action="editarPoder" data-item-id="{{this.id}}" title="Editar formas, custos e melhorias"><i class="fa-solid fa-pen-to-square"></i></button>
       <button type="button" class="epm-icone-botao" data-action="duplicarPoder" data-item-id="{{this.id}}" title="Duplicar (criar uma variante)"><i class="fa-solid fa-clone"></i></button>

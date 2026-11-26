@@ -4,6 +4,7 @@
  * aparecem por padrão (o Mestre ainda pode mostrar ou esconder cada uma em Personalizar).
  * Dados em flags["epm-ficha"].npc.
  */
+import { custoInimigo, TIPO_DA_FICHA } from "./inimigos-nivel.mjs";
 import { FLAG, ABAS, COR_PADRAO, COR_PADRAO_ANTIGA } from "./config.mjs";
 import { num, int, novoId } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
@@ -77,6 +78,8 @@ export function contextoNpc({ actor, bruto = {}, isGM = false, abaOculta = () =>
     disposicoes: DISPOSICOES.map(d => ({ v: d, sel: d === n.disposicao })),
     tamanhos: TAMANHOS.map(d => ({ v: d, sel: d === n.tamanho })),
     vidaFormula: n.vidaFormula ?? "", referencia: n.referencia?.nivel ? n.referencia : null,
+    raridades: [["comum", "Comum"], ["raro", "Raro"], ["epico", "Épico"], ["lendario", "Lendário"]].map(([v, l]) => ({ v, l, sel: (n.raridade || "comum") === v })),
+    custo: n.custo ?? "", custoPadrao: custoInimigo(n.referencia?.tipo || TIPO_DA_FICHA[tipo] || "monstro", n.raridade || "comum"),
     interp: { jeito: n.interp?.jeito ?? "", quer: n.interp?.quer ?? "", sabe: n.interp?.sabe ?? "" },
     moral: { pct: Math.max(0, Math.min(99, int(n.moral?.pct, tipo === "chefe" ? 0 : 25))), texto: n.moral?.texto ?? "", avisado: !!n.moral?.avisado },
     defesas: {
@@ -459,6 +462,9 @@ export function visualNpc({ ctx, actor, bruto = {}, ficha, poderes = [], isGM = 
   /* Cabeçalho */
   const chips = [];
   const ch = (texto, cls = "") => { if (String(texto ?? "").trim()) chips.push({ texto, cls }); };
+  // Raridade do inimigo (0.9.0): selo no cabeçalho, menos para o Comum
+  const RAR = { raro: "Raro", epico: "Épico", lendario: "Lendário" };
+  if (RAR[n.raridade]) ch(RAR[n.raridade], `raridade ${n.raridade}`);
   if (nv === 0) {
     ch(bruto.raca);
     if (bruto.arquetipo) ch(`${bruto.arquetipo} ${int(bruto.nivel, 1)}`, "ac");

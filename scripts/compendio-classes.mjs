@@ -9,7 +9,7 @@
  */
 import { FLAG, MODULE_ID } from "./config.mjs";
 import { ARQUETIPOS } from "./arquetipos.mjs";
-import { CLASSES_NOTION, habilidadesDaClasse, RECURSOS_ARQUETIPO } from "./regras-extras.mjs";
+import { CLASSES_EPM, habilidadesDaClasse, RECURSOS_ARQUETIPO } from "./regras-extras.mjs";
 import { dadosHabilidadeArquetipo, dadosHabilidadeClasse, formaEspecialClasse } from "./extras.mjs";
 import { escapar } from "./helpers.mjs";
 import { formaPadrao } from "./data.mjs";
@@ -155,7 +155,7 @@ export function documentosDoCompendio() {
       const d = dadosHabilidadeArquetipo(arqId, h);
       itens.push({ ...d, _id: h.id, folder: idFixo("pasta:hab-arq"), sort: h.nivel * 10, flags: { ...d.flags, [FLAG]: { ...d.flags[FLAG], compendio: "habilidade" } } });
     }
-    const subclasses = Object.entries(CLASSES_NOTION).filter(([, c]) => (c.arquetipo ?? "combatente") === arqId);
+    const subclasses = Object.entries(CLASSES_EPM).filter(([, c]) => (c.arquetipo ?? "combatente") === arqId);
     const rec = RECURSOS_ARQUETIPO[arqId] ?? {};
     const prog = Object.entries(a.progressao ?? {}).map(([n, t]) => `<tr><td>${n}</td><td>${escapar(t)}</td></tr>`).join("");
     const desc = [
@@ -181,7 +181,7 @@ export function documentosDoCompendio() {
     });
   }
 
-  for (const [classeId, c] of Object.entries(CLASSES_NOTION)) {
+  for (const [classeId, c] of Object.entries(CLASSES_EPM)) {
     const arqId = c.arquetipo ?? "combatente";
     const habs = habilidadesDaClasse(classeId).map(h => ({ ...h, id: idFixo(`classe:${h.ref}`) }));
     for (const h of habs) {
@@ -193,6 +193,7 @@ export function documentosDoCompendio() {
       `<p>${escapar(c.descricao ?? "")}</p>`,
       `<p><strong>Arquétipo:</strong> ${link(idFixo(`arquetipo:${arqId}`), ARQUETIPOS[arqId]?.nome ?? arqId)}</p>`,
       c.caminhos ? `<p><strong>Caminhos:</strong> ${Object.values(c.caminhos).map(escapar).join(", ")} (liga na ficha, sub-aba Classe).</p>` : "",
+      (c.regras ?? []).length ? `<h3>Regras</h3><ul>${c.regras.map(r => `<li>${escapar(r)}</li>`).join("")}</ul>` : "",
       `<h3>Habilidades</h3><ul>${habs.map(h => `<li><strong>Nível ${h.nivel}</strong>: ${link(h.id, h.nome)}${caminho(h)}</li>`).join("")}</ul>`,
       `<p class="epm-dica">Arraste para a ficha EPM para escolher esta classe: as habilidades liberadas no nível do arquétipo entram sozinhas na sub-aba Classe.</p>`
     ].join("");

@@ -3,6 +3,7 @@
  * Não usa APIs do Foundry diretamente: recebe objetos simples (ou documentos) e devolve dados prontos.
  * O que depende do Foundry (lista de idiomas, outros atores) chega já resolvido pela ficha.
  */
+import { contextoHui } from "./habilidades-ui.mjs";
 import {
   FLAG, CONDICOES, EXAUSTAO, ATRIBUTOS, ATALHOS_ATRIBUTO, USOS_FORMA, IDIOMAS_EPM, IDIOMAS_PROIBIDOS, NIVEIS_IDIOMA, REGRAS_IDIOMA, RARIDADES_ITEM, RARIDADES_PODER, ORIGENS_HABILIDADE, CIRCULOS,
   ACOES, ACOES_TURNO, CATEGORIAS_ITEM, CATEGORIA_MOCHILAS, itemNaCategoria, eVestimenta, TIPOS_VESTIMENTA, MOEDAS, CAMPOS_SOBRE, TEXTOS_SOBRE, TIPOS_RELACAO,
@@ -38,7 +39,7 @@ import { regrasLigadas, danoAcumulos, regra } from "./opcionais.mjs";
 import { contextoNovas } from "./contexto-novas.mjs";
 import { contextoNpc, abaOcultaNpc, eAtorNpc, abasDoTipo, visualNpc, corDaFicha, corEscolhida } from "./tipos-npc.mjs";
 import { contexto060 } from "./contexto-060.mjs";
-import { FAIXAS_IDADE, CLASSES_NOTION, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
+import { FAIXAS_IDADE, CLASSES_EPM, classesDoArquetipo, habilidadesDaClasse, RECURSOS_ARQUETIPO, tabelaRecursos, idArquetipo } from "./regras-extras.mjs";
 import { CATEGORIAS_ARMA_MAGICA } from "./atirador-arcano.mjs";
 import { atiradorDaFicha, idClasse, nivelTecPersonagem, condicoesBonusExtra, condicaoBonusExtra, valoresAjustaveisClasse, escolhasTreinoAtivas, especialDoTreino, armaSintonizada } from "./ficha-extras.mjs";
 import { PROPRIEDADES_PROTECAO, ITENS_CATALOGO, MAESTRIAS, REGIOES_CATALOGO } from "./itens-catalogo.mjs";
@@ -325,14 +326,14 @@ export function modsDoAtaque(at, ficha) {
   const cac = !ataqueADistancia(at);
   // Arma que conta como desarmada: só os bônus de desarmado, ou os dois (opção no editor da arma)
   const usaArmado = cac && (!desarmado || !!at?.desarmadoAmbos);
-  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : []), ...(ex.todos ?? [])];
+  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : ex.distancia ?? []), ...(ex.todos ?? [])];
   // Atirador Arcano: circuitos, Sobrecarga e Disparo Fortificado II (+ Pontaria) nos ataques com a Arma Mágica
   const aa = at?.armaMagica?.ativa ? ficha.extras?.classe?.atirador : null;
   const fontesAa = aa ? [...(aa.acertoFontes ?? [])] : [];
   if (aa?.pontaria) { const pt = int(ficha.periciaPorId?.pontaria?.bonusProprio); if (pt) fontesAa.push({ valor: pt, fonte: "Pontaria (Disparo Fortificado II)" }); }
   const acertoAa = fontesAa.reduce((s, x) => s + int(x.valor), 0);
   return {
-    acerto: g.penal + distancia + acertoAa,
+    acerto: g.penal + distancia + acertoAa + (cac ? ex.acertoCorpo ?? [] : ex.acertoDist ?? []).reduce((t, x) => t + int(x.valor), 0),
     acertoFontes: [...g.fontes, ...(ataqueADistancia(at) ? g.fontesDistancia : []), ...fontesAa],
     dano: g.dano, danoFontes: g.fontesDano,
     danoExtra: [...g.danoExtra.map(x => x.formula), ...(at.danoExtra ?? []).map(x => x.formula), ...extras.map(x => x.formula)],
@@ -416,7 +417,7 @@ export function detalharDano(at, ficha, cena) {
   const desarmado = ataqueDesarmado(at);
   const cac = !ataqueADistancia(at);
   const usaArmado = cac && (!desarmado || !!at?.desarmadoAmbos);
-  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : []), ...(ex.todos ?? [])];
+  const extras = [...(usaArmado ? ex.armado ?? [] : []), ...(desarmado ? ex.desarmado ?? [] : []), ...(cac ? ex.corpo ?? [] : ex.distancia ?? []), ...(ex.todos ?? [])];
   for (const x of extras) linhas.push(...linhasDaFormula(x.formula, x.fonte || "Bônus", ficha));
   for (const f of m.danoFontes ?? []) if (int(f.valor)) linhas.push({ valor: `${f.valor > 0 ? "+" : "−"}${Math.abs(f.valor)}`, fonte: comExplicacao(f.fonte) });
   if (linhas[0]) linhas[0].valor = linhas[0].valor.replace(/^\+/, "");
@@ -625,7 +626,7 @@ function painelClasse({ dados, poderes, editavel }) {
     qtd: habilidadesDaClasse(c.id).length
   })));
   const id = idClasse(dados.classe);
-  const def = id ? CLASSES_NOTION[id] : null;
+  const def = id ? CLASSES_EPM[id] : null;
   const textoLivre = String(dados.classe ?? "").trim();
   const base = { temArquetipo: arqs.length > 0, opcoes, semOpcoes: arqs.length > 0 && !opcoes.length, editavel };
   if (!def) return { ...base, escolhendo: !textoLivre && !dados.classeLivre, livre: !!(textoLivre || dados.classeLivre), nomeLivre: textoLivre };
@@ -643,7 +644,7 @@ function painelClasse({ dados, poderes, editavel }) {
   });
   const liberadas = habilidades.filter(h => h.liberada);
   return {
-    ...base, escolhida: true, id, nome: def.nome, descricao: def.descricao ?? "", nivel, foraDoArquetipo: !arqs.some(a => a.id === arqId),
+    ...base, escolhida: true, id, nome: def.nome, descricao: def.descricao ?? "", regras: def.regras ?? [], nivel, foraDoArquetipo: !arqs.some(a => a.id === arqId),
     arquetipo: ARQUETIPOS[arqId]?.nome ?? arqId, cor: ARQUETIPOS[arqId]?.cor ?? "",
     caminhos: Object.entries(def.caminhos ?? {}).map(([cid, label]) => ({ id: cid, label, ativo: caminhos.includes(cid) })),
     habilidades: habilidades.filter(h => !h.foraDoCaminho),
@@ -1294,7 +1295,7 @@ export function montarContexto({
       transformacao: tVinculo, arquetipoRef: p.arquetipoRef, classeRef: p.classeRef,
       nivelHab: int(item.flags?.[FLAG]?.nivelHab, 1) > 1 ? int(item.flags[FLAG].nivelHab) : 0,
       alternavel: p.tipo === "habilidade" && !!item.flags?.[FLAG]?.alternavel,
-      tipoHab: p.tipoHab, tema: p.tema, foraDoLimite: p.foraDoLimite,
+      tipoHab: p.tipoHab, tema: p.tema, foraDoLimite: p.foraDoLimite, temReceita: !!item.flags?.[FLAG]?.receita, hui: !!item.flags?.[FLAG]?.hui,
       ativa: !!item.flags?.[FLAG]?.ativa || !!dados.sustentadas?.[item.id] || Object.values(dados.bonusCena ?? {}).some(b => b?.ativo && b.origem === item.id),
       gatilho: (() => { const g = p.formas.find(f => f.bonus?.gatilho && f.bonus.gatilho !== "uso" && f.bonus.opcoes?.length)?.bonus.gatilho; return g ? GATILHOS_BONUS[g].replace(/ \(automático\)$/, "") : ""; })(),
       formas, nFormas: formas.length, variasFormas: formas.length > 1,
@@ -1309,7 +1310,7 @@ export function montarContexto({
   const ordenarPoderes = (a, b) => (b.favorito - a.favorito) || a.name.localeCompare(b.name, "pt-BR");
   for (const p of poderes) p.selecionando = selecao.aba === (p.tipo === "magia" ? "magias" : "habilidades");
   const contagem = contarRaridades(poderes);
-  const modo = ajustes.modoLimites ?? "separados";
+  const modo = ajustes.modoLimites ?? "combinados";
 
   const habilidades = poderes.filter(p => p.tipo === "habilidade");
   const origensEspeciais = SUBABAS_HABILIDADE.filter(s => s.origem).map(s => s.origem);
@@ -1324,8 +1325,8 @@ export function montarContexto({
     // Geral: a Habilidade Única vem primeiro, em destaque (não conta nos espaços); depois Passivas e as raridades
     const secoes = sub.origem
       ? [passivas(lista), { id: "comum", label: "Comum", cor: RARIDADES_PODER.comum.cor, limite: null, itens: lista.filter(h => !h.passiva).sort(ordenarPoderes) }]
-      : [{ ...porRaridade("unica"), label: "Habilidade Única", destaque: true, dica: "Não conta nos espaços de habilidades conhecidas." },
-        passivas(lista), ...["comum", "rara", "epica", "lendaria"].map(porRaridade)];
+      : [{ ...porRaridade("unica"), label: "Habilidade Única", destaque: true, hui: true, dica: "A Habilidade Única Inicial e as Únicas de raça não contam nos espaços; as Únicas criadas contam (limite 2)." },
+        passivas(lista), ...["comum", "incomum", "rara", "epica", "lendaria", "mitica"].map(porRaridade)];
     for (const s of secoes) s.vazia = !s.itens.length;
     return { secoes, total: lista.length };
   };
@@ -1341,6 +1342,9 @@ export function montarContexto({
     conhecidas: geral.filter(h => h.raridade !== "unica").length,
     espacos: int(dados.espacos?.habilidades, 2)
   };
+  // 0.9.0: Habilidade Única Inicial na seção Única
+  ctx.hui = contextoHui(brutoFlags, { tipo: actor?.type, isGM, editavel, itens });
+  if (ctx.hui) for (const sub of subabas) for (const sec of sub.secoes ?? []) if (sec.hui) sec.vazia = false;
   // Aba opcional Arquétipo e Classe: anotações próprias + as mesmas habilidades das sub-abas
   // Ajustar os bônus do arquétipo e da classe (modo edição)
   const rotuloAjuste = alvo => {

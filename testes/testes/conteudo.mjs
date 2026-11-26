@@ -13,7 +13,9 @@ ok(n.docs.length === C.NPCS_MODELO.length && n.pastas.length === 3, `NPCs modelo
   const merc = porNome("Mercador Viajante"), lich = porNome("Lich Ancestral"), aranha = porNome("Aranha Gigante");
   ok(n.docs.length >= 35, `0.8.28: mais NPCs modelo (${n.docs.length})`);
   ok(merc.flags["epm-ficha"].npc.disposicao === "Amigável" && Object.keys(merc.flags["epm-ficha"].npc.servicos).length === 3 && merc.prototypeToken.disposition === 1, "Mercador: amigável, com serviços e token aliado");
-  ok(Object.keys(lich.flags["epm-ficha"].ataques).length === 2 && Object.values(lich.flags["epm-ficha"].npc.lacaios)[0]?.nome === "Esqueleto Guerreiro" && lich.flags["epm-ficha"].npc.tipo === "chefe", "Lich: chefe com 2 ataques e lacaios");
+  const atLich = Object.values(lich.flags["epm-ficha"].ataques);
+  ok(atLich.filter(a => a.gerado && !/área/i.test(a.nome)).length === 4 && atLich.some(a => /área/i.test(a.nome)) && Object.values(lich.flags["epm-ficha"].npc.lacaios)[0]?.nome === "Esqueleto Guerreiro" && lich.flags["epm-ficha"].npc.tipo === "chefe", `Lich (0.9.0): chefe com 4 ataques (2 Lendárias), área e lacaios (${atLich.length})`);
+  ok(Object.values(lich.flags["epm-ficha"].npc.recargas ?? {}).some(r => r.nome === "Ataque em área") && lich.flags["epm-ficha"].npc.custo > 0 && ["comum", "raro", "epico", "lendario"].includes(lich.flags["epm-ficha"].npc.raridade), "modelos com recarga da área, raridade e custo");
   ok(Object.values(aranha.flags["epm-ficha"].npc.recargas)[0]?.min === 5 && Object.values(aranha.flags["epm-ficha"].npc.conhecimento.niveis).length === 2, "Aranha: recarga 5–6 e conhecimento por CD");
   ok(new Set(n.docs.map(d => d._id)).size === n.docs.length, "ids únicos nos NPCs modelo");
   const tipos = new Set(n.docs.map(d => d.flags["epm-ficha"].npc.tipo));

@@ -14,6 +14,33 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.9.0
+
+**Sistema de Habilidades, Magias e Rituais**
+- **Criador** nas abas Habilidades (botões Criar e Ritual) e Magias (Criar magia): categoria, natureza, nome, tipo, tema e técnicas, cada uma com raridade, modo, modificadores, restrições, efeito e custo proposto. A ficha calcula o Orçamento de cada técnica, o custo de uso (+50% com área), a manutenção da sustentada, a Potência, os PH, as horas e a DT, e bloqueia o que a raridade não permite. Dá para partir de um dos 32 exemplos.
+- **7 raridades**: Comum, Incomum, Rara, Épica (limite 4), Lendária (limite 3), Mítica (limite 2) e Única (limite 2). Os limites somam habilidades e magias (opção do mundo; padrão "Somados").
+- **Projeto** na sub-aba Criação dos Treinamentos: as horas entram nas 8 h do dia, um teste por dia, os PH só saem no sucesso. Afinidade (natureza do arquétipo): −25% de horas e +2 no teste. Mítica e Única esperam o Mestre marcar o Catalisador; a Única, o Despertar.
+- **Aprender** arrastando uma habilidade com receita (vira projeto com os PH de aprender, metade das horas e DT −5). **Aprimorar** (PT por +1 de Orçamento ou −20% no custo), **Evoluir**, **Nova técnica** e **Remodelar** no botão novo da linha da habilidade.
+- Compêndio novo **EPM · Habilidades de exemplo** com as 31 habilidades, magias e rituais do documento e O Legado do Errante.
+
+**Habilidade Única Inicial (HUI)**
+- Último passo da criação guiada: o questionário de 6 perguntas, com "Enviar ao Mestre", "Responder depois" e "Sem Habilidade Única Inicial" (opção do mundo, ligada).
+- Na seção Única da aba Habilidades: "Continuar Criação de Habilidade Única Inicial", "Aguardando o Mestre" e, ativa, o selo do estágio, o peso, a barra de usos e o próximo estágio.
+- Mestre: cartão no chat e lista no Escudo (aba Habilidades) com Copiar prompt, Colar resposta, Montar no criador, +1/−1 uso e "sem HUI".
+- Criador no modo Única Inicial: peso Leve 1 / Regular 2 / Suprema 3, até 10 de peso, 5 técnicas e 1 Suprema (12 e 6 no Estágio VI). A raridade sai do peso, do estágio e da Ressonância; no Estágio VI todas as técnicas são Transcendidas. Não ocupa espaço de raridade.
+- Estágios nos níveis 1, 10, 20, 30, 40 e 50 (sobem e descem com o nível); usos de técnica ativa (até 3 por combate) dão a Ressonância (10/15/20/25/30) e, no VI, a Ressonância final com 40.
+
+**Classes nas versões finais**
+- As 23 classes (9 de Combatente, 8 de Conjurador e 6 de Artífice) com o texto final, as regras e as 16 habilidades de cada uma. Entraram Guerreiro, Arqueiro, Mago, Clérigo, Invocador, Xamã, Mago de Guerra, Alquimista, Armadura Viva, Curandeiro e Master of Puppets.
+- Automação nova: Posturas do Guerreiro, Fúria do Bárbaro por faixa (dano, RD, PE por turno e usos), Couraça e Muralha do Guardião, golpe desarmado do Lutador, Bastião (+20/+20/+30 PV, CA, testes e Corpo Inabalável), Elemental (2d12 no 48, Núcleo fixo por acerto, margem), Alice (limiar da Histeria), Caçador (Pistola 3d10/4d10, Munição de Oficina), Mecha do Mecânico de Guerra e Marionetes do Master of Puppets.
+- Saíram as regras antigas: Proteções do Bárbaro, tabela de crítico, caminhos, Posições do Lutador e Corpo de Pedra. As fichas antigas trocam as habilidades de classe sozinhas.
+
+**Inimigos por nível, raridade e poder do grupo**
+- "Preencher pelo nível" com a tabela nova (um nível por linha, de 1 a 100; acima de 50 é projeção). Cria os ataques prontos: Lacaio 1, Monstro 2, Forte 3, Chefe 4 (2 Lendárias), em d8, e ataque em área com recarga 5–6 no Forte e no Chefe.
+- **Raridade** do inimigo (Comum, Raro, Épico, Lendário) com selo no cabeçalho e **poder do grupo** (Fraco, Normal, Equipado, Lendário; opção do mundo).
+- **Orçamento do encontro** no Escudo (aba Combate): custo dos NPCs contra os jogadores, com Fácil, Justo ou Difícil.
+- NPC rápido e os NPCs modelo usam a tabela nova. NPCs antigos ganham raridade, custo e a Vida da tabela nova (se a Vida não foi mexida).
+
 ## Novidades da 0.8.31
 
 Correções nos testes do Quench (o módulo em si não mudou):

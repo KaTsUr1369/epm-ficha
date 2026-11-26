@@ -44,6 +44,7 @@
         {{/if}}
         <button type="button" class="epm-botao" data-action="rolarIniciativaNpcs" {{#unless combate.semIniciativa}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Iniciativa dos NPCs</button>
         <button type="button" class="epm-link" data-action="marcarTodos" data-de="combate">marcar todos</button>
+        {{#with combate.orcamento as |o|}}<span class="epm-escudo-orcamento {{o.cls}}" title="{{o.dica}}"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Encontro: <strong>{{o.custo}}</strong> / {{o.orcamento}}{{#if o.etiqueta}} · <strong>{{o.etiqueta}}</strong> ({{o.pct}}%){{/if}}</span>{{/with}}
         {{#if novasMestre.regras.descanso}}<button type="button" class="epm-botao" data-action="novasMestre" data-op="emboscada" title="Surpreendido no grupo, menos se alguém vigiou no último descanso longo"><i class="fa-solid fa-triangle-exclamation"></i> Emboscada</button>{{/if}}
                 {{#if novasMestre.regras.auraHorror}}<button type="button" class="epm-botao" data-action="novasMestre" data-op="aura" title="Selecione o token da criatura; quem está marcado (ou o grupo) faz Vontade"><i class="fa-solid fa-ghost"></i> Aura de Horror</button>{{/if}}
       {{else}}
@@ -195,6 +196,12 @@
 
     {{!-- ================= HABILIDADES ================= --}}
     {{#if (epmEq aba "habilidades")}}
+    <details class="epm-escudo-hui" {{#if huiPendencias}}open{{/if}}><summary><i class="fa-solid fa-sun" aria-hidden="true"></i> Habilidade Única Inicial{{#if huiPendencias}} · <strong>{{huiPendencias}} esperando o Mestre</strong>{{/if}}</summary>
+      <ul class="epm-escudo-lista-hui">{{#each huis}}<li><img src="{{this.img}}" alt="" /> <strong>{{this.nome}}</strong> <span class="epm-tag">{{#if ativa}}{{this.selo}} · {{this.usos}} usos{{else}}{{this.estadoLabel}}{{/if}}</span>
+        {{#if respondida}}<button type="button" class="epm-botao" data-action="huiEscudo" data-op="prompt" data-ator="{{this.uuid}}">Copiar prompt</button><button type="button" class="epm-botao" data-action="huiEscudo" data-op="colar" data-ator="{{this.uuid}}">Colar resposta</button><button type="button" class="epm-botao" data-action="huiEscudo" data-op="montar" data-ator="{{this.uuid}}">Montar no criador</button>{{/if}}
+        {{#if ativa}}<button type="button" class="epm-icone-botao" data-action="huiEscudo" data-op="menos" data-ator="{{this.uuid}}" title="−1 uso"><i class="fa-solid fa-minus"></i></button><button type="button" class="epm-icone-botao" data-action="huiEscudo" data-op="mais" data-ator="{{this.uuid}}" title="+1 uso"><i class="fa-solid fa-plus"></i></button><button type="button" class="epm-link" data-action="huiEscudo" data-op="montar" data-ator="{{this.uuid}}">criador</button>{{/if}}
+        {{#if nenhuma}}<button type="button" class="epm-link" data-action="huiEscudo" data-op="pendente" data-ator="{{this.uuid}}">voltar para pendente</button>{{else}}{{#unless ativa}}<button type="button" class="epm-link" data-action="huiEscudo" data-op="nenhuma" data-ator="{{this.uuid}}">sem HUI</button>{{/unless}}{{/if}}</li>{{/each}}</ul>
+    </details>
     <div class="epm-escudo-barra">
       <label class="epm-campo"><span>Dar para</span><select data-destino-item>{{#each destinos}}<option value="{{this.id}}" {{#if selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select></label>
       <span class="epm-dica">Marque fichas no Grupo ou no Combate para dar a várias de uma vez.</span>

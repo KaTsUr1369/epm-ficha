@@ -33,8 +33,8 @@ export function registrarAjustes() {
   });
   reg("modoLimites", {
     name: "Limites de raridade",
-    hint: "Épica 4, Lendária 3, Única 2. Separados: habilidades e magias contam cada uma o seu limite. Somados: dividem o mesmo limite.",
-    scope: "world", config: true, type: String, default: "separados",
+    hint: "Épica 4, Lendária 3, Mítica 2, Única 2. Somados (padrão do sistema de habilidades): habilidades e magias dividem o mesmo limite. Separados: cada uma conta o seu. A Habilidade Única Inicial não conta.",
+    scope: "world", config: true, type: String, default: "combinados",
     choices: { separados: "Separados", combinados: "Somados" }
   });
   reg("bloquearLimites", {
@@ -90,6 +90,17 @@ export function registrarAjustes() {
   });
   reg("numeros0820", { scope: "world", config: false, type: Boolean, default: false });
   reg("numeros0827", { scope: "world", config: false, type: Boolean, default: false });
+  reg("permitirSemHui", {
+    name: "Permitir fichas sem Habilidade Única Inicial",
+    hint: "Mostra o botão \"Sem Habilidade Única Inicial\" no questionário da criação de ficha.",
+    scope: "world", config: true, type: Boolean, default: true
+  });
+  reg("poderGrupo", {
+    name: "Poder do grupo (inimigos por nível)",
+    hint: "Multiplica a Vida e o dano dos inimigos do \"Preencher pelo nível\" e do NPC rápido. Fraco ×0,7 · Normal ×1 · Equipado ×1,2 (Nv 31+: ×1,1) · Lendário ×1,45 (Nv 31+: ×1,25).",
+    scope: "world", config: true, type: String, default: "normal",
+    choices: { fraco: "Fraco (sem talentos nem treinamentos)", normal: "Normal (talentos e treinamentos comuns)", equipado: "Equipado (arma e armadura com Modificações e Encantamento)", lendario: "Lendário (Maldição ou Bênção de item, atributos no máximo)" }
+  });
   game.settings.registerMenu(MODULE_ID, "numerosBonusMenu", {
     name: "Bônus de estilos e treinos", label: "Editar números",
     hint: "O Mestre muda os bônus numéricos dos Estilos de Combate e dos treinos automáticos. Campo vazio volta ao padrão.",
@@ -147,7 +158,7 @@ export function ajustes() {
   return {
     marcadorTurnoEpm: ler("marcadorTurnoEpm", true),
     condicoesHud: ler("condicoesHud", "substituir"),
-    modoLimites: ler("modoLimites", "separados"),
+    modoLimites: ler("modoLimites", "combinados"),
     bloquearLimites: ler("bloquearLimites", true),
     formulaTeste: ler("formulaTeste", "1d20"),
     marcarAcoes: ler("marcarAcoes", true),

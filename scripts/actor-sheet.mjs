@@ -53,7 +53,8 @@ const ACOES_FICHA = [
   "criarItem", "expandirItem", "quantidade", "equiparItem", "favoritar", "chatItem", "editarItem", "excluirItem",
   "usarItem", "usarFormasItem", "usarFormaItem", "alternarPassivaItem", "testeMorte", "escolherTreino", "atacar", "danoArma", "novoAtaque", "excluirAtaque", "novoBonusCena", "excluirBonusCena", "alternarTemp",
   "abrirMochila", "tirarDaMochila", "moverItemPara", "moverNaMochila", "moverCategoria", "restaurarOrdemCategorias", "adicionarEfeitoItem", "removerEfeitoItem",
-  "novoPoder", "poderDeTexto", "usarPoder", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
+  "novoPoder", "poderDeTexto", "usarPoder", "criarHabilidade", "trabalharProjetoHab", "testarProjetoHab", "apagarProjetoHab", "liberarProjetoHab", "menuHabilidade",
+  "huiQuestionario", "huiAjustar", "huiPrompt", "huiColar", "huiMontar", "alternarHabilidade", "magiaConjunta", "editarPoder", "duplicarPoder",
   "novaPagina", "renomearPagina", "excluirPagina", "moverPagina",
   "alternarCondicao", "soAtivas", "aplicarCombinacao", "removerCombinacao", "removerTag", "removerIdioma",
   "novaBencao", "excluirBencao", "adicionarMod", "removerMod", "abrirCatalogo", "tipoCatalogo", "adicionarDoCatalogo",
@@ -1699,6 +1700,22 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
   acaoZerarVistosAura() { return this.actor.update({ [`${P}.aura.vistos`]: [] }); }
   acaoNovaCriacao() { this._mudarAba("treinos", "criacao"); return Oficina.novaCriacao(this.actor); }
   acaoTrabalharCriacao(ev, alvo) { return Oficina.trabalharCriacao(this.actor, alvo.dataset.criacao); }
+  // 0.9.0: sistema de habilidades e Habilidade Única Inicial
+  async acaoCriarHabilidade(ev, alvo) { return (await import("./habilidades-ui.mjs")).criarHabilidade(this.actor, alvo.dataset.categoria || "habilidade"); }
+  async acaoTrabalharProjetoHab(ev, alvo) { return (await import("./habilidades-ui.mjs")).trabalharProjetoHab(this.actor, alvo.dataset.projeto); }
+  async acaoTestarProjetoHab(ev, alvo) { return (await import("./habilidades-ui.mjs")).testarProjetoHab(this.actor, alvo.dataset.projeto); }
+  async acaoApagarProjetoHab(ev, alvo) {
+    const { confirmar } = await import("./mecanicas.mjs");
+    if (!(await confirmar("Apagar projeto", "<p>Apagar este projeto de habilidade? As horas feitas se perdem.</p>"))) return;
+    return this.actor.update({ [`${P}.habProjetos.-=${alvo.dataset.projeto}`]: null });
+  }
+  acaoLiberarProjetoHab(ev, alvo) { if (!game.user.isGM) return; return this.actor.update({ [`${P}.habProjetos.${alvo.dataset.projeto}.${alvo.dataset.campo}`]: "ok" }); }
+  async acaoMenuHabilidade(ev, alvo) { const it = this.actor.items.get(alvo.closest("[data-item-id]")?.dataset.itemId ?? alvo.dataset.itemId); if (it) return (await import("./habilidades-ui.mjs")).menuHabilidade(this.actor, it); }
+  async acaoHuiQuestionario() { return (await import("./habilidades-ui.mjs")).questionarioHui(this.actor, { titulo: "Continuar Criação de Habilidade Única Inicial" }); }
+  async acaoHuiAjustar(ev, alvo) { return (await import("./habilidades-ui.mjs")).ajustarHui(this.actor, alvo.dataset.op); }
+  async acaoHuiPrompt() { const H = await import("./habilidades-ui.mjs"); return H.copiar(H.promptDoAtor(this.actor), "Prompt da HUI"); }
+  async acaoHuiColar() { return (await import("./habilidades-ui.mjs")).colarRespostaHui(this.actor); }
+  async acaoHuiMontar() { return (await import("./habilidades-ui.mjs")).montarHui(this.actor); }
   acaoTestarCriacao(ev, alvo) { return Oficina.testarCriacao(this.actor, alvo.dataset.criacao); }
   async acaoApagarCriacao(ev, alvo) {
     if (!(await M.confirmar("Apagar projeto", "<p>Apagar este projeto de criação? As horas feitas se perdem.</p>"))) return;

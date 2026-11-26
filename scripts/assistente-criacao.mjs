@@ -119,7 +119,7 @@ export async function assistenteCriacao(actor) {
   const dados = actor.flags?.[FLAG] ?? {};
   const { estadoAtor } = await import("./mecanicas.mjs");
   let nivel = nivelValido(dados.nivel);
-  const passosComNivel = nv => 6 + (nv > 1 ? 1 : 0) + (nv >= 3 ? 1 : 0);
+  const passosComNivel = nv => 7 + (nv > 1 ? 1 : 0) + (nv >= 3 ? 1 : 0);
 
   // 1. Nome, conceito e nível
   let r = await passo("Começo", 1, passosComNivel(nivel), `<p class="epm-dica">Comece pelo básico. Tudo pode ser mudado depois.</p>
@@ -223,6 +223,12 @@ export async function assistenteCriacao(actor) {
   // 8. Kit inicial (só do arquétipo escolhido)
   r = await passo("Equipamento inicial", numero, total, `<p>Escolha um kit${arq ? ` de ${escapar(ARQUETIPOS[arq].nome)}` : ""} (armas, armadura, kit de aventura e moedas). Os kits dos outros arquétipos ficam travados.</p><p class="epm-dica">Clique em Próximo para ver os kits.</p>`);
   if (r && typeof r === "object") { const { kitInicial } = await import("./ficha-060.mjs"); await kitInicial(actor); }
+  numero++;
+  // 9. Habilidade Única Inicial (0.9.0): questionário, com "Enviar ao Mestre", "Responder depois" e "Sem HUI"
+  if (actor.type === "character" && actor.flags?.[FLAG]?.unicaInicial?.estado !== "ativa") {
+    const { questionarioHui } = await import("./habilidades-ui.mjs");
+    await questionarioHui(actor, { titulo: `Criação de personagem · ${numero}/${total}: Habilidade Única Inicial` });
+  }
   await actor.update({ [`${P}.assistenteFeito`]: true });
   ui.notifications.info(`${actor.name} está pronto no nível ${nivel}! Revise a ficha no modo edição se quiser mudar algo.`);
   return true;

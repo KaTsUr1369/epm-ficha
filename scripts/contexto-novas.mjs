@@ -2,6 +2,7 @@
  * Contexto das novas mecânicas para os templates (ctx.novas). Puro: lê só os dados do ator,
  * as regras ligadas e as listas do Mestre (fora do Foundry, tudo desligado e com padrões).
  */
+import { contextoProjetosHab } from "./habilidades-ui.mjs";
 import { FLAG, MOEDAS } from "./config.mjs";
 import { int, num } from "./data.mjs";
 import {
@@ -134,6 +135,9 @@ export function contextoNovas({ actor, dados, ficha, itens = [], edicao = false,
       andamento: cr.estado === "andamento", pronto: cr.estado === "pronto", concluido: cr.estado === "concluido"
     };
   }).sort((a, b) => (a.concluido - b.concluido) || a.criado - b.criado);
+  // 0.9.0: projetos de habilidades, magias e rituais
+  n.habProjetos = contextoProjetosHab(actor?.flags?.[FLAG] ?? dados, { editavel });
+  n.qtdCriacao = n.criacoes.length + n.habProjetos.filter(p => !p.concluido).length;
   // Treinos do catálogo: requisitos estruturados (atributos, pontos em perícias, treinos, favorita); os outros pelo texto
   const baseReq = baseRequisitos(dados, { temExotica: (actor?.items?.contents ?? actor?.items ?? []).some(i => i.type === "weapon" && !!maestriaDoItem(i)) });
   n.requisitos = Object.fromEntries(Object.entries(dados.treinamentos ?? {}).filter(([, t]) => (t?.requisitos || treinoModelo(t?.modelo)) && t.estado !== "concluido")

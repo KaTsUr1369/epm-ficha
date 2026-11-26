@@ -2,6 +2,7 @@
  * Escudo do Mestre: monta o contexto das abas a partir de dados simples (testável fora do Foundry).
  * Quem chama (escudo.mjs) junta o combate, os personagens, os itens do mundo e o estado da janela.
  */
+import { orcamentoEncontro, custoDoNpc } from "./inimigos-nivel.mjs";
 import { ITENS_PRONTOS } from "./itens-prontos.mjs";
 import { TRANSFORMACOES_PRONTAS } from "./config.mjs";
 import {
@@ -76,6 +77,11 @@ export function montarEscudo({ aba = "combate", combate = null, grupo = [], iten
       existe: true, iniciado: !!combate.iniciado, rodada: combate.rodada ?? 0, linhas, vazio: !linhas.length,
       atual: linhas.find(l => l.atual)?.name ?? "", semIniciativa: linhas.filter(l => l.semIniciativa).length
     };
+    // Orçamento do encontro (0.9.0): custo dos NPCs contra o número de jogadores (cada um vale 1)
+    const npcs = combate.linhas.filter(l => l.actor?.type === "npc");
+    const jogadores = combate.linhas.filter(l => l.actor && l.actor.type !== "npc").length || grupo.length;
+    const orc = orcamentoEncontro(npcs.map(l => custoDoNpc(l.actor.flags?.["epm-ficha"]?.npc ?? {})), jogadores);
+    if (npcs.length) ctx.combate.orcamento = { ...orc, npcs: npcs.length, dica: `Custo: Lacaio 0,25 · Monstro 1 · Forte 2 · Chefe 4, × raridade (Raro 1,5 · Épico 2 · Lendário 3). Fácil até 60% do orçamento, Justo até 120%, Difícil acima.` };
   } else ctx.combate = { existe: false, linhas: [], vazio: true };
 
   /* Grupo */

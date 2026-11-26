@@ -51,6 +51,7 @@ const ID_FICHA = `${MODULE_ID}.EPMActorSheet`;
 Hooks.once("init", () => {
   registrarAjustes();
   registrarCompendioClasses();
+  import("./habilidades-ui.mjs").then(m => m.registrarHabilidadesSistema()).catch(err => console.warn("EPM | sistema de habilidades", err));
   import("./conteudo-epm.mjs").then(m => m.registrarConteudo()).catch(err => console.warn("EPM | Conteúdo pronto", err));
   registrarCompendioItens();
   registrarDicasCompendio();

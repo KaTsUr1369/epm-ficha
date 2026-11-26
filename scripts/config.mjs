@@ -133,11 +133,13 @@ export const RARIDADE_DND5E = {
 
 /** Raridades de habilidades e magias, com limites, custos em PH e teto de poder. */
 export const RARIDADES_PODER = {
-  comum:    { label: "Comum",    cor: "#AEB4AE", ordem: 1, limite: null, criar: 5,  aprender: 3,  danoMax: "2d6",       efeitos: 1 },
-  rara:     { label: "Rara",     cor: "#4F9FE0", ordem: 2, limite: null, criar: 10, aprender: 5,  danoMax: "3d8",       efeitos: 2 },
-  epica:    { label: "Épica",    cor: "#A86BE3", ordem: 3, limite: 4,    criar: 20, aprender: 10, danoMax: "4d10",      efeitos: 3 },
-  lendaria: { label: "Lendária", cor: "#E58A2A", ordem: 4, limite: 3,    criar: 35, aprender: 18, danoMax: "4d12 + 15", efeitos: 4 },
-  unica:    { label: "Única",    cor: "#F0CF62", ordem: 5, limite: 2,    criar: 50, aprender: 25, danoMax: "5d12 + 20", efeitos: 5 }
+  comum:    { label: "Comum",    cor: "#AEB4AE", ordem: 1, limite: null, criar: 5,  aprender: 3,  danoMax: "2d6",        efeitos: 1 },
+  incomum:  { label: "Incomum",  cor: "#7FB07A", ordem: 2, limite: null, criar: 7,  aprender: 4,  danoMax: "3d6",        efeitos: 2 },
+  rara:     { label: "Rara",     cor: "#4F9FE0", ordem: 3, limite: null, criar: 10, aprender: 5,  danoMax: "3d10",       efeitos: 3 },
+  epica:    { label: "Épica",    cor: "#A86BE3", ordem: 4, limite: 4,    criar: 20, aprender: 10, danoMax: "5d10",       efeitos: 4 },
+  lendaria: { label: "Lendária", cor: "#E58A2A", ordem: 5, limite: 3,    criar: 35, aprender: 18, danoMax: "4d12 + 15",  efeitos: 4 },
+  mitica:   { label: "Mítica",   cor: "#D9534F", ordem: 6, limite: 2,    criar: 42, aprender: 21, danoMax: "8d10 + 10",  efeitos: 5 },
+  unica:    { label: "Única",    cor: "#F0CF62", ordem: 7, limite: 2,    criar: 50, aprender: 0,  danoMax: "10d12 + 15", efeitos: 5 }
 };
 
 export const ORIGENS_HABILIDADE = {

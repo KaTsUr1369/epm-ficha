@@ -1151,7 +1151,10 @@ export function calcularFicha({ dados, hp = {}, statuses = [], modsAE = {}, iten
       armado: [...posAtr.extrasAtaque.armado, ...extrasFicha.extrasAtaque.armado],
       desarmado: [...posAtr.extrasAtaque.desarmado, ...extrasFicha.extrasAtaque.desarmado],
       todos: extrasFicha.extrasAtaque.todos,
-      corpo: extrasFicha.extrasAtaque.corpo ?? []
+      corpo: extrasFicha.extrasAtaque.corpo ?? [],
+      distancia: extrasFicha.extrasAtaque.distancia ?? [],
+      acertoCorpo: extrasFicha.extrasAtaque.acertoCorpo ?? [],
+      acertoDist: extrasFicha.extrasAtaque.acertoDist ?? []
     }
   };
 }

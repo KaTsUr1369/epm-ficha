@@ -400,8 +400,224 @@ export function registrarLotes(quench) {
         const indice = await pack.getIndex();
         assert.isAtLeast(indice.size ?? indice.length ?? 0, C.NPCS_MODELO.length);
       });
+      it("Preencher pelo nível (0.9.0): Chefe Épico nível 10 com 4 ataques, área, selo e custo", async function () {
+        this.timeout?.(10000);
+        const I = await import("./inimigos-nivel.mjs");
+        const ator = await h.ator("Chefe Épico", { type: "npc", flags: { npc: { tipo: "chefe" } }, system: { attributes: { hp: { value: 10, max: 10 } } } });
+        const responder = cfg => respostaPadrao(cfg, { nivel: "10", tipo: "chefe", raridade: "epico", poder: "normal", vida: true, ataques: true, salvarPoder: false });
+        await comRespostas([responder], () => I.preencherPeloNivel(ator));
+        const npc = ator.flags[FLAG].npc;
+        assert.equal(ator.system.attributes.hp.max, Math.round(551 * 1.6));
+        assert.equal(npc.raridade, "epico");
+        assert.equal(npc.custo, 8);
+        const gerados = Object.values(ator.flags[FLAG].ataques ?? {}).filter(a => a.gerado);
+        assert.equal(gerados.length, 5, "4 ataques + área");
+        assert.equal(gerados.filter(a => /Lendária/.test(a.nome)).length, 2);
+        assert.ok(Object.values(npc.recargas ?? {}).some(r => r.nome === "Ataque em área" && r.min === 5), "recarga 5–6 da área");
+        await comRespostas([responder], () => I.preencherPeloNivel(ator));
+        assert.equal(Object.values(ator.flags[FLAG].ataques ?? {}).filter(a => a.gerado).length, 5, "apertar de novo troca, não duplica");
+        const { estadoAtor } = await import("./mecanicas.mjs");
+        assert.equal(estadoAtor(ator).ficha.ca.total, 26 + 2);
+      });
+      it("selo de raridade no cabeçalho do NPC", async function () {
+        this.timeout?.(8000);
+        const ator = await h.ator("Lobo Raro", { type: "npc", flags: { npc: { tipo: "monstro", raridade: "raro" } } });
+        await ator.sheet.render(true);
+        let el = null;
+        for (let i = 0; i < 40 && !(el = ator.sheet.element?.querySelector?.(".epm-npcv-chip.raridade")); i++) await espera(100);
+        assert.equal(el?.textContent?.trim(), "Raro");
+        await ator.sheet.close?.();
+      });
+      it("orçamento do encontro no Escudo: Fácil, Justo e Difícil", async () => {
+        const E = await import("./escudo-contexto.mjs");
+        const pj = await h.ator("Jogador", { flags: { nivel: 3, arquetipo: "Combatente" } });
+        const chefe = await h.ator("Chefe", { type: "npc", flags: { npc: { tipo: "chefe" } } });
+        const lacaio = await h.ator("Lacaio", { type: "npc", flags: { npc: { tipo: "comum", custo: 0.25 } } });
+        const linhas = atores => atores.map((actor, i) => ({ id: `c${i}`, actor, name: actor.name }));
+        const o1 = E.montarEscudo({ combate: { linhas: linhas([pj, lacaio]) }, grupo: [pj] }).combate.orcamento;
+        const o2 = E.montarEscudo({ combate: { linhas: linhas([pj, chefe]) }, grupo: [pj] }).combate.orcamento;
+        assert.equal(o1.etiqueta, "Fácil");
+        assert.equal(o2.etiqueta, "Difícil");
+        assert.equal(o2.custo, 4);
+      });
+      it("NPC antigo (0.9.0): ganha raridade, custo e a Vida da tabela nova", async () => {
+        const MM = await import("./migracoes-mundo.mjs");
+        const ator = await h.ator("NPC antigo", { type: "npc", flags: { npc: { tipo: "monstro", referencia: { nivel: 5, tipo: "monstro", pv: 38, ca: 21 } } }, system: { attributes: { hp: { value: 38, max: 38 } } } });
+        await MM.npcs090();
+        assert.equal(ator.flags[FLAG].npc.raridade, "comum");
+        assert.equal(ator.flags[FLAG].npc.custo, 1);
+        assert.equal(ator.system.attributes.hp.max, 89);
+        assert.ok(ator.flags[FLAG].npcs090);
+      });
     });
   }, { displayName: "EPM: NPCs" });
+
+  /* ------------------------------------------------------------ */
+  quench.registerBatch(`${MODULE_ID}.classes`, ctx => {
+    const { describe, it, assert, after } = ctx;
+    const h = ajudante();
+    describe("Classes nas versões finais (0.9.0)", () => {
+      soMestre(ctx);
+      after(() => h.limpar());
+      it("as 23 classes estão no livro, com 16 habilidades e regras", async () => {
+        const R = await import("./regras-extras.mjs");
+        const ids = Object.keys(R.CLASSES_EPM);
+        assert.equal(ids.length, 23);
+        assert.deepEqual(ids.filter(id => R.habilidadesDaClasse(id).length < 16 || !(R.CLASSES_EPM[id].regras ?? []).length), []);
+      });
+      it("Bárbaro: botão da Fúria liga, dá dano e RD pela faixa e conta os usos", async () => {
+        const F = await import("./ficha-060.mjs");
+        const { estadoAtor } = await import("./mecanicas.mjs");
+        const ator = await h.ator("Bárbaro", { flags: { nivel: 12, arquetipo: "Combatente", classe: "Bárbaro" } });
+        await F.alternarFuria(ator);
+        assert.ok(ator.flags[FLAG].classeEpm.furiaAtiva);
+        assert.equal(ator.flags[FLAG].classeEpm.furiaUsos, 1);
+        const f = estadoAtor(ator).ficha.extras.classe.furia;
+        assert.equal(f.dano, 3); assert.equal(f.rd, 4); assert.equal(f.custo, 3);
+        await F.alternarFuria(ator);
+        assert.notOk(ator.flags[FLAG].classeEpm.furiaAtiva);
+      });
+      it("Guerreiro: Postura Lâmina entra no dano corpo a corpo", async () => {
+        const F = await import("./ficha-060.mjs");
+        const { estadoAtor } = await import("./mecanicas.mjs");
+        const ator = await h.ator("Guerreiro", { flags: { nivel: 11, arquetipo: "Combatente", classe: "Guerreiro" } });
+        await F.alternarLista(ator, "classeEpm.posturas", "lamina", 1);
+        const { ficha } = estadoAtor(ator);
+        assert.ok((ficha.extrasAtaque?.corpo ?? []).some(x => x.fonte === "Postura: Lâmina" && x.formula === "1d6"));
+      });
+      it("Bastião: +20 PV, +1 CA e +2 nos testes de resistência no nível 3", async () => {
+        const { estadoAtor } = await import("./mecanicas.mjs");
+        const sem = await h.ator("Combatente", { flags: { nivel: 3, arquetipo: "Combatente" } });
+        const bas = await h.ator("Bastião", { flags: { nivel: 3, arquetipo: "Combatente", classe: "Bastião Inquebrável" } });
+        const a = estadoAtor(sem).ficha, b = estadoAtor(bas).ficha;
+        assert.equal(b.ca.total - a.ca.total, 1);
+        assert.equal(b.periciaPorId.fortitude.total - a.periciaPorId.fortitude.total, 2);
+      });
+      it("migração: habilidade de classe antiga ganha o nome novo e opções que saíram somem", async () => {
+        const MM = await import("./migracoes-mundo.mjs");
+        const ator = await h.ator("Bárbaro antigo", { flags: { nivel: 7, arquetipo: "Combatente", classe: "Bárbaro", classeEpm: { protecoes: ["semArmadura"] }, ajustesBonus: { "cla-barbaro-critico-mult": 2 } } });
+        await ator.createEmbeddedDocuments("Item", [{ name: "Proteção de Bárbaro", type: "feat", system: { description: { value: "<p>x</p><p class=\"epm-dica\">Bárbaro, nível 6.</p>" } }, flags: { [FLAG]: { classeRef: "barbaro:protecao-de-barbaro", origem: "classe" } } }]);
+        await MM.classesFinais090();
+        const nomes = ator.items.map(i => i.name);
+        assert.ok(nomes.includes("Instinto Perigoso"), "Instinto Perigoso");
+        assert.ok(!nomes.includes("Proteção de Bárbaro"), "Proteção de Bárbaro");
+        assert.ok(nomes.includes("Fúria"), "a liberada que faltava entrou");
+        assert.ok(ator.flags[FLAG].classeEpm?.protecoes === undefined, "Proteções do Bárbaro saíram");
+        assert.ok(ator.flags[FLAG].ajustesBonus?.["cla-barbaro-critico-mult"] === undefined, "ajuste do crítico antigo saiu");
+      });
+    });
+  }, { displayName: "EPM: classes" });
+
+  /* ------------------------------------------------------------ */
+  quench.registerBatch(`${MODULE_ID}.habilidades`, ctx => {
+    const { describe, it, assert, after } = ctx;
+    const h = ajudante();
+    const RESPOSTAS = { q1: "A", q2: "E", q3: "B", q4: "C", q5: "E", q6: "ser livre" };
+    const RECEITA_HUI = { categoria: "unicaInicial", natureza: "fisica", nome: `${PREFIXO} Eco Livre`, tema: "liberdade", tecnicas: [
+      { nome: "Passo Livre", peso: "leve", modo: "movimento", mods: {}, restricoes: {} },
+      { nome: "Golpe Livre", peso: "regular", modo: "golpe", mods: {}, restricoes: {} },
+      { nome: "Canção Livre", peso: "suprema", modo: "golpe", mods: {}, restricoes: { porCena: 1 } }] };
+    describe("Sistema de habilidades e Habilidade Única Inicial (0.9.0)", () => {
+      soMestre(ctx);
+      after(() => h.limpar());
+      it("projeto de habilidade: falha não gasta PH; sucesso cria o item com a receita e paga os PH", async function () {
+        this.timeout?.(10000);
+        const H = await import("./habilidades-ui.mjs");
+        const S = await import("./habilidades-sistema.mjs");
+        const { HABILIDADES_EXEMPLO } = await import("./habilidades-exemplos.mjs");
+        const ator = await h.ator("Criadora", { flags: { nivel: 5, arquetipo: "Combatente", pontos: { ph: 40 } } });
+        const receita = HABILIDADES_EXEMPLO.find(x => x.nome === "Corte Abissal");
+        const conta = S.contaHabilidade(receita, { arquetipos: ["combatente"] });
+        const id = await H.gravarProjeto(ator, receita, conta);
+        assert.equal(ator.flags[FLAG].habProjetos[id].estado, "andamento");
+        await ator.update({ [`flags.${FLAG}.habProjetos.${id}.horasFeitas`]: conta.horas, [`flags.${FLAG}.habProjetos.${id}.estado`]: "pronto", [`flags.${FLAG}.habProjetos.${id}.dt`]: 999 });
+        await H.testarProjetoHab(ator, id);
+        assert.equal(ator.flags[FLAG].pontos.ph, 40, "falhou: PH intactos");
+        assert.ok(ator.flags[FLAG].habProjetos[id].ultimoTeste, "marcou o teste do dia");
+        await ator.update({ [`flags.${FLAG}.habProjetos.${id}.dt`]: -50 });
+        await H.testarProjetoHab(ator, id);
+        assert.equal(ator.flags[FLAG].pontos.ph, 40 - conta.ph);
+        const item = ator.items.find(i => i.name === "Corte Abissal");
+        assert.ok(item?.flags[FLAG].receita, "item com a receita");
+        assert.equal(item.flags[FLAG].raridade, "rara");
+        assert.equal(ator.flags[FLAG].habProjetos[id].estado, "concluido");
+      });
+      it("HUI: Enviar ao Mestre deixa \"respondida\"; Sem HUI deixa \"nenhuma\"", async () => {
+        const H = await import("./habilidades-ui.mjs");
+        const a = await h.ator("HUI respondida", { flags: { nivel: 1, arquetipo: "Combatente" } });
+        await comRespostas([{ acao: "enviar", respostas: RESPOSTAS }], () => H.questionarioHui(a));
+        assert.equal(a.flags[FLAG].unicaInicial.estado, "respondida");
+        assert.equal(a.flags[FLAG].unicaInicial.respostas.q6, "ser livre");
+        const b = await h.ator("HUI nenhuma", { flags: { nivel: 1 } });
+        await comRespostas([{ acao: "nenhuma" }], () => H.questionarioHui(b));
+        assert.equal(b.flags[FLAG].unicaInicial.estado, "nenhuma");
+        const c = await h.ator("HUI depois", { flags: { nivel: 1 } });
+        await comRespostas([{ acao: "depois", respostas: { q1: "B" } }], () => H.questionarioHui(c));
+        assert.equal(c.flags[FLAG].unicaInicial.estado, "pendente");
+      });
+      it("HUI: concluir no nível 12 entra no Estágio II, fora dos limites, com raridade pelo peso", async () => {
+        const H = await import("./habilidades-ui.mjs");
+        const a = await h.ator("HUI ativa", { flags: { nivel: 12, arquetipo: "Combatente", unicaInicial: { estado: "respondida", respostas: RESPOSTAS } } });
+        const item = await H.concluirHui(a, RECEITA_HUI);
+        assert.equal(a.flags[FLAG].unicaInicial.estado, "ativa");
+        assert.equal(a.flags[FLAG].unicaInicial.estagio, 2);
+        assert.ok(item.flags[FLAG].hui && item.flags[FLAG].foraDoLimite);
+        assert.equal(item.flags[FLAG].raridade, "lendaria", "Suprema no Estágio II = Lendária");
+        const custos = Object.values(item.flags[FLAG].formas).map(f => f.custo?.valor).sort((x, y) => x - y);
+        assert.deepEqual(custos, [10, 15, 20], "Leve Rara 10, Regular Épica 15, Suprema Lendária 20");
+      });
+      it("HUI: usar técnica conta uso (até 3 por combate) e 15 usos no II dão a Ressonância com o mesmo custo", async () => {
+        const H = await import("./habilidades-ui.mjs");
+        const a = await h.ator("HUI ressoa", { flags: { nivel: 12, arquetipo: "Combatente", unicaInicial: { estado: "respondida" } } });
+        const item = await H.concluirHui(a, RECEITA_HUI);
+        await a.update({ [`flags.${FLAG}.unicaInicial.usos`]: 14 });
+        const forma = Object.values(item.flags[FLAG].formas).find(f => f.nome === "Canção Livre");
+        const r = await H.contarUsoHui(a, item, forma);
+        assert.ok(r.ressoou);
+        assert.ok(a.flags[FLAG].unicaInicial.ressonante);
+        const it2 = a.items.get(item.id);
+        const cancao = Object.values(it2.flags[FLAG].formas).find(f => f.nome === "Canção Livre");
+        assert.equal(cancao.custo.valor, 20, "custo continua o do Estágio II");
+        assert.ok(/Mítica/.test(cancao.efeito), "números do Estágio III");
+        assert.ok(null === await H.contarUsoHui(a, a.items.find(i => !i.flags?.[FLAG]?.hui) ?? null, forma), "item que não é HUI não conta");
+      });
+      it("HUI: subir para o nível 20 desperta o Estágio III e zera os usos", async () => {
+        const H = await import("./habilidades-ui.mjs");
+        const a = await h.ator("HUI sobe", { flags: { nivel: 12, arquetipo: "Combatente", unicaInicial: { estado: "respondida" } } });
+        await H.concluirHui(a, RECEITA_HUI);
+        await a.update({ [`flags.${FLAG}.unicaInicial.usos`]: 7, [`flags.${FLAG}.nivel`]: 20 });
+        await H.conferirEstagioHui(a);
+        assert.equal(a.flags[FLAG].unicaInicial.estagio, 3);
+        assert.equal(a.flags[FLAG].unicaInicial.usos, 0);
+        assert.equal(a.items.get(a.flags[FLAG].unicaInicial.itemId).flags[FLAG].raridade, "mitica");
+      });
+      it("criador no modo Única Inicial mostra o peso e bloqueia 2 Supremas", async function () {
+        this.timeout?.(8000);
+        const H = await import("./habilidades-ui.mjs");
+        const a = await h.ator("Criador HUI", { flags: { nivel: 1 } });
+        const receita = { ...RECEITA_HUI, tecnicas: [...RECEITA_HUI.tecnicas, { nome: "Outra", peso: "suprema", modo: "buff" }] };
+        // Desenha a janela num elemento de teste (o mesmo render do Foundry) e lê o contador de peso
+        let peso = "", bloqueado = null;
+        const { resultado } = await comRespostas([cfg => {
+          const el = document.createElement("div");
+          el.innerHTML = `<form>${cfg.content}</form><button type="button" data-action="ok">ok</button>`;
+          document.body.append(el);
+          try { cfg.render?.(null, { element: el }); peso = el.querySelector("[data-peso]")?.textContent ?? ""; bloqueado = el.querySelector('button[data-action="ok"]').disabled; }
+          finally { el.remove(); }
+          return null;
+        }], () => H.abrirCriador(a, { modo: "hui", receita, hui: { estagio: 1 } }));
+        assert.ok(/2 de 1 Suprema/.test(peso), peso);
+        assert.ok(bloqueado, "Concluir bloqueado");
+        assert.ok(resultado === null);
+      });
+      it("compêndio de habilidades de exemplo tem os 32 modelos com receita", async () => {
+        const C = await import("./conteudo-epm.mjs");
+        const { docs } = await C.documentosHabilidades();
+        assert.equal(docs.length, 32);
+        assert.ok(docs.every(d => d.flags[FLAG].receita?.tecnicas?.length));
+      });
+    });
+  }, { displayName: "EPM: habilidades e HUI" });
 
   /* ------------------------------------------------------------ */
   quench.registerBatch(`${MODULE_ID}.grupos`, ctx => {
@@ -531,7 +747,7 @@ export function registrarLotes(quench) {
           { kit: "combatente:a" }
         ], () => AC.assistenteCriacao(ator));
         const d = ator.flags[FLAG];
-        assert.equal(titulos.length, 9, `janelas: ${titulos.join(" | ")}`);
+        assert.equal(titulos.length, 10, `janelas: ${titulos.join(" | ")}`);
         assert.equal(d.nivel, 4);
         assert.equal(d.atributos.forca.base, 3);
         assert.equal(d.atributos.forca.aumento, 2);
@@ -723,11 +939,15 @@ export function registrarLotes(quench) {
         const errados = n.docs.filter(d => { const { ficha } = lerAtor({ ...d, items: [] }); return ficha.ca.total !== d.flags[FLAG].npc.referencia.ca; }).map(d => d.name);
         assert.deepEqual(errados, []);
       });
-      it("NPC rápido: força maior dá mais Vida e CA; dano vira fórmula", async () => {
+      it("NPC rápido (0.9.0): raridade dá mais Vida e CA; força só nos atributos; ataques em d8", async () => {
         const N = await import("./criar-npc.mjs");
-        const fraca = N.gerarCriatura({ forca: "fraca", nivel: 10 }), forte = N.gerarCriatura({ forca: "muitoForte", nivel: 10 });
-        assert.isAtLeast(forte.pv, fraca.pv + 1);
-        assert.isAtLeast(forte.ca, fraca.ca);
+        const comum = N.gerarCriatura({ forca: "fraca", nivel: 10 }), rara = N.gerarCriatura({ forca: "fraca", nivel: 10, raridade: "lendario" });
+        const forte = N.gerarCriatura({ forca: "muitoForte", nivel: 10 });
+        assert.equal(rara.pv, comum.pv * 2);
+        assert.equal(rara.ca, comum.ca + 3);
+        assert.equal(forte.pv, comum.pv, "a força não mexe mais na Vida");
+        assert.equal(Object.keys(comum.ataques).length, 2, "Monstro: 2 ataques");
+        assert.ok(/d8/.test(Object.values(comum.ataques)[0].dano));
         assert.equal(N.formulaDoDano(12), "2d6 + 5");
         assert.deepEqual(N.distribuir(10, { a: 1, b: 1, c: 2 }), { a: 2, b: 2, c: 6 });
       });

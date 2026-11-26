@@ -15,7 +15,7 @@ const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
 const P = `flags.${FLAG}`;
 
-const ACOES_EDITOR = ["novaForma", "excluirForma", "duplicarForma", "moverForma", "aplicarMelhoria", "removerMelhoria", "editarImagem", "novaOpcaoBonus", "removerOpcaoBonus", "subirNivelHab"];
+const ACOES_EDITOR = ["novaForma", "excluirForma", "duplicarForma", "moverForma", "aplicarMelhoria", "removerMelhoria", "editarImagem", "novaOpcaoBonus", "removerOpcaoBonus", "subirNivelHab", "lerTexto"];
 const despachar = nome => function (evento, alvo) {
   return this[`acao${nome[0].toUpperCase()}${nome.slice(1)}`]?.(evento, alvo);
 };
@@ -61,6 +61,12 @@ export class EPMPoderSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       enriched: await enriquecer(descricao, { relativeTo: item, rollData: rolagem, secrets: item.isOwner })
     });
     return Object.assign(base, montarContextoPoder({ item, ficha, listaPericias: listaPericias(), editores, editavel: this.isEditable }));
+  }
+
+  /** 0.9.2: preenche as formas pelo texto (só o que estiver vazio) e, se der, monta a receita do criador. */
+  async acaoLerTexto() {
+    const { padronizarItem } = await import("./habilidades-padrao.mjs");
+    return padronizarItem(this.item, { forcar: true });
   }
 
   async acaoNovaForma() {

@@ -3785,3 +3785,12 @@ dialog.application.dialog .window-content, .application.dialog .window-content {
   white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
 }
 .epm-npcv-chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* ------------------------------------------------------------ */
+/*  0.9.3: Grimório do Multiverso (o site) dentro do Foundry    */
+/* ------------------------------------------------------------ */
+.epm-grimorio-site .window-content { padding: 0; overflow: hidden; }
+.epm-grimorio-site-corpo { display: flex; flex-direction: column; height: 100%; background: #0D0A12; }
+.epm-grimorio-site-corpo iframe { flex: 1; width: 100%; border: 0; background: #0D0A12; }
+.epm-grimorio-site-rodape { margin: 0; padding: 6px 12px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; color: #b9adc4; background: #17131D; border-top: 1px solid #2c2535; }
+.epm-grimorio-site-rodape .epm-link { margin-left: auto; }

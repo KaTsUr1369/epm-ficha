@@ -40,7 +40,7 @@
     <header class="epm-painel-titulo">
       <h3>Formas</h3>
       <span class="epm-dica">Cada forma é um modo de usar. Com mais de uma, você escolhe ao usar.</span>
-      {{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="novaForma"><i class="fa-solid fa-plus"></i> Nova forma</button>{{/if}}
+      {{#if editavel}}<button type="button" class="epm-botao epm-botao-sutil" data-action="lerTexto" title="Lê o texto do efeito e preenche o que estiver vazio: ação, custo, uso, alcance, área, duração, teste, dano e condições"><i class="fa-solid fa-wand-magic-sparkles"></i> Automatizar pelo texto</button><button type="button" class="epm-botao epm-botao-sutil" data-action="novaForma"><i class="fa-solid fa-plus"></i> Nova forma</button>{{/if}}
     </header>
     {{#unless formas.length}}<p class="epm-vazio">Sem formas. Crie uma para definir ação, custo e dano.</p>{{/unless}}
     {{#each formas}}

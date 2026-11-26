@@ -18,6 +18,7 @@
  */
 import { FLAG, ACOES, CUSTO_RECURSOS, USOS_FORMA } from "./config.mjs";
 import { formaPadrao, normalizarTexto } from "./data.mjs";
+import { automatizarForma } from "./habilidade-auto.mjs";
 
 const esc = t => String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -112,13 +113,15 @@ export function lerHabilidadeTexto(texto) {
   const formas = partes.map((p, i) => {
     const c = p.campos;
     const custo = c.custo ? custoDe(c.custo) : { recurso: "nenhum", valor: 0 };
-    return {
+    const forma = {
       ...formaPadrao(i, p.nome),
       acao: c.acao ? acaoDe(c.acao) : "padrao",
       custo, duracao: c.duracao ?? "", alcance: c.alcance ?? "", alvo: c.alvo ?? "", area: c.area ?? "",
       uso: c.uso ? usoDe(c.uso) : "livre",
       efeito: textoParaHtml(p.texto)
     };
+    // 0.9.2: o resto (teste, dano, condições, alcance, área…) sai do próprio texto do efeito
+    return automatizarForma(forma, p.texto.join("\n")).forma;
   });
   return { nome, tipoHab, tema, descricao: textoParaHtml(abertura), formas };
 }

@@ -86,7 +86,9 @@ Hooks.once("init", () => {
 
   const modulo = game.modules.get(MODULE_ID);
   if (modulo) modulo.api = { atalho: async d => (await import("./atalhos.mjs")).executarAtalho(d), EPMActorSheet, EPMPoderSheet, EPMItemSheet, abrirEditorPoder, abrirEditorItem, mecanicas, extras, relacaoMultipla, catalogoBencaos, PainelGrupo, painelGrupo: abrirPainelGrupo, EscudoMestre, escudoMestre: abrirEscudo, mundo,
-    grimorio: async (opcoes = {}) => (await import("./grimorio-app.mjs")).abrirGrimorio(opcoes) };
+    grimorio: async (opcoes = {}) => (await import("./grimorio-app.mjs")).abrirGrimorio(opcoes),
+    grimorioSite: async (opcoes = {}) => (await import("./grimorio-site.mjs")).abrirSiteGrimorio(opcoes),
+    padronizarHabilidades: async () => (await import("./habilidades-padrao.mjs")).padronizarMundo() };
 });
 
 Hooks.once("setup", () => registrarCondicoes());

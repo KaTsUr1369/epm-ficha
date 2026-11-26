@@ -90,6 +90,11 @@ export function registrarAjustes() {
   });
   reg("numeros0820", { scope: "world", config: false, type: Boolean, default: false });
   reg("numeros0827", { scope: "world", config: false, type: Boolean, default: false });
+  reg("grimorioSite", {
+    name: "Endereço do Grimório do Multiverso",
+    hint: "Site aberto pelo botão \"Grimório do Multiverso\" (magias, rituais e habilidades para arrastar ou clicar e adicionar na ficha).",
+    scope: "world", config: true, type: String, default: "https://katsur1369.github.io/grimorio-do-multiverso/"
+  });
   reg("permitirSemHui", {
     name: "Permitir fichas sem Habilidade Única Inicial",
     hint: "Mostra o botão \"Sem Habilidade Única Inicial\" no questionário da criação de ficha.",

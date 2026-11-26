@@ -8,7 +8,7 @@ import { FLAG } from "./config.mjs";
 import { escapar } from "./helpers.mjs";
 import { GRIMORIO } from "./grimorio-dados.mjs";
 import {
-  GRIMORIO_URL, SECOES_GRIMORIO, secaoDe, dadosMagiaGrimorio, descricaoGrimorio, textoBusca, execucaoCurta, tipoExecucao, EXECUCOES,
+  SECOES_GRIMORIO, secaoDe, dadosMagiaGrimorio, descricaoGrimorio, textoBusca, execucaoCurta, tipoExecucao, EXECUCOES,
   tiposDanoGrimorio, iconeGrimorio
 } from "./grimorio.mjs";
 
@@ -143,7 +143,7 @@ function criarClasse() {
         <footer class="epm-cat-rodape">
           <span class="epm-cat-total">Marcadas: <strong data-qtd>0</strong></span>
           ${!this.actor && destinos.length ? `<label class="epm-campo epm-cat-destino"><span>Dar para</span><select data-destino>${destinos.map(a => `<option value="${a.id}" ${a.id === this.destino ? "selected" : ""}>${escapar(a.name)}</option>`).join("")}</select></label>` : ""}
-          <a class="epm-link" href="${GRIMORIO_URL}" target="_blank" rel="noopener" title="As mesmas magias, no site"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir o site</a>
+          <button type="button" class="epm-link" data-site title="O Grimório do Multiverso (magias, rituais e habilidades) numa janela do Foundry: arraste ou clique para adicionar"><i class="fa-solid fa-globe"></i> Abrir o site</button>
           <span class="epm-cat-botoes">
             ${this.actor && tem.size ? `<button type="button" class="epm-botao" data-atualizar title="Reescreve as magias que vieram do Grimório com o texto atual (raridade, favorito e formas extras ficam)"><i class="fa-solid fa-rotate"></i> Atualizar as da ficha</button>` : ""}
             ${this.actor || destinos.length ? `<button type="button" class="epm-botao epm-botao-forte" data-adicionar><i class="fa-solid fa-plus"></i> ${this.actor ? "Adicionar à ficha" : "Dar"}</button>` : ""}
@@ -216,6 +216,7 @@ function criarClasse() {
         if (n !== undefined) this.render();
       });
       r.querySelector("[data-atualizar]")?.addEventListener("click", () => atualizarDoGrimorio(this.actor));
+      r.querySelector("[data-site]")?.addEventListener("click", async () => (await import("./grimorio-site.mjs")).abrirSiteGrimorio({ actor: this.actor, aba: "magias" }));
       r.querySelector("[data-importar]")?.addEventListener("click", async () => {
         const ids = marcadas();
         if (!ids.length) {

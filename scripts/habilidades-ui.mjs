@@ -8,6 +8,7 @@ import { int, formaPadrao, novoId } from "./data.mjs";
 import { escapar } from "./helpers.mjs";
 import * as S from "./habilidades-sistema.mjs";
 import { HABILIDADES_EXEMPLO } from "./habilidades-exemplos.mjs";
+import { automatizarForma } from "./habilidade-auto.mjs";
 
 const P = `flags.${FLAG}`;
 const fvtt = () => foundry.applications.api;
@@ -58,6 +59,13 @@ export function formaDaTecnica(t, i, { categoria = "habilidade", natureza = "fis
   if (freq) forma.uso = freq;
   if (modo === "disparo" || modo === "explosao") forma.dano = { formula: c.potencia ? S.RARIDADES_HAB[c.numeros].proprio.replace(/\s/g, "") : "", tipo: "" };
   if (modo === "explosao") forma.teste = { tipo: "resistencia", pericia: "reflexos", nd: "" };
+  // Automação pelo texto (0.9.3): alcance, área, duração, teste, dano e condições do efeito escrito.
+  // A ação e o custo da receita valem; a frequência do texto só entra se a receita não tiver uma.
+  if (t.efeito) {
+    const a = automatizarForma(forma, t.efeito, { modo }).forma;
+    Object.assign(forma, { alcance: a.alcance, area: a.area, duracao: a.duracao, teste: a.teste, dano: a.dano, condicoes: a.condicoes ?? [] });
+    if (!freq && a.uso) forma.uso = a.uso;
+  }
   const detalhes = [
     `${S.MODOS[modo].label} ${c.label}${c.numeros !== c.raridade ? ` (números ${S.RARIDADES_HAB[c.numeros].label})` : ""}`,
     c.efeitoBase,

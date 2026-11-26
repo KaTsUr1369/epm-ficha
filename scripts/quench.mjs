@@ -1020,4 +1020,45 @@ export function registrarLotes(quench) {
       });
     });
   }, { displayName: "EPM: listas e catálogos" });
+
+  quench.registerBatch(`${MODULE_ID}.grimorioSite`, ctx => {
+    const { describe, it, assert, after } = ctx;
+    describe("Grimório do Multiverso e automação pelo texto (0.9.3)", () => {
+      let ator = null;
+      after(async () => { await ator?.delete(); });
+      it("Automação: teste, dano e condições lidos do efeito", async () => {
+        const A = await import("./habilidade-auto.mjs");
+        const a = A.lerAutomacao("Até 9 m. Fortitude CD 10 + Força: 2d8 de dano de Corte; se falhar, fica Lento.");
+        assert.equal(a.teste.pericia, "fortitude");
+        assert.ok(a.dano.formula.includes("2d8"));
+        assert.ok(a.condicoes.includes("epm-lento"));
+      });
+      it("Habilidade feita à mão: Automatizar pelo texto preenche a forma e monta a receita", async () => {
+        const { formaPadrao } = await import("./data.mjs");
+        const P = await import("./habilidades-padrao.mjs");
+        ator = await Actor.create({ name: "Teste Grimório 0.9.3", type: "character" });
+        const [it] = await ator.createEmbeddedDocuments("Item", [{ name: "Corte Teste", type: "feat",
+          flags: { [FLAG]: { origem: "criada", formas: { f1: { ...formaPadrao(0, "Corte"), efeito: "<p>Até 9 m. Fortitude CD 10 + Força: 2d8 de dano de Corte; se falhar, fica Lento.</p>" } } } } }]);
+        await P.padronizarItem(it, { avisar: false });
+        const f = it.flags[FLAG];
+        assert.deepEqual(f.formas.f1.condicoes, ["epm-lento"]);
+        assert.ok(f.receita?.tecnicas?.length);
+        assert.ok(f.padronizada >= 1);
+      });
+      it("Do site para a ficha: magia do Grimório entra pelo id", async () => {
+        const G = await import("./grimorio-app.mjs");
+        const S = await import("./grimorio-site.mjs");
+        ator ??= await Actor.create({ name: "Teste Grimório 0.9.3", type: "character" });
+        const { GRIMORIO } = await import("./grimorio-dados.mjs");
+        const id = GRIMORIO.magias[0].id;
+        assert.ok(G.magiaGrimorioPorId(id));
+        await S.adicionarDoSite(ator, { type: "EPMGrimorio", kind: "magia", id });
+        assert.ok(ator.items.some(i => i.flags[FLAG]?.grimorio === id));
+      });
+      it("Endereço do site configurável", async () => {
+        const S = await import("./grimorio-site.mjs");
+        assert.ok(/^https:\/\//.test(S.urlSite()));
+      });
+    });
+  }, { displayName: "EPM: Grimório do Multiverso (0.9.3)" });
 }

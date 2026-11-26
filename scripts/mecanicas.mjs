@@ -942,6 +942,13 @@ async function cartaoPoder(actor, item, p, forma, { avisos, ficha, rolagem, cust
         label: `${cura ? "Cura" : "Dano"} ${formulaDano}${potente ? " (Magia Potente)" : ""}${somaAfin ? " (Afinidade Elemental)" : ""}`, icone: cura ? "fa-solid fa-heart" : "fa-solid fa-burst"
       });
     }
+    // Condições do efeito (0.9.3): um botão por condição, aplicada nos alvos marcados
+    for (const cid of forma.condicoes ?? []) {
+      const cond = condicaoPorId(cid);
+      if (!cond) continue;
+      botoes.push({ acao: "condicaoAlvo", condicao: cid, rotulo: item.name,
+        label: `${forma.teste.tipo === "resistencia" ? "Falhou" : "Acertou"}? ${cond.label}`, icone: "fa-solid fa-circle-exclamation" });
+    }
     for (const [k, ligado] of Object.entries(forma.requisitos)) if (ligado) requisitos.push(REQUISITOS[k]?.label ?? k);
     // Conjurador: Manipulação Mágica (Nv. 5) e Sobrecarga Mágica (Nv. 37) direto do cartão da magia
     const nivelConj = p.tipo === "magia" ? nivelArquetipo(actor.flags?.[FLAG] ?? {}, "conjurador") : 0;

@@ -14,6 +14,12 @@ https://github.com/KaTsUr1369/epm-ficha/releases/latest/download/module.json
 
 Ative o módulo no mundo. A ficha EPM vira a ficha padrão de personagens; para trocar uma ficha específica, use o botão de configuração da ficha (ícone de engrenagem no topo).
 
+## Novidades da 0.9.3
+
+- **Grimório do Multiverso dentro do Foundry:** o site agora mora no GitHub Pages (`katsur1369.github.io/grimorio-do-multiverso`) e abre numa janela do Foundry pelos botões **Grimório** (aba Habilidades), **Site** (aba Magias), **Site do Grimório** (Escudo do Mestre) e **Abrir o site** (Grimório de Magias). Arraste um cartão (magia, ritual, habilidade de exemplo ou a habilidade montada no criador) para a ficha, ou clique em **Adicionar à ficha**. Magias do Grimório entram direto; habilidades de exemplo abrem a janela de aprender; a montada no criador abre o criador da ficha e vira projeto; a Habilidade Única Inicial fica com o Mestre. O endereço do site pode ser trocado nas configurações.
+- **Automação pelo texto:** criar ou colar uma habilidade, ou o novo botão **Automatizar pelo texto** no editor, lê o efeito e preenche ação, custo, uso, alcance, área, duração, teste (com a DT), dano e as **condições** que ele aplica. Cada condição vira um botão no cartão do chat ("Falhou? Lento") que aplica nos alvos marcados. Só preenche o que está vazio.
+- **Habilidades antigas no padrão do site:** a migração passa por todas as habilidades e magias do mundo e das fichas, automatiza as formas pelo texto e dá às habilidades feitas à mão a receita do criador (raridade, modo, modificadores e restrições), com o menu Aprimorar, Evoluir, Nova técnica e Remodelar. Habilidades de classe, raça, arquétipo e treino, magias do Grimório e a HUI só ganham a automação.
+
 ## Novidades da 0.9.2
 
 - **Dobro e Passo no fluxo de defesa**: depois de Esquiva, Bloqueio ou Contra-ataque (ou sem reação), se o ataque acertou, quem tem a habilidade passa o dano para um aliado na cena com um clique. É ação livre: usa quando quiser, sem gastar a Reação. O aliado recebe o botão de dano e +5 no teste de ataque ou no dano do próximo ataque (um teste comum não gasta esse bônus). Fichas que já tinham a habilidade passam para ação livre.

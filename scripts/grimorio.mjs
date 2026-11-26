@@ -9,7 +9,7 @@ import { FLAG, TIPOS_DANO } from "./config.mjs";
 import { formaPadrao } from "./data.mjs";
 
 /** Endereço do site do Grimório (página publicada com as mesmas magias). */
-export const GRIMORIO_URL = "https://claude.ai/artifact/A6QayZpDEmQ6YTkTqag5rR";
+export const GRIMORIO_URL = "https://katsur1369.github.io/grimorio-do-multiverso/";
 
 /** Seções do grimório na ordem do documento. */
 export const SECOES_GRIMORIO = [

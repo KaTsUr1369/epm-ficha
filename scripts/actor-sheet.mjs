@@ -804,6 +804,7 @@ export class EPMActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       const item = await Item.implementation.fromDropData(dados);
       return Oficina.soltarNaCriacao(this.actor, zonaCriacao.dataset.criacao, zonaCriacao.dataset.soltarCriacao, item);
     }
+    if (dados?.type === "EPMGrimorio") return (await import("./grimorio-site.mjs")).adicionarDoSite(this.actor, dados);
     if (dados?.type === "Item") return this._soltarItem(dados, event);
     if (dados?.type === "Actor") return this._soltarAtor(dados);
     if (dados?.type) return ui.notifications.info("A ficha EPM aceita itens, habilidades, magias e personagens (estes nas abas Relações, Companheiros ou Bestiário).");
